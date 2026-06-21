@@ -1,0 +1,112 @@
+<!-- 3220089_3220172 // 2025 -->
+ 
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DevDromos – Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- CSS paths -->
+    <link rel="stylesheet" href="/assets/css/reset.css" />
+    <link rel="stylesheet" href="/assets/css/theme.css" />
+    <link rel="stylesheet" href="/assets/css/layout.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+  </head>
+  <body>
+    <!-- Site header: logo + main navigation -->
+    <header class="site-header">
+      <div class="container header-content">
+        <!-- Brand / logo -->
+        <div class="logo">
+          <img class="logo-img" src="/assets/img/logo_Image.png" alt="DevDromos logo" />
+          <span class="logo-text">DevDromos</span>
+        </div>
+
+        <!-- Mobile menu button (hamburger) -->
+        <button
+          id="menuToggle"
+          class="menu-toggle"
+          type="button"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+          aria-controls="mainNav"
+        >
+          ☰
+        </button>
+
+        <!-- Main navigation -->
+        <nav id="mainNav" class="main-nav">
+          <a href="/index.html">Home</a>
+          <a href="/src/pages/courses/courses.html">Courses</a>
+          <a href="/src/pages/books/books.html">Books</a>
+          <a href="/src/pages/about/about.html">About</a>
+          <a href="/src/pages/cart/cart.html" data-cart-link>Cart</a>
+          <a href="/src/pages/login/login.html" class="btn-outline active">Login</a>
+          <a href="/src/pages/register/register.html" class="btn-primary">Register</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container page-content">
+      <h1>Login</h1>
+
+      <form id="loginForm" class="card form-grid">
+        <div class="form-field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required />
+        </div>
+
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required />
+        </div>
+
+        <div class="form-actions form-field-full">
+          <button type="submit" class="btn-primary">Login</button>
+        </div>
+
+        <p id="status" class="meta"></p>
+      </form>
+    </main>
+
+    <!-- Site footer -->
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <img
+              class="logo-img"
+              src="/assets/img/logo_Image.png"
+              alt="DevDromos logo"
+            />
+            <span class="logo-text">DevDromos</span>
+          </div>
+
+          <p>Empowering future computer scientists.</p>
+        </div>
+
+        <div>
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="/src/pages/courses/courses.html">Courses</a></li>
+            <li><a href="/src/pages/books/books.html">Books</a></li>
+            <li><a href="/src/pages/about/about.html">About us</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4>Contact</h4>
+          <p>Email: info@devdromos.com</p>
+          <p>Phone: (+30) 210 6459986</p>
+        </div>
+      </div>
+
+      <div class="container footer-bottom">
+        <small>&copy; 2025 DevDromos.</small>
+      </div>
+    </footer>
+
+    <script type="module" src="./login.ts"></script>
+  </body>
+</html>

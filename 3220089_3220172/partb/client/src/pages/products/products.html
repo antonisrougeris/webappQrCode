@@ -1,0 +1,135 @@
+<!-- 3220089_3220172 // 2025 -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Skanare - Products</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="/assets/css/reset.css" />
+  <link rel="stylesheet" href="/assets/css/theme.css" />
+  <link rel="stylesheet" href="/assets/css/layout.css" />
+  <link rel="stylesheet" href="/assets/css/components.css" />
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a href="/index.html" class="logo">
+        <img class="logo-img" src="/assets/img/logo_Image.png" alt="Skanare logo" />
+        <span class="logo-text">Skanare</span>
+      </a>
+
+      <button
+        id="menuToggle"
+        class="menu-toggle"
+        type="button"
+        aria-label="Toggle menu"
+        aria-expanded="false"
+        aria-controls="mainNav"
+      >
+        ☰
+      </button>
+
+      <nav id="mainNav" class="main-nav">
+        <a href="/index.html">Home</a>
+        <a href="/src/pages/products/products.html" class="active">Products</a>
+        <a href="/src/pages/products/products.html?category=tshirt">T-Shirts</a>
+        <a href="/src/pages/products/products.html?category=accessory">Accessories</a>
+        <a href="/src/pages/contact/contact.html">Contact</a>
+        <a href="/src/pages/cart/cart.html" data-cart-link>Cart</a>
+        <a href="/src/pages/login/login.html" class="btn-outline">Login</a>
+        <a href="/src/pages/register/register.html" class="btn-primary">Register</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-content">
+        <div>
+          <span class="eyebrow">QR clothing & accessories</span>
+          <h1>Shop editable QR products.</h1>
+          <p>
+            Choose a t-shirt or accessory, add your personal QR destination,
+            and update the link anytime from your account.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-muted">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">All Products</h2>
+        </div>
+
+        <div class="filters">
+          <input
+            id="productSearch"
+            type="search"
+            placeholder="Search products..."
+            aria-label="Search products"
+          />
+
+          <select id="productCategory" aria-label="Filter by category">
+            <option value="All">All categories</option>
+            <option value="tshirt">T-Shirts</option>
+            <option value="accessory">Accessories</option>
+          </select>
+        </div>
+
+        <div id="productsGrid" class="grid grid-4"></div>
+
+        <p id="productsLoading" class="meta">Loading products...</p>
+
+        <p id="productsEmpty" class="meta" hidden>
+          No products match your search criteria.
+        </p>
+
+        <p
+          id="productsError"
+          class="meta"
+          style="color: var(--color-error, #dc2626);"
+          hidden
+        >
+          Failed to load products. Please try again later.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a href="/index.html" class="logo">
+          <img class="logo-img" src="/assets/img/logo_Image.png" alt="Skanare logo" />
+          <span class="logo-text">Skanare</span>
+        </a>
+        <p>Modern QR clothing for creators, brands and events.</p>
+      </div>
+
+      <div>
+        <h4>Shop</h4>
+        <ul>
+          <li><a href="/src/pages/products/products.html?category=tshirt">T-Shirts</a></li>
+          <li><a href="/src/pages/products/products.html?category=accessory">Accessories</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Support</h4>
+        <p>Email: hello@skanare.com</p>
+        <p>Free QR link updates.</p>
+      </div>
+    </div>
+
+    <div class="container footer-bottom">
+      <small>&copy; 2025 Skanare.</small>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/pages/products/products.ts"></script>
+</body>
+</html>
