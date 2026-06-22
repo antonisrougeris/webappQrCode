@@ -101,18 +101,55 @@
             <a class="btn-outline" href="#how">See how it works</a>
           </div>
         </div>
-        <div class="hero-visual" aria-label="QR t-shirt preview">
-          <div class="tshirt-mockup"><div class="qr-print"></div></div>
+        <div class="hero-visual">
+
+          <!-- T-SHIRT -->
+          <div class="tshirt-mockup">
+        
+            <!-- SVG shirt -->
+            <svg class="tshirt-svg" viewBox="0 0 200 200">
+              <path d="M50 40 L70 20 L130 20 L150 40 L170 60 L150 80 L150 170 L50 170 L50 80 L30 60 Z"
+                fill="#111" />
+        
+              <!-- QR πάνω στο shirt -->
+              <image
+                href="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://skanare.com"
+                x="60"
+                y="70"
+                width="80"
+                height="80"
+              />
+            </svg>
+        
+          </div>
+        
+          <!-- PHONE CARD -->
           <div class="phone-card">
             <div class="phone-screen">
+        
               <strong>Your QR profile</strong>
-              <div class="qr-print" style="position:static; transform:none; margin:20px auto; width:92px; height:92px;"></div>
-              <div class="link-chip">https://your-link.com</div>
+        
+              <img
+                class="qr-real small"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=https://skanare.com/antonios"
+              />
+        
+              <div class="link-chip">
+                skanare.com/antonios
+              </div>
+        
               <a class="btn-primary" href="#">Update link</a>
+        
             </div>
           </div>
-          <div class="float-badge">One QR. Unlimited links.</div>
+        
+          <!-- BADGE -->
+          <div class="float-badge">
+            One QR. Unlimited links.
+          </div>
+        
         </div>
+        
       </div>
     </section>
 
