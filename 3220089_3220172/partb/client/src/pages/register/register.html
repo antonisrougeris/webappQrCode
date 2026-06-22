@@ -5,7 +5,7 @@
 <head>
   <!-- Basic metadata -->
   <meta charset="UTF-8" />
-  <title>DevDromos - Register</title>
+  <title>Skanare - Register</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- CSS order: reset -> theme -> layout -> components -->
@@ -16,152 +16,129 @@
 </head>
 
 <body>
-  <!-- Shared site header (logo + nav + cart link + mobile menu button) -->
+  
+      <!-- Site header: logo + main navigation -->
   <header class="site-header">
     <div class="container header-content">
-      <div class="logo">
-        <!-- Fix: Use correct image path -->
-        <img class="logo-img" src="/assets/img/logo_Image.png" alt="DevDromos logo" />
-        <span class="logo-text">DevDromos</span>
-      </div>
-
-      <!-- Mobile menu toggle (handled by menu.js + responsive.js) -->
+  
       <button
         id="menuToggle"
         class="menu-toggle"
+        type="button"
         aria-label="Toggle menu"
         aria-expanded="false"
         aria-controls="mainNav"
       >
         ☰
       </button>
-
-      <!-- Navigation: data-cart-link is updated by cart-badge.js -->
+  
       <nav id="mainNav" class="main-nav">
-        <a href="/index.html">Home</a>
-        <a href="/src/pages/courses/courses.html">Courses</a>
-        <a href="/src/pages/books/books.html">Books</a>
-        <a href="/src/pages/about/about.html">About</a>
-        <a href="/src/pages/cart/cart.html" data-cart-link>Cart</a>
-        <a href="/src/pages/login/login.html" class="btn-outline">Login</a>
-        <a href="/src/pages/register/register.html" class="btn-primary active">Register</a>
+        <div class="nav-left">
+          <a href="#tshirts">QR Clothing</a>
+          <a href="#accessories">QR Accessories</a>
+        </div>
+  
+        <div class="nav-right">
+          <a href="/src/pages/contact/contact.html">Contact</a>
+          <a href="#how">How it works</a>
+  
+          <a href="/src/pages/login/login.html" class="icon-link" aria-label="Login or register">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
+            </svg>
+          </a>
+        </div>
       </nav>
+  
+      <a href="/index.html" class="logo">
+        <img class="logo-img" src="/assets/img/logo_Image.png" alt="Skanare logo" />
+        <span class="logo-text">Skanare</span>
+      </a>
+  
+      <a href="/src/pages/cart/cart.html" class="cart-link" aria-label="Cart">
+        <svg
+          role="presentation"
+          stroke-width="1.6"
+          focusable="false"
+          width="22"
+          height="22"
+          class="icon icon-cart"
+          viewBox="0 0 22 22"
+        >
+          <path
+            d="M14.666 7.333a3.666 3.666 0 1 1-7.333 0M3.33 6.785l-.642 7.7c-.137 1.654-.206 2.48.073 3.119a2.75 2.75 0 0 0 1.21 1.314c.612.332 1.442.332 3.102.332h7.853c1.66 0 2.49 0 3.103-.332a2.75 2.75 0 0 0 1.21-1.314c.279-.638.21-1.465.072-3.12l-.642-7.7c-.118-1.423-.178-2.134-.493-2.673A2.75 2.75 0 0 0 16.99 3.02c-.563-.269-1.277-.269-2.705-.269h-6.57c-1.428 0-2.142 0-2.705.27A2.75 2.75 0 0 0 3.823 4.11c-.315.539-.374 1.25-.493 2.674Z"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </a>
+  
     </div>
   </header>
 
-  <main class="container page-content">
-    <!-- Page title -->
-    <h1>Create your account</h1>
+  <main class="auth-page">
 
-    
-
-    <!-- Registration form
-         - id="registerForm" is used by register_form.js
-         - novalidate disables the browser popup UI (we show custom JS errors) -->
-    <form id="registerForm" class="card form-grid" novalidate>
-
-      <!-- Basic user info -->
-      <div class="form-field">
-        <label for="firstName">First name *</label>
-        <input id="firstName" name="firstName" type="text" required />
-      </div>
-
-      <div class="form-field">
-        <label for="lastName">Last name *</label>
-        <input id="lastName" name="lastName" type="text" required />
-      </div>
-
-      <div class="form-field">
-        <label for="email">Email *</label>
-        <input id="email" name="email" type="email" required />
-      </div>
-
-      <div class="form-field">
-        <label for="phone">Phone *</label>
-        <input id="phone" name="phone" type="tel" required />
-      </div>
-
-      <!-- Account credentials -->
-      <div class="form-field">
-        <label for="password">Password *</label>
-        <input id="password" name="password" type="password" required />
-      </div>
-
-      <div class="form-field">
-        <label for="confirmPassword">Confirm password *</label>
-        <input id="confirmPassword" name="confirmPassword" type="password" required />
-      </div>
-
-      <!-- Birth date used for age validation in register_form.js -->
-      <div class="form-field">
-        <label for="birthdate">Birth date *</label>
-        <input id="birthdate" name="birthdate" type="date" required />
-      </div>
-
-      <!-- Select input example (required) -->
-      <div class="form-field">
-        <label for="gender">Gender *</label>
-        <select id="gender" name="gender" required>
-          <option value="">Select gender</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-          <option value="Prefer not to say">Prefer not to say</option>
-        </select>
-      </div>
-
-      <!-- Interests (checkbox group)
-           register_form.js validates that at least one checkbox is selected -->
-      <fieldset class="form-field form-field-full">
-        <legend>Areas of interest * (select at least one)</legend>
-        <label><input type="checkbox" name="interests" value="Programming" /> Programming</label>
-        <label><input type="checkbox" name="interests" value="Networking" /> Networking</label>
-        <label><input type="checkbox" name="interests" value="Security" /> Security</label>
-        <label><input type="checkbox" name="interests" value="Database" /> Databases</label>
-      </fieldset>
-
-      <!-- Experience (radio group)
-           register_form.js validates that one radio is selected -->
-      <fieldset class="form-field form-field-full">
-        <legend>Experience level *</legend>
-        <label><input type="radio" name="experience" value="Beginner" required /> Beginner</label>
-        <label><input type="radio" name="experience" value="Intermediate" /> Intermediate</label>
-        <label><input type="radio" name="experience" value="Advanced" /> Advanced</label>
-        <label><input type="radio" name="experience" value="Expert" /> Expert</label>
-      </fieldset>
-
-      <!-- Optional textarea used in the summary -->
-      <div class="form-field form-field-full">
-        <label for="goals">Learning goals (optional)</label>
-        <textarea id="goals" name="goals" rows="4"></textarea>
-      </div>
-
-      <!-- Optional newsletter checkbox -->
-      <div class="form-field form-field-full">
-        <label>
-          <input type="checkbox" name="newsletter" />
-          Subscribe to our newsletter
-        </label>
-      </div>
-
-      <p id="status" class="meta" style="margin-top: 1rem;"></p>
-      
-      <!-- Submit button triggers JS validation + summary panel (no real backend in Part A) -->
-      <div class="form-actions form-field-full">
-        <button type="submit" class="btn-primary">Create account</button>
-      </div>
-
-    </form>
-  </main>
-
-  <!-- Minimal footer -->
-  <footer class="site-footer">
-    <div class="container footer-bottom">
-      <small>&copy; 2025 DevDromos.</small>
+    <div class="auth-card">
+  
+      <h1>Create account</h1>
+      <p class="auth-sub">Start your QR journey</p>
+  
+      <button type="button" class="auth-google">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" />
+        Continue with Google
+      </button>
+  
+      <div class="auth-divider"><span>OR</span></div>
+  
+      <form id="registerForm" class="auth-form">
+  
+        <input name="firstName" placeholder="First name" required />
+        <input name="lastName" placeholder="Last name" required />
+        <input name="email" type="email" placeholder="Email" required />
+        <input name="password" type="password" placeholder="Password" required />
+        <input name="confirmPassword" type="password" placeholder="Confirm password" required />
+  
+        <button type="submit" class="auth-submit">
+          Create account
+        </button>
+  
+        <p id="status" class="auth-status"></p>
+  
+      </form>
+  
+      <p class="auth-switch">
+        Already have an account?
+        <a href="/src/pages/login/login.html">Sign in</a>
+      </p>
+  
     </div>
+  
+  </main>
+ 
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div><div class="logo-text">Skanare</span></div><p>Modern QR clothing for creators, brands and events.</p></div>
+      <div><h4>Shop</h4><ul><li><a href="/src/pages/products/products.html?category=tshirt">T-Shirts</a></li><li><a href="/src/pages/products/products.html?category=accessory">Accessories</a></li></ul></div>
+      <div><h4>Support</h4><p>Email: hello@skanare.com</p><p>Free QR link updates.</p></div>
+    </div>
+    <div class="container footer-bottom"><small>&copy; 2026 skanare.</small></div>
   </footer>
 
-  <!-- Main app entry point: initRegisterForm() runs here safely -->
-  <script type="module" src="./register.ts"></script>
+  <div id="cartOverlay" class="cart-overlay hidden"></div>
+
+<aside id="cartDrawer" class="cart-drawer hidden">
+  <header class="cart-header">
+    <h2>Your Cart</h2>
+    <button id="closeCart" type="button">✕</button>
+  </header>
+
+  <div id="cartDrawerContent"></div>
+</aside>
+
+<script type="module" src="./register.ts"></script>
+<script type="module" src="/src/pages/cart/cart.ts"></script>
 </body>
 </html>

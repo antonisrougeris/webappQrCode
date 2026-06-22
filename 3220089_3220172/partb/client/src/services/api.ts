@@ -2,7 +2,7 @@
 
 import { getToken } from "./auth";
 
-const API_URL = "http://localhost:4000/api"; // Match server PORT=4000
+const API_URL = "https://cldrq5-4000.csb.app/api"; // Match server PORT=4000
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = getToken();

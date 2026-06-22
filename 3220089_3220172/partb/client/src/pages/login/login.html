@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>DevDromos – Login</title>
+    <title>Skanare – Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- CSS paths -->
@@ -14,99 +14,130 @@
     <link rel="stylesheet" href="/assets/css/components.css" />
   </head>
   <body>
-    <!-- Site header: logo + main navigation -->
-    <header class="site-header">
-      <div class="container header-content">
-        <!-- Brand / logo -->
-        <div class="logo">
-          <img class="logo-img" src="/assets/img/logo_Image.png" alt="DevDromos logo" />
-          <span class="logo-text">DevDromos</span>
+      <!-- Site header: logo + main navigation -->
+  <header class="site-header">
+    <div class="container header-content">
+  
+      <button
+        id="menuToggle"
+        class="menu-toggle"
+        type="button"
+        aria-label="Toggle menu"
+        aria-expanded="false"
+        aria-controls="mainNav"
+      >
+        ☰
+      </button>
+  
+      <nav id="mainNav" class="main-nav">
+        <div class="nav-left">
+          <a href="#tshirts">QR Clothing</a>
+          <a href="#accessories">QR Accessories</a>
         </div>
-
-        <!-- Mobile menu button (hamburger) -->
-        <button
-          id="menuToggle"
-          class="menu-toggle"
-          type="button"
-          aria-label="Toggle menu"
-          aria-expanded="false"
-          aria-controls="mainNav"
+  
+        <div class="nav-right">
+          <a href="/src/pages/contact/contact.html">Contact</a>
+          <a href="#how">How it works</a>
+  
+          <a href="/src/pages/login/login.html" class="icon-link" aria-label="Login or register">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
+            </svg>
+          </a>
+        </div>
+      </nav>
+  
+      <a href="/index.html" class="logo">
+        <img class="logo-img" src="/assets/img/logo_Image.png" alt="Skanare logo" />
+        <span class="logo-text">Skanare</span>
+      </a>
+  
+      <a href="/src/pages/cart/cart.html" class="cart-link" aria-label="Cart">
+        <svg
+          role="presentation"
+          stroke-width="1.6"
+          focusable="false"
+          width="22"
+          height="22"
+          class="icon icon-cart"
+          viewBox="0 0 22 22"
         >
-          ☰
+          <path
+            d="M14.666 7.333a3.666 3.666 0 1 1-7.333 0M3.33 6.785l-.642 7.7c-.137 1.654-.206 2.48.073 3.119a2.75 2.75 0 0 0 1.21 1.314c.612.332 1.442.332 3.102.332h7.853c1.66 0 2.49 0 3.103-.332a2.75 2.75 0 0 0 1.21-1.314c.279-.638.21-1.465.072-3.12l-.642-7.7c-.118-1.423-.178-2.134-.493-2.673A2.75 2.75 0 0 0 16.99 3.02c-.563-.269-1.277-.269-2.705-.269h-6.57c-1.428 0-2.142 0-2.705.27A2.75 2.75 0 0 0 3.823 4.11c-.315.539-.374 1.25-.493 2.674Z"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </a>
+  
+    </div>
+  </header>
+
+  <main class="auth-page">
+
+    <div class="auth-card">
+  
+      <h1>Welcome back</h1>
+      <p class="auth-sub">Sign in to your account</p>
+  
+      <!-- GOOGLE -->
+      <button class="auth-google">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" />
+        Continue with Google
+      </button>
+  
+      <div class="auth-divider">
+        <span>OR</span>
+      </div>
+  
+      <!-- ✅ ΔΕΝ ΑΛΛΑΖΟΥΜΕ ID -->
+      <form id="loginForm" class="auth-form">
+  
+        <input name="email" type="email" placeholder="Email" required />
+        <input name="password" type="password" placeholder="Password" required />
+  
+        <button type="submit" class="auth-submit">
+          Sign in
         </button>
-
-        <!-- Main navigation -->
-        <nav id="mainNav" class="main-nav">
-          <a href="/index.html">Home</a>
-          <a href="/src/pages/courses/courses.html">Courses</a>
-          <a href="/src/pages/books/books.html">Books</a>
-          <a href="/src/pages/about/about.html">About</a>
-          <a href="/src/pages/cart/cart.html" data-cart-link>Cart</a>
-          <a href="/src/pages/login/login.html" class="btn-outline active">Login</a>
-          <a href="/src/pages/register/register.html" class="btn-primary">Register</a>
-        </nav>
-      </div>
-    </header>
-
-    <main class="container page-content">
-      <h1>Login</h1>
-
-      <form id="loginForm" class="card form-grid">
-        <div class="form-field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" required />
-        </div>
-
-        <div class="form-field">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" required />
-        </div>
-
-        <div class="form-actions form-field-full">
-          <button type="submit" class="btn-primary">Login</button>
-        </div>
-
-        <p id="status" class="meta"></p>
+  
+        <p id="status" class="auth-status"></p>
+  
       </form>
-    </main>
+  
+      <p class="auth-switch">
+        Don’t have an account?
+        <a href="/src/pages/register/register.html">Sign up</a>
+      </p>
+  
+    </div>
+  
+  </main>
+  
+    
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div><div class="logo-text">Skanare</span></div><p>Modern QR clothing for creators, brands and events.</p></div>
+      <div><h4>Shop</h4><ul><li><a href="/src/pages/products/products.html?category=tshirt">T-Shirts</a></li><li><a href="/src/pages/products/products.html?category=accessory">Accessories</a></li></ul></div>
+      <div><h4>Support</h4><p>Email: hello@skanare.com</p><p>Free QR link updates.</p></div>
+    </div>
+    <div class="container footer-bottom"><small>&copy; 2026 skanare.</small></div>
+  </footer>
 
-    <!-- Site footer -->
-    <footer class="site-footer">
-      <div class="container footer-grid">
-        <div>
-          <div class="logo">
-            <img
-              class="logo-img"
-              src="/assets/img/logo_Image.png"
-              alt="DevDromos logo"
-            />
-            <span class="logo-text">DevDromos</span>
-          </div>
+  <div id="cartOverlay" class="cart-overlay hidden"></div>
 
-          <p>Empowering future computer scientists.</p>
-        </div>
+<aside id="cartDrawer" class="cart-drawer hidden">
+  <header class="cart-header">
+    <h2>Your Cart</h2>
+    <button id="closeCart" type="button">✕</button>
+  </header>
 
-        <div>
-          <h4>Quick Links</h4>
-          <ul>
-            <li><a href="/src/pages/courses/courses.html">Courses</a></li>
-            <li><a href="/src/pages/books/books.html">Books</a></li>
-            <li><a href="/src/pages/about/about.html">About us</a></li>
-          </ul>
-        </div>
+  <div id="cartDrawerContent"></div>
+</aside>
 
-        <div>
-          <h4>Contact</h4>
-          <p>Email: info@devdromos.com</p>
-          <p>Phone: (+30) 210 6459986</p>
-        </div>
-      </div>
-
-      <div class="container footer-bottom">
-        <small>&copy; 2025 DevDromos.</small>
-      </div>
-    </footer>
-
-    <script type="module" src="./login.ts"></script>
-  </body>
+<script type="module" src="./login.ts"></script>
+<script type="module" src="/src/pages/cart/cart.ts"></script>
+</body>
 </html>

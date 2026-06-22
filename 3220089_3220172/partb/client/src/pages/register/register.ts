@@ -4,12 +4,11 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { initNav } from "../../components/initNav";
 import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
-import { readData, validateAndShowErrors } from "../../utils/register-validation";
 import { firebaseAuth } from "../../services/firebase";
 import { saveToken } from "../../services/auth";
 import { register } from "../../services/api";
 
-// Initialize navigation (handles login/logout state)
+// ✅ Initialize UI
 initNav();
 updateCartBadge();
 initMobileMenu();
@@ -17,52 +16,56 @@ initMobileMenu();
 const form = document.getElementById("registerForm") as HTMLFormElement;
 const statusEl = document.getElementById("status");
 
+// ✅ Submit
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
+
   if (statusEl) statusEl.textContent = "";
 
-  const data = readData(form);
-  const ok = validateAndShowErrors(form, data);
-  if (!ok) {
-    if (statusEl) statusEl.textContent = "Please fix the highlighted errors.";
-    return;
-  }
+  const formData = new FormData(form);
+
+  const firstName = formData.get("firstName") as string;
+  const lastName = formData.get("lastName") as string;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
   if (statusEl) statusEl.textContent = "Registering...";
 
-  const payload = {
-    firstName: data.firstName,
-    lastName: data.lastName,
-    email: data.email,
-    phone: data.phone,
-    password: data.password,
-    birthdate: data.birthdate,
-    gender: data.gender,
-    interests: data.interests,
-    experience: data.experience,
-    goals: data.goals,
-    newsletter: data.newsletter,
-  };
-
   try {
-    const credentials = await createUserWithEmailAndPassword(firebaseAuth, payload.email, payload.password);
+    // ✅ Firebase create user
+    const credentials = await createUserWithEmailAndPassword(
+      firebaseAuth,
+      email,
+      password
+    );
+
     const token = await credentials.user.getIdToken();
+
+    // ✅ Save locally
     saveToken(token);
 
-    const data = await register({
-      ...payload,
+    // ✅ Send to backend
+    await register({
+      firstName,
+      lastName,
+      email,
+      password,
       idToken: token,
     });
 
-    if (data?.token) {
-      saveToken(data.token);
+    // ✅ Success
+    if (statusEl) {
+      statusEl.textContent = "Registration successful! Redirecting...";
     }
-    statusEl!.textContent = "Registration successful! Redirecting...";
+
     setTimeout(() => {
       window.location.href = "/index.html";
     }, 1500);
   } catch (err: any) {
     console.error("Register error:", err);
-    statusEl!.textContent = err.message || "Registration failed";
+
+    if (statusEl) {
+      statusEl.textContent = err.message || "Registration failed";
+    }
   }
 });

@@ -2,45 +2,78 @@
 
 import { isLoggedIn, removeToken } from "../services/auth";
 
-// Track if nav has already been initialized
 let isInitialized = false;
 
 export function initNav() {
-  // Prevent multiple initializations
   if (isInitialized) return;
-  
-  const nav = document.querySelector("nav");
-  if (!nav) return;
 
-  const loginLink = nav.querySelector("a[href*='login']");
-  const registerLink = nav.querySelector("a[href*='register']");
+  const btn = document.querySelector(".account-btn") as HTMLElement | null;
+  const dropdown = document.querySelector(
+    ".account-dropdown"
+  ) as HTMLElement | null;
 
-  if (isLoggedIn()) {
-    // Only modify nav if user is logged in
-    const existingLogout = nav.querySelector("a[href='#']:not([href*='login']):not([href*='register'])");
-    
-    // Don't add logout button if it already exists
-    if (existingLogout) {
-      isInitialized = true;
-      return;
-    }
+  if (!btn || !dropdown) return;
 
-    const logoutLink = document.createElement("a");
-    logoutLink.textContent = "Logout";
-    logoutLink.href = "#";
-    logoutLink.classList.add("btn-outline");
+  const loggedIn = isLoggedIn();
 
-    loginLink?.remove();
-    registerLink?.remove();
-    nav.appendChild(logoutLink);
-
-    logoutLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      removeToken();
+  // ✅ NOT LOGGED IN → redirect μόνο
+  if (!loggedIn) {
+    btn.addEventListener("click", () => {
       window.location.href = "/src/pages/login/login.html";
     });
+
+    isInitialized = true;
+    return;
   }
 
-  // Mark as initialized
+  // ✅ LOGGED IN → dropdown
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    dropdown.classList.toggle("hidden");
+    btn.classList.toggle("active");
+  });
+
+  // ✅ Dropdown content
+  dropdown.innerHTML = `
+    <button id="logoutBtn">Sign out</button>
+  `;
+
+  // ✅ Logout
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  logoutBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    removeToken();
+    window.location.href = "/src/pages/login/login.html";
+  });
+
+  // ✅ hover open
+  btn.addEventListener("mouseenter", () => {
+    dropdown.classList.remove("hidden");
+    btn.classList.add("active");
+  });
+
+  // ✅ hover leave (από button ή dropdown)
+  btn.addEventListener("mouseleave", () => {
+    setTimeout(() => {
+      if (!dropdown.matches(":hover")) {
+        dropdown.classList.add("hidden");
+        btn.classList.remove("active");
+      }
+    }, 100);
+  });
+
+  dropdown.addEventListener("mouseleave", () => {
+    dropdown.classList.add("hidden");
+    btn.classList.remove("active");
+  });
+
+  // ✅ Close όταν πατάς έξω
+  document.addEventListener("click", () => {
+    dropdown.classList.add("hidden");
+    btn.classList.remove("active");
+  });
+
   isInitialized = true;
 }

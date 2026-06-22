@@ -1,226 +1,152 @@
 /* 3220089_3220172  2025 */
 
-import { getDB, getAuthService, toPlainDoc } from "../config/db.js";
-import { validatePassword, isValidBirthdate } from "../middleware/validateUser.js";
+import { getDB, getAuthService } from "../config/db.js";
 
+// ✅ Helpers
 function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
+  return String(email || "")
+    .trim()
+    .toLowerCase();
 }
 
 function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function normalizePhone(phone) {
-  return String(phone || "").replace(/\D/g, "");
+function isStrongPassword(password) {
+  return String(password || "").length >= 6; // ✅ simple rule
 }
 
-function buildUserProfile(uid, data = {}) {
-  return {
-    id: uid,
-    _id: uid,
-    firebaseUid: uid,
-    firstName: data.firstName || "",
-    lastName: data.lastName || "",
-    email: data.email || "",
-    phone: data.phone || "",
-    birthdate: data.birthdate || "",
-    gender: data.gender || "",
-    interests: Array.isArray(data.interests) ? data.interests : [],
-    experience: data.experience || "",
-    goals: data.goals || "",
-    newsletter: Boolean(data.newsletter),
-    createdAt: data.createdAt || new Date().toISOString(),
-    updatedAt: data.updatedAt || new Date().toISOString(),
-  };
-}
-
-async function signInWithEmailPassword(email, password) {
-  const apiKey = process.env.FIREBASE_WEB_API_KEY;
-  if (!apiKey) {
-    throw new Error("Missing FIREBASE_WEB_API_KEY");
-  }
-
-  const response = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, returnSecureToken: true }),
-    }
-  );
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = payload?.error?.message || payload?.message || "Invalid credentials";
-    throw new Error(message);
-  }
-
-  return payload;
-}
-
+// ✅ REGISTER
 export async function registerUser(req, res, next) {
   try {
     const db = getDB();
     const auth = getAuthService();
-    const body = req.body || {};
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      password,
-      birthdate,
-      gender,
-      interests = [],
-      experience,
-      goals,
-      newsletter = false,
-      idToken,
-    } = body;
 
+    const { firstName, lastName, email, password, idToken } = req.body || {};
     const syncOnlyMode = Boolean(idToken);
 
-    if (!firstName || !lastName || !email || (!password && !syncOnlyMode)) {
-      return res.status(400).json({ error: true, message: "Missing required fields" });
+    // ✅ Basic checks only
+    if (!firstName || firstName.trim().length < 2) {
+      return res
+        .status(400)
+        .json({ error: true, message: "Invalid first name" });
     }
 
-    if (String(firstName).trim().length < 2) {
-      return res.status(400).json({ error: true, message: "First name is too short" });
-    }
-
-    if (String(lastName).trim().length < 2) {
-      return res.status(400).json({ error: true, message: "Last name is too short" });
+    if (!lastName || lastName.trim().length < 2) {
+      return res
+        .status(400)
+        .json({ error: true, message: "Invalid last name" });
     }
 
     const cleanEmail = normalizeEmail(email);
+
     if (!isValidEmail(cleanEmail)) {
       return res.status(400).json({ error: true, message: "Invalid email" });
     }
 
-    const phoneDigits = normalizePhone(phone);
-    if (!phoneDigits || phoneDigits.length < 10) {
-      return res.status(400).json({ error: true, message: "Invalid phone number" });
-    }
-
-    if (!syncOnlyMode) {
-      const pwIssues = validatePassword(password);
-      if (pwIssues.length > 0) {
-        return res.status(400).json({
-          error: true,
-          message: `Password must have: ${pwIssues.join(", ")}`,
-        });
-      }
-    }
-
-    if (!isValidBirthdate(birthdate)) {
+    if (!syncOnlyMode && (!password || !isStrongPassword(password))) {
       return res.status(400).json({
         error: true,
-        message: "Invalid birthdate or user is too young (min age 16)",
+        message: "Password must be at least 6 characters",
       });
     }
 
-    if (!gender || String(gender).trim().length === 0) {
-      return res.status(400).json({ error: true, message: "Gender is required" });
-    }
+    let uid;
 
-    if (!Array.isArray(interests) || interests.length === 0) {
-      return res.status(400).json({ error: true, message: "Select at least one interest" });
-    }
-
-    if (!experience || String(experience).trim().length === 0) {
-      return res.status(400).json({ error: true, message: "Experience level is required" });
-    }
-
-    let uid = null;
-    let tokenSource = null;
-
-    if (syncOnlyMode) {
-      tokenSource = idToken || String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
-      if (!tokenSource) {
-        return res.status(401).json({ error: true, message: "Missing Firebase token" });
-      }
-
-      const decoded = await auth.verifyIdToken(tokenSource);
-      if (decoded.email && normalizeEmail(decoded.email) !== cleanEmail) {
-        return res.status(400).json({ error: true, message: "Email does not match Firebase token" });
-      }
-
+    // ✅ Αν έρχεται token από Firebase (frontend signup)
+    if (idToken) {
+      const decoded = await auth.verifyIdToken(idToken);
       uid = decoded.uid;
-      await auth.updateUser(uid, {
-        displayName: `${String(firstName).trim()} ${String(lastName).trim()}`.trim(),
-      }).catch(() => null);
     } else {
-      try {
-        await auth.getUserByEmail(cleanEmail);
-        return res.status(400).json({ error: true, message: "Email already in use" });
-      } catch (lookupError) {
-        if (lookupError?.code !== "auth/user-not-found") {
-          throw lookupError;
-        }
-      }
-
-      const created = await auth.createUser({
+      // ✅ Create user directly
+      const user = await auth.createUser({
         email: cleanEmail,
         password,
-        displayName: `${String(firstName).trim()} ${String(lastName).trim()}`.trim(),
+        displayName: `${firstName} ${lastName}`,
       });
-      uid = created.uid;
+
+      uid = user.uid;
     }
 
-    const user = buildUserProfile(uid, {
-      firstName: String(firstName).trim(),
-      lastName: String(lastName).trim(),
+    // ✅ Save simple user profile
+    const userProfile = {
+      id: uid,
+      firstName,
+      lastName,
       email: cleanEmail,
-      phone: String(phone || ""),
-      birthdate,
-      gender,
-      interests,
-      experience,
-      goals,
-      newsletter,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    };
 
-    await db.collection("users").doc(uid).set(user, { merge: true });
-
-    const token = syncOnlyMode ? tokenSource : (await signInWithEmailPassword(cleanEmail, password)).idToken;
+    await db.collection("users").doc(uid).set(userProfile);
 
     res.status(201).json({
       message: "User registered successfully",
-      token,
-      user,
+      user: userProfile,
     });
   } catch (err) {
     next(err);
   }
 }
 
+// ✅ LOGIN
 export async function login(req, res, next) {
   try {
     const db = getDB();
+    const auth = getAuthService();
+
     const { email, password } = req.body || {};
 
     const cleanEmail = normalizeEmail(email);
-    const pass = String(password || "");
 
-    if (!cleanEmail) return res.status(400).json({ error: true, message: "email is required" });
-    if (!pass) return res.status(400).json({ error: true, message: "password is required" });
+    if (!cleanEmail) {
+      return res
+        .status(400)
+        .json({ error: true, message: "Email is required" });
+    }
 
-    const session = await signInWithEmailPassword(cleanEmail, pass);
-    const profileSnapshot = await db.collection("users").doc(session.localId).get();
-    const profile = toPlainDoc(profileSnapshot) || buildUserProfile(session.localId, { email: cleanEmail });
+    if (!password) {
+      return res
+        .status(400)
+        .json({ error: true, message: "Password is required" });
+    }
+
+    // ✅ Firebase login μέσω REST API
+    const apiKey = process.env.FIREBASE_WEB_API_KEY;
+
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password,
+          returnSecureToken: true,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(401).json({
+        error: true,
+        message: "Invalid credentials",
+      });
+    }
+
+    const userDoc = await db.collection("users").doc(data.localId).get();
+
+    const user = userDoc.exists
+      ? userDoc.data()
+      : { id: data.localId, email: cleanEmail };
 
     res.json({
-      token: session.idToken,
-      user: buildUserProfile(session.localId, profile),
+      token: data.idToken,
+      user,
     });
   } catch (err) {
-    const message = String(err?.message || "");
-    if (/INVALID_PASSWORD|EMAIL_NOT_FOUND|INVALID_LOGIN_CREDENTIALS/i.test(message)) {
-      return res.status(401).json({ error: true, message: "Invalid credentials" });
-    }
     next(err);
   }
 }

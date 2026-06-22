@@ -36,7 +36,7 @@ interface Product {
   updatedAt?: string;
 }
 
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || "http://localhost:4000/api";
+const API_BASE = import.meta.env?.VITE_API_BASE_URL || "https://cldrq5-4000.csb.app/api";
 
 async function getProducts(params: { q?: string; category?: string } = {}): Promise<Product[]> {
   const url = new URL(`${API_BASE}/products`);

@@ -39,7 +39,8 @@ interface Product {
   reviews?: Review[];
 }
 
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || "http://localhost:4000/api";
+const API_BASE =
+  import.meta.env?.VITE_API_BASE_URL || "https://cldrq5-4000.csb.app/api";
 
 function getQueryParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
@@ -57,10 +58,16 @@ function formatPrice(value: number): string {
 }
 
 async function getProductById(id: string): Promise<Product> {
-  const response = await fetch(`${API_BASE}/products/${encodeURIComponent(id)}`);
+  const response = await fetch(
+    `${API_BASE}/products/${encodeURIComponent(id)}`
+  );
 
   if (!response.ok) {
-    throw new Error(response.status === 404 ? "Product not found" : `Product request failed (${response.status})`);
+    throw new Error(
+      response.status === 404
+        ? "Product not found"
+        : `Product request failed (${response.status})`
+    );
   }
 
   return response.json();
@@ -117,7 +124,9 @@ function showToast(message: string): void {
 }
 
 function openExistingCartDrawer(): void {
-  const cartLink = document.querySelector<HTMLElement>("[data-cart-link], .cart-link");
+  const cartLink = document.querySelector<HTMLElement>(
+    "[data-cart-link], .cart-link"
+  );
   cartLink?.click();
 }
 
@@ -177,8 +186,12 @@ function unique(values: Array<string | undefined>): string[] {
   return Array.from(new Set(values.filter(Boolean) as string[]));
 }
 
-function setupVariantControls(product: Product): () => ProductVariant | undefined {
-  const wrapper = document.getElementById("variantControls") as HTMLElement | null;
+function setupVariantControls(
+  product: Product
+): () => ProductVariant | undefined {
+  const wrapper = document.getElementById(
+    "variantControls"
+  ) as HTMLElement | null;
   const sizeOptions = document.getElementById("sizeOptions");
   const selectedSizeText = document.getElementById("selectedSizeText");
   const stockEl = document.getElementById("productStock");
@@ -190,18 +203,13 @@ function setupVariantControls(product: Product): () => ProductVariant | undefine
     return () => undefined;
   }
 
+  const sizes = unique(variants.map((v) => v.size));
 
-const sizes = unique(variants.map(v => v.size));
+  const firstAvailable = variants.find((v) => (v.stock ?? 0) > 0);
 
-const firstAvailable = variants.find(
-  v => (v.stock ?? 0) > 0
-);
-
-let selectedSize =
-  firstAvailable?.size ||
-  sizes[0];
+  let selectedSize = firstAvailable?.size || sizes[0];
   function getStock(size: string) {
-    const v = variants.find(x => x.size === size);
+    const v = variants.find((x) => x.size === size);
     return v?.stock ?? 0;
   }
 
@@ -210,49 +218,49 @@ let selectedSize =
   }
 
   function getSelectedVariant(): ProductVariant | undefined {
-    return variants.find(v => v.size === selectedSize);
+    return variants.find((v) => v.size === selectedSize);
   }
   function updateStock() {
-  const variant = getSelectedVariant();
-  selectedVariantStock = variant?.stock ?? product.stock ?? 0;
-}
+    const variant = getSelectedVariant();
+    selectedVariantStock = variant?.stock ?? product.stock ?? 0;
+  }
 
   function updateUI() {
-
     updateStock();
     if (selectedSizeText) selectedSizeText.textContent = selectedSize;
 
-    document.querySelectorAll<HTMLButtonElement>("[data-size]").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.size === selectedSize);
-    });
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-size]")
+      .forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.size === selectedSize);
+      });
 
     const variant = getSelectedVariant();
 
-if ((variant?.stock ?? 0) <= 0) {
-  quantity = 1;
-}
+    if ((variant?.stock ?? 0) <= 0) {
+      quantity = 1;
+    }
     if (!stockEl) return;
 
-    const allOut = variants.every(v => v.stock === 0);
+    const allOut = variants.every((v) => v.stock === 0);
 
     if (allOut) {
       stockEl.textContent = "Out of stock";
       stockEl.style.color = "red";
     } else {
-      stockEl.textContent = isInStock(product, variant) ? "In stock" : "Out of stock";
+      stockEl.textContent = isInStock(product, variant)
+        ? "In stock"
+        : "Out of stock";
       stockEl.style.color = "#129447";
     }
-
-
-
   }
 
-
   if (sizeOptions) {
-    sizeOptions.innerHTML = sizes.map(size => {
-      const out = isSizeOut(size);
+    sizeOptions.innerHTML = sizes
+      .map((size) => {
+        const out = isSizeOut(size);
 
-      return `
+        return `
         <button 
           type="button"
           class="option-btn ${out ? "out-of-stock" : ""}"
@@ -262,10 +270,11 @@ if ((variant?.stock ?? 0) <= 0) {
           ${size}
         </button>
       `;
-    }).join("");
+      })
+      .join("");
   }
 
-  document.querySelectorAll<HTMLButtonElement>("[data-size]").forEach(btn => {
+  document.querySelectorAll<HTMLButtonElement>("[data-size]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const size = btn.dataset.size!;
       if (isSizeOut(size)) return;
@@ -317,7 +326,10 @@ function renderReviews(reviews: Review[]): void {
   if (productStars) {
     const average =
       reviews.length > 0
-        ? Math.round(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length)
+        ? Math.round(
+            reviews.reduce((sum, review) => sum + review.rating, 0) /
+              reviews.length
+          )
         : 0;
 
     productStars.textContent = "★".repeat(average) + "☆".repeat(5 - average);
@@ -368,7 +380,9 @@ async function renderRelatedProducts(currentProduct: Product): Promise<void> {
         const productId = product._id || product.id;
 
         return `
-          <a href="/src/pages/product-details/product-details.html?id=${encodeURIComponent(product.id)}"
+          <a href="/src/pages/product-details/product-details.html?id=${encodeURIComponent(
+            product.id
+          )}"
    class="related-product-card">
 
   <div class="related-product-image">
@@ -398,36 +412,42 @@ async function renderRelatedProducts(currentProduct: Product): Promise<void> {
       })
       .join("");
 
-    relatedProductsEl.querySelectorAll<HTMLButtonElement>(".quick-add-btn").forEach((btn) => {
-      btn.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+    relatedProductsEl
+      .querySelectorAll<HTMLButtonElement>(".quick-add-btn")
+      .forEach((btn) => {
+        btn.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
 
-        const productId = btn.dataset.productId;
-        const product = related.find((item) => (item._id || item.id) === productId);
+          const productId = btn.dataset.productId;
+          const product = related.find(
+            (item) => (item._id || item.id) === productId
+          );
 
-        if (!product || !isInStock(product)) {
-          showToast("This product is out of stock.");
-          return;
-        }
+          if (!product || !isInStock(product)) {
+            showToast("This product is out of stock.");
+            return;
+          }
 
-        const selectedVariant = product.variants?.find((variant) => Number(variant.stock || 0) > 0);
+          const selectedVariant = product.variants?.find(
+            (variant) => Number(variant.stock || 0) > 0
+          );
 
-        addProductToLocalCart({
-          product,
-          quantity: 1,
-          selectedVariant,
-          qrDestination: "https://skanare.com",
+          addProductToLocalCart({
+            product,
+            quantity: 1,
+            selectedVariant,
+            qrDestination: "https://skanare.com",
+          });
+
+          await updateCartBadge();
+
+          btn.classList.add("added");
+          btn.textContent = "✓";
+
+          openExistingCartDrawer();
         });
-
-        await updateCartBadge();
-
-        btn.classList.add("added");
-        btn.textContent = "✓";
-
-        openExistingCartDrawer();
       });
-    });
   } catch (error) {
     console.error("Failed to load related products:", error);
     relatedProductsEl.innerHTML = `<p class="meta">Related products could not be loaded.</p>`;
@@ -447,18 +467,33 @@ async function initProductDetailsPage(): Promise<void> {
   const priceEl = document.getElementById("productPrice");
   const stockEl = document.getElementById("productStock");
   const badgeEl = document.getElementById("productBadge") as HTMLElement | null;
-  const imageEl = document.getElementById("productImage") as HTMLImageElement | null;
-  const imageFallback = document.getElementById("productImageFallback") as HTMLElement | null;
-  const thumbnailsEl = document.getElementById("productThumbnails") as HTMLElement | null;
-  const qrDestinationInput = document.getElementById("qrDestination") as HTMLInputElement | null;
-  const addBtn = document.getElementById("productAddToCartBtn") as HTMLButtonElement | null;
+  const imageEl = document.getElementById(
+    "productImage"
+  ) as HTMLImageElement | null;
+  const imageFallback = document.getElementById(
+    "productImageFallback"
+  ) as HTMLElement | null;
+  const thumbnailsEl = document.getElementById(
+    "productThumbnails"
+  ) as HTMLElement | null;
+  const qrDestinationInput = document.getElementById(
+    "qrDestination"
+  ) as HTMLInputElement | null;
+  const addBtn = document.getElementById(
+    "productAddToCartBtn"
+  ) as HTMLButtonElement | null;
 
   const quantityValue = document.getElementById("quantityValue");
-  const decreaseQty = document.getElementById("decreaseQty") as HTMLButtonElement | null;
-  const increaseQty = document.getElementById("increaseQty") as HTMLButtonElement | null;
+  const decreaseQty = document.getElementById(
+    "decreaseQty"
+  ) as HTMLButtonElement | null;
+  const increaseQty = document.getElementById(
+    "increaseQty"
+  ) as HTMLButtonElement | null;
 
   function updateQuantity(): void {
-    if (selectedVariantStock > 0) quantity = Math.min(quantity, selectedVariantStock);
+    if (selectedVariantStock > 0)
+      quantity = Math.min(quantity, selectedVariantStock);
     quantity = Math.max(1, quantity);
     if (quantityValue) quantityValue.textContent = String(quantity);
   }
@@ -472,7 +507,11 @@ async function initProductDetailsPage(): Promise<void> {
     if (selectedVariantStock > 0 && quantity >= selectedVariantStock) {
       quantity = selectedVariantStock;
       updateQuantity();
-      showToast(`Only ${selectedVariantStock} item${selectedVariantStock === 1 ? "" : "s"} available in this size.`);
+      showToast(
+        `Only ${selectedVariantStock} item${
+          selectedVariantStock === 1 ? "" : "s"
+        } available in this size.`
+      );
       return;
     }
 
@@ -525,24 +564,36 @@ async function initProductDetailsPage(): Promise<void> {
       imageEl.hidden = false;
       if (imageFallback) imageFallback.hidden = true;
 
-      thumbnailsEl?.querySelectorAll<HTMLButtonElement>(".product-thumbnail").forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.src === src);
-      });
+      thumbnailsEl
+        ?.querySelectorAll<HTMLButtonElement>(".product-thumbnail")
+        .forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.src === src);
+        });
     };
 
     if (image) setMainImage(image);
 
     if (thumbnailsEl && productImages.length > 1) {
       thumbnailsEl.hidden = false;
-      thumbnailsEl.innerHTML = productImages.map((src, index) => `
-        <button type="button" class="product-thumbnail ${index === 0 ? "active" : ""}" data-src="${src}">
+      thumbnailsEl.innerHTML = productImages
+        .map(
+          (src, index) => `
+        <button type="button" class="product-thumbnail ${
+          index === 0 ? "active" : ""
+        }" data-src="${src}">
           <img src="${src}" alt="${product.title} photo ${index + 1}" />
         </button>
-      `).join("");
+      `
+        )
+        .join("");
 
-      thumbnailsEl.querySelectorAll<HTMLButtonElement>(".product-thumbnail").forEach((btn) => {
-        btn.addEventListener("click", () => setMainImage(btn.dataset.src || ""));
-      });
+      thumbnailsEl
+        .querySelectorAll<HTMLButtonElement>(".product-thumbnail")
+        .forEach((btn) => {
+          btn.addEventListener("click", () =>
+            setMainImage(btn.dataset.src || "")
+          );
+        });
     }
 
     const reviews = getFallbackReviews(product);
@@ -557,8 +608,6 @@ async function initProductDetailsPage(): Promise<void> {
       addBtn.disabled = !isInStock(product);
 
       addBtn.addEventListener("click", async () => {
-        
-
         const rawQrDestination = qrDestinationInput?.value.trim() || "";
         let qrDestination = rawQrDestination || "https://skanare.com";
 
@@ -568,7 +617,9 @@ async function initProductDetailsPage(): Promise<void> {
           try {
             new URL(rawQrDestination);
           } catch {
-            showToast("Please enter a valid URL, for example https://example.com");
+            showToast(
+              "Please enter a valid URL, for example https://example.com"
+            );
             qrDestinationInput?.focus();
             return;
           }
@@ -581,11 +632,16 @@ async function initProductDetailsPage(): Promise<void> {
           return;
         }
 
-        const availableStock = selectedVariant?.stock ?? product.stock ?? selectedVariantStock;
+        const availableStock =
+          selectedVariant?.stock ?? product.stock ?? selectedVariantStock;
         if (availableStock > 0 && quantity > availableStock) {
           quantity = availableStock;
           updateQuantity();
-          showToast(`Only ${availableStock} item${availableStock === 1 ? "" : "s"} available in this size.`);
+          showToast(
+            `Only ${availableStock} item${
+              availableStock === 1 ? "" : "s"
+            } available in this size.`
+          );
           return;
         }
 
@@ -594,11 +650,11 @@ async function initProductDetailsPage(): Promise<void> {
           addBtn.textContent = "Adding...";
 
           addProductToLocalCart({
-  product,
-  quantity,
-  selectedVariant,
-  qrDestination,
-});
+            product,
+            quantity,
+            selectedVariant,
+            qrDestination,
+          });
 
           await updateCartBadge();
 

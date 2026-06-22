@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Skanare - Products</title>
+  <title>Skanare - Checkout</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="stylesheet" href="/assets/css/reset.css" />
@@ -75,72 +75,54 @@
     
       </div>
     </header>
-  <main>
-    <section class="hero">
-      <div class="container hero-content">
-        <div>
-          <span class="eyebrow">QR clothing & accessories</span>
-          <h1>Shop editable QR products.</h1>
-          <p>
-            Choose a t-shirt or accessory, add your personal QR destination,
-            and update the link anytime from your account.
-          </p>
+    <main class="checkout-page">
+
+        <div class="checkout-page__container">
+      
+          <div class="card checkout-page__left">
+      
+            <h2>Checkout</h2>
+      
+            <div class="checkout-page__section">
+              <h3>Contact</h3>
+      
+              <input class="form-input" placeholder="First name" />
+              <input class="form-input" placeholder="Last name" />
+              <input class="form-input" placeholder="Email" />
+            </div>
+      
+            <div class="checkout-page__section">
+              <h3>Shipping</h3>
+      
+              <input class="form-input" placeholder="Address" />
+              <input class="form-input" placeholder="City" />
+              <input class="form-input" placeholder="Postal code" />
+            </div>
+      
+            <button class="btn-primary checkout-page__button">
+              Place order
+            </button>
+      
+          </div>
+      
+          <div class="card checkout-page__summary">
+      
+            <h3>Your order</h3>
+      
+            <div id="checkoutItems"></div>
+      
+            <div class="checkout-page__total">
+              <span>Total</span>
+              <strong id="checkoutTotal">€0</strong>
+            </div>
+      
+          </div>
+      
         </div>
-      </div>
-    </section>
-
-    <section class="section section-muted">
-      <div class="container">
-        <div class="section-head">
-          <h2 class="section-title">All Products</h2>
-        </div>
-
-        <div class="filters">
-          <input
-            id="productSearch"
-            type="search"
-            placeholder="Search products..."
-            aria-label="Search products"
-          />
-
-          <select id="productCategory" aria-label="Filter by category">
-            <option value="All">All categories</option>
-            <option value="tshirt">T-Shirts</option>
-            <option value="accessory">Accessories</option>
-          </select>
-        </div>
-
-        <div id="productsGrid" class="grid grid-4"></div>
-
-        <p id="productsLoading" class="meta">Loading products...</p>
-
-        <p id="productsEmpty" class="meta" hidden>
-          No products match your search criteria.
-        </p>
-
-        <p
-          id="productsError"
-          class="meta"
-          style="color: var(--color-error, #dc2626);"
-          hidden
-        >
-          Failed to load products. Please try again later.
-        </p>
-      </div>
-    </section>
-    
-    <section id="how" class="section">
-      <div class="container">
-        <div class="section-head"><h2 class="section-title">How it works</h2></div>
-        <div class="grid grid-3 how-it-works">
-          <article class="card step"><h3>Choose product</h3><p class="meta">Pick a t-shirt, hoodie or accessory.</p></article>
-          <article class="card step"><h3>Add your QR link</h3><p class="meta">Enter the URL, social profile or text you want to open.</p></article>
-          <article class="card step"><h3>Change it anytime</h3><p class="meta">After purchase, edit the QR destination without replacing the shirt.</p></article>
-        </div>
-      </div>
-    </section>
-    
-  </main>
+      
+      </main>
+      
+      
 
   <footer class="site-footer">
     <div class="container footer-grid">
@@ -161,8 +143,8 @@
   
     <div id="cartDrawerContent"></div>
   </aside>
-<script type="module" src="/src/pages/products/products.ts"></script>
-<script type="module" src="/src/pages/cart/cart.ts"></script>
+  <script type="module" src="/src/pages/checkout/checkout.ts"></script>
+  <script type="module" src="/src/pages/cart/cart.ts"></script>
 
 
 </body>
