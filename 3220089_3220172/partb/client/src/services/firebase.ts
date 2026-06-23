@@ -2,6 +2,7 @@
 
 import { getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; // ✅ ADD THIS
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -14,4 +15,6 @@ const firebaseConfig = {
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
+// ✅ EXPORTS
 export const firebaseAuth = getAuth(app);
+export const db = getFirestore(app); // ✅ THIS FIXES YOUR ERROR

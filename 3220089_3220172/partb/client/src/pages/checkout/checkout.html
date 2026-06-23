@@ -77,50 +77,106 @@
     </header>
     <main class="checkout-page">
 
-        <div class="checkout-page__container">
-      
-          <div class="card checkout-page__left">
-      
-            <h2>Checkout</h2>
-      
-            <div class="checkout-page__section">
-              <h3>Contact</h3>
-      
-              <input class="form-input" placeholder="First name" />
-              <input class="form-input" placeholder="Last name" />
-              <input class="form-input" placeholder="Email" />
+      <div class="checkout-page__container">
+    
+        <!-- LEFT -->
+        <form id="checkoutForm" class="checkout-page__form">
+    
+          <h2>Checkout</h2>
+    
+          <!-- CONTACT -->
+          <div class="checkout-page__section">
+            <h3>Contact</h3>
+    
+            <div class="row">
+              <input name="firstName" placeholder="First name" required />
+              <input name="lastName" placeholder="Last name" required />
             </div>
-      
-            <div class="checkout-page__section">
-              <h3>Shipping</h3>
-      
-              <input class="form-input" placeholder="Address" />
-              <input class="form-input" placeholder="City" />
-              <input class="form-input" placeholder="Postal code" />
-            </div>
-      
-            <button class="btn-primary checkout-page__button">
-              Place order
-            </button>
-      
+    
+            <input name="email" placeholder="Email" required />
+            <input name="phone" placeholder="Phone" required />
           </div>
-      
-          <div class="card checkout-page__summary">
-      
-            <h3>Your order</h3>
-      
-            <div id="checkoutItems"></div>
-      
-            <div class="checkout-page__total">
-              <span>Total</span>
-              <strong id="checkoutTotal">€0</strong>
+    
+          <!-- ADDRESS -->
+          <div class="checkout-page__section">
+            <h3>Shipping</h3>
+    
+            <input name="address" placeholder="Address" required />
+            <div class="row">
+              <input name="city" placeholder="City" required />
+              <input name="postalCode" placeholder="Postal code" required />
             </div>
-      
+    
+            <input name="country" placeholder="Country" required />
           </div>
-      
+    
+          <!-- DELIVERY -->
+          <div class="checkout-page__section">
+            <h3>Delivery</h3>
+    
+            <label>
+              <input type="radio" name="delivery" value="home" checked />
+              Home delivery
+            </label>
+    
+            <label>
+              <input type="radio" name="delivery" value="boxnow" />
+              Box Now locker
+            </label>
+    
+            <div id="boxnowmap"></div>
+
+<button class="boxnow-widget-button">
+  📍 Select Box Now Locker
+</button>
+
+<input
+  id="lockerInput"
+  name="locker"
+  placeholder="Selected locker will appear here"
+/>
+
+                    </div>
+    
+          <button class="checkout-page__btn">
+            Pay with Viva
+          </button>
+    
+        </form>
+    
+        <!-- RIGHT -->
+        <div class="checkout-page__summary">
+    
+          <div id="checkoutItems"></div>
+
+          <div class="checkout-discount">
+            <input id="discountInput" placeholder="Discount code or gift card" />
+            <button id="applyDiscount">Apply</button>
+          </div>
+          
+    
+          <div class="checkout-line">
+            <span>Subtotal</span>
+            <span id="subtotal"></span>
+          </div>
+    
+          <p id="freeShippingMsg" class="checkout-free-msg"></p>
+
+          <div class="checkout-line">
+            <span>Shipping</span>
+            <span id="shipping">€3.50</span>
+          </div>
+    
+          <div class="checkout-total">
+            <span>Total</span>
+            <strong id="total"></strong>
+          </div>
+    
         </div>
-      
-      </main>
+    
+      </div>
+    
+    </main>
       
       
 
@@ -147,5 +203,31 @@
   <script type="module" src="/src/pages/cart/cart.ts"></script>
 
 
+  <script>
+    var _bn_map_widget_config = {
+      partnerId: 1,
+  
+      parentElement: "#boxnowmap",
+  
+      type: "popup",
+  
+      afterSelect: function(selected) {
+        console.log(selected);
+  
+        document.getElementById("lockerInput").value =
+          selected.boxnowLockerId;
+  
+        alert("Selected: " + selected.boxnowLockerAddressLine1);
+      }
+    };
+  
+    (function(d) {
+      var e = d.createElement("script");
+      e.src = "https://widgetcdn.boxnow.gr/map-widget/client/v5.js";
+      e.async = true;
+      e.defer = true;
+      d.getElementsByTagName("head")[0].appendChild(e);
+    })(document);
+  </script>
 </body>
 </html>
