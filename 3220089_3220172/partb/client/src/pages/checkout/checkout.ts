@@ -1,6 +1,25 @@
 import { isLoggedIn } from "../../services/auth";
 import { db } from "../../services/firebase";
 import { addDoc, collection } from "firebase/firestore";
+import { setDoc, doc } from "firebase/firestore";
+import { firebaseAuth  } from "../../services/firebase";
+
+async function createQRsForOrder(cart: any[]) {
+  const user = firebaseAuth.currentUser;
+
+  for (const item of cart) {
+    const id = Math.random().toString(36).substring(2, 10);
+
+    await setDoc(doc(db, "qrCodes", id), {
+      userId: user?.uid,
+      productTitle: item.title,
+      targetUrl: item.qrDestination || "https://skanare.com",
+      scans: 0,
+      createdAt: new Date()
+    });
+  }
+}
+
 
 const CART_KEY = "skanare_cart";
 
@@ -148,6 +167,7 @@ document
 
     // ✅ save order
     await addDoc(collection(db, "orders"), order);
+    await createQRsForOrder(getCart());
 
     // ✅ CLEAR CART
     localStorage.removeItem(CART_KEY);

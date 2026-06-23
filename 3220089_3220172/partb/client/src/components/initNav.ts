@@ -1,12 +1,10 @@
-/* 3220089_3220172  2025 */
+/* 3220089_3220172 2025 */
 
-import { isLoggedIn, removeToken } from "../services/auth";
-
-let isInitialized = false;
+import { signOut } from "firebase/auth";
+import { firebaseAuth } from "../services/firebase";
+import { removeToken } from "../services/auth";
 
 export function initNav() {
-  if (isInitialized) return;
-
   const btn = document.querySelector(".account-btn") as HTMLElement | null;
   const dropdown = document.querySelector(
     ".account-dropdown"
@@ -14,66 +12,88 @@ export function initNav() {
 
   if (!btn || !dropdown) return;
 
-  const loggedIn = isLoggedIn();
+  // Καθαρίζουμε τυχόν παλιό περιεχόμενο
+  dropdown.innerHTML = "";
 
-  // ✅ NOT LOGGED IN → redirect μόνο
-  if (!loggedIn) {
-    btn.addEventListener("click", () => {
-      window.location.href = "/src/pages/login/login.html";
-    });
-
-    isInitialized = true;
-    return;
-  }
-
-  // ✅ LOGGED IN → dropdown
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-
-    dropdown.classList.toggle("hidden");
-    btn.classList.toggle("active");
-  });
-
-  // ✅ Dropdown content
-  dropdown.innerHTML = `
-    <button id="logoutBtn">Sign out</button>
-  `;
-
-  // ✅ Logout
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  logoutBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    removeToken();
-    window.location.href = "/src/pages/login/login.html";
-  });
-
-  // ✅ hover open
-  btn.addEventListener("mouseenter", () => {
-    dropdown.classList.remove("hidden");
-    btn.classList.add("active");
-  });
-
-  // ✅ hover leave (από button ή dropdown)
-  btn.addEventListener("mouseleave", () => {
-    setTimeout(() => {
-      if (!dropdown.matches(":hover")) {
-        dropdown.classList.add("hidden");
-        btn.classList.remove("active");
-      }
-    }, 100);
-  });
-
-  dropdown.addEventListener("mouseleave", () => {
+  firebaseAuth.onAuthStateChanged((user) => {
+    // Reset UI
     dropdown.classList.add("hidden");
     btn.classList.remove("active");
+
+    // Αφαιρούμε τυχόν παλιό content
+    dropdown.innerHTML = "";
+
+    // ==========================
+    // NOT LOGGED IN
+    // ==========================
+    if (!user) {
+      btn.onclick = () => {
+        window.location.href = "/src/pages/login/login.html";
+      };
+
+      return;
+    }
+
+    // ==========================
+    // LOGGED IN
+    // ==========================
+    btn.onclick = (e) => {
+      e.stopPropagation();
+
+      dropdown.classList.toggle("hidden");
+      btn.classList.toggle("active");
+    };
+
+    dropdown.innerHTML = `
+      <button id="logoutBtn" type="button">
+        Sign out
+      </button>
+    `;
+
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    logoutBtn?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      try {
+        // Firebase logout
+        await signOut(firebaseAuth);
+
+        // Local token cleanup
+        removeToken();
+
+        // Redirect home
+        window.location.href = "/index.html";
+      } catch (err) {
+        console.error("Logout failed:", err);
+      }
+    });
+
+    // Hover open
+    btn.addEventListener("mouseenter", () => {
+      dropdown.classList.remove("hidden");
+      btn.classList.add("active");
+    });
+
+    // Hover close
+    btn.addEventListener("mouseleave", () => {
+      setTimeout(() => {
+        if (!dropdown.matches(":hover")) {
+          dropdown.classList.add("hidden");
+          btn.classList.remove("active");
+        }
+      }, 100);
+    });
+
+    dropdown.addEventListener("mouseleave", () => {
+      dropdown.classList.add("hidden");
+      btn.classList.remove("active");
+    });
   });
 
-  // ✅ Close όταν πατάς έξω
+  // Click outside closes menu
   document.addEventListener("click", () => {
     dropdown.classList.add("hidden");
     btn.classList.remove("active");
   });
-
-  isInitialized = true;
 }
