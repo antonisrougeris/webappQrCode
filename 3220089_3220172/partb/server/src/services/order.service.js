@@ -2,12 +2,6 @@ import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
-import {
-  getProductByIdOrSlug,
-  resolveVariantOrThrow,
-  assertStockForVariant,
-} from "./product.service.js";
-import { getCartByUserId, clearCart } from "./cart.service.js";
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -21,46 +15,55 @@ function calculateShipping(subtotal, delivery) {
 }
 
 function buildOrderNumber() {
-  return `SK-${Date.now()}`;
+  return `SK-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 7)
+    .toUpperCase()}`;
 }
 
-async function createQrCodesForOrder({
-  db,
-  ownerId,
-  ownerType,
-  orderId,
-  items,
-}) {
-  const qrCodes = [];
+function variantKey(variant) {
+  return [variant?.sku || "", variant?.size || "", variant?.color || ""].join(
+    "|"
+  );
+}
 
-  for (const item of items) {
-    if (!item.customQr) continue;
+function findVariant(product, selectedVariant) {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  if (!variants.length) return { variant: null, index: -1 };
 
-    const qrId = createId("qr");
+  const selectedKey = variantKey(selectedVariant);
+  const index = variants.findIndex(
+    (variant) => variantKey(variant) === selectedKey
+  );
+  if (index < 0)
+    throw new ApiError(
+      400,
+      `Selected variant does not exist for ${product.title}`
+    );
+  return { variant: variants[index], index };
+}
 
-    const qrDoc = {
-      id: qrId,
-      userId: ownerType === "user" ? ownerId : null,
-      guestId: ownerType === "guest" ? ownerId : null,
-      orderId,
-      productId: item.productId,
-      productTitle: item.title,
-      targetUrl: item.qrDestination || "",
-      scans: 0,
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    };
-
-    await db.collection(COLLECTIONS.QR_CODES).doc(qrId).set(qrDoc);
-    qrCodes.push(qrDoc);
+function assertAndDecrementStock(product, variant, variantIndex, quantity) {
+  const qty = toNumber(quantity, 0);
+  if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
+    throw new ApiError(400, "Invalid item quantity");
   }
 
-  return qrCodes;
-}
+  if (variant) {
+    const currentStock = toNumber(variant.stock, 0);
+    if (currentStock < qty)
+      throw new ApiError(400, `Not enough stock for ${product.title}`);
 
-/* =========================================================
-   CHECKOUT
-========================================================= */
+    const variants = [...(product.variants || [])];
+    variants[variantIndex] = { ...variant, stock: currentStock - qty };
+    return { variants };
+  }
+
+  const currentStock = toNumber(product.stock, 0);
+  if (currentStock < qty)
+    throw new ApiError(400, `Not enough stock for ${product.title}`);
+  return { stock: currentStock - qty };
+}
 
 export async function checkoutCartForOwner({
   ownerId,
@@ -71,199 +74,191 @@ export async function checkoutCartForOwner({
   locker,
   notes,
 }) {
+  if (!ownerId) throw new ApiError(401, "Missing checkout owner");
+
   const db = getDB();
-
-  if (!ownerId) {
-    throw new ApiError(401, "Missing checkout owner");
-  }
-
-  const cart = await getCartByUserId(ownerId);
-
-  if (!cart.items?.length) {
-    throw new ApiError(400, "Cart is empty");
-  }
-
-  if (!customer?.firstName || !customer?.lastName || !customer?.email) {
-    throw new ApiError(400, "Missing customer details");
-  }
-
-  if (!shippingAddress?.addressLine1 || !shippingAddress?.city) {
-    throw new ApiError(400, "Missing shipping address");
-  }
-
-  const orderItems = [];
-  let subtotal = 0;
-
-  for (const item of cart.items) {
-    const product = await getProductByIdOrSlug(item.productId);
-
-    if (!product || product.active === false) {
-      throw new ApiError(
-        400,
-        `Product "${item.title || item.productId}" is unavailable`
-      );
-    }
-
-    const resolvedVariant = item.variant
-      ? resolveVariantOrThrow(product, item.variant)
-      : null;
-
-    assertStockForVariant(product, resolvedVariant, item.quantity);
-
-    const unitPrice = toNumber(item.price ?? product.price, 0);
-    const lineTotal = unitPrice * toNumber(item.quantity, 0);
-
-    subtotal += lineTotal;
-
-    orderItems.push({
-      id: item.id || createId("orderitem"),
-      productId: item.productId,
-      slug: item.slug || product.slug || product.id,
-      title: item.title || product.title,
-      image:
-        item.image ||
-        product.image ||
-        (Array.isArray(product.images) ? product.images[0] || null : null),
-      quantity: item.quantity,
-      unitPrice,
-      currency: item.currency || product.currency || "EUR",
-      lineTotal,
-      variant: item.variant || null,
-      qrDestination: item.qrDestination || null,
-      customQr: !!item.customQr,
-    });
-  }
-
-  const shippingCost = calculateShipping(subtotal, delivery);
-  const total = subtotal + shippingCost;
-
   const orderId = createId("order");
   const orderNumber = buildOrderNumber();
+  const createdAt = nowIso();
 
-  const order = {
-    id: orderId,
-    orderNumber,
-    ownerId,
-    ownerType, // "user" | "guest"
+  const result = await db.runTransaction(async (tx) => {
+    const cartRef = db.collection(COLLECTIONS.CARTS).doc(ownerId);
+    const cartSnap = await tx.get(cartRef);
 
-    customer: {
-      firstName: customer.firstName,
-      lastName: customer.lastName,
-      email: customer.email,
-      phone: customer.phone || "",
-    },
+    const cart = cartSnap.exists ? cartSnap.data() : { items: [] };
+    const cartItems = Array.isArray(cart.items) ? cart.items : [];
+    if (!cartItems.length) throw new ApiError(400, "Cart is empty");
 
-    shippingAddress: {
-      firstName: shippingAddress.firstName || customer.firstName,
-      lastName: shippingAddress.lastName || customer.lastName,
-      email: shippingAddress.email || customer.email,
-      phone: shippingAddress.phone || customer.phone || "",
-      country: shippingAddress.country || "Greece",
-      city: shippingAddress.city,
-      postalCode: shippingAddress.postalCode || "",
-      addressLine1: shippingAddress.addressLine1,
-      addressLine2: shippingAddress.addressLine2 || "",
-    },
+    const productRefs = cartItems.map((item) =>
+      db.collection(COLLECTIONS.PRODUCTS).doc(String(item.productId))
+    );
+    const productSnaps = await Promise.all(
+      productRefs.map((ref) => tx.get(ref))
+    );
 
-    delivery: delivery || "home",
-    locker: locker || null,
-    notes: notes || "",
+    const orderItems = [];
+    const stockUpdates = [];
+    let subtotal = 0;
 
-    items: orderItems,
-    subtotal,
-    shippingCost,
-    total,
-    currency: "EUR",
+    for (let i = 0; i < cartItems.length; i += 1) {
+      const item = cartItems[i];
+      const productSnap = productSnaps[i];
+      if (!productSnap.exists)
+        throw new ApiError(400, "Product is unavailable");
 
-    status: "pending",
-    paymentStatus: "pending",
+      const product = { id: productSnap.id, ...productSnap.data() };
+      if (product.active === false)
+        throw new ApiError(400, `Product "${product.title}" is unavailable`);
 
-    qrCodesCreated: orderItems.filter((item) => item.customQr).length,
+      const quantity = toNumber(item.quantity, 0);
+      const { variant, index } = findVariant(product, item.variant);
+      const stockPatch = assertAndDecrementStock(
+        product,
+        variant,
+        index,
+        quantity
+      );
+      stockUpdates.push({
+        ref: productRefs[i],
+        patch: { ...stockPatch, updatedAt: createdAt },
+      });
 
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-  };
+      // IMPORTANT: price always comes from product/variant server-side, never from cart/client.
+      const unitPrice = toNumber(variant?.price ?? product.price, 0);
+      const lineTotal = unitPrice * quantity;
+      subtotal += lineTotal;
 
-  await db.collection(COLLECTIONS.ORDERS).doc(orderId).set(order);
+      orderItems.push({
+        id: item.id || createId("orderitem"),
+        productId: product.id,
+        slug: product.slug || product.id,
+        title: product.title,
+        image: Array.isArray(product.images)
+          ? product.images[0] || null
+          : product.image || null,
+        quantity,
+        unitPrice,
+        currency: product.currency || "EUR",
+        lineTotal,
+        variant: variant
+          ? {
+              sku: variant.sku || "",
+              size: variant.size || "",
+              color: variant.color || "",
+            }
+          : null,
+        qrDestination: item.qrDestination || null,
+        customQr: !!item.customQr,
+      });
+    }
 
-  const qrCodes = await createQrCodesForOrder({
-    db,
-    ownerId,
-    ownerType,
-    orderId,
-    items: orderItems,
+    const shippingCost = calculateShipping(subtotal, delivery);
+    const total = subtotal + shippingCost;
+
+    const order = {
+      id: orderId,
+      orderNumber,
+      ownerId,
+      ownerType,
+      customer: {
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone || "",
+      },
+      shippingAddress: {
+        firstName: shippingAddress.firstName || customer.firstName,
+        lastName: shippingAddress.lastName || customer.lastName,
+        email: shippingAddress.email || customer.email,
+        phone: shippingAddress.phone || customer.phone || "",
+        country: shippingAddress.country || "Greece",
+        city: shippingAddress.city,
+        postalCode: shippingAddress.postalCode || "",
+        addressLine1: shippingAddress.addressLine1,
+        addressLine2: shippingAddress.addressLine2 || "",
+      },
+      delivery: delivery || "home",
+      locker: locker || null,
+      notes: notes || "",
+      items: orderItems,
+      subtotal,
+      shippingCost,
+      total,
+      currency: "EUR",
+      status: "pending",
+      paymentStatus: "pending",
+      paymentProvider: "manual",
+      qrCodesCreated: orderItems.filter((item) => item.customQr).length,
+      createdAt,
+      updatedAt: createdAt,
+    };
+
+    for (const update of stockUpdates) tx.update(update.ref, update.patch);
+    tx.set(db.collection(COLLECTIONS.ORDERS).doc(orderId), order);
+
+    for (const item of orderItems) {
+      if (!item.customQr) continue;
+      const qrId = createId("qr");
+      tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
+        id: qrId,
+        userId: ownerType === "user" ? ownerId : null,
+        guestId: ownerType === "guest" ? ownerId : null,
+        orderId,
+        productId: item.productId,
+        productTitle: item.title,
+        targetUrl: item.qrDestination || "",
+        scans: 0,
+        createdAt,
+        updatedAt: createdAt,
+      });
+    }
+
+    tx.set(
+      cartRef,
+      { userId: ownerId, items: [], updatedAt: createdAt },
+      { merge: true }
+    );
+
+    return {
+      orderId,
+      orderNumber,
+      qrCodesCreated: order.qrCodesCreated,
+      order,
+    };
   });
 
-  await clearCart(ownerId);
-
-  return {
-    orderId,
-    orderNumber,
-    qrCodesCreated: qrCodes.length,
-    order,
-  };
+  return result;
 }
 
-/* =========================================================
-   ORDERS LIST FOR USER
-========================================================= */
-
 export async function getOrdersForUser(userId) {
-  if (!userId) {
-    throw new ApiError(401, "Missing user id");
-  }
-
+  if (!userId) throw new ApiError(401, "Missing user id");
   const db = getDB();
-
   const snapshot = await db
     .collection(COLLECTIONS.ORDERS)
     .where("ownerId", "==", userId)
     .where("ownerType", "==", "user")
     .get();
 
-  const orders = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-  orders.sort((a, b) => {
-    const aTime = new Date(a.createdAt || 0).getTime();
-    const bTime = new Date(b.createdAt || 0).getTime();
-    return bTime - aTime;
-  });
-
+  const orders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  orders.sort(
+    (a, b) =>
+      new Date(b.createdAt || 0).getTime() -
+      new Date(a.createdAt || 0).getTime()
+  );
   return orders;
 }
 
-/* =========================================================
-   SINGLE ORDER FOR USER
-========================================================= */
-
 export async function getOrderByIdForUser(userId, orderId) {
-  if (!userId) {
-    throw new ApiError(401, "Missing user id");
-  }
-
-  if (!orderId) {
-    throw new ApiError(400, "Missing order id");
-  }
+  if (!userId) throw new ApiError(401, "Missing user id");
+  if (!orderId) throw new ApiError(400, "Missing order id");
 
   const db = getDB();
-
   const docSnap = await db.collection(COLLECTIONS.ORDERS).doc(orderId).get();
+  if (!docSnap.exists) throw new ApiError(404, "Order not found");
 
-  if (!docSnap.exists) {
-    throw new ApiError(404, "Order not found");
-  }
-
-  const order = {
-    id: docSnap.id,
-    ...docSnap.data(),
-  };
-
+  const order = { id: docSnap.id, ...docSnap.data() };
   if (order.ownerId !== userId || order.ownerType !== "user") {
     throw new ApiError(403, "You do not have access to this order");
   }
-
   return order;
 }

@@ -5,9 +5,6 @@ import { getToken } from "./auth";
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://cldrq5-4000.csb.app/api";
 
-/**
- * Generic API envelope
- */
 export interface ApiEnvelope<T> {
   success?: boolean;
   data?: T;
@@ -15,29 +12,9 @@ export interface ApiEnvelope<T> {
   error?: string;
 }
 
-/**
- * Guest cart support
- */
-function getGuestId(): string {
-  let guestId = localStorage.getItem("guestId");
-
-  if (!guestId) {
-    guestId = crypto.randomUUID();
-    localStorage.setItem("guestId", guestId);
-  }
-
-  return guestId;
-}
-
-/**
- * Build request headers
- * - If logged in => Authorization Bearer token
- * - If guest => x-guest-id for cart/session support
- */
 function buildHeaders(init?: HeadersInit): Headers {
   const headers = new Headers(init || {});
 
-  // default JSON unless caller overrides it
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -46,22 +23,18 @@ function buildHeaders(init?: HeadersInit): Headers {
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
-  } else {
-    headers.set("x-guest-id", getGuestId());
   }
 
   return headers;
 }
 
-/**
- * Main API request helper
- */
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    credentials: "include",
     headers: buildHeaders(options.headers),
   });
 
@@ -124,16 +97,6 @@ export interface AuthResponse {
   data?: AuthUser;
 }
 
-/* =========================================================
-   AUTH API
-========================================================= */
-
-/**
- * Register / sync user with backend after Firebase signup
- *
- * Expected backend route:
- * POST /api/auth/register
- */
 export async function register(
   payload: RegisterPayload
 ): Promise<AuthResponse> {
@@ -143,12 +106,6 @@ export async function register(
   });
 }
 
-/**
- * Login / sync user with backend after Firebase login
- *
- * Expected backend route:
- * POST /api/auth/login
- */
 export async function login(payload: LoginPayload): Promise<AuthResponse> {
   return apiRequest<AuthResponse>("/auth/login", {
     method: "POST",
@@ -156,13 +113,6 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
   });
 }
 
-/**
- * Optional helper:
- * fetch current authenticated user from backend
- *
- * Expected backend route:
- * GET /api/auth/me
- */
 export async function getMe(): Promise<AuthUser | null> {
   const response = await apiRequest<
     | AuthUser

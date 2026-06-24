@@ -8,15 +8,33 @@ import { updateCartBadge } from "./utils/cart-badge";
 import { firebaseAuth } from "./services/firebase";
 import { getMyQrCodes, updateQrCode, type QrCode } from "./services/qr";
 
+async function initGuestSession(): Promise<void> {
+  try {
+    await fetch(`${import.meta.env.VITE_API_BASE_URL}/session/guest`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (error) {
+    console.error("Failed to initialize guest session:", error);
+  }
+}
+
 initNav();
 initMobileMenu();
-void updateCartBadge();
-
+void initGuestSession().then(() => updateCartBadge());
 /* =========================
    USER QR DASHBOARD
 ========================= */
 
 function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
+  function escapeHtml(value: string): string {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
   if (!qrCodes.length) {
     grid.innerHTML = `
       <div class="empty-state">
@@ -29,8 +47,9 @@ function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
 
   grid.innerHTML = qrCodes
     .map((qr) => {
-      const safeTarget = qr.targetUrl || "";
-      const title = qr.productTitle || "QR Product";
+      const safeTarget = escapeHtml(qr.targetUrl || "");
+      const title = escapeHtml(qr.productTitle || "QR Product");
+      const safeQrId = escapeHtml(qr.id);
 
       return `
         <article class="dashboard-card qr-dashboard-card">
@@ -42,13 +61,13 @@ function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
             <span class="qr-scan-badge">${qr.scans ?? 0} scans</span>
           </div>
 
-          <label class="qr-edit-label" for="input-${qr.id}">
+          <label class="qr-edit-label" for="input-${safeQrId}">
             Destination URL
           </label>
 
           <div class="qr-edit-row">
             <input
-              id="input-${qr.id}"
+              id="input-${safeQrId}"
               class="qr-edit-input"
               type="url"
               value="${safeTarget}"
@@ -57,7 +76,7 @@ function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
             <button
               type="button"
               class="btn-primary qr-save-btn"
-              data-qr-id="${qr.id}"
+              data-qr-id="${safeQrId}"
             >
               Save
             </button>
