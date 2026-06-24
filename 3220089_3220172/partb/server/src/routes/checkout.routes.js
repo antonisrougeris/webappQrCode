@@ -1,10 +1,9 @@
 import { Router } from "express";
-import { optionalAuth } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
 import { checkout } from "../controllers/checkout.controller.js";
 
 const router = Router();
 
-// allow guest OR logged-in checkout
-router.post("/", optionalAuth, checkout);
+router.post("/", requireAuth, checkout);
 
 export default router;

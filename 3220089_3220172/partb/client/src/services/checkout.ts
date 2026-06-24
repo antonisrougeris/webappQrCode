@@ -31,14 +31,25 @@ export interface CheckoutResult {
   orderId: string;
   orderNumber?: string;
   qrCodesCreated?: number;
-  order?: any;
+  order?: unknown;
+  vivaOrderCode?: string;
+  checkoutUrl?: string;
 }
 
 export async function checkout(
   payload: CheckoutPayload
 ): Promise<CheckoutResult> {
-  return apiRequest<CheckoutResult>("/checkout", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const res = await apiRequest<CheckoutResult | { data: CheckoutResult }>(
+    "/checkout",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if ("data" in res && res.data) {
+    return res.data;
+  }
+
+  return res as CheckoutResult;
 }

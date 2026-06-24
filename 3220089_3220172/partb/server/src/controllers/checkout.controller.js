@@ -1,13 +1,13 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ok } from "../utils/response.js";
 import { checkoutCartForOwner } from "../services/order.service.js";
+import { createVivaPaymentOrder } from "../services/viva.service.js";
 import { ApiError } from "../utils/apiError.js";
 import { checkoutSchema, parseOrThrow } from "../utils/validators.js";
 
 function getCheckoutOwner(req) {
   if (req.user?.uid) return { type: "user", id: req.user.uid };
-  if (req.guestId) return { type: "guest", id: req.guestId };
-  throw new ApiError(401, "Missing checkout identity");
+  throw new ApiError(401, "You must be signed in to checkout");
 }
 
 export const checkout = asyncHandler(async (req, res) => {
@@ -24,5 +24,15 @@ export const checkout = asyncHandler(async (req, res) => {
     notes: body.notes || "",
   });
 
-  return ok(res, result, 201);
+  const viva = await createVivaPaymentOrder(result.order);
+
+  return ok(
+    res,
+    {
+      ...result,
+      vivaOrderCode: viva.vivaOrderCode,
+      checkoutUrl: viva.checkoutUrl,
+    },
+    201
+  );
 });

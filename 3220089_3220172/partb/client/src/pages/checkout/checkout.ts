@@ -1,69 +1,70 @@
-import { addDoc, collection, setDoc, doc } from "firebase/firestore";
-import { db, firebaseAuth } from "../../services/firebase";
+/* 3220089_3220172 */
+
+import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";
+import { checkout } from "../../services/checkout";
 
 let discount = 0;
 
-function formatPrice(n: number) {
+function formatPrice(n: number): string {
   return new Intl.NumberFormat("el-GR", {
     style: "currency",
     currency: "EUR",
   }).format(n || 0);
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function getCartItemTitle(item: CartItem): string {
-  if (item.title) return item.title;
-  if (item.product?.title) return item.product.title;
-  return "Product";
+  return item.title || "Product";
 }
 
 function getCartItemImage(item: CartItem): string {
-  if (item.image) return item.image;
-  if (item.product?.image) return item.product.image;
-  if (item.product?.images?.[0]) return item.product.images[0];
-  return "/assets/img/logo_Image.png";
+  return item.image || "/assets/img/logo_Image.png";
 }
 
 function getCartItemUnitPrice(item: CartItem): number {
-  if (typeof item.unitPrice === "number") return item.unitPrice;
-  if (typeof item.price === "number") return item.price;
-  if (typeof item.priceEUR === "number") return item.priceEUR;
-  if (typeof item.product?.price === "number") return item.product.price;
-  if (typeof item.product?.priceEUR === "number") return item.product.priceEUR;
-  return 0;
+  return typeof item.price === "number" ? item.price : 0;
 }
 
 function getCartItemVariant(item: CartItem) {
-  return item.variant || item.selectedVariant || null;
+  return item.variant || null;
 }
 
 function getCartItemQr(item: CartItem): string {
-  return item.qrDestination || item.qrCodeUrl || "";
+  return item.qrDestination || "";
 }
 
-function calculateShipping(subtotal: number, delivery: string) {
+function calculateShipping(subtotal: number, delivery: string): number {
   if (subtotal >= 50) return 0;
   if (delivery === "boxnow") return 2.0;
   return 3.5;
 }
 
-async function createQRsForOrder(cartItems: CartItem[]) {
+function setPayButtonState(): void {
+  const button = document.querySelector<HTMLButtonElement>(
+    "#checkoutForm button[type='submit']"
+  );
+
+  if (!button) return;
+
   const user = firebaseAuth.currentUser;
 
-  for (const item of cartItems) {
-    const id = Math.random().toString(36).substring(2, 10);
-
-    await setDoc(doc(db, "qrCodes", id), {
-      userId: user?.uid || null,
-      productTitle: getCartItemTitle(item),
-      targetUrl: getCartItemQr(item) || "https://skanare.com",
-      scans: 0,
-      createdAt: new Date(),
-    });
+  if (!user) {
+    button.textContent = "Sign in to pay with viva.com";
+  } else {
+    button.textContent = "Pay with viva.com";
   }
 }
 
-async function render() {
+async function render(): Promise<void> {
   const cart = await getCart();
   const items: CartItem[] = cart?.items || [];
 
@@ -84,8 +85,10 @@ async function render() {
     document.getElementById("subtotal")!.textContent = formatPrice(0);
     document.getElementById("shipping")!.textContent = formatPrice(0);
     document.getElementById("total")!.textContent = formatPrice(0);
+
     const msg = document.getElementById("freeShippingMsg");
     if (msg) msg.textContent = "";
+
     return;
   }
 
@@ -96,20 +99,21 @@ async function render() {
       subtotal += itemTotal;
 
       const variant = getCartItemVariant(item);
-      const title = getCartItemTitle(item);
-      const image = getCartItemImage(item);
-      const qr = getCartItemQr(item);
+      const title = escapeHtml(getCartItemTitle(item));
+      const image = escapeHtml(getCartItemImage(item));
+      const qr = escapeHtml(getCartItemQr(item));
+      const quantity = Number(item.quantity || 0);
 
       return `
         <div class="checkout-item">
           <div class="checkout-item__image-wrapper">
             <img src="${image}" alt="${title}" />
-            <span class="checkout-item__badge">${item.quantity}</span>
+            <span class="checkout-item__badge">${quantity}</span>
           </div>
 
           <div class="checkout-item__info">
             <p>${title}</p>
-            <small>Size: ${variant?.size || "-"}</small>
+            <small>Size: ${escapeHtml(variant?.size || "-")}</small>
             ${qr ? `<small>${qr}</small>` : ""}
           </div>
 
@@ -132,6 +136,7 @@ async function render() {
   document.getElementById("total")!.textContent = formatPrice(total);
 
   const msg = document.getElementById("freeShippingMsg");
+
   if (msg) {
     if (discountedSubtotal < 50) {
       msg.textContent = `Add ${(50 - discountedSubtotal).toFixed(
@@ -143,8 +148,26 @@ async function render() {
   }
 }
 
+function getRequiredFormString(
+  form: FormData,
+  field: string,
+  label: string
+): string {
+  const value = String(form.get(field) || "").trim();
+
+  if (!value) {
+    throw new Error(`${label} is required.`);
+  }
+
+  return value;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   void render();
+
+  firebaseAuth.onAuthStateChanged(() => {
+    setPayButtonState();
+  });
 
   document
     .querySelectorAll<HTMLInputElement>("input[name='delivery']")
@@ -177,44 +200,87 @@ document.addEventListener("DOMContentLoaded", () => {
     ?.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const form = new FormData(e.target as HTMLFormElement);
-      const cart = await getCart();
-      const items: CartItem[] = cart?.items || [];
+      const user = firebaseAuth.currentUser;
 
-      if (items.length === 0) {
-        alert("Your cart is empty.");
+      if (!user) {
+        alert("Please sign in or create an account before checkout.");
+        window.location.href = "/login.html?redirect=/checkout.html";
         return;
       }
 
-      const totalText =
-        document.getElementById("total")?.textContent || formatPrice(0);
+      const submitButton = document.querySelector<HTMLButtonElement>(
+        "#checkoutForm button[type='submit']"
+      );
 
-      const order = {
-        user: {
-          firstName: form.get("firstName"),
-          lastName: form.get("lastName"),
-          email: form.get("email"),
-          phone: form.get("phone"),
-        },
-        address: {
-          address: form.get("address"),
-          city: form.get("city"),
-          postalCode: form.get("postalCode"),
-          country: form.get("country"),
-        },
-        delivery: form.get("delivery"),
-        locker: form.get("locker"),
-        cart: items,
-        total: totalText,
-        createdAt: new Date(),
-      };
+      try {
+        submitButton && (submitButton.disabled = true);
+        submitButton && (submitButton.textContent = "Preparing payment...");
 
-      await addDoc(collection(db, "orders"), order);
-      await createQRsForOrder(items);
+        const form = new FormData(e.target as HTMLFormElement);
+        const cart = await getCart();
+        const items: CartItem[] = cart?.items || [];
 
-      // εδώ μετά μπορείς να καθαρίσεις cart από backend/service αν έχεις clearCart()
-      // π.χ. await clearCart();
+        if (items.length === 0) {
+          throw new Error("Your cart is empty.");
+        }
 
-      window.location.href = "https://demo.vivapayments.com/web/checkout";
+        const firstName = getRequiredFormString(
+          form,
+          "firstName",
+          "First name"
+        );
+        const lastName = getRequiredFormString(form, "lastName", "Last name");
+        const email =
+          String(form.get("email") || "").trim() || user.email || "";
+        const phone = String(form.get("phone") || "").trim();
+        const country = String(form.get("country") || "Greece").trim();
+        const city = getRequiredFormString(form, "city", "City");
+        const postalCode = String(form.get("postalCode") || "").trim();
+        const addressLine1 = getRequiredFormString(form, "address", "Address");
+
+        if (!email) {
+          throw new Error("Email is required.");
+        }
+
+        const delivery = String(form.get("delivery") || "home") as
+          | "home"
+          | "boxnow";
+
+        const result = await checkout({
+          customer: {
+            firstName,
+            lastName,
+            email,
+            phone,
+          },
+          shippingAddress: {
+            firstName,
+            lastName,
+            email,
+            phone,
+            country,
+            city,
+            postalCode,
+            addressLine1,
+            addressLine2: "",
+          },
+          delivery,
+          locker: String(form.get("locker") || "").trim(),
+          notes: "",
+        });
+
+        if (result.checkoutUrl) {
+          window.location.href = result.checkoutUrl;
+          return;
+        }
+
+        alert("Order created, but payment URL was not returned.");
+      } catch (error) {
+        console.error("Checkout failed:", error);
+        alert(error instanceof Error ? error.message : "Checkout failed.");
+      } finally {
+        submitButton && (submitButton.disabled = false);
+        setPayButtonState();
+      }
     });
 });
