@@ -1,4 +1,4 @@
-//* 3220089_3220172  2025 */
+/* 3220089_3220172 2025 */
 
 import {
   signInWithEmailAndPassword,
@@ -11,27 +11,26 @@ import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
 import { firebaseAuth } from "../../services/firebase";
 import { saveToken } from "../../services/auth";
-import { register } from "../../services/api"; // ✅ για sync backend
+import { login, register } from "../../services/api";
 
-const form = document.getElementById("loginForm") as HTMLFormElement;
+const form = document.getElementById("loginForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
 const googleBtn = document.querySelector(".auth-google");
 
-// ✅ Run only on login page
 if (form) {
   initNav();
   initMobileMenu();
-  updateCartBadge();
+  void updateCartBadge();
 
-  // ✅ EMAIL / PASSWORD LOGIN
+  // EMAIL / PASSWORD LOGIN
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    statusEl!.textContent = "Logging in...";
+    if (statusEl) statusEl.textContent = "Logging in...";
 
     const formData = new FormData(form);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const email = String(formData.get("email") || "");
+    const password = String(formData.get("password") || "");
 
     try {
       const credentials = await signInWithEmailAndPassword(
@@ -43,42 +42,48 @@ if (form) {
       const token = await credentials.user.getIdToken();
       saveToken(token);
 
-      statusEl!.textContent = "Login successful! Redirecting...";
+      // sync/login backend
+      await login({
+        email,
+        idToken: token,
+      });
+
+      if (statusEl) statusEl.textContent = "Login successful! Redirecting...";
 
       setTimeout(() => {
         window.location.href = "/index.html";
       }, 1200);
     } catch (err: any) {
       console.error("Login error:", err);
-      statusEl!.textContent = err.message || "Login failed";
+      if (statusEl) {
+        statusEl.textContent = err?.message || "Login failed";
+      }
     }
   });
 
-  // ✅ GOOGLE SIGN-IN
+  // GOOGLE SIGN-IN
   googleBtn?.addEventListener("click", async () => {
     try {
       const provider = new GoogleAuthProvider();
-
       const result = await signInWithPopup(firebaseAuth, provider);
 
       const token = await result.user.getIdToken();
-
-      // ✅ Save token locally
       saveToken(token);
 
-      // ✅ Sync with backend (optional but recommended)
+      // Αν ο backend register endpoint κάνει "upsert" user, αυτό είναι τέλειο
       await register({
         firstName: result.user.displayName?.split(" ")[0] || "",
-        lastName: result.user.displayName?.split(" ")[1] || "",
-        email: result.user.email,
+        lastName: result.user.displayName?.split(" ").slice(1).join(" ") || "",
+        email: result.user.email || "",
         idToken: token,
       });
 
-      // ✅ Redirect
       window.location.href = "/index.html";
     } catch (err: any) {
       console.error("Google login error:", err);
-      statusEl!.textContent = "Google sign-in failed";
+      if (statusEl) {
+        statusEl.textContent = err?.message || "Google sign-in failed";
+      }
     }
   });
 }

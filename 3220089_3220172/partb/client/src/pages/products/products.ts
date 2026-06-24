@@ -36,13 +36,17 @@ interface Product {
   updatedAt?: string;
 }
 
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || "https://cldrq5-4000.csb.app/api";
+const API_BASE =
+  import.meta.env?.VITE_API_BASE_URL || "https://cldrq5-4000.csb.app/api";
 
-async function getProducts(params: { q?: string; category?: string } = {}): Promise<Product[]> {
+async function getProducts(
+  params: { q?: string; category?: string } = {}
+): Promise<Product[]> {
   const url = new URL(`${API_BASE}/products`);
 
   if (params.q && params.q.trim()) url.searchParams.set("q", params.q.trim());
-  if (params.category && params.category !== "All") url.searchParams.set("category", params.category);
+  if (params.category && params.category !== "All")
+    url.searchParams.set("category", params.category);
 
   const response = await fetch(url.toString());
 
@@ -55,7 +59,9 @@ async function getProducts(params: { q?: string; category?: string } = {}): Prom
 }
 
 function normalize(text: unknown): string {
-  return String(text || "").trim().toLowerCase();
+  return String(text || "")
+    .trim()
+    .toLowerCase();
 }
 
 function formatPrice(value: number): string {
@@ -79,7 +85,9 @@ function isInStock(product: Product): boolean {
 
 function productUrl(product: Product): string {
   const id = product.id || product._id || product.slug;
-  return `/src/pages/product-details/product-details.html?id=${encodeURIComponent(String(id))}`;
+  return `/src/pages/product-details/product-details.html?id=${encodeURIComponent(
+    String(id)
+  )}`;
 }
 
 function renderProducts(container: HTMLElement, products: Product[]): void {
@@ -93,7 +101,9 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
     link.href = productUrl(product);
 
     const media = document.createElement("div");
-    media.className = `product-media ${product.category === "accessory" ? "grey" : ""}`;
+    media.className = `product-media ${
+      product.category === "accessory" ? "grey" : ""
+    }`;
 
     const badgeText = product.badge || (product.featured ? "Featured" : "");
     if (badgeText) {
@@ -113,7 +123,8 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
       media.appendChild(img);
     } else {
       const fallback = document.createElement("div");
-      fallback.className = product.category === "tshirt" ? "mini-shirt" : "category-icon";
+      fallback.className =
+        product.category === "tshirt" ? "mini-shirt" : "category-icon";
       fallback.textContent = product.category === "accessory" ? "▣" : "";
       media.appendChild(fallback);
     }
@@ -164,10 +175,17 @@ function setStateToURL(state: { q: string; category: string }): void {
   if (state.category !== "All") params.set("category", state.category);
 
   const query = params.toString();
-  window.history.replaceState(null, "", query ? `${window.location.pathname}?${query}` : window.location.pathname);
+  window.history.replaceState(
+    null,
+    "",
+    query ? `${window.location.pathname}?${query}` : window.location.pathname
+  );
 }
 
-function applyClientFilters(products: Product[], state: { q: string; category: string }): Product[] {
+function applyClientFilters(
+  products: Product[],
+  state: { q: string; category: string }
+): Product[] {
   const q = normalize(state.q);
 
   return products.filter((product) => {
@@ -178,7 +196,8 @@ function applyClientFilters(products: Product[], state: { q: string; category: s
       normalize(product.description).includes(q) ||
       normalize(product.tags?.join(" ")).includes(q);
 
-    const matchesCategory = state.category === "All" || product.category === state.category;
+    const matchesCategory =
+      state.category === "All" || product.category === state.category;
 
     return matchesQuery && matchesCategory && product.active !== false;
   });
@@ -188,11 +207,21 @@ async function initProductsPage(): Promise<void> {
   const grid = document.getElementById("productsGrid") as HTMLElement | null;
   if (!grid) return;
 
-  const searchInput = document.getElementById("productSearch") as HTMLInputElement | null;
-  const categorySelect = document.getElementById("productCategory") as HTMLSelectElement | null;
-  const loadingEl = document.getElementById("productsLoading") as HTMLElement | null;
-  const emptyEl = document.getElementById("productsEmpty") as HTMLElement | null;
-  const errorEl = document.getElementById("productsError") as HTMLElement | null;
+  const searchInput = document.getElementById(
+    "productSearch"
+  ) as HTMLInputElement | null;
+  const categorySelect = document.getElementById(
+    "productCategory"
+  ) as HTMLSelectElement | null;
+  const loadingEl = document.getElementById(
+    "productsLoading"
+  ) as HTMLElement | null;
+  const emptyEl = document.getElementById(
+    "productsEmpty"
+  ) as HTMLElement | null;
+  const errorEl = document.getElementById(
+    "productsError"
+  ) as HTMLElement | null;
 
   const urlState = getStateFromURL();
 

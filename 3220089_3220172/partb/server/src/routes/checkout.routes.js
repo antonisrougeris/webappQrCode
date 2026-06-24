@@ -1,11 +1,10 @@
-/* 3220089_3220172  2025 */
-
 import { Router } from "express";
-import { requireAuth } from "../middleware/requireAuth.js";
-import { checkoutCart } from "../controllers/checkout.controller.js";
+import { optionalAuth } from "../middleware/auth.js";
+import { checkout } from "../controllers/checkout.controller.js";
 
 const router = Router();
 
-router.post("/", requireAuth, checkoutCart);
+// allow guest OR logged-in checkout
+router.post("/", optionalAuth, checkout);
 
 export default router;

@@ -1,98 +1,125 @@
-import { isLoggedIn } from "../../services/auth";
-import { db } from "../../services/firebase";
-import { addDoc, collection } from "firebase/firestore";
-import { setDoc, doc } from "firebase/firestore";
-import { firebaseAuth  } from "../../services/firebase";
+import { addDoc, collection, setDoc, doc } from "firebase/firestore";
+import { db, firebaseAuth } from "../../services/firebase";
+import { getCart, type CartItem } from "../../services/cart";
 
-async function createQRsForOrder(cart: any[]) {
+let discount = 0;
+
+function formatPrice(n: number) {
+  return new Intl.NumberFormat("el-GR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(n || 0);
+}
+
+function getCartItemTitle(item: CartItem): string {
+  if (item.title) return item.title;
+  if (item.product?.title) return item.product.title;
+  return "Product";
+}
+
+function getCartItemImage(item: CartItem): string {
+  if (item.image) return item.image;
+  if (item.product?.image) return item.product.image;
+  if (item.product?.images?.[0]) return item.product.images[0];
+  return "/assets/img/logo_Image.png";
+}
+
+function getCartItemUnitPrice(item: CartItem): number {
+  if (typeof item.unitPrice === "number") return item.unitPrice;
+  if (typeof item.price === "number") return item.price;
+  if (typeof item.priceEUR === "number") return item.priceEUR;
+  if (typeof item.product?.price === "number") return item.product.price;
+  if (typeof item.product?.priceEUR === "number") return item.product.priceEUR;
+  return 0;
+}
+
+function getCartItemVariant(item: CartItem) {
+  return item.variant || item.selectedVariant || null;
+}
+
+function getCartItemQr(item: CartItem): string {
+  return item.qrDestination || item.qrCodeUrl || "";
+}
+
+function calculateShipping(subtotal: number, delivery: string) {
+  if (subtotal >= 50) return 0;
+  if (delivery === "boxnow") return 2.0;
+  return 3.5;
+}
+
+async function createQRsForOrder(cartItems: CartItem[]) {
   const user = firebaseAuth.currentUser;
 
-  for (const item of cart) {
+  for (const item of cartItems) {
     const id = Math.random().toString(36).substring(2, 10);
 
     await setDoc(doc(db, "qrCodes", id), {
-      userId: user?.uid,
-      productTitle: item.title,
-      targetUrl: item.qrDestination || "https://skanare.com",
+      userId: user?.uid || null,
+      productTitle: getCartItemTitle(item),
+      targetUrl: getCartItemQr(item) || "https://skanare.com",
       scans: 0,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
   }
 }
 
-
-const CART_KEY = "skanare_cart";
-
-if (!isLoggedIn()) {
-  alert("Login required");
-  window.location.href = "/src/pages/login/login.html";
-}
-
-function getCart() {
-  return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-}
-
-function formatPrice(n: number) {
-  return n.toFixed(2) + " €";
-}
-
-function calculateShipping(subtotal: number, delivery: string) {
-  if (subtotal >= 50) {
-    return 0; // ✅ FREE SHIPPING
-  }
-
-  if (delivery === "boxnow") {
-    return 2.0; // πιο φθηνό
-  }
-
-  return 3.5; // home delivery
-}
-
-let discount = 0;
-
-function render() {
-  const items = getCart();
+async function render() {
+  const cart = await getCart();
+  const items: CartItem[] = cart?.items || [];
 
   const delivery =
     (
       document.querySelector(
         "input[name='delivery']:checked"
-      ) as HTMLInputElement
+      ) as HTMLInputElement | null
     )?.value || "home";
+
+  const container = document.getElementById("checkoutItems");
+  if (!container) return;
 
   let subtotal = 0;
 
-  const container = document.getElementById("checkoutItems")!;
+  if (items.length === 0) {
+    container.innerHTML = `<p>Your cart is empty.</p>`;
+    document.getElementById("subtotal")!.textContent = formatPrice(0);
+    document.getElementById("shipping")!.textContent = formatPrice(0);
+    document.getElementById("total")!.textContent = formatPrice(0);
+    const msg = document.getElementById("freeShippingMsg");
+    if (msg) msg.textContent = "";
+    return;
+  }
 
   container.innerHTML = items
-    .map((item: any) => {
-      const itemTotal = item.priceEUR * item.quantity;
+    .map((item) => {
+      const unitPrice = getCartItemUnitPrice(item);
+      const itemTotal = unitPrice * Number(item.quantity || 0);
       subtotal += itemTotal;
 
+      const variant = getCartItemVariant(item);
+      const title = getCartItemTitle(item);
+      const image = getCartItemImage(item);
+      const qr = getCartItemQr(item);
+
       return `
-      <div class="checkout-item">
+        <div class="checkout-item">
+          <div class="checkout-item__image-wrapper">
+            <img src="${image}" alt="${title}" />
+            <span class="checkout-item__badge">${item.quantity}</span>
+          </div>
 
-        <div class="checkout-item__image-wrapper">
+          <div class="checkout-item__info">
+            <p>${title}</p>
+            <small>Size: ${variant?.size || "-"}</small>
+            ${qr ? `<small>${qr}</small>` : ""}
+          </div>
 
-        <img src="${item.image || "/assets/img/logo_Image.png"}" />
-        <span class="checkout-item__badge">${item.quantity}</span>
+          <strong>${formatPrice(itemTotal)}</strong>
         </div>
-
-        <div class="checkout-item__info">
-          <p>${item.title}</p>
-          <small>Size: ${item.selectedVariant?.size || "-"}</small>
-          <small>${item.qrDestination || ""}</small>
-        </div>
-
-        <strong>${formatPrice(itemTotal)}</strong>
-      </div>
-    `;
+      `;
     })
     .join("");
 
-  // ✅ discount apply
   const discountedSubtotal = subtotal * (1 - discount / 100);
-
   const shipping = calculateShipping(discountedSubtotal, delivery);
   const total = discountedSubtotal + shipping;
 
@@ -104,74 +131,90 @@ function render() {
 
   document.getElementById("total")!.textContent = formatPrice(total);
 
-  // ✅ free shipping message
-  const msg = document.getElementById("freeShippingMsg")!;
-
-  if (discountedSubtotal < 50) {
-    msg.textContent = `Add ${(50 - discountedSubtotal).toFixed(
-      2
-    )}€ for FREE shipping`;
-  } else {
-    msg.textContent = "You unlocked FREE shipping 🎉";
+  const msg = document.getElementById("freeShippingMsg");
+  if (msg) {
+    if (discountedSubtotal < 50) {
+      msg.textContent = `Add ${(50 - discountedSubtotal).toFixed(
+        2
+      )}€ for FREE shipping`;
+    } else {
+      msg.textContent = "You unlocked FREE shipping 🎉";
+    }
   }
 }
 
-render();
+document.addEventListener("DOMContentLoaded", () => {
+  void render();
 
-document.getElementById("applyDiscount")?.addEventListener("click", () => {
-  const code = (document.getElementById("discountInput") as HTMLInputElement)
-    .value;
+  document
+    .querySelectorAll<HTMLInputElement>("input[name='delivery']")
+    .forEach((radio) => {
+      radio.addEventListener("change", () => {
+        void render();
+      });
+    });
 
-  if (code === "SKANARE10") {
-    discount = 10;
-    alert("10% discount applied ✅");
-  } else {
-    discount = 0;
-    alert("Invalid code");
-  }
-
-  render();
-});
-
-document.getElementById("openLockerMap")?.addEventListener("click", () => {
-  window.open("https://boxnow.gr/en/locker-finder", "_blank");
-});
-
-// ✅ submit
-document
-  .getElementById("checkoutForm")
-  ?.addEventListener("submit", async (e) => {
+  document.getElementById("applyDiscount")?.addEventListener("click", (e) => {
     e.preventDefault();
 
-    const form = new FormData(e.target as HTMLFormElement);
+    const code = (
+      document.getElementById("discountInput") as HTMLInputElement | null
+    )?.value?.trim();
 
-    const order = {
-      user: {
-        firstName: form.get("firstName"),
-        lastName: form.get("lastName"),
-        email: form.get("email"),
-        phone: form.get("phone"),
-      },
-      address: {
-        address: form.get("address"),
-        city: form.get("city"),
-        postalCode: form.get("postalCode"),
-        country: form.get("country"),
-      },
-      delivery: form.get("delivery"),
-      locker: form.get("locker"),
-      cart: getCart(),
-      total: document.getElementById("total")?.textContent,
-      createdAt: new Date(),
-    };
+    if (code === "SKANARE10") {
+      discount = 10;
+      alert("10% discount applied ✅");
+    } else {
+      discount = 0;
+      alert("Invalid code");
+    }
 
-    // ✅ save order
-    await addDoc(collection(db, "orders"), order);
-    await createQRsForOrder(getCart());
-
-    // ✅ CLEAR CART
-    localStorage.removeItem(CART_KEY);
-
-    // ✅ Viva redirect (real flow later via backend)
-    window.location.href = "https://demo.vivapayments.com/web/checkout";
+    void render();
   });
+
+  document
+    .getElementById("checkoutForm")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const form = new FormData(e.target as HTMLFormElement);
+      const cart = await getCart();
+      const items: CartItem[] = cart?.items || [];
+
+      if (items.length === 0) {
+        alert("Your cart is empty.");
+        return;
+      }
+
+      const totalText =
+        document.getElementById("total")?.textContent || formatPrice(0);
+
+      const order = {
+        user: {
+          firstName: form.get("firstName"),
+          lastName: form.get("lastName"),
+          email: form.get("email"),
+          phone: form.get("phone"),
+        },
+        address: {
+          address: form.get("address"),
+          city: form.get("city"),
+          postalCode: form.get("postalCode"),
+          country: form.get("country"),
+        },
+        delivery: form.get("delivery"),
+        locker: form.get("locker"),
+        cart: items,
+        total: totalText,
+        createdAt: new Date(),
+      };
+
+      await addDoc(collection(db, "orders"), order);
+      await createQRsForOrder(items);
+
+      // εδώ μετά μπορείς να καθαρίσεις cart από backend/service αν έχεις clearCart()
+      // π.χ. await clearCart();
+
+      window.location.href = "https://demo.vivapayments.com/web/checkout";
+    });
+});

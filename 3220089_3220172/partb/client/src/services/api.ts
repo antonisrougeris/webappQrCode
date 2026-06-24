@@ -1,167 +1,183 @@
-/* 3220089_3220172  2025 */
+/* 3220089_3220172 */
 
 import { getToken } from "./auth";
 
-const API_URL = "https://cldrq5-4000.csb.app/api"; // Match server PORT=4000
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://cldrq5-4000.csb.app/api";
 
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
+/**
+ * Generic API envelope
+ */
+export interface ApiEnvelope<T> {
+  success?: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Guest cart support
+ */
+function getGuestId(): string {
+  let guestId = localStorage.getItem("guestId");
+
+  if (!guestId) {
+    guestId = crypto.randomUUID();
+    localStorage.setItem("guestId", guestId);
+  }
+
+  return guestId;
+}
+
+/**
+ * Build request headers
+ * - If logged in => Authorization Bearer token
+ * - If guest => x-guest-id for cart/session support
+ */
+function buildHeaders(init?: HeadersInit): Headers {
+  const headers = new Headers(init || {});
+
+  // default JSON unless caller overrides it
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const token = getToken();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string>),
-  };
 
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    headers.set("Authorization", `Bearer ${token}`);
+  } else {
+    headers.set("x-guest-id", getGuestId());
   }
 
-  const response = await fetch(url, { ...options, headers });
+  return headers;
+}
 
-  if (!response.ok) {
-    // Try to extract an error message from JSON or text
-    const contentType = response.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: response.statusText }));
-      throw new Error(error.message || "API request failed");
-    }
+/**
+ * Main API request helper
+ */
+export async function apiRequest<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: buildHeaders(options.headers),
+  });
 
-    const errorText = await response.text().catch(() => "");
-    throw new Error(errorText || response.statusText || "API request failed");
-  }
-
-  // 204 No Content (e.g., DELETE /cart/:itemId)
   if (response.status === 204) {
-    return null;
+    return null as T;
   }
 
   const contentType = response.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    return response.json();
-  }
+  const isJson = contentType.includes("application/json");
 
-  // Fallback for endpoints that might return plain text
-  return response.text();
-}
-
-// ==================== AUTH ====================
-export async function register(userData: any) {
-  const response = await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(userData),
-  });
+  const payload = isJson ? await response.json().catch(() => null) : null;
 
   if (!response.ok) {
-    const contentType = response.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(error.message || "API request failed");
-    }
+    const message =
+      payload?.message ||
+      payload?.error ||
+      `Request failed (${response.status})`;
 
-    const errorText = await response.text().catch(() => "");
-    throw new Error(errorText || response.statusText || "API request failed");
+    throw new Error(message);
   }
 
-  return response.json();
+  return payload as T;
 }
 
-export async function login(email: string, password: string) {
-  return fetchWithAuth(`${API_URL}/auth/login`, {
+export const apiFetch = apiRequest;
+
+/* =========================================================
+   AUTH TYPES
+========================================================= */
+
+export interface RegisterPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  idToken: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  idToken: string;
+}
+
+export interface AuthUser {
+  id?: string;
+  uid?: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuthResponse {
+  success?: boolean;
+  message?: string;
+  token?: string;
+  user?: AuthUser;
+  data?: AuthUser;
+}
+
+/* =========================================================
+   AUTH API
+========================================================= */
+
+/**
+ * Register / sync user with backend after Firebase signup
+ *
+ * Expected backend route:
+ * POST /api/auth/register
+ */
+export async function register(
+  payload: RegisterPayload
+): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(payload),
   });
 }
 
-// ==================== USERS ====================
-export async function getCurrentUser() {
-  return fetchWithAuth(`${API_URL}/users/me`);
-}
-
-// ==================== COURSES ====================
-export async function getCourses(query?: string) {
-  const url = query ? `${API_URL}/courses?${query}` : `${API_URL}/courses`;
-  return fetchWithAuth(url);
-}
-
-export async function getCourseById(id: string) {
-  return fetchWithAuth(`${API_URL}/courses/${id}`);
-}
-
-// ==================== BOOKS ====================
-export async function getBooks() {
-  return fetchWithAuth(`${API_URL}/books`);
-}
-
-export async function getBookById(id: string) {
-  return fetchWithAuth(`${API_URL}/books/${id}`);
-}
-
-// ==================== ENROLLMENTS ====================
-export async function enrollInCourse(courseId: string) {
-  return fetchWithAuth(`${API_URL}/enrollments`, {
+/**
+ * Login / sync user with backend after Firebase login
+ *
+ * Expected backend route:
+ * POST /api/auth/login
+ */
+export async function login(payload: LoginPayload): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ courseId }),
+    body: JSON.stringify(payload),
   });
 }
 
-export async function getMyEnrollments() {
-  return fetchWithAuth(`${API_URL}/enrollments/me`);
-}
+/**
+ * Optional helper:
+ * fetch current authenticated user from backend
+ *
+ * Expected backend route:
+ * GET /api/auth/me
+ */
+export async function getMe(): Promise<AuthUser | null> {
+  const response = await apiRequest<
+    | AuthUser
+    | {
+        success?: boolean;
+        user?: AuthUser;
+        data?: AuthUser;
+      }
+  >("/auth/me");
 
-export async function cancelEnrollment(courseId: string) {
-  return fetchWithAuth(`${API_URL}/enrollments/${courseId}`, {
-    method: "DELETE",
-  });
-}
+  if (!response) return null;
 
-// ==================== PURCHASES ====================
-export async function getMyPurchases() {
-  return fetchWithAuth(`${API_URL}/purchases/my`);
-}
+  if ("email" in response) {
+    return response as AuthUser;
+  }
 
-// ==================== CART ====================
-export async function getCart() {
-  return fetchWithAuth(`${API_URL}/cart`);
-}
-
-export async function addToCart(itemId: string, type: "course" | "book") {
-  return fetchWithAuth(`${API_URL}/cart`, {
-    method: "POST",
-    body: JSON.stringify({ itemId, itemType: type }),
-  });
-}
-
-export async function removeFromCart(itemId: string) {
-  return fetchWithAuth(`${API_URL}/cart/${itemId}`, {
-    method: "DELETE",
-  });
-}
-
-export async function checkout() {
-  return fetchWithAuth(`${API_URL}/checkout`, {
-    method: "POST",
-  });
-}
-
-// ==================== REVIEWS ====================
-export async function submitCourseReview(courseId: string, rating: number, comment: string) {
-  return fetchWithAuth(`${API_URL}/reviews/courses/${courseId}`, {
-    method: "POST",
-    body: JSON.stringify({ rating, comment }),
-  });
-}
-
-export async function submitBookReview(bookId: string, rating: number, comment: string) {
-  return fetchWithAuth(`${API_URL}/reviews/books/${bookId}`, {
-    method: "POST",
-    body: JSON.stringify({ rating, comment }),
-  });
-}
-
-export async function getCourseReviews(courseId: string) {
-  return fetchWithAuth(`${API_URL}/reviews/courses/${courseId}`);
+  return response.user || response.data || null;
 }

@@ -1,8 +1,8 @@
-/* 3220089_3220172  2025 */
+/* 3220089_3220172 */
 
-const TOKEN_KEY = "token";
+const TOKEN_KEY = "skanare_token";
 
-export function saveToken(token: string) {
+export function saveToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
 }
 

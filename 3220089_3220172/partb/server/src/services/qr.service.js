@@ -1,0 +1,72 @@
+import { getDB } from "../config/db.js";
+import { COLLECTIONS } from "../constants/collections.js";
+import { ApiError } from "../utils/apiError.js";
+import { nowIso } from "../utils/ids.js";
+
+export async function getQrCodesForUser(userId) {
+  if (!userId) {
+    throw new ApiError(401, "Missing user id");
+  }
+
+  const db = getDB();
+
+  const snapshot = await db
+    .collection(COLLECTIONS.QR_CODES)
+    .where("userId", "==", userId)
+    .get();
+
+  const qrCodes = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  qrCodes.sort((a, b) => {
+    const aTime = new Date(a.createdAt || 0).getTime();
+    const bTime = new Date(b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+
+  return qrCodes;
+}
+
+export async function updateQrCodeTarget({ userId, qrId, targetUrl }) {
+  if (!userId) {
+    throw new ApiError(401, "Missing user id");
+  }
+
+  if (!qrId) {
+    throw new ApiError(400, "Missing qr id");
+  }
+
+  if (!targetUrl) {
+    throw new ApiError(400, "targetUrl is required");
+  }
+
+  const db = getDB();
+  const qrRef = db.collection(COLLECTIONS.QR_CODES).doc(qrId);
+  const qrSnap = await qrRef.get();
+
+  if (!qrSnap.exists) {
+    throw new ApiError(404, "QR code not found");
+  }
+
+  const qrCode = {
+    id: qrSnap.id,
+    ...qrSnap.data(),
+  };
+
+  if (qrCode.userId !== userId) {
+    throw new ApiError(403, "You do not have access to this QR code");
+  }
+
+  await qrRef.update({
+    targetUrl,
+    updatedAt: nowIso(),
+  });
+
+  return {
+    ...qrCode,
+    targetUrl,
+    updatedAt: nowIso(),
+  };
+}

@@ -1,21 +1,21 @@
-/* 3220089_3220172  2025 */
-
 import { Router } from "express";
-import { requireAuth } from "../middleware/requireAuth.js";
+import { requireAuth } from "../middleware/auth.js";
 import {
-  listCart,
   addToCart,
-  removeFromCart,
+  deleteCartItem,
+  getCart,
+  patchCartItem,
 } from "../controllers/cart.controller.js";
+
+import { optionalAuth } from "../middleware/auth.js";
+
 
 const router = Router();
 
-router.get("/", requireAuth, listCart);
-
-//  POST { itemType: "book" | "course", itemId: "..." }
-router.post("/", requireAuth, addToCart);
-
-//  DELETE /api/cart/:itemId
-router.delete("/:itemId", requireAuth, removeFromCart);
+router.use(optionalAuth);
+router.get("/", getCart);
+router.post("/items", addToCart);
+router.patch("/items/:itemId", patchCartItem);
+router.delete("/items/:itemId", deleteCartItem);
 
 export default router;

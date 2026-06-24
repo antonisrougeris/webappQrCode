@@ -1,36 +1,46 @@
-/* 3220089_3220172  2025 */
-// cart-badge.ts - Utility for updating cart badge in navigation
-import { getCart } from "../services/api";
+/* 3220089_3220172 */
+
+import { getCart } from "../services/cart";
 import { isLoggedIn } from "../services/auth";
+
+function getCartCount(cart: {
+  totalItems?: number;
+  items?: Array<{ quantity?: number }>;
+}): number {
+  if (typeof cart.totalItems === "number") {
+    return cart.totalItems;
+  }
+
+  if (Array.isArray(cart.items)) {
+    return cart.items.reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0
+    );
+  }
+
+  return 0;
+}
 
 /**
  * Updates the cart badge in the navigation with the current cart item count
  */
 export async function updateCartBadge(): Promise<void> {
-  try {
-    const cartLink = document.querySelector("[data-cart-link]");
-    if (!cartLink) return;
+  const cartLink = document.querySelector<HTMLElement>("[data-cart-link]");
 
+  if (!cartLink) return;
+
+  try {
     if (!isLoggedIn()) {
-      // If not logged in, just show "Cart"
       cartLink.textContent = "Cart";
       return;
     }
 
-    // Fetch cart from server API
-    const cartData = await getCart();
-    const totalItems = cartData.length || 0;
+    const cart = await getCart();
+    const totalItems = getCartCount(cart);
 
-    if (totalItems > 0) {
-      cartLink.textContent = `Cart (${totalItems})`;
-    } else {
-      cartLink.textContent = "Cart";
-    }
+    cartLink.textContent = totalItems > 0 ? `Cart (${totalItems})` : "Cart";
   } catch (error) {
     console.error("Failed to update cart badge:", error);
-    const cartLink = document.querySelector("[data-cart-link]");
-    if (cartLink) {
-      cartLink.textContent = "Cart";
-    }
+    cartLink.textContent = "Cart";
   }
 }

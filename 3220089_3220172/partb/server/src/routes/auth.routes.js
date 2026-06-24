@@ -1,11 +1,11 @@
-/* 3220089_3220172  2025 */
+import express from "express";
+import { register, login, me } from "../controllers/auth.controller.js";
+import { requireAuth } from "../middleware/auth.js";
 
-import { Router } from "express";
-import { registerUser,login } from "../controllers/auth.controller.js";
+const router = express.Router();
 
-const router = Router();
-
+router.post("/register", register);
 router.post("/login", login);
-router.post("/register", registerUser);
+router.get("/me", requireAuth, me);
 
 export default router;

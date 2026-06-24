@@ -1,171 +1,396 @@
 [
   {
     "id": "classic-black",
+    "slug": "qr-classic-tee-black",
     "title": "QR Classic Tee - Black",
-    "shortDescription": "Unisex • Custom QR print",
-  "description": "•100% organic cotton\n•High-quality and durable print\n•High fabric density: 180 g/m²\n•Medium fit",
+    "shortDescription": "Unisex custom QR t-shirt in black.",
+    "description": "100% organic cotton t-shirt with custom editable QR print. High-quality durable print, 180 g/m² fabric density and medium fit for everyday wear.",
     "category": "tshirt",
-    "priceEUR": 29.9,
-    "images": ["/assets/img/products/classic-black.png","/assets/img/products/classic-white.png"],
+    "price": 29.9,
+    "currency": "EUR",
     "stock": 20,
     "featured": true,
     "active": true,
+    "customQr": true,
+    "images": [
+      "/assets/img/products/classic-black.png",
+      "/assets/img/products/classic-white.png"
+    ],
     "variants": [
-      { "size": "S", "color": "Black", "stock": 4 },
-      { "size": "M", "color": "Black", "stock": 5 },
-      { "size": "L", "color": "Black", "stock": 5 },
-      { "size": "XL", "color": "Black", "stock": 3 },
-      { "size": "2XL", "color": "Black", "stock": 3 }
+      {
+        "sku": "CLASSIC-BLACK-S",
+        "size": "S",
+        "color": "Black",
+        "stock": 4
+      },
+      {
+        "sku": "CLASSIC-BLACK-M",
+        "size": "M",
+        "color": "Black",
+        "stock": 5
+      },
+      {
+        "sku": "CLASSIC-BLACK-L",
+        "size": "L",
+        "color": "Black",
+        "stock": 5
+      },
+      {
+        "sku": "CLASSIC-BLACK-XL",
+        "size": "XL",
+        "color": "Black",
+        "stock": 3
+      },
+      {
+        "sku": "CLASSIC-BLACK-2XL",
+        "size": "2XL",
+        "color": "Black",
+        "stock": 3
+      }
     ],
     "reviews": [
-      { "name": "Maria", "rating": 5, "comment": "Great quality and the QR code scans perfectly." },
-      { "name": "Alex", "rating": 5, "comment": "Nice fit and fast delivery." },
-      { "name": "Nikos", "rating": 4, "comment": "Very good print quality." }
+      {
+        "name": "Maria",
+        "rating": 5,
+        "comment": "Great quality and the QR code scans perfectly."
+      },
+      {
+        "name": "Alex",
+        "rating": 5,
+        "comment": "Nice fit and fast delivery."
+      },
+      {
+        "name": "Nikos",
+        "rating": 4,
+        "comment": "Very good print quality."
+      }
     ]
   },
   {
     "id": "classic-white",
+    "slug": "qr-classic-tee-white",
     "title": "QR Classic Tee - White",
-    "shortDescription": "Unisex • Custom QR print",
-    "description": "Premium white t-shirt with your editable QR code.",
+    "shortDescription": "Unisex custom QR t-shirt in white.",
+    "description": "Premium white t-shirt with editable QR print. Soft organic cotton feel with a clean minimal look and comfortable regular fit.",
     "category": "tshirt",
-    "priceEUR": 29.9,
-    "images": ["/assets/img/products/classic-white.png"],
+    "price": 29.9,
+    "currency": "EUR",
     "stock": 20,
     "featured": true,
     "active": true,
+    "customQr": true,
+    "images": [
+      "/assets/img/products/classic-white.png"
+    ],
     "variants": [
-      { "size": "S", "color": "White", "stock": 4 },
-      { "size": "M", "color": "White", "stock": 5 },
-      { "size": "L", "color": "White", "stock": 5 },
-      { "size": "XL", "color": "White", "stock": 3 },
-      { "size": "2XL", "color": "White", "stock": 3 }
+      {
+        "sku": "CLASSIC-WHITE-S",
+        "size": "S",
+        "color": "White",
+        "stock": 4
+      },
+      {
+        "sku": "CLASSIC-WHITE-M",
+        "size": "M",
+        "color": "White",
+        "stock": 5
+      },
+      {
+        "sku": "CLASSIC-WHITE-L",
+        "size": "L",
+        "color": "White",
+        "stock": 5
+      },
+      {
+        "sku": "CLASSIC-WHITE-XL",
+        "size": "XL",
+        "color": "White",
+        "stock": 3
+      },
+      {
+        "sku": "CLASSIC-WHITE-2XL",
+        "size": "2XL",
+        "color": "White",
+        "stock": 3
+      }
     ],
     "reviews": [
-      { "name": "Eleni", "rating": 5, "comment": "Clean design and comfortable fabric." },
-      { "name": "George", "rating": 4, "comment": "The QR print looks sharp." }
+      {
+        "name": "Eleni",
+        "rating": 5,
+        "comment": "Clean design and comfortable fabric."
+      },
+      {
+        "name": "George",
+        "rating": 4,
+        "comment": "The QR print looks sharp."
+      }
     ]
   },
   {
     "id": "oversized-black",
+    "slug": "qr-oversized-tee-black",
     "title": "QR Oversized Tee",
-    "shortDescription": "Heavy cotton • Street fit",
-    "description": "Oversized black QR t-shirt with premium heavy cotton.",
+    "shortDescription": "Oversized black QR t-shirt with heavy cotton feel.",
+    "description": "Streetwear-inspired oversized black t-shirt with editable QR print and premium heavyweight cotton for a more structured fit.",
     "category": "tshirt",
-    "priceEUR": 34.9,
-    "images": ["/assets/img/products/oversized-black.png"],
+    "price": 34.9,
+    "currency": "EUR",
     "stock": 15,
     "featured": true,
     "active": true,
+    "customQr": true,
+    "images": [
+      "/assets/img/products/oversized-black.png"
+    ],
     "variants": [
-      { "size": "S", "color": "Black", "stock": 3 },
-      { "size": "M", "color": "Black", "stock": 4 },
-      { "size": "L", "color": "Black", "stock": 4 },
-      { "size": "XL", "color": "Black", "stock": 2 },
-      { "size": "2XL", "color": "Black", "stock": 2 }
+      {
+        "sku": "OVERSIZED-BLACK-S",
+        "size": "S",
+        "color": "Black",
+        "stock": 3
+      },
+      {
+        "sku": "OVERSIZED-BLACK-M",
+        "size": "M",
+        "color": "Black",
+        "stock": 4
+      },
+      {
+        "sku": "OVERSIZED-BLACK-L",
+        "size": "L",
+        "color": "Black",
+        "stock": 4
+      },
+      {
+        "sku": "OVERSIZED-BLACK-XL",
+        "size": "XL",
+        "color": "Black",
+        "stock": 2
+      },
+      {
+        "sku": "OVERSIZED-BLACK-2XL",
+        "size": "2XL",
+        "color": "Black",
+        "stock": 2
+      }
     ],
     "reviews": [
-      { "name": "Kostas", "rating": 5, "comment": "Perfect oversized fit." },
-      { "name": "Anna", "rating": 5, "comment": "Premium feel and strong print." }
+      {
+        "name": "Kostas",
+        "rating": 5,
+        "comment": "Perfect oversized fit."
+      },
+      {
+        "name": "Anna",
+        "rating": 5,
+        "comment": "Premium feel and strong print."
+      }
     ]
   },
   {
     "id": "color-qr-tee",
+    "slug": "qr-color-tee",
     "title": "QR Color Tee",
-    "shortDescription": "Choose your QR color",
-    "description": "Custom t-shirt with colored QR print.",
+    "shortDescription": "Custom t-shirt with colored QR print.",
+    "description": "T-shirt with editable colored QR code print. Built for users who want a more playful and personalized QR product look.",
     "category": "tshirt",
-    "priceEUR": 32.9,
-    "images": ["/assets/img/products/color-qr-tee.png"],
+    "price": 32.9,
+    "currency": "EUR",
     "stock": 12,
     "featured": true,
     "active": true,
+    "customQr": true,
+    "images": [
+      "/assets/img/products/color-qr-tee.png"
+    ],
     "variants": [
-      { "size": "S", "color": "Blue", "stock": 2 },
-      { "size": "M", "color": "Blue", "stock": 3 },
-      { "size": "L", "color": "Blue", "stock": 3 },
-      { "size": "XL", "color": "Blue", "stock": 2 },
-      { "size": "2XL", "color": "Blue", "stock": 2 }
+      {
+        "sku": "COLOR-QR-BLUE-S",
+        "size": "S",
+        "color": "Blue",
+        "stock": 2
+      },
+      {
+        "sku": "COLOR-QR-BLUE-M",
+        "size": "M",
+        "color": "Blue",
+        "stock": 3
+      },
+      {
+        "sku": "COLOR-QR-BLUE-L",
+        "size": "L",
+        "color": "Blue",
+        "stock": 3
+      },
+      {
+        "sku": "COLOR-QR-BLUE-XL",
+        "size": "XL",
+        "color": "Blue",
+        "stock": 2
+      },
+      {
+        "sku": "COLOR-QR-BLUE-2XL",
+        "size": "2XL",
+        "color": "Blue",
+        "stock": 2
+      }
     ],
     "reviews": [
-      { "name": "Sofia", "rating": 5, "comment": "The colored QR looks amazing." },
-      { "name": "Dimitris", "rating": 4, "comment": "Good quality and unique style." }
+      {
+        "name": "Sofia",
+        "rating": 5,
+        "comment": "The colored QR looks amazing."
+      },
+      {
+        "name": "Dimitris",
+        "rating": 4,
+        "comment": "Good quality and unique style."
+      }
     ]
   },
   {
     "id": "qr-card",
+    "slug": "qr-card",
     "title": "QR Card",
-    "shortDescription": "Wallet-friendly QR card",
-    "description": "A clean QR card with your editable destination link.",
+    "shortDescription": "Wallet-friendly QR card with editable destination link.",
+    "description": "Minimal QR card designed to fit in your wallet and share your profile, website, contact page or any other destination instantly.",
     "category": "accessory",
-    "priceEUR": 14.9,
-    "images": ["/assets/img/products/qr-card.png"],
+    "price": 14.9,
+    "currency": "EUR",
     "stock": 50,
     "featured": true,
     "active": true,
+    "customQr": true,
+    "images": [
+      "/assets/img/products/qr-card.png"
+    ],
     "variants": [
-      { "color": "Black", "stock": 25 },
-      { "color": "White", "stock": 25 }
+      {
+        "sku": "QR-CARD-BLACK",
+        "color": "Black",
+        "stock": 25
+      },
+      {
+        "sku": "QR-CARD-WHITE",
+        "color": "White",
+        "stock": 25
+      }
     ],
     "reviews": [
-      { "name": "Petros", "rating": 5, "comment": "Very useful and easy to carry." }
+      {
+        "name": "Petros",
+        "rating": 5,
+        "comment": "Very useful and easy to carry."
+      }
     ]
   },
   {
     "id": "qr-keychain",
+    "slug": "qr-keychain",
     "title": "QR Keychain",
-    "shortDescription": "Small, clean and easy to scan",
-    "description": "A compact keychain with your personal QR code.",
+    "shortDescription": "Compact keychain with personal editable QR code.",
+    "description": "Small, durable and practical QR keychain that links directly to your chosen destination and is easy to scan on the go.",
     "category": "accessory",
-    "priceEUR": 12.9,
-    "images": ["/assets/img/products/qr-keychain.png"],
+    "price": 12.9,
+    "currency": "EUR",
     "stock": 40,
     "featured": true,
     "active": true,
+    "customQr": true,
+    "images": [
+      "/assets/img/products/qr-keychain.png"
+    ],
     "variants": [
-      { "color": "Black", "stock": 20 },
-      { "color": "White", "stock": 20 }
+      {
+        "sku": "QR-KEYCHAIN-BLACK",
+        "color": "Black",
+        "stock": 20
+      },
+      {
+        "sku": "QR-KEYCHAIN-WHITE",
+        "color": "White",
+        "stock": 20
+      }
     ],
     "reviews": [
-      { "name": "Ioanna", "rating": 5, "comment": "Small, practical and scans fast." }
+      {
+        "name": "Ioanna",
+        "rating": 5,
+        "comment": "Small, practical and scans fast."
+      }
     ]
   },
   {
     "id": "qr-tote-bag",
+    "slug": "qr-tote-bag",
     "title": "QR Tote Bag",
-    "shortDescription": "Custom QR print for everyday use",
-    "description": "Minimal tote bag with your editable QR code.",
+    "shortDescription": "Minimal tote bag with custom editable QR print.",
+    "description": "Everyday tote bag with QR print that can point to your social links, website, event page or any destination you want to update later.",
     "category": "accessory",
-    "priceEUR": 19.9,
-    "images": ["/assets/img/products/qr-tote-bag.png"],
+    "price": 19.9,
+    "currency": "EUR",
     "stock": 25,
     "featured": true,
     "active": true,
+    "customQr": true,
+    "images": [
+      "/assets/img/products/qr-tote-bag.png"
+    ],
     "variants": [
-      { "color": "Natural", "stock": 15 },
-      { "color": "Black", "stock": 10 }
+      {
+        "sku": "QR-TOTE-NATURAL",
+        "color": "Natural",
+        "stock": 15
+      },
+      {
+        "sku": "QR-TOTE-BLACK",
+        "color": "Black",
+        "stock": 10
+      }
     ],
     "reviews": [
-      { "name": "Christina", "rating": 5, "comment": "Great for events and daily use." }
+      {
+        "name": "Christina",
+        "rating": 5,
+        "comment": "Great for events and daily use."
+      }
     ]
   },
   {
     "id": "qr-stickers",
+    "slug": "qr-stickers",
     "title": "QR Stickers",
-    "shortDescription": "Sticker pack with your personal QR code",
-    "description": "Pack of QR stickers with your editable link.",
+    "shortDescription": "Sticker pack with editable personal QR code.",
+    "description": "Pack of QR stickers for packaging, events, laptops, notebooks or marketing use. Each sticker links to your chosen editable destination.",
     "category": "accessory",
-    "priceEUR": 9.9,
-    "images": ["/assets/img/products/qr-stickers.png"],
+    "price": 9.9,
+    "currency": "EUR",
     "stock": 100,
     "featured": true,
     "active": true,
+    "customQr": true,
+    "images": [
+      "/assets/img/products/qr-stickers.png"
+    ],
     "variants": [
-      { "color": "White", "stock": 100 }
+      {
+        "sku": "QR-STICKERS-WHITE",
+        "color": "White",
+        "stock": 100
+      }
     ],
     "reviews": [
-      { "name": "Manos", "rating": 5, "comment": "Perfect sticker pack and easy to scan." },
-      { "name": "Eva", "rating": 5, "comment": "Good quality stickers." }
+      {
+        "name": "Manos",
+        "rating": 5,
+        "comment": "Perfect sticker pack and easy to scan."
+      },
+      {
+        "name": "Eva",
+        "rating": 5,
+        "comment": "Good quality stickers."
+      }
     ]
   }
 ]

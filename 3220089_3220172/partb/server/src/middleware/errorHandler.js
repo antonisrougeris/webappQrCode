@@ -1,9 +1,18 @@
-/* 3220089_3220172  2025 */
+import { ApiError } from "../utils/apiError.js";
 
 export function errorHandler(err, req, res, next) {
-  const status = err.statusCode || 500;
-  res.status(status).json({
-    error: true,
-    message: err.message || "Server error",
+  console.error(err);
+
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      details: err.details || null,
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    message: "Internal server error",
   });
 }
