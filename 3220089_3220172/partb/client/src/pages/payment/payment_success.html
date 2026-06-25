@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Successful | Skanare</title>
+
+    <link rel="stylesheet" href="/assets/css/reset.css" />
+    <link rel="stylesheet" href="/assets/css/theme.css" />
+    <link rel="stylesheet" href="/assets/css/layout.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+
+    <script type="module" src="./payment_success.ts"></script>
+  </head>
+
+  <body>
+    <main class="payment-page">
+      <section class="payment-card success">
+        <div class="payment-icon">✅</div>
+
+        <p class="payment-eyebrow">Payment confirmed</p>
+        <h1>Thank you for your order</h1>
+
+        <p class="payment-copy">
+          Your payment was successful and your QR products are now active.
+        </p>
+
+        <div id="orderSummary" class="payment-summary">
+          <p>Loading order details...</p>
+        </div>
+
+        <div class="payment-actions">
+          <a href="/index.html#userDashboardHero" class="btn-primary">
+            View My QR Codes
+          </a>
+
+          <a href="/index.html" class="btn-secondary"> Continue Shopping </a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

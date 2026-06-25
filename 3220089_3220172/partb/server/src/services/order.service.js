@@ -196,29 +196,6 @@ export async function checkoutCartForOwner({
     for (const update of stockUpdates) tx.update(update.ref, update.patch);
     tx.set(db.collection(COLLECTIONS.ORDERS).doc(orderId), order);
 
-    for (const item of orderItems) {
-      if (!item.customQr) continue;
-      const qrId = createId("qr");
-      tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
-        id: qrId,
-        userId: ownerType === "user" ? ownerId : null,
-        guestId: ownerType === "guest" ? ownerId : null,
-        orderId,
-        productId: item.productId,
-        productTitle: item.title,
-        targetUrl: item.qrDestination || "",
-        scans: 0,
-        createdAt,
-        updatedAt: createdAt,
-      });
-    }
-
-    tx.set(
-      cartRef,
-      { userId: ownerId, items: [], updatedAt: createdAt },
-      { merge: true }
-    );
-
     return {
       orderId,
       orderNumber,
@@ -261,4 +238,26 @@ export async function getOrderByIdForUser(userId, orderId) {
     throw new ApiError(403, "You do not have access to this order");
   }
   return order;
+}
+
+export async function getOrderByVivaOrderCodeForUser(userId, vivaOrderCode) {
+  if (!userId) throw new ApiError(401, "Missing user id");
+  if (!vivaOrderCode) throw new ApiError(400, "Missing Viva order code");
+
+  const db = getDB();
+
+  const snapshot = await db
+    .collection(COLLECTIONS.ORDERS)
+    .where("ownerId", "==", userId)
+    .where("ownerType", "==", "user")
+    .where("payment.vivaOrderCode", "==", String(vivaOrderCode))
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  const doc = snapshot.docs[0];
+  return { id: doc.id, ...doc.data() };
 }

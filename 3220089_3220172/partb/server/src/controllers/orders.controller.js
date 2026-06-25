@@ -3,6 +3,7 @@ import { ok } from "../utils/response.js";
 import {
   getOrdersForUser,
   getOrderByIdForUser,
+  getOrderByVivaOrderCodeForUser,
 } from "../services/order.service.js";
 
 export const listOrders = asyncHandler(async (req, res) => {
@@ -12,5 +13,14 @@ export const listOrders = asyncHandler(async (req, res) => {
 
 export const getOrder = asyncHandler(async (req, res) => {
   const order = await getOrderByIdForUser(req.user.uid, req.params.orderId);
+  return ok(res, { order });
+});
+
+export const getOrderByVivaCode = asyncHandler(async (req, res) => {
+  const order = await getOrderByVivaOrderCodeForUser(
+    req.user.uid,
+    req.params.vivaOrderCode
+  );
+
   return ok(res, { order });
 });

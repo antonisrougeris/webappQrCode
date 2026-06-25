@@ -6,7 +6,7 @@ const VIVA_LIVE_API = "https://api.vivapayments.com";
 const VIVA_DEMO_ACCOUNTS = "https://demo-accounts.vivapayments.com";
 const VIVA_LIVE_ACCOUNTS = "https://accounts.vivapayments.com";
 
-const VIVA_DEMO_CHECKOUT = "https://demo.vivapayments.com/web/checkout";
+const VIVA_DEMO_CHECKOUT = "https://demo.vivapayments.com/web2";
 const VIVA_LIVE_CHECKOUT = "https://www.vivapayments.com/web/checkout";
 
 function isLive() {
@@ -23,6 +23,12 @@ function getVivaAccountsBase() {
 
 function getVivaCheckoutBase() {
   return isLive() ? VIVA_LIVE_CHECKOUT : VIVA_DEMO_CHECKOUT;
+}
+
+function getVivaWebBase() {
+  return isLive()
+    ? "https://www.vivapayments.com"
+    : "https://demo.vivapayments.com";
 }
 
 function getRequiredEnv(name) {
@@ -81,6 +87,14 @@ export async function createVivaPaymentOrder(order) {
     throw new ApiError(400, "Invalid payment amount");
   }
 
+  const successUrl = `${publicBaseUrl}/pages/payment/payment_success.html?orderId=${encodeURIComponent(
+    order.id
+  )}`;
+
+  const failureUrl = `${publicBaseUrl}/pages/payment/payment_failure.html?orderId=${encodeURIComponent(
+    order.id
+  )}`;
+
   const body = {
     amount: amountInCents,
     customerTrns: `Order ${order.orderNumber}`,
@@ -106,12 +120,10 @@ export async function createVivaPaymentOrder(order) {
 
     tags: ["skanare", order.id],
 
-    redirectUrl: `${publicBaseUrl}/payment-success.html?orderId=${encodeURIComponent(
-      order.id
-    )}`,
-    cancelUrl: `${publicBaseUrl}/payment-failure.html?orderId=${encodeURIComponent(
-      order.id
-    )}`,
+    successUrl,
+    failureUrl,
+    redirectUrl: successUrl,
+    cancelUrl: failureUrl,
 
     ...(sourceCode ? { sourceCode } : {}),
   };
@@ -139,6 +151,11 @@ export async function createVivaPaymentOrder(order) {
     throw new ApiError(502, "Viva did not return an order code", payload);
   }
 
+  console.log("====================================");
+  console.log("VIVA CREATE ORDER PAYLOAD:", payload);
+  console.log("VIVA ORDER CODE:", orderCode);
+  console.log("TYPE:", typeof orderCode);
+  console.log("====================================");
   return {
     vivaOrderCode: orderCode,
     checkoutUrl: `${getVivaCheckoutBase()}?ref=${encodeURIComponent(
@@ -146,4 +163,31 @@ export async function createVivaPaymentOrder(order) {
     )}`,
     raw: payload,
   };
+}
+
+export async function getVivaWebhookVerificationKey() {
+  const merchantId = getRequiredEnv("VIVA_MERCHANT_ID");
+  const apiKey = getRequiredEnv("VIVA_API_KEY");
+
+  const credentials = Buffer.from(`${merchantId}:${apiKey}`).toString("base64");
+
+  const response = await fetch(
+    `${getVivaWebBase()}/api/messages/config/token`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Basic ${credentials}`,
+      },
+    }
+  );
+
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+
+  if (!response.ok) {
+    console.error("Viva webhook key failed:", response.status, payload);
+    throw new ApiError(502, "Failed to get Viva webhook key", payload);
+  }
+
+  return payload;
 }

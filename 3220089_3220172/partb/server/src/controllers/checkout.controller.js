@@ -4,6 +4,7 @@ import { checkoutCartForOwner } from "../services/order.service.js";
 import { createVivaPaymentOrder } from "../services/viva.service.js";
 import { ApiError } from "../utils/apiError.js";
 import { checkoutSchema, parseOrThrow } from "../utils/validators.js";
+import { attachVivaPaymentToOrder } from "../services/payment.service.js";
 
 function getCheckoutOwner(req) {
   if (req.user?.uid) return { type: "user", id: req.user.uid };
@@ -25,6 +26,12 @@ export const checkout = asyncHandler(async (req, res) => {
   });
 
   const viva = await createVivaPaymentOrder(result.order);
+  await attachVivaPaymentToOrder({
+    orderId: result.orderId,
+    vivaOrderCode: viva.vivaOrderCode,
+    checkoutUrl: viva.checkoutUrl,
+    raw: viva.raw,
+  });
 
   return ok(
     res,

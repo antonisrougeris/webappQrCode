@@ -9,16 +9,30 @@ export interface QrCode {
   createdAt?: string;
 }
 
+type QrListResponse = {
+  qrCodes: QrCode[];
+};
+
+type QrUpdateResponse = {
+  qrCode: QrCode;
+};
+
 export async function getMyQrCodes(): Promise<QrCode[]> {
-  return apiRequest<QrCode[]>("/qr");
+  const res = await apiRequest<QrListResponse>("/qr-codes");
+  return Array.isArray(res.qrCodes) ? res.qrCodes : [];
 }
 
 export async function updateQrCode(
   qrId: string,
   targetUrl: string
 ): Promise<QrCode> {
-  return apiRequest<QrCode>(`/qr/${encodeURIComponent(qrId)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ targetUrl }),
-  });
+  const res = await apiRequest<QrUpdateResponse>(
+    `/qr-codes/${encodeURIComponent(qrId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ targetUrl }),
+    }
+  );
+
+  return res.qrCode;
 }

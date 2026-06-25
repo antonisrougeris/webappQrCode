@@ -21,6 +21,8 @@ import qrRoutes from "./routes/qr.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 
 import cookieParser from "cookie-parser";
+
+import vivaRoutes from "./routes/viva.routes.js";
 dotenv.config();
 
 const app = express();
@@ -31,6 +33,8 @@ app.use(cors(corsOptions()));
 app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(attachGuestSession);
+
+app.use("/api/viva", vivaRoutes);
 
 app.use(
   "/api",

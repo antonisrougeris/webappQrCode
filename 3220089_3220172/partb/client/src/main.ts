@@ -50,39 +50,56 @@ function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
       const safeTarget = escapeHtml(qr.targetUrl || "");
       const title = escapeHtml(qr.productTitle || "QR Product");
       const safeQrId = escapeHtml(qr.id);
+      const QR_REDIRECT_BASE_URL =
+        import.meta.env.VITE_QR_REDIRECT_BASE_URL ||
+        "https://redirectqr-qrk4dnnhta-ew.a.run.app";
+
+      const qrRedirectUrl = `${QR_REDIRECT_BASE_URL}/q/${encodeURIComponent(
+        qr.id
+      )}`;
+
+      const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+        qrRedirectUrl
+      )}`;
+
+      const safeQrImageUrl = escapeHtml(qrImageUrl);
 
       return `
-        <article class="dashboard-card qr-dashboard-card">
-          <div class="dashboard-card__head">
-            <div>
-              <p class="meta">QR product</p>
-              <h3>${title}</h3>
-            </div>
-            <span class="qr-scan-badge">${qr.scans ?? 0} scans</span>
-          </div>
+  <article class="dashboard-card qr-dashboard-card">
+    <p class="meta qr-card-meta">QR product</p>
 
-          <label class="qr-edit-label" for="input-${safeQrId}">
-            Destination URL
-          </label>
+    <img
+      class="qr-dashboard-image"
+      src="${safeQrImageUrl}"
+      alt="QR code for ${title}"
+      loading="lazy"
+    />
 
-          <div class="qr-edit-row">
-            <input
-              id="input-${safeQrId}"
-              class="qr-edit-input"
-              type="url"
-              value="${safeTarget}"
-              placeholder="https://example.com"
-            />
-            <button
-              type="button"
-              class="btn-primary qr-save-btn"
-              data-qr-id="${safeQrId}"
-            >
-              Save
-            </button>
-          </div>
-        </article>
-      `;
+    <h3 class="qr-dashboard-title">${title}</h3>
+    <span class="qr-scan-badge">${qr.scans ?? 0} scans</span>
+
+    <label class="qr-edit-label" for="input-${safeQrId}">
+      Destination URL
+    </label>
+
+    <div class="qr-edit-row">
+      <input
+        id="input-${safeQrId}"
+        class="qr-edit-input"
+        type="url"
+        value="${safeTarget}"
+        placeholder="https://example.com"
+      />
+      <button
+        type="button"
+        class="btn-primary qr-save-btn"
+        data-qr-id="${safeQrId}"
+      >
+        Save
+      </button>
+    </div>
+  </article>
+`;
     })
     .join("");
 
@@ -136,21 +153,25 @@ async function loadUserQrCodes(): Promise<void> {
   if (!grid) return;
 
   try {
+    const qrCodes = await getMyQrCodes();
+
+    if (!qrCodes.length) {
+      dashboardHero?.classList.add("hidden");
+      defaultHero?.classList.remove("hidden");
+      grid.innerHTML = "";
+      return;
+    }
+
     dashboardHero?.classList.remove("hidden");
     defaultHero?.classList.add("hidden");
 
-    grid.innerHTML = `<p class="meta">Loading your QR products...</p>`;
-
-    const qrCodes = await getMyQrCodes();
     renderQrDashboard(grid, qrCodes);
   } catch (error) {
     console.error("Failed to load user QR codes:", error);
 
-    grid.innerHTML = `
-      <div class="error-state">
-        <p>Could not load your QR products right now.</p>
-      </div>
-    `;
+    dashboardHero?.classList.add("hidden");
+    defaultHero?.classList.remove("hidden");
+    grid.innerHTML = "";
   }
 }
 
