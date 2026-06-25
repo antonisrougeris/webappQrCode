@@ -2538,3 +2538,45 @@ body.cart-open {
   flex: 1;
   min-width: 0;
 }
+
+
+
+
+
+.checkout-page__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  max-width: 320px;
+  height: 52px;
+
+  margin-top: 24px;
+  padding: 0 24px;
+
+  background: #111;
+  color: #fff;
+
+  border: none;
+  border-radius: 12px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.checkout-page__btn:hover {
+  background: #222;
+}
+
+.checkout-page__btn:active {
+  transform: scale(0.98);
+}
+
+.checkout-page__btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
