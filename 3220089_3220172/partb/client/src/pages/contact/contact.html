@@ -33,21 +33,29 @@
       <div class="nav-left">
         <a href="/src/pages/products/products.html?category=tshirt">QR Clothing</a>
         <a href="/src/pages/products/products.html?category=accessory">QR Accessories</a>
-        
       </div>
 
       <div class="nav-right">
-        <a href="/index.html#how">How it works</a>
+        <a href="#how">How it works</a>
 
-        <a href="/src/pages/login/login.html" class="icon-link" aria-label="Login or register">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="8" r="4"></circle>
-            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
-          </svg>
-        </a>
+        
+<div class="account-menu">
+
+  <button class="icon-link account-btn" type="button" aria-label="Account menu">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="8" r="4"></circle>
+      <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
+    </svg>
+  </button>
+
+  <div class="account-dropdown hidden"></div>
+
+</div>
+
       </div>
     </nav>
 
+  
     <a href="/index.html" class="logo">
       <img class="logo-img" src="/assets/img/logo_Image.png" alt="Skanare logo" />
       <span class="logo-text">Skanare</span>
@@ -109,8 +117,20 @@
     </form>
 
   </section>
+  
 
 </main>
+
+ <section id="how" class="section">
+      <div class="container">
+        <div class="section-head"><h2 class="section-title">How it works</h2></div>
+        <div class="grid grid-3 how-it-works">
+          <article class="card step"><h3>Choose product</h3><p class="meta">Pick a t-shirt, hoodie or accessory.</p></article>
+          <article class="card step"><h3>Add your QR link</h3><p class="meta">Enter the URL, social profile or text you want to open.</p></article>
+          <article class="card step"><h3>Change it anytime</h3><p class="meta">After purchase, edit the QR destination without replacing the shirt.</p></article>
+        </div>
+      </div>
+    </section>
 
   <footer class="site-footer">
     <div class="container footer-grid">
@@ -120,6 +140,16 @@
     </div>
     <div class="container footer-bottom"><small>&copy; 2025 QRWEAR.</small></div>
   </footer>
+  <div id="cartOverlay" class="cart-overlay hidden"></div>
+
+  <aside id="cartDrawer" class="cart-drawer hidden">
+    <header class="cart-header">
+      <h2>Your Cart</h2>
+      <button id="closeCart" type="button">✕</button>
+    </header>
+  
+    <div id="cartDrawerContent"></div>
+  </aside>
 
 
   <!-- SIMPLE FORM SCRIPT -->
@@ -145,6 +175,7 @@
       }
     });
   </script>
+  <script type="module" src="/src/pages/cart/cart.ts"></script>
 
 </body>
 </html>

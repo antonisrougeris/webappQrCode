@@ -4,6 +4,8 @@ import { signOut } from "firebase/auth";
 import { firebaseAuth } from "../services/firebase";
 import { removeToken } from "../services/auth";
 
+import { transferCartToGuest } from "../services/cart";
+
 export function initNav() {
   const btn = document.querySelector(".account-btn") as HTMLElement | null;
   const dropdown = document.querySelector(
@@ -53,21 +55,20 @@ export function initNav() {
     const logoutBtn = document.getElementById("logoutBtn");
 
     logoutBtn?.addEventListener("click", async (e) => {
-      e.stopPropagation();
+  e.stopPropagation();
 
-      try {
-        // Firebase logout
-        await signOut(firebaseAuth);
+  try {
+    await transferCartToGuest();
 
-        // Local token cleanup
-        removeToken();
+    await signOut(firebaseAuth);
 
-        // Redirect home
-        window.location.href = "/index.html";
-      } catch (err) {
-        console.error("Logout failed:", err);
-      }
-    });
+    removeToken();
+
+    window.location.href = "/index.html";
+  } catch (err) {
+    console.error("Logout failed:", err);
+  }
+});
 
     // Hover open
     btn.addEventListener("mouseenter", () => {

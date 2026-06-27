@@ -3,6 +3,47 @@
 import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";
 import { checkout } from "../../services/checkout";
+const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
+
+function saveCheckoutDraft(formEl: HTMLFormElement): void {
+  const form = new FormData(formEl);
+  const draft: Record<string, string> = {};
+
+  form.forEach((value, key) => {
+    draft[key] = String(value);
+  });
+
+  localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+}
+
+function restoreCheckoutDraft(): void {
+  const raw = localStorage.getItem(CHECKOUT_DRAFT_KEY);
+  if (!raw) return;
+
+  try {
+    const draft = JSON.parse(raw) as Record<string, string>;
+
+    Object.entries(draft).forEach(([key, value]) => {
+      const el = document.querySelector<HTMLInputElement>(
+        `[name="${CSS.escape(key)}"]`
+      );
+
+      if (!el) return;
+
+      if (el.type === "radio") {
+        const radio = document.querySelector<HTMLInputElement>(
+          `input[name="${CSS.escape(key)}"][value="${CSS.escape(value)}"]`
+        );
+        if (radio) radio.checked = true;
+        return;
+      }
+
+      el.value = value;
+    });
+  } catch {
+    localStorage.removeItem(CHECKOUT_DRAFT_KEY);
+  }
+}
 
 let discount = 0;
 
@@ -163,6 +204,7 @@ function getRequiredFormString(
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  restoreCheckoutDraft();
   void render();
 
   firebaseAuth.onAuthStateChanged(() => {
@@ -203,10 +245,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const user = firebaseAuth.currentUser;
 
       if (!user) {
-        alert("Please sign in or create an account before checkout.");
-        window.location.href = "/login.html?redirect=/checkout.html";
-        return;
-      }
+  saveCheckoutDraft(e.target as HTMLFormElement);
+
+  alert("Please sign in or create an account before checkout.");
+
+  window.location.href =
+    "/src/pages/login/login.html?redirect=" +
+    encodeURIComponent("/src/pages/checkout/checkout.html");
+
+  return;
+}
 
       const submitButton = document.querySelector<HTMLButtonElement>(
         "#checkoutForm button[type='submit']"

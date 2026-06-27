@@ -70,3 +70,12 @@ export async function removeCartItem(itemId: string): Promise<Cart> {
 
   return res.cart;
 }
+
+
+export async function transferCartToGuest(): Promise<Cart> {
+  const res = await apiRequest<{ cart: Cart }>("/cart/transfer-to-guest", {
+    method: "POST",
+  });
+
+  return res.cart;
+}

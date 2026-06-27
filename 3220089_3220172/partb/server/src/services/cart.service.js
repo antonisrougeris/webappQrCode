@@ -254,3 +254,104 @@ export async function clearCart(userId) {
 
   return nextCart;
 }
+
+
+export async function mergeGuestCartIntoUserCart({ guestId, userId }) {
+  if (!guestId || !userId || guestId === userId) {
+    return getCartByUserId(userId);
+  }
+
+  const db = getDB();
+
+  const guestCart = await getCartByUserId(guestId);
+  const userCart = await getCartByUserId(userId);
+
+if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
+  const now = nowIso();
+
+  const nextUserCart = {
+    userId,
+    items: Array.isArray(guestCart.items)
+      ? guestCart.items.map((item) => ({
+          ...item,
+          updatedAt: now,
+        }))
+      : [],
+    updatedAt: now,
+  };
+
+  await db.collection(COLLECTIONS.CARTS).doc(userId).set(nextUserCart);
+  await db.collection(COLLECTIONS.CARTS).doc(guestId).delete();
+
+  return nextUserCart;
+}
+  const mergedItems = [...(userCart.items || [])];
+
+  for (const guestItem of guestCart.items || []) {
+    const sameIndex = mergedItems.findIndex((item) => {
+      const sameProduct = item.productId === guestItem.productId;
+      const sameQr = (item.qrDestination || null) === (guestItem.qrDestination || null);
+      const sameSku = (item.variant?.sku || "") === (guestItem.variant?.sku || "");
+
+      return sameProduct && sameQr && sameSku;
+    });
+
+    if (sameIndex >= 0) {
+      mergedItems[sameIndex] = {
+        ...mergedItems[sameIndex],
+        quantity:
+          Number(mergedItems[sameIndex].quantity || 0) +
+          Number(guestItem.quantity || 0),
+        updatedAt: nowIso(),
+      };
+    } else {
+      mergedItems.push({
+        ...guestItem,
+        id: guestItem.id || createId("cartitem"),
+        updatedAt: nowIso(),
+      });
+    }
+  }
+
+  const nextUserCart = {
+    userId,
+    items: mergedItems,
+    updatedAt: nowIso(),
+  };
+
+  await db.collection(COLLECTIONS.CARTS).doc(userId).set(nextUserCart, {
+    merge: true,
+  });
+
+  await db.collection(COLLECTIONS.CARTS).doc(guestId).delete();
+
+  return nextUserCart;
+}
+
+export async function copyUserCartToGuestCart({ userId, guestId }) {
+  if (!userId) throw new ApiError(401, "Missing user id");
+  if (!guestId) throw new ApiError(400, "Missing guest id");
+
+  const db = getDB();
+
+  const userCart = await getCartByUserId(userId);
+  const now = nowIso();
+
+  const guestCart = {
+    userId: guestId,
+    sourceUserId: userId,
+    copiedFromUserCart: true,
+    items: Array.isArray(userCart.items)
+      ? userCart.items.map((item) => ({
+          ...item,
+          id: item.id || createId("cartitem"),
+          updatedAt: now,
+        }))
+      : [],
+    updatedAt: now,
+  };
+
+  await db.collection(COLLECTIONS.CARTS).doc(guestId).set(guestCart);
+
+  return guestCart;
+}

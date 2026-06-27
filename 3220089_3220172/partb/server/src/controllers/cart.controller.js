@@ -11,6 +11,7 @@ import {
   getCartByUserId,
   removeCartItem,
   updateCartItem,
+  copyUserCartToGuestCart,
 } from "../services/cart.service.js";
 
 export const getCart = asyncHandler(async (req, res) => {
@@ -19,6 +20,30 @@ export const getCart = asyncHandler(async (req, res) => {
 const cart = await getCartByUserId(owner.id);
 
   return ok(res, { cart });
+});
+
+export const transferCartToGuest = asyncHandler(async (req, res) => {
+  if (!req.user?.uid) {
+    throw new Error("Missing authenticated user");
+  }
+
+  let guestId = req.guestId;
+
+  if (!guestId) {
+    const { createGuestId, setGuestCookie } = await import(
+      "../middleware/guestSession.js"
+    );
+
+    guestId = createGuestId();
+    setGuestCookie(res, guestId);
+  }
+
+  const cart = await copyUserCartToGuestCart({
+    userId: req.user.uid,
+    guestId,
+  });
+
+  return ok(res, { cart, guestId });
 });
 
 export const addToCart = asyncHandler(async (req, res) => {

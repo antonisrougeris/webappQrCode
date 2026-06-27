@@ -2580,3 +2580,53 @@ body.cart-open {
   background: #999;
   cursor: not-allowed;
 }
+
+
+
+@media (max-width: 900px) {
+  .checkout-page {
+    padding: 32px 14px;
+  }
+
+  .checkout-page__container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .checkout-page__form {
+    order: 1;
+    padding: 22px;
+  }
+
+  .checkout-page__summary {
+    order: 2;
+    padding: 22px;
+  }
+
+  .checkout-page__form .row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .checkout-discount {
+    flex-direction: column;
+  }
+
+  .checkout-item {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .checkout-item strong {
+    grid-column: 2;
+  }
+
+  .checkout-page__btn {
+    max-width: none;
+    width: 100%;
+    position: sticky;
+    bottom: 14px;
+    z-index: 50;
+  }
+}
