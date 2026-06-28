@@ -6,6 +6,8 @@ import {
 
 import { showFlashToast } from "../../utils/toast.ts";
 
+import { apiRequest } from "../../services/api";
+
 const form = document.getElementById("verifyEmailForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
 const resendBtn = document.getElementById("resendCode") as HTMLButtonElement | null;
@@ -101,6 +103,14 @@ form?.addEventListener("submit", async (event) => {
     if (statusEl) statusEl.textContent = "Verifying...";
 
     await verifyEmailCode(otp);
+
+    try {
+  await apiRequest("/cart/merge-guest", {
+    method: "POST",
+  });
+} catch (mergeError) {
+  console.warn("Guest cart merge after verification failed:", mergeError);
+}
 
     if (statusEl) statusEl.textContent = "Email verified. Redirecting...";
 
