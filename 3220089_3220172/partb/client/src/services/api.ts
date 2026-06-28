@@ -3,6 +3,8 @@
 
 import { firebaseAuth } from "./firebase";
 import { getToken, saveToken } from "./auth";
+import type { ProductVariant } from "./products";
+import { addCartItem } from "./cart";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://cldrq5-4000.csb.app/api";
@@ -155,4 +157,15 @@ export async function verifyEmailCode(otp: string): Promise<void> {
     method: "POST",
     body: JSON.stringify({ otp }),
   });
+}
+
+export interface AddToCartInput {
+  productId: string;
+  quantity?: number;
+  variant?: ProductVariant | null;
+  qrDestination?: string;
+}
+
+export async function addToCart(payload: AddToCartInput) {
+  return addCartItem(payload);
 }

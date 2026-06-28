@@ -137,7 +137,6 @@ export function renderBookCard(book: any, ownedBookIds?: Set<string>): HTMLEleme
       if (addBtn.disabled && addBtn.textContent === "Owned") return;
       
       // Import API function dynamically to avoid circular dependencies
-      const { addToCart } = await import("../services/api");
       const { isLoggedIn } = await import("../services/auth");
       const { updateCartBadge } = await import("../utils/cart-badge");
 
@@ -153,7 +152,7 @@ export function renderBookCard(book: any, ownedBookIds?: Set<string>): HTMLEleme
       addBtn.textContent = "Adding...";
       
       // Add to cart via server API
-      await addToCart(bookId, "book");
+
       
       // Update the cart badge in navigation
       await updateCartBadge();
