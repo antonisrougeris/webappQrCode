@@ -1,6 +1,8 @@
 /* 3220089_3220172 */
 
-import { getToken } from "./auth";
+
+import { firebaseAuth } from "./firebase";
+import { getToken, saveToken } from "./auth";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://cldrq5-4000.csb.app/api";
@@ -12,11 +14,20 @@ export interface ApiEnvelope<T> {
   error?: string;
 }
 
-function buildHeaders(init?: HeadersInit): Headers {
+async function buildHeaders(init?: HeadersInit): Promise<Headers> {
   const headers = new Headers(init || {});
 
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+
+  const user = firebaseAuth.currentUser;
+
+  if (user) {
+    const freshToken = await user.getIdToken();
+    saveToken(freshToken);
+    headers.set("Authorization", `Bearer ${freshToken}`);
+    return headers;
   }
 
   const token = getToken();
@@ -27,7 +38,6 @@ function buildHeaders(init?: HeadersInit): Headers {
 
   return headers;
 }
-
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
@@ -35,7 +45,7 @@ export async function apiRequest<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     credentials: "include",
-    headers: buildHeaders(options.headers),
+    headers: await buildHeaders(options.headers),
   });
 
   if (response.status === 204) {
