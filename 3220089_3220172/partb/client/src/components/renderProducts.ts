@@ -1,4 +1,4 @@
-import type { Product } from "../services/api.products";
+import type { Product } from "../services/products";
 
 function formatPrice(value: number): string {
   return new Intl.NumberFormat("el-GR", {
