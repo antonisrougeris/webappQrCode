@@ -2,9 +2,9 @@ import { apiRequest } from "./api";
 import type { ProductVariant } from "./products";
 
 export interface CartItem {
-  _id: string | undefined;
-  id?: string;
-  itemId?: string;
+  selectedVariant: { sku?: string; size?: string; color?: string; stock?: number; } | null | undefined;
+  priceEUR: any;
+  id: string;
   productId: string;
   title: string;
   slug?: string;
@@ -12,9 +12,13 @@ export interface CartItem {
   currency?: string;
   quantity: number;
   image?: string;
-  variant?: ProductVariant | null;
+  variant?: {
+    sku?: string;
+    size?: string;
+    color?: string;
+    stock?: number;
+  } | null;
   qrDestination?: string;
-  lineTotal?: number;
 }
 
 export interface Cart {

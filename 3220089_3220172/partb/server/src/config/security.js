@@ -15,10 +15,18 @@ export function corsOptions() {
 
   return {
     origin(origin, callback) {
-      if (!origin && !isProduction) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
-    },
+  if (!origin) return callback(null, true);
+
+  const allowed = getAllowedOrigins();
+
+  if (allowed.includes(origin)) {
+    return callback(null, true);
+  }
+
+  console.warn("Blocked CORS origin:", origin);
+
+  return callback(null, false); // NO crash
+},
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

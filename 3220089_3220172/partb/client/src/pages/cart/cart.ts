@@ -13,15 +13,32 @@ import {
 } from "../../services/cart";
 import { getProducts, type Product } from "../../services/products";
 
-import { showToast } from "../../utils/toast.ts";
-
 initNav();
 initMobileMenu();
 
 const FREE_SHIPPING_TARGET = 50;
 const FREE_STICKERS_TARGET = 80;
 
+function showToast(message: string): void {
+  let stack = document.getElementById("toastStack");
 
+  if (!stack) {
+    stack = document.createElement("div");
+    stack.id = "toastStack";
+    stack.className = "toast-stack";
+    document.body.appendChild(stack);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "toast-message";
+  toast.textContent = message;
+  stack.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+    if (stack && stack.children.length === 0) stack.remove();
+  }, 3000);
+}
 
 function formatPrice(value: number): string {
   return new Intl.NumberFormat("el-GR", {
@@ -47,7 +64,7 @@ function getCartTotal(cart: Cart | null | undefined): number {
   }
 
   return getCartItems(cart).reduce((sum, item) => {
-    const price = Number(item.unitPrice ?? item.price ?? 0);
+    const price = Number( item.price ?? 0);
     const quantity = Number(item.quantity || 0);
     return sum + price * quantity;
   }, 0);
@@ -67,14 +84,14 @@ function getCartCount(cart: Cart | null | undefined): number {
 }
 
 function getCartItemKey(item: CartItem, index: number): string {
-  return String(item.id || item._id || item.cartItemId || index);
+  return String(item.id || index);
 }
 
 function getCartItemProductId(item: CartItem): string {
   if (typeof item.productId === "string") return item.productId;
 
-  if (item.product && typeof item.product === "object") {
-    return item.product.id || item.product._id || item.product.slug || "";
+  if (item.productId && typeof item.productId === "object") {
+    return item.productId ||  "";
   }
 
   return "";
@@ -82,23 +99,22 @@ function getCartItemProductId(item: CartItem): string {
 
 function getCartItemTitle(item: CartItem): string {
   if (item.title) return item.title;
-  if (item.product?.title) return item.product.title;
+  if (item.title) return item.title;
   return "Product";
 }
 
 function getCartItemImage(item: CartItem): string {
   if (item.image) return item.image;
-  if (item.product?.image) return item.product.image;
-  if (item.product?.images?.[0]) return item.product.images[0];
+  if (item.image) return item.image;
   return "/assets/img/logo_Image.png";
 }
 
 function getCartItemUnitPrice(item: CartItem): number {
-  if (typeof item.unitPrice === "number") return item.unitPrice;
+  if (typeof item.price === "number") return item.price;
   if (typeof item.price === "number") return item.price;
   if (typeof item.priceEUR === "number") return item.priceEUR;
-  if (typeof item.product?.price === "number") return item.product.price;
-  if (typeof item.product?.priceEUR === "number") return item.product.priceEUR;
+  if (typeof item.price === "number") return item.price;
+  if (typeof item.priceEUR === "number") return item.priceEUR;
   return 0;
 }
 
@@ -107,7 +123,7 @@ function getCartItemVariant(item: CartItem) {
 }
 
 function getCartItemQr(item: CartItem): string {
-  return item.qrDestination || item.qrCodeUrl || "";
+  return item.qrDestination || "";
 }
 
 function getItemAvailableStock(item: CartItem): number {
@@ -117,8 +133,8 @@ function getItemAvailableStock(item: CartItem): number {
     return variant.stock;
   }
 
-  if (typeof item.product?.stock === "number") {
-    return item.product.stock;
+  if (typeof item.variant?.stock === "number") {
+    return item.variant.stock;
   }
 
   return 99;

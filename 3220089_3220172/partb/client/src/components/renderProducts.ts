@@ -20,6 +20,8 @@ export function renderProducts(container: HTMLElement, products: Product[]): voi
 
     const image = getProductImage(product);
     const productId = product.id || product._id;
+    if (!productId) return;
+
     const href = `/src/pages/product-details/product-details.html?id=${encodeURIComponent(productId)}`;
 
     const badgeText = product.badge || (product.featured ? "Featured" : "");
@@ -38,7 +40,7 @@ export function renderProducts(container: HTMLElement, products: Product[]): voi
         <div class="product-body">
           <div class="product-row">
             <h3>${product.title}</h3>
-            <p class="price">${formatPrice(product.priceEUR)}</p>
+            <p class="price">${formatPrice(product.price)}</p>
           </div>
 
           <p class="meta">${product.shortDescription || "Custom QR product"}</p>
