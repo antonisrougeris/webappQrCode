@@ -3,10 +3,13 @@
 import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";
 import { checkout } from "../../services/checkout";
+import { getMe } from "../../services/api";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
+import { setFlashToast } from "../../utils/toast.ts";
+
 
 function saveCheckoutDraft(formEl: HTMLFormElement): void {
-  const form = new FormData(formEl);
+  const form = new FormData(formEl)
   const draft: Record<string, string> = {};
 
   form.forEach((value, key) => {
@@ -103,7 +106,10 @@ function setPayButtonState(): void {
   } else {
     button.textContent = "Pay with viva.com";
   }
+  
 }
+
+
 
 async function render(): Promise<void> {
   const cart = await getCart();
@@ -203,6 +209,8 @@ function getRequiredFormString(
   return value;
 }
 
+
+
 document.addEventListener("DOMContentLoaded", () => {
   restoreCheckoutDraft();
   void render();
@@ -228,10 +236,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (code === "SKANARE10") {
       discount = 10;
-      alert("10% discount applied ✅");
+      setFlashToast("10% discount applied ✅");
     } else {
       discount = 0;
-      alert("Invalid code");
+      setFlashToast("Invalid code");
     }
 
     void render();
@@ -247,12 +255,23 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!user) {
   saveCheckoutDraft(e.target as HTMLFormElement);
 
-  alert("Please sign in or create an account before checkout.");
+  setFlashToast("Please sign in or create an account before checkout.");
 
   window.location.href =
     "/src/pages/login/login.html?redirect=" +
     encodeURIComponent("/src/pages/checkout/checkout.html");
+  return;
+}
+const me = await getMe();
 
+if (!me?.emailVerified) {
+  saveCheckoutDraft(e.target as HTMLFormElement);
+
+  setFlashToast("Please verify your email before checkout.");
+
+  window.location.href =
+    "/src/pages/verify-email/verify-email.html?redirect=" +
+    encodeURIComponent("/src/pages/checkout/checkout.html");
   return;
 }
 
@@ -322,10 +341,10 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        alert("Order created, but payment URL was not returned.");
+        setFlashToast("Order created, but payment URL was not returned.");
       } catch (error) {
         console.error("Checkout failed:", error);
-        alert(error instanceof Error ? error.message : "Checkout failed.");
+        setFlashToast(error instanceof Error ? error.message : "Checkout failed.");
       } finally {
         submitButton && (submitButton.disabled = false);
         setPayButtonState();

@@ -2,6 +2,7 @@ import { apiRequest } from "./api";
 import type { ProductVariant } from "./products";
 
 export interface CartItem {
+  _id: string | undefined;
   id?: string;
   itemId?: string;
   productId: string;

@@ -1,3 +1,5 @@
+import { firebaseAuth } from "../../services/firebase";
+import { saveToken } from "../../services/auth";
 import { apiRequest } from "../../services/api";
 
 interface Order {
@@ -43,6 +45,33 @@ function getOrderLookup(): { type: "id" | "viva"; value: string } | null {
   return null;
 }
 
+function waitForAuthReady(timeoutMs = 4000): Promise<boolean> {
+  return new Promise((resolve) => {
+    let resolved = false;
+
+    const timer = window.setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
+      unsubscribe();
+      resolve(Boolean(firebaseAuth.currentUser));
+    }, timeoutMs);
+
+    const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
+      if (resolved) return;
+      resolved = true;
+      window.clearTimeout(timer);
+
+      if (user) {
+        const token = await user.getIdToken(true);
+        saveToken(token);
+      }
+
+      unsubscribe();
+      resolve(Boolean(user));
+    });
+  });
+}
+
 async function loadOrder(): Promise<void> {
   const container = document.getElementById("orderSummary");
   if (!container) return;
@@ -50,11 +79,11 @@ async function loadOrder(): Promise<void> {
   const lookup = getOrderLookup();
 
   if (!lookup) {
-    container.innerHTML = `
-      <p>Payment completed, but no order ID was provided.</p>
-    `;
+    container.innerHTML = `<p>Payment completed, but no order ID was provided.</p>`;
     return;
   }
+
+  container.innerHTML = `<p>Loading your order...</p>`;
 
   try {
     const path =
@@ -63,7 +92,6 @@ async function loadOrder(): Promise<void> {
         : `/orders/viva/${encodeURIComponent(lookup.value)}`;
 
     const res = await apiRequest<{ order: Order }>(path);
-
     const order = res.order;
 
     container.innerHTML = `
@@ -74,10 +102,7 @@ async function loadOrder(): Promise<void> {
 
       <div class="payment-summary-row">
         <span>Amount Paid</span>
-        <strong>${formatPrice(
-          order.total || 0,
-          order.currency || "EUR"
-        )}</strong>
+        <strong>${formatPrice(order.total || 0, order.currency || "EUR")}</strong>
       </div>
 
       <div class="payment-summary-row">
@@ -100,11 +125,19 @@ async function loadOrder(): Promise<void> {
 
     container.innerHTML = `
       <p>Your payment was successful.</p>
+      <p>We are finalizing your order details. Please refresh in a few seconds.</p>
       <p>Order reference: <strong>${lookup.value}</strong></p>
-          `;
+    `;
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  void loadOrder();
+document.addEventListener("DOMContentLoaded", async () => {
+  const authed = await waitForAuthReady();
+
+  console.log("Payment success auth:", {
+    authed,
+    currentUser: firebaseAuth.currentUser?.uid || null,
+  });
+
+  await loadOrder();
 });

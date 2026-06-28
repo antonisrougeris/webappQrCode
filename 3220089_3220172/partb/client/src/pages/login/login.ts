@@ -10,8 +10,11 @@ import { initNav } from "../../components/initNav";
 import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
 import { firebaseAuth } from "../../services/firebase";
-import { saveToken } from "../../services/auth";
+import { removeToken, saveToken } from "../../services/auth";
 import { login, register } from "../../services/api";
+
+
+import { showFlashToast } from "../../utils/toast.ts";
 
 const form = document.getElementById("loginForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
@@ -19,6 +22,10 @@ const googleBtn = document.querySelector<HTMLButtonElement>(".auth-google");
 const registerLink = document.getElementById(
   "registerLink"
 ) as HTMLAnchorElement | null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  showFlashToast();
+});
 
 function getRedirectUrl(): string {
   const redirect = new URLSearchParams(window.location.search).get("redirect");
@@ -67,7 +74,19 @@ if (form) {
         email,
         password
       );
+await credentials.user.reload();
 
+if (!credentials.user.emailVerified) {
+  await firebaseAuth.signOut();
+  removeToken();
+
+  if (statusEl) {
+    statusEl.textContent =
+      "Please verify your email before continuing. Check your inbox.";
+  }
+
+  return;
+}
       const token = await credentials.user.getIdToken();
       saveToken(token);
 

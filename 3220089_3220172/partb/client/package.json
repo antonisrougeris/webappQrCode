@@ -9,7 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "firebase": "^12.6.0"
+    "firebase": "^12.6.0",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

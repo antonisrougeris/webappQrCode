@@ -97,6 +97,8 @@ export interface AuthUser {
   role?: string;
   createdAt?: string;
   updatedAt?: string;
+  emailVerified?: boolean;
+emailVerifiedAt?: string;
 }
 
 export interface AuthResponse {
@@ -140,4 +142,17 @@ export async function getMe(): Promise<AuthUser | null> {
   }
 
   return response.user || response.data || null;
+}
+
+export async function sendVerificationCode(): Promise<void> {
+  await apiRequest("/auth/send-verification", {
+    method: "POST",
+  });
+}
+
+export async function verifyEmailCode(otp: string): Promise<void> {
+  await apiRequest("/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ otp }),
+  });
 }

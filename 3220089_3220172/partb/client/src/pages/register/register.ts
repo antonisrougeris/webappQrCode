@@ -11,7 +11,7 @@ import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
 import { firebaseAuth } from "../../services/firebase";
 import { saveToken } from "../../services/auth";
-import { register } from "../../services/api";
+import { register, sendVerificationCode } from "../../services/api";
 
 initNav();
 void updateCartBadge();
@@ -58,6 +58,12 @@ form?.addEventListener("submit", async (e) => {
       password
     );
 
+await sendVerificationCode();
+
+window.location.href =
+  "/src/pages/verify-email/verify-email.html?redirect=" +
+  encodeURIComponent(getRedirectUrl());
+
     const token = await credentials.user.getIdToken();
     saveToken(token);
 
@@ -70,10 +76,13 @@ form?.addEventListener("submit", async (e) => {
     });
 
     if (statusEl) {
-      statusEl.textContent = "Registration successful! Redirecting...";
-    }
+  statusEl.textContent =
+    "Registration successful. Please check your email to verify your account.";
+}
 
-    goToRedirect();
+  await firebaseAuth.signOut();
+
+return;
   } catch (err: any) {
     console.error("Register error:", err);
 

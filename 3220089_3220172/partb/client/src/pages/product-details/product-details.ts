@@ -12,6 +12,9 @@ import {
 } from "../../services/products";
 import { addCartItem } from "../../services/cart";
 
+import { showToast } from "../../utils/toast.ts";
+
+
 initNav();
 initMobileMenu();
 void updateCartBadge();
@@ -34,26 +37,7 @@ function formatPrice(value: number): string {
   }).format(value || 0);
 }
 
-function showToast(message: string): void {
-  let stack = document.getElementById("toastStack");
 
-  if (!stack) {
-    stack = document.createElement("div");
-    stack.id = "toastStack";
-    stack.className = "toast-stack";
-    document.body.appendChild(stack);
-  }
-
-  const toast = document.createElement("div");
-  toast.className = "toast-message";
-  toast.textContent = message;
-  stack.appendChild(toast);
-
-  setTimeout(() => {
-    toast.remove();
-    if (stack && stack.children.length === 0) stack.remove();
-  }, 3200);
-}
 
 function openExistingCartDrawer(): void {
   const cartLink = document.querySelector<HTMLElement>(

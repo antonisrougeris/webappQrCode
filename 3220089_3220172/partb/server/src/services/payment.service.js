@@ -3,6 +3,8 @@ import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
 
+import { sendPaidOrderEmails } from "./order-email.service.js";
+
 function getEventData(payload) {
   return payload?.EventData || payload?.eventData || payload?.data || payload;
 }
@@ -105,6 +107,7 @@ export async function attachVivaPaymentToOrder({
 }
 
 export async function markOrderPaidFromVivaWebhook(payload) {
+  let paidOrderForEmail = null;
   const data = getEventData(payload);
 
   const vivaOrderCode = String(
@@ -129,13 +132,21 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
   const amount = toCents(getVivaField(data, ["Amount", "amount"]));
 
+  console.log("========== PAYMENT WEBHOOK PARSED ==========");
+  console.log({
+    vivaOrderCode,
+    transactionId,
+    rawStatusId,
+    amount,
+    successful: isSuccessfulVivaPayment(data),
+  });
+
   if (!vivaOrderCode || !transactionId) {
     console.warn("Viva webhook ignored: invalid payload", {
       vivaOrderCode,
       transactionId,
       payload,
     });
-
     return;
   }
 
@@ -145,7 +156,6 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       transactionId,
       statusId: rawStatusId,
     });
-
     return;
   }
 
@@ -153,29 +163,36 @@ export async function markOrderPaidFromVivaWebhook(payload) {
   const paidAt = nowIso();
 
   await db.runTransaction(async (tx) => {
-    // READ 1: find order
     const found = await findOrderByVivaOrderCode(tx, db, vivaOrderCode);
 
     if (!found) {
+      console.warn("Webhook transaction stopped: order not found");
       return;
     }
 
     const { ref, order } = found;
 
-    // READ 2: check if QR already created for this order
-    // Πρέπει να γίνει ΠΡΙΝ από οποιοδήποτε tx.update / tx.set.
+    console.log("Order found for webhook:", {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      paymentStatus: order.paymentStatus,
+      customerEmail: order.customer?.email,
+      hasEmails: Boolean(order.emails?.paidOrderSentAt),
+    });
+
+    if (order.paymentStatus === "paid") {
+      console.log("Order already paid. Will still attempt email if needed.", {
+        orderId: order.id,
+        emailsSent: Boolean(order.emails?.paidOrderSentAt),
+      });
+
+      paidOrderForEmail = order;
+      return;
+    }
+
     const existingQrSnap = await tx.get(
       db.collection(COLLECTIONS.QR_CODES).where("orderId", "==", order.id)
     );
-
-    if (order.paymentStatus === "paid") {
-      console.log("Viva webhook ignored: order already paid", {
-        orderId: order.id,
-        vivaOrderCode,
-      });
-
-      return;
-    }
 
     const expectedAmount = Math.round(Number(order.total || 0) * 100);
 
@@ -188,7 +205,6 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       });
     }
 
-    // WRITE 1: mark order paid
     tx.update(ref, {
       status: "paid",
       paymentStatus: "paid",
@@ -203,7 +219,6 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       updatedAt: paidAt,
     });
 
-    // WRITE 2: create QR codes only once
     if (existingQrSnap.empty) {
       for (const item of order.items || []) {
         if (!item.customQr) continue;
@@ -225,7 +240,22 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       }
     }
 
-    // WRITE 3: clear cart only after confirmed payment
+    paidOrderForEmail = {
+      ...order,
+      status: "paid",
+      paymentStatus: "paid",
+      payment: {
+        ...(order.payment || {}),
+        transactionId,
+        statusId: rawStatusId || null,
+        amount: amount || expectedAmount,
+        rawWebhook: payload,
+        paidAt,
+        updatedAt: paidAt,
+      },
+      updatedAt: paidAt,
+    };
+
     tx.set(
       db.collection(COLLECTIONS.CARTS).doc(order.ownerId),
       {
@@ -236,4 +266,25 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       { merge: true }
     );
   });
+
+  console.log("After transaction paidOrderForEmail:", {
+    exists: Boolean(paidOrderForEmail),
+    orderId: paidOrderForEmail?.id,
+    emailAlreadySent: Boolean(paidOrderForEmail?.emails?.paidOrderSentAt),
+  });
+
+  if (paidOrderForEmail) {
+    try {
+      console.log("Calling sendPaidOrderEmails...");
+      await sendPaidOrderEmails(paidOrderForEmail);
+      console.log("sendPaidOrderEmails completed.");
+    } catch (error) {
+      console.error("Paid order email failed", {
+        orderId: paidOrderForEmail.id,
+        message: error?.message,
+        stack: error?.stack,
+        error,
+      });
+    }
+  }
 }

@@ -13,32 +13,15 @@ import {
 } from "../../services/cart";
 import { getProducts, type Product } from "../../services/products";
 
+import { showToast } from "../../utils/toast.ts";
+
 initNav();
 initMobileMenu();
 
 const FREE_SHIPPING_TARGET = 50;
 const FREE_STICKERS_TARGET = 80;
 
-function showToast(message: string): void {
-  let stack = document.getElementById("toastStack");
 
-  if (!stack) {
-    stack = document.createElement("div");
-    stack.id = "toastStack";
-    stack.className = "toast-stack";
-    document.body.appendChild(stack);
-  }
-
-  const toast = document.createElement("div");
-  toast.className = "toast-message";
-  toast.textContent = message;
-  stack.appendChild(toast);
-
-  setTimeout(() => {
-    toast.remove();
-    if (stack && stack.children.length === 0) stack.remove();
-  }, 3000);
-}
 
 function formatPrice(value: number): string {
   return new Intl.NumberFormat("el-GR", {
