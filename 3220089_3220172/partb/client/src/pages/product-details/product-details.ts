@@ -452,6 +452,8 @@ async function initProductDetailsPage(): Promise<void> {
 
 document.title = `${product.title} | Skanare`;
 
+
+
 const description =
   product.shortDescription ||
   product.description ||
@@ -466,6 +468,35 @@ if (!meta) {
 }
 
 meta.content = description;
+
+const productUrl = window.location.href;
+let canonical = document.querySelector<HTMLLinkElement>(
+  'link[rel="canonical"]'
+);
+
+if (!canonical) {
+  canonical = document.createElement("link");
+  canonical.rel = "canonical";
+  document.head.appendChild(canonical);
+}
+
+canonical.href = productUrl;
+const productImage =
+  product.images?.[0] ||
+  product.image ||
+  "https://skanare.com/assets/img/logo_Image.png";
+
+setMetaName("description", description);
+
+setMetaProperty("og:title", `${product.title} | Skanare`);
+setMetaProperty("og:description", description);
+setMetaProperty("og:image", productImage);
+setMetaProperty("og:url", productUrl);
+setMetaProperty("og:type", "product");
+
+setMetaName("twitter:title", `${product.title} | Skanare`);
+setMetaName("twitter:description", description);
+setMetaName("twitter:image", productImage);
 
 injectProductSchema(product);
 
@@ -663,16 +694,45 @@ function injectProductSchema(product: any): void {
       name: "Skanare"
     },
     offers: {
-      "@type": "Offer",
-      price: String(product.price || product.priceEUR || 0),
-      priceCurrency: "EUR",
-      availability:
-        Number(product.stock || 0) > 0
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
-      url: window.location.href
-    }
+  "@type": "Offer",
+  url: window.location.href,
+  price: String(product.price || product.priceEUR || 0),
+  priceCurrency: "EUR",
+  availability: isInStock(product)
+    ? "https://schema.org/InStock"
+    : "https://schema.org/OutOfStock",
+  seller: {
+    "@type": "Organization",
+    name: "Skanare"
+  }
+}
   });
 
   document.head.appendChild(script);
+}
+
+function setMetaProperty(property: string, content: string): void {
+  let meta = document.querySelector<HTMLMetaElement>(
+    `meta[property="${property}"]`
+  );
+
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute("property", property);
+    document.head.appendChild(meta);
+  }
+
+  meta.content = content;
+}
+
+function setMetaName(name: string, content: string): void {
+  let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = name;
+    document.head.appendChild(meta);
+  }
+
+  meta.content = content;
 }
