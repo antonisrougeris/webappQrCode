@@ -240,21 +240,23 @@ async function loadHomepageProducts(
 ========================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-  void loadHomepageProducts(
-    "featuredTshirtsGrid",
-    "featuredTshirtsLoading",
-    "featuredTshirtsEmpty",
-    "featuredTshirtsError",
-    "tshirt"
-  );
+  window.setTimeout(() => {
+    void loadHomepageProducts(
+      "featuredTshirtsGrid",
+      "featuredTshirtsLoading",
+      "featuredTshirtsEmpty",
+      "featuredTshirtsError",
+      "tshirt"
+    );
 
-  void loadHomepageProducts(
-    "featuredAccessoriesGrid",
-    "featuredAccessoriesLoading",
-    "featuredAccessoriesEmpty",
-    "featuredAccessoriesError",
-    "accessory"
-  );
+    void loadHomepageProducts(
+      "featuredAccessoriesGrid",
+      "featuredAccessoriesLoading",
+      "featuredAccessoriesEmpty",
+      "featuredAccessoriesError",
+      "accessory"
+    );
+  }, 100);
 
   firebaseAuth.onAuthStateChanged((user) => {
     if (user) {
