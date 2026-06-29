@@ -360,6 +360,7 @@ async function renderRelatedProducts(currentProduct: Product): Promise<void> {
 }
 
 async function initProductDetailsPage(): Promise<void> {
+  
   const details = document.getElementById("productDetails");
   if (!details) return;
 
@@ -446,8 +447,27 @@ async function initProductDetailsPage(): Promise<void> {
     }
 
     if (product.active === false) {
-      throw new Error("This product is no longer available.");
-    }
+  throw new Error("This product is no longer available.");
+}
+
+document.title = `${product.title} | Skanare`;
+
+const description =
+  product.shortDescription ||
+  product.description ||
+  "QR clothing and accessories by Skanare.";
+
+let meta = document.querySelector<HTMLMetaElement>("meta[name='description']");
+
+if (!meta) {
+  meta = document.createElement("meta");
+  meta.name = "description";
+  document.head.appendChild(meta);
+}
+
+meta.content = description;
+
+injectProductSchema(product);
 
     setText(titleEl, product.title);
     setText(
@@ -621,3 +641,38 @@ async function initProductDetailsPage(): Promise<void> {
 }
 
 void initProductDetailsPage();
+
+
+
+function injectProductSchema(product: any): void {
+  const old = document.getElementById("productJsonLd");
+  old?.remove();
+
+  const script = document.createElement("script");
+  script.id = "productJsonLd";
+  script.type = "application/ld+json";
+
+  script.textContent = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description || product.shortDescription || "",
+    image: product.images?.[0] || product.image || "https://skanare.com/assets/img/logo_Image.png",
+    brand: {
+      "@type": "Brand",
+      name: "Skanare"
+    },
+    offers: {
+      "@type": "Offer",
+      price: String(product.price || product.priceEUR || 0),
+      priceCurrency: "EUR",
+      availability:
+        Number(product.stock || 0) > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+      url: window.location.href
+    }
+  });
+
+  document.head.appendChild(script);
+}
