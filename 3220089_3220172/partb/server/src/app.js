@@ -24,6 +24,9 @@ import cookieParser from "cookie-parser";
 
 import vivaRoutes from "./routes/viva.routes.js";
 
+
+import sitemapRoutes from "./routes/sitemap.routes.js";
+
 import { optionalAuth } from "./middleware/auth.js";
 dotenv.config();
 
@@ -39,6 +42,7 @@ app.use(optionalAuth);
 
 app.use("/api/viva", vivaRoutes);
 
+app.use("/", sitemapRoutes);
 app.use(
   "/api",
   rateLimit({

@@ -459,17 +459,12 @@ const description =
   product.description ||
   "QR clothing and accessories by Skanare.";
 
-let meta = document.querySelector<HTMLMetaElement>("meta[name='description']");
 
-if (!meta) {
-  meta = document.createElement("meta");
-  meta.name = "description";
-  document.head.appendChild(meta);
-}
+const productIdentifier = product.slug || product.id;
+const productUrl = `https://skanare.com/src/pages/product-details/product-details.html?id=${encodeURIComponent(
+  productIdentifier
+)}`;
 
-meta.content = description;
-
-const productUrl = window.location.href;
 let canonical = document.querySelector<HTMLLinkElement>(
   'link[rel="canonical"]'
 );

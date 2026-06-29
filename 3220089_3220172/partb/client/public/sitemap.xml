@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- HOME -->
   <url>
     <loc>https://skanare.com/</loc>
     <priority>1.0</priority>
   </url>
 
+  <!-- MAIN PAGES -->
   <url>
     <loc>https://skanare.com/src/pages/products/products.html</loc>
     <priority>0.9</priority>
@@ -14,4 +17,46 @@
     <loc>https://skanare.com/src/pages/contact/contact.html</loc>
     <priority>0.7</priority>
   </url>
+
+  <url>
+    <loc>https://skanare.com/src/pages/cart/cart.html</loc>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://skanare.com/src/pages/checkout/checkout.html</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://skanare.com/src/pages/login/login.html</loc>
+    <priority>0.4</priority>
+  </url>
+
+  <url>
+    <loc>https://skanare.com/src/pages/register/register.html</loc>
+    <priority>0.4</priority>
+  </url>
+
+  <url>
+    <loc>https://skanare.com/src/pages/verify-email/verify-email.html</loc>
+    <priority>0.4</priority>
+  </url>
+
+  <url>
+    <loc>https://skanare.com/src/pages/payment/payment_success.html</loc>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://skanare.com/src/pages/payment/payment_failure.html</loc>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- IMPORTANT: PRODUCT DETAILS (template page) -->
+  <url>
+    <loc>https://skanare.com/src/pages/product-details/product-details.html</loc>
+    <priority>0.8</priority>
+  </url>
+
 </urlset>
