@@ -140,6 +140,12 @@ function renderProductHtml(product) {
 </html>`;
 }
 
+function isBot(userAgent = "") {
+  return /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot/i.test(
+    String(userAgent)
+  );
+}
+
 
 
 router.get("/product/:slug", async (req, res, next) => {
