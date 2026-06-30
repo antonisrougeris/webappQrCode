@@ -146,7 +146,7 @@ router.get("/product/:slug", async (req, res, next) => {
     const userAgent = req.headers["user-agent"] || "";
 
     if (!isBot(userAgent)) {
-      return res.redirect(302, clientProductUrl);
+return res.send(renderProductHtml(product));
     }
 
     res.status(200);
