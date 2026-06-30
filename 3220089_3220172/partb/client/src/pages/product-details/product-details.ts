@@ -357,12 +357,25 @@ async function renderRelatedProducts(currentProduct: Product): Promise<void> {
   }
 }
 
+
+function getProductIdentifier(): string | null {
+  const queryId = getQueryParam("id");
+  if (queryId) return queryId;
+
+  const match = window.location.pathname.match(/\/product\/([^/]+)$/);
+  if (match?.[1]) {
+    return decodeURIComponent(match[1]);
+  }
+
+  return null;
+}
+
 async function initProductDetailsPage(): Promise<void> {
   
   const details = document.getElementById("productDetails");
   if (!details) return;
 
-  const id = getQueryParam("id");
+const id = getProductIdentifier();
 
   const titleEl = document.getElementById("productTitle");
   const metaEl = document.getElementById("productMeta");

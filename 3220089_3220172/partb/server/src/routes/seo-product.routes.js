@@ -1,6 +1,17 @@
 import { Router } from "express";
 import { getProductByIdOrSlug } from "../services/product.service.js";
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const productDetailsHtmlPath = path.resolve(
+  __dirname,
+  "../../client/dist/src/pages/product-details/product-details.html"
+);
+
 const router = Router();
 
 function escapeHtml(value = "") {
@@ -129,25 +140,19 @@ function renderProductHtml(product) {
 </html>`;
 }
 
-function isBot(userAgent = "") {
-  return /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot/i.test(
-    userAgent
-  );
+if (!isBot(userAgent)) {
+  return res.sendFile(productDetailsHtmlPath);
 }
 
 router.get("/product/:slug", async (req, res, next) => {
   try {
     const product = await getProductByIdOrSlug(req.params.slug);
 
-    const clientProductUrl = `/src/pages/product-details/product-details.html?id=${encodeURIComponent(
-      product.slug || product.id
-    )}`;
-
     const userAgent = req.headers["user-agent"] || "";
 
-if (!isBot(userAgent)) {
-  return res.redirect(302, clientProductUrl);
-}
+    if (!isBot(userAgent)) {
+      return res.sendFile(productDetailsHtmlPath);
+    }
 
     res.status(200);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
