@@ -459,7 +459,7 @@ const description =
 
 
 const productIdentifier = product.slug || product.id;
-const productUrl = `https://skanare.com/src/pages/product-details/product-details.html?id=${encodeURIComponent(
+const productUrl = `https://skanare.com/product/${encodeURIComponent(
   productIdentifier
 )}`;
 

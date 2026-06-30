@@ -290,8 +290,11 @@ async function renderCrossSell(cartItems: CartItem[]): Promise<string> {
               const image = getProductImage(product);
 
               return `
-                <article class="cart-cross-card" data-id="${product.id}">
-                  <img src="${image || "/assets/img/logo_Image.png"}" alt="${
+<article
+  class="cart-cross-card"
+  data-id="${product.id}"
+  data-slug="${product.slug || product.id}"
+>                  <img src="${image || "/assets/img/logo_Image.png"}" alt="${
                 product.title
               }" />
                   <h4>${product.title}</h4>
@@ -434,13 +437,12 @@ function bindCartActions(): void {
     const card = target.closest(".cart-cross-card") as HTMLElement | null;
 
     if (card && !target.closest(".cross-add")) {
-      const id = card.dataset.id;
-      if (!id) return;
+const identifier = card.dataset.slug || card.dataset.id;
+if (!identifier) return;
 
-      window.location.href = `/src/pages/product-details/product-details.html?id=${encodeURIComponent(
-        id
-      )}`;
-      return;
+window.location.href = `/product/${encodeURIComponent(identifier)}`;
+
+return;
     }
 
     const addBtn = target.closest(".cross-add") as HTMLButtonElement | null;

@@ -88,9 +88,11 @@ function renderProductHtml(product) {
   const description = productDescription(product);
   const url = productUrl(product);
   const image = productImage(product);
-  const clientProductUrl = `/src/pages/product-details/product-details.html?id=${encodeURIComponent(
+  const clientProductUrl = `https://skanare.com/product/${encodeURIComponent(
     product.slug || product.id
   )}`;
+
+
 
   return `<!DOCTYPE html>
 <html lang="en">

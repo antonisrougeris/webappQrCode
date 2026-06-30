@@ -22,8 +22,10 @@ export function renderProducts(container: HTMLElement, products: Product[]): voi
     const productId = product.id || product._id;
     if (!productId) return;
 
-    const href = `/src/pages/product-details/product-details.html?id=${encodeURIComponent(productId)}`;
+const identifier = product.slug || product.id;
 
+const href =
+  `/product/${encodeURIComponent(identifier)}`;
     const badgeText = product.badge || (product.featured ? "Featured" : "");
 
     article.innerHTML = `

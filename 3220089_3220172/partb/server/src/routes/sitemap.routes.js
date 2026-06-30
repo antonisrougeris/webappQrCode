@@ -91,12 +91,12 @@ router.get("/sitemap.xml", async (_req, res) => {
           product.createdAt ||
           new Date().toISOString();
 
-        return urlEntry({
-          loc: `${baseUrl}${productPath(product, doc.id)}`,
-          priority: product.featured ? "0.9" : "0.8",
-          changefreq: "weekly",
-          lastmod,
-        });
+       return urlEntry({
+    loc: `${baseUrl}/product/${encodeURIComponent(identifier)}`,
+    priority: product.featured ? "0.9" : "0.8",
+    changefreq: "weekly",
+    lastmod,
+});
       })
       .filter(Boolean)
       .join("");

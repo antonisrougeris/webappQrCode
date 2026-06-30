@@ -84,10 +84,8 @@ function isInStock(product: Product): boolean {
 }
 
 function productUrl(product: Product): string {
-  const id = product.id || product._id || product.slug;
-  return `/src/pages/product-details/product-details.html?id=${encodeURIComponent(
-    String(id)
-  )}`;
+  const identifier = product.slug || product.id;
+  return `/product/${encodeURIComponent(identifier)}`;
 }
 
 function renderProducts(container: HTMLElement, products: Product[]): void {
