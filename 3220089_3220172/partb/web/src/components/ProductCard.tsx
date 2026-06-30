@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Product } from "@/lib/products";
+import type { Product } from "@/lib/products.tsx";
 
 function formatPrice(value: number): string {
   return new Intl.NumberFormat("el-GR", {
