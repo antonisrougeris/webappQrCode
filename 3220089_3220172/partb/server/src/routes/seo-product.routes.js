@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const productDetailsHtmlPath = path.resolve(
   __dirname,
-  "../../client/dist/src/pages/product-details/product-details.html"
+  "../../../client/dist/src/pages/product-details/product-details.html"
 );
 
 const router = Router();
@@ -140,9 +140,7 @@ function renderProductHtml(product) {
 </html>`;
 }
 
-if (!isBot(userAgent)) {
-  return res.sendFile(productDetailsHtmlPath);
-}
+
 
 router.get("/product/:slug", async (req, res, next) => {
   try {

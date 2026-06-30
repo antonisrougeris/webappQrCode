@@ -80,27 +80,30 @@ router.get("/sitemap.xml", async (_req, res) => {
 
     const productsSnap = await db.collection(COLLECTIONS.PRODUCTS).get();
 
-    const productUrls = productsSnap.docs
-      .map((doc) => {
-        const product = doc.data() || {};
+const productUrls = productsSnap.docs
+  .map((doc) => {
+    const product = doc.data() || {};
 
-        if (product.active === false) return null;
+    if (product.active === false) return null;
 
-        const lastmod =
-          product.updatedAt ||
-          product.createdAt ||
-          new Date().toISOString();
+    const identifier = product.slug || product.id || doc.id;
 
-       return urlEntry({
-    loc: `${baseUrl}/product/${encodeURIComponent(identifier)}`,
-    priority: product.featured ? "0.9" : "0.8",
-    changefreq: "weekly",
-    lastmod,
-});
-      })
-      .filter(Boolean)
-      .join("");
+    const lastmod =
+      product.updatedAt ||
+      product.createdAt ||
+      new Date().toISOString();
 
+    return urlEntry({
+      loc: `${baseUrl}/product/${encodeURIComponent(identifier)}`,
+      priority: product.featured ? "0.9" : "0.8",
+      changefreq: "weekly",
+      lastmod,
+    });
+  })
+  .filter(Boolean)
+  .join("");
+
+  
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${staticUrls}
