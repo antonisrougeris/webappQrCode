@@ -15,11 +15,12 @@ export function initMobileMenu(options: MenuOptions = {}) {
     toggleSelector = "#menuToggle", // Button that opens/closes the menu
     navSelector = "#mainNav", // Nav container
     openClass = "nav-open", // Class placed on <html> when menu is open
-    lockScroll = true, // Prevent background scroll when open (mobile)
   } = options;
 
   // Grab DOM elements
-  const toggleBtn = document.querySelector(toggleSelector) as HTMLButtonElement | null;
+  const toggleBtn = document.querySelector(
+    toggleSelector
+  ) as HTMLButtonElement | null;
   const nav = document.querySelector(navSelector) as HTMLElement | null;
 
   // If elements are missing on this page, do nothing (safe module)
@@ -31,16 +32,18 @@ export function initMobileMenu(options: MenuOptions = {}) {
 
   // --- Accessibility defaults ---
   // aria-expanded tells screen readers if the menu is open
-  if (!toggleBtn.hasAttribute("aria-expanded")) toggleBtn.setAttribute("aria-expanded", "false");
- // aria-controls points to the nav id this button controls
-  if (!toggleBtn.hasAttribute("aria-controls")) toggleBtn.setAttribute("aria-controls", nav.id || "mainNav");
- // Ensure button type is set (prevents accidental form submit)
+  if (!toggleBtn.hasAttribute("aria-expanded"))
+    toggleBtn.setAttribute("aria-expanded", "false");
+  // aria-controls points to the nav id this button controls
+  if (!toggleBtn.hasAttribute("aria-controls"))
+    toggleBtn.setAttribute("aria-controls", nav.id || "mainNav");
+  // Ensure button type is set (prevents accidental form submit)
   if (!toggleBtn.hasAttribute("type")) toggleBtn.setAttribute("type", "button");
 
- // Ensure nav has an id for aria-controls to work
+  // Ensure nav has an id for aria-controls to work
   if (!nav.id) nav.id = "mainNav";
 
-   // We toggle a class on <html> so CSS can show/hide the nav
+  // We toggle a class on <html> so CSS can show/hide the nav
   const root = document.documentElement;
 
   // Helper: check open state
@@ -48,15 +51,11 @@ export function initMobileMenu(options: MenuOptions = {}) {
 
   // Helper: apply open/close state
   const setOpen = (open: boolean) => {
-    // Toggle open class on <html>
     root.classList.toggle(openClass, open);
-    // Sync ARIA state
     toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
 
-    // Optional: lock/unlock scroll on mobile
-    if (lockScroll) {
-      document.body.style.overflow = open ? "hidden" : "";
-    }
+    // Μην κλειδώνεις scroll στο mobile menu
+    document.body.style.overflow = "";
   };
 
   const toggle = () => setOpen(!isOpen());
@@ -76,4 +75,21 @@ export function initMobileMenu(options: MenuOptions = {}) {
   });
 
   console.log("Mobile menu initialized successfully");
- }
+
+  // Αν ο χρήστης αρχίσει scroll/touch, κλείσε το menu
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (isOpen()) setOpen(false);
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "touchmove",
+    () => {
+      if (isOpen()) setOpen(false);
+    },
+    { passive: true }
+  );
+}
