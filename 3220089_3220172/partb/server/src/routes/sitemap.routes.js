@@ -22,10 +22,7 @@ function cleanBaseUrl() {
 
 function productPath(product, docId) {
   const identifier = product.slug || product.id || docId;
-
-  return `/src/pages/product-details/product-details.html?id=${encodeURIComponent(
-    identifier
-  )}`;
+  return `/product/${encodeURIComponent(identifier)}`;
 }
 
 function urlEntry({ loc, priority = "0.6", changefreq = "monthly", lastmod }) {

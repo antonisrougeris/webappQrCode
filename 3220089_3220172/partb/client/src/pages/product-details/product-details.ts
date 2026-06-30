@@ -68,9 +68,7 @@ function unique(values: Array<string | undefined>): string[] {
 
 function productUrl(product: Product): string {
   const identifier = product.slug || product.id;
-  return `/src/pages/product-details/product-details.html?id=${encodeURIComponent(
-    identifier
-  )}`;
+  return `/product/${encodeURIComponent(identifier)}`;
 }
 
 function getFallbackReviews(product: Product): ProductReview[] {

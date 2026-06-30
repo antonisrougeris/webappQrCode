@@ -28,6 +28,9 @@ import vivaRoutes from "./routes/viva.routes.js";
 import sitemapRoutes from "./routes/sitemap.routes.js";
 
 import { optionalAuth } from "./middleware/auth.js";
+
+import seoProductRoutes from "./routes/seo-product.routes.js";
+
 dotenv.config();
 
 const app = express();
@@ -40,8 +43,10 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(attachGuestSession);
 app.use(optionalAuth);
 
+
 app.use("/api/viva", vivaRoutes);
 
+app.use("/", seoProductRoutes);
 app.use("/", sitemapRoutes);
 app.use(
   "/api",
