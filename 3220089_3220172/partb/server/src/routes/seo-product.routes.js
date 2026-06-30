@@ -118,10 +118,6 @@ function renderProductHtml(product) {
 
   <script type="application/ld+json">${productJsonLd(product)}</script>
 
-  <meta http-equiv="refresh" content="0; url=${escapeHtml(clientProductUrl)}" />
-  <script>
-    window.location.replace(${JSON.stringify(clientProductUrl)});
-  </script>
 </head>
 <body>
   <h1>${escapeHtml(product.title)}</h1>
@@ -133,14 +129,30 @@ function renderProductHtml(product) {
 </html>`;
 }
 
+function isBot(userAgent = "") {
+  return /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot/i.test(
+    userAgent
+  );
+}
+
 router.get("/product/:slug", async (req, res, next) => {
   try {
     const product = await getProductByIdOrSlug(req.params.slug);
 
+    const clientProductUrl = `/src/pages/product-details/product-details.html?id=${encodeURIComponent(
+      product.slug || product.id
+    )}`;
+
+    const userAgent = req.headers["user-agent"] || "";
+
+    if (!isBot(userAgent)) {
+      return res.redirect(302, clientProductUrl);
+    }
+
     res.status(200);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=300");
-    res.send(renderProductHtml(product));
+    return res.send(renderProductHtml(product));
   } catch (error) {
     next(error);
   }
