@@ -41,7 +41,13 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "https://client.crisp.chat"],
+scriptSrc: [
+  "'self'",
+  "'unsafe-inline'",
+  "https://client.crisp.chat",
+  "https://apis.google.com",
+  "https://www.gstatic.com"
+],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'", "https:", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
