@@ -2615,8 +2615,10 @@ body.cart-open {
     height: 34px;
   }
 
-  .menu-toggle {
-  color: #fff;
+.menu-toggle {
+  color: #fff !important;
+  font-size: 22px;
+  line-height: 1;
 }
 
   .logo {
