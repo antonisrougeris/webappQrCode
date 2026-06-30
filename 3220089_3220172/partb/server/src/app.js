@@ -45,7 +45,7 @@ app.use(
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'", "https:", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", "https:"],
+        connectSrc: ["'self'", "https:", "wss:"],
         frameSrc: ["'self'", "https:"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
