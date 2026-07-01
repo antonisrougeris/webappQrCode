@@ -34,6 +34,18 @@ export interface Cart {
   currency?: string;
 }
 
+export interface AddToCartPayload {
+  productId: string;
+  quantity?: number;
+  variant?: {
+    sku?: string;
+    size?: string;
+    color?: string;
+    stock?: number;
+  } | null;
+  qrDestination?: string;
+}
+
 async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
@@ -58,6 +70,15 @@ async function apiRequest<T>(
 
 export async function getCart(): Promise<Cart> {
   const res = await apiRequest<{ cart: Cart }>("/cart");
+  return res.cart;
+}
+
+export async function addCartItem(payload: AddToCartPayload): Promise<Cart> {
+  const res = await apiRequest<{ cart: Cart }>("/cart/items", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
   return res.cart;
 }
 
