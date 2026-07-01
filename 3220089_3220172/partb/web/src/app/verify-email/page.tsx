@@ -17,26 +17,32 @@ export default function VerifyEmailPage() {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
-    const unsub = firebaseAuth.onAuthStateChanged((user) => {
-      if (!user) {
-        window.location.href =
-          "/login?redirect=" +
-          encodeURIComponent(window.location.pathname + window.location.search);
-      }
-    });
+  const unsub = firebaseAuth.onAuthStateChanged((user) => {
+    if (user) return; // OK, stay here
 
-    return () => unsub();
-  }, []);
+    window.location.replace(
+      "/login?redirect=" +
+        encodeURIComponent(getRedirectUrl())
+    );
+  });
 
-  function getRedirectUrl(): string {
-    const redirect = searchParams.get("redirect");
+  return () => unsub();
+}, []);
 
-    if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-      return redirect;
-    }
+function cleanRedirect(value: string | null): string {
+  if (!value) return "/";
 
+  // prevent infinite nesting
+  if (value.includes("login") || value.includes("register")) {
     return "/";
   }
+
+  return value;
+}
+
+function getRedirectUrl(): string {
+  return cleanRedirect(searchParams.get("redirect"));
+}
 
   function setDigit(index: number, value: string) {
     const next = [...digits];
