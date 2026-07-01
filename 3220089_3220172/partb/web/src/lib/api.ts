@@ -44,8 +44,17 @@ export async function apiRequest<T>(
   const payload = await res.json().catch(() => null);
 
   if (!res.ok) {
+    console.error("API request failed:", {
+      path,
+      status: res.status,
+      payload,
+    });
+
     throw new Error(
-      payload?.message || payload?.error || `Request failed (${res.status})`
+      payload?.message ||
+        payload?.error ||
+        payload?.details?.message ||
+        `Request failed (${res.status})`
     );
   }
 
@@ -123,4 +132,37 @@ export async function mergeGuestCart() {
   return apiRequest("/cart/merge-guest", {
     method: "POST",
   });
+}
+
+export interface Order {
+  id: string;
+  orderNumber?: string;
+  total?: number;
+  currency?: string;
+  paymentStatus?: string;
+  status?: string;
+  qrCodesCreated?: number;
+  createdAt?: string;
+  payment?: {
+    paidAt?: string;
+    transactionId?: string;
+  };
+}
+
+export async function getOrderById(orderId: string): Promise<Order> {
+  const res = await apiRequest<{ order: Order }>(
+    `/orders/${encodeURIComponent(orderId)}`
+  );
+
+  return res.order;
+}
+
+export async function getOrderByVivaCode(
+  vivaOrderCode: string
+): Promise<Order> {
+  const res = await apiRequest<{ order: Order }>(
+    `/orders/viva/${encodeURIComponent(vivaOrderCode)}`
+  );
+
+  return res.order;
 }
