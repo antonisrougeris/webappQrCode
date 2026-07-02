@@ -232,6 +232,34 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       });
     }
 
+    const qrWrites = [];
+
+    if (existingQrSnap.empty) {
+      for (const item of order.items || []) {
+        if (!item.customQr) continue;
+
+        const qrId = createId("qr");
+        const shortId = await generateUniqueShortId(tx, db);
+
+        qrWrites.push({
+          qrId,
+          data: {
+            id: qrId,
+            shortId,
+            userId: order.ownerType === "user" ? order.ownerId : null,
+            guestId: order.ownerType === "guest" ? order.ownerId : null,
+            orderId: order.id,
+            productId: item.productId,
+            productTitle: item.title,
+            targetUrl: item.qrDestination || "",
+            scans: 0,
+            createdAt: paidAt,
+            updatedAt: paidAt,
+          },
+        });
+      }
+    }
+
     tx.update(ref, {
       status: "paid",
       paymentStatus: "paid",
@@ -246,27 +274,8 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       updatedAt: paidAt,
     });
 
-    if (existingQrSnap.empty) {
-      for (const item of order.items || []) {
-        if (!item.customQr) continue;
-
-        const qrId = createId("qr");
-const shortId = await generateUniqueShortId(tx, db);
-
-tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
-  id: qrId,
-  shortId,
-  userId: order.ownerType === "user" ? order.ownerId : null,
-  guestId: order.ownerType === "guest" ? order.ownerId : null,
-  orderId: order.id,
-  productId: item.productId,
-  productTitle: item.title,
-  targetUrl: item.qrDestination || "",
-  scans: 0,
-  createdAt: paidAt,
-  updatedAt: paidAt,
-});
-      }
+    for (const qr of qrWrites) {
+      tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qr.qrId), qr.data);
     }
 
     paidOrderForEmail = {
