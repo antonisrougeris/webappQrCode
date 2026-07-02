@@ -54,11 +54,13 @@ function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
         import.meta.env.VITE_QR_REDIRECT_BASE_URL ||
         "https://redirectqr-qrk4dnnhta-ew.a.run.app";
 
-      const qrRedirectUrl = `${QR_REDIRECT_BASE_URL}/q/${encodeURIComponent(
-        qr.id
-      )}`;
+const publicQrId = qr.shortId || qr.id;
 
-      const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+const qrRedirectUrl = `${QR_REDIRECT_BASE_URL}/${encodeURIComponent(
+  publicQrId
+)}`;
+
+const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
         qrRedirectUrl
       )}`;
 

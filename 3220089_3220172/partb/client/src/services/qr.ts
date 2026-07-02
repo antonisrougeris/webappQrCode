@@ -2,6 +2,7 @@ import { apiRequest } from "./api";
 
 export interface QrCode {
   id: string;
+  shortId?: string;
   productId?: string;
   productTitle?: string;
   targetUrl?: string;

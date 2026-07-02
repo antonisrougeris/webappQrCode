@@ -5,6 +5,8 @@ import { createId, nowIso } from "../utils/ids.js";
 
 import { sendPaidOrderEmails } from "./order-email.service.js";
 
+import crypto from "crypto";
+
 function getEventData(payload) {
   return payload?.EventData || payload?.eventData || payload?.data || payload;
 }
@@ -104,6 +106,31 @@ export async function attachVivaPaymentToOrder({
       },
       { merge: true }
     );
+}
+
+function generateShortId(length = 6) {
+  return crypto
+    .randomBytes(8)
+    .toString("base64url")
+    .replace(/[-_]/g, "")
+    .slice(0, length);
+}
+
+async function generateUniqueShortId(tx, db) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const shortId = generateShortId(6);
+
+    const snap = await tx.get(
+      db
+        .collection(COLLECTIONS.QR_CODES)
+        .where("shortId", "==", shortId)
+        .limit(1)
+    );
+
+    if (snap.empty) return shortId;
+  }
+
+  throw new ApiError(500, "Could not generate unique QR short id");
 }
 
 export async function markOrderPaidFromVivaWebhook(payload) {
@@ -224,19 +251,21 @@ export async function markOrderPaidFromVivaWebhook(payload) {
         if (!item.customQr) continue;
 
         const qrId = createId("qr");
+const shortId = await generateUniqueShortId(tx, db);
 
-        tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
-          id: qrId,
-          userId: order.ownerType === "user" ? order.ownerId : null,
-          guestId: order.ownerType === "guest" ? order.ownerId : null,
-          orderId: order.id,
-          productId: item.productId,
-          productTitle: item.title,
-          targetUrl: item.qrDestination || "",
-          scans: 0,
-          createdAt: paidAt,
-          updatedAt: paidAt,
-        });
+tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
+  id: qrId,
+  shortId,
+  userId: order.ownerType === "user" ? order.ownerId : null,
+  guestId: order.ownerType === "guest" ? order.ownerId : null,
+  orderId: order.id,
+  productId: item.productId,
+  productTitle: item.title,
+  targetUrl: item.qrDestination || "",
+  scans: 0,
+  createdAt: paidAt,
+  updatedAt: paidAt,
+});
       }
     }
 
