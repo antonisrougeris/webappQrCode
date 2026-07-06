@@ -295,7 +295,7 @@ export async function sendPaidOrderEmails(order) {
     const downloadLinks = [];
 
     const QR_BASE_URL =
-      import.meta.env.QR_REDIRECT_BASE_URL ||
+      process.env.QR_REDIRECT_BASE_URL ||
     "https://redirectqr-qrk4dnnhta-ew.a.run.app";
 
     // =========================
