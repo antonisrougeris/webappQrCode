@@ -12,6 +12,11 @@
     "featured": true,
     "active": true,
     "customQr": true,
+    "qrConfig": {
+  "textPrint": "SCAN ME",
+  "textPosition": "bottom",
+  "color": "#ffffff"
+},
     "images": [
       "/assets/img/products/classic-black.png",
       "/assets/img/products/classic-white.png"
@@ -79,6 +84,11 @@
     "featured": true,
     "active": true,
     "customQr": true,
+    "qrConfig": {
+  "textPrint": "SCAN ME",
+  "textPosition": "bottom",
+  "color": "#000000"
+},
     "images": [
       "/assets/img/products/classic-white.png"
     ],
@@ -140,6 +150,11 @@
     "featured": true,
     "active": true,
     "customQr": true,
+        "qrConfig": {
+  "textPrint": "SCAN ME",
+  "textPosition": "bottom",
+  "color": "#ffffff"
+},
     "images": [
       "/assets/img/products/oversized-black.png"
     ],
@@ -201,6 +216,11 @@
     "featured": true,
     "active": true,
     "customQr": true,
+    "qrConfig": {
+  "textPrint": "SCAN ME",
+  "textPosition": "bottom",
+  "color": "#1a73e8"
+},
     "images": [
       "/assets/img/products/color-qr-tee.png"
     ],
@@ -262,6 +282,11 @@
     "featured": true,
     "active": true,
     "customQr": true,
+        "qrConfig": {
+  "textPrint": "SCAN ME",
+  "textPosition": "bottom",
+  "color": "#ffffff"
+},
     "images": [
       "/assets/img/products/qr-card.png"
     ],
@@ -298,6 +323,11 @@
     "featured": true,
     "active": true,
     "customQr": true,
+        "qrConfig": {
+  "textPrint": "SCAN ME",
+  "textPosition": "bottom",
+  "color": "#ffffff"
+},
     "images": [
       "/assets/img/products/qr-keychain.png"
     ],
@@ -334,6 +364,11 @@
     "featured": true,
     "active": true,
     "customQr": true,
+        "qrConfig": {
+  "textPrint": "SCAN ME",
+  "textPosition": "bottom",
+  "color": "#ffffff"
+},
     "images": [
       "/assets/img/products/qr-tote-bag.png"
     ],
@@ -370,6 +405,11 @@
     "featured": true,
     "active": true,
     "customQr": true,
+        "qrConfig": {
+  "textPrint": "SCAN ME",
+  "textPosition": "bottom",
+  "color": "#ffffff"
+},
     "images": [
       "/assets/img/products/qr-stickers.png"
     ],

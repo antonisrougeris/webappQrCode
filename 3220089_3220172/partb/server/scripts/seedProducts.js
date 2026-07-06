@@ -92,27 +92,36 @@ function normalizeProduct(product) {
         )
       : 0;
 
-  return {
-    id,
-    slug,
-    title: product.title || "",
-    shortDescription: product.shortDescription || "",
-    description: product.description || "",
-    category: product.category || "general",
-    price,
-    priceEUR: typeof product.priceEUR === "number" ? product.priceEUR : price,
-    images,
-    image: product.image || images[0] || "",
-    stock,
-    featured: product.featured === true,
-    active: product.active !== false,
-    badge: product.badge || "",
-    customQr: Boolean(product.customQr),
-    variants: Array.isArray(product.variants) ? product.variants : [],
-    reviews: Array.isArray(product.reviews) ? product.reviews : [],
-    createdAt: product.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+return {
+  id,
+  slug,
+  title: product.title || "",
+  shortDescription: product.shortDescription || "",
+  description: product.description || "",
+  category: product.category || "general",
+  price,
+  priceEUR: typeof product.priceEUR === "number" ? product.priceEUR : price,
+  images,
+  image: product.image || images[0] || "",
+  stock,
+  featured: product.featured === true,
+  active: product.active !== false,
+  badge: product.badge || "",
+  customQr: Boolean(product.customQr),
+
+  // ✅ NEW FIELD
+  qrConfig: {
+    textPrint: product?.qrConfig?.textPrint || "SCAN ME",
+    textPosition: product?.qrConfig?.textPosition || "bottom",
+    color: product?.qrConfig?.color || "#000000"
+  },
+
+  variants: Array.isArray(product.variants) ? product.variants : [],
+  reviews: Array.isArray(product.reviews) ? product.reviews : [],
+
+  createdAt: product.createdAt || new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
 }
 
 async function seedProducts() {

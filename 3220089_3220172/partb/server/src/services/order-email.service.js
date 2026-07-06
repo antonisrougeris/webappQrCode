@@ -6,7 +6,7 @@ import { sendEmail } from "./email.service.js";
 
 
 import { uploadQrToStorage } from "../utils/uploadQrToStorage.js";
-import { generateQrBufferLikeFrontend } from "../utils/qrcode.js";
+import { generatePrintQrImage } from "../utils/generatePrintQrImage.js";
 
 
 function money(value, currency = "EUR") {
@@ -312,8 +312,11 @@ export async function sendPaidOrderEmails(order) {
       const qrUrl = `${QR_BASE_URL}/${qr.shortId}`;
 
       // SAME AS FRONTEND
-      const buffer = await generateQrBufferLikeFrontend(qrUrl);
-
+const buffer = await generatePrintQrImage(qrUrl, {
+  color: qr.qrConfig?.color || "#000000",
+  text: qr.qrConfig?.textPrint || "SCAN ME",
+  textPosition: qr.qrConfig?.textPosition || "bottom",
+});
       // =========================
       // UPLOAD PNG TO STORAGE
       // =========================

@@ -249,8 +249,15 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       for (const item of order.items || []) {
         if (!item.customQr) continue;
 
-        const qrId = createId("qr");
+        const qrId = createId("qr");const product = order.items.find(i => i.productId === item.productId);
+
+const qrConfig = product?.qrConfig || {
+  textPrint: "SCAN ME",
+  textPosition: "bottom",
+  color: "#000000"
+};
 const shortId = await generateUniqueShortId(db);
+
 
 tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
   id: qrId,
@@ -261,6 +268,9 @@ tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
   productId: item.productId,
   productTitle: item.title,
   targetUrl: item.qrDestination || "",
+  // ✅ NEW
+qrConfig,
+
   scans: 0,
   createdAt: paidAt,
   updatedAt: paidAt,
