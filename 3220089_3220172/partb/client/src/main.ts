@@ -8,6 +8,8 @@ import { updateCartBadge } from "./utils/cart-badge";
 import { firebaseAuth } from "./services/firebase";
 import { getMyQrCodes, updateQrCode, type QrCode } from "./services/qr";
 
+import QRCode from "qrcode";
+
 async function initGuestSession(): Promise<void> {
   try {
     await fetch(`${import.meta.env.VITE_API_BASE_URL}/session/guest`, {
@@ -26,7 +28,7 @@ void initGuestSession().then(() => updateCartBadge());
    USER QR DASHBOARD
 ========================= */
 
-function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
+async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<void> {
   function escapeHtml(value: string): string {
     return value
       .replaceAll("&", "&amp;")
@@ -35,6 +37,7 @@ function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
+
   if (!qrCodes.length) {
     grid.innerHTML = `
       <div class="empty-state">
@@ -45,65 +48,72 @@ function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): void {
     return;
   }
 
-  grid.innerHTML = qrCodes
-    .map((qr) => {
+  const QR_REDIRECT_BASE_URL =
+    import.meta.env.VITE_QR_REDIRECT_BASE_URL ||
+    "https://redirectqr-qrk4dnnhta-ew.a.run.app";
+
+  const htmlBlocks = await Promise.all(
+    qrCodes.map(async (qr) => {
       const safeTarget = escapeHtml(qr.targetUrl || "");
       const title = escapeHtml(qr.productTitle || "QR Product");
-      const safeQrId = escapeHtml(qr.id);
-      const QR_REDIRECT_BASE_URL =
-        import.meta.env.VITE_QR_REDIRECT_BASE_URL ||
-        "https://redirectqr-qrk4dnnhta-ew.a.run.app";
 
-const publicQrId = qr.shortId || qr.id;
+      const publicQrId = qr.shortId || qr.id;
 
-const qrRedirectUrl = `${QR_REDIRECT_BASE_URL}/${encodeURIComponent(
-  publicQrId
-)}`;
+      const qrRedirectUrl = `${QR_REDIRECT_BASE_URL}/${encodeURIComponent(publicQrId)}`;
 
-const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-        qrRedirectUrl
-      )}`;
-
-      const safeQrImageUrl = escapeHtml(qrImageUrl);
+      // 🔥 LOCAL GENERATION (NO API)
+      const qrDataUrl = await QRCode.toDataURL(qrRedirectUrl, {
+        width: 400,              // printing safe
+        margin: 1,
+        color: {
+          dark: "#000000",       // pure black
+          light: "#00000000",      // pure transparent
+        },
+        errorCorrectionLevel: "H",
+      });
 
       return `
-  <article class="dashboard-card qr-dashboard-card">
-    <p class="meta qr-card-meta">QR product</p>
+        <article class="dashboard-card qr-dashboard-card">
 
-    <img
-      class="qr-dashboard-image"
-      src="${safeQrImageUrl}"
-      alt="QR code for ${title}"
-      loading="lazy"
-    />
+          <p class="meta qr-card-meta">QR product</p>
 
-    <h3 class="qr-dashboard-title">${title}</h3>
-    <span class="qr-scan-badge">${qr.scans ?? 0} scans</span>
+          <img
+            class="qr-dashboard-image"
+            src="${qrDataUrl}"
+            alt="QR code for ${title}"
+            loading="lazy"
+          />
 
-    <label class="qr-edit-label" for="input-${safeQrId}">
-      Destination URL
-    </label>
+          <h3 class="qr-dashboard-title">${title}</h3>
+          <span class="qr-scan-badge">${qr.scans ?? 0} scans</span>
 
-    <div class="qr-edit-row">
-      <input
-        id="input-${safeQrId}"
-        class="qr-edit-input"
-        type="url"
-        value="${safeTarget}"
-        placeholder="https://example.com"
-      />
-      <button
-        type="button"
-        class="btn-primary qr-save-btn"
-        data-qr-id="${safeQrId}"
-      >
-        Save
-      </button>
-    </div>
-  </article>
-`;
+          <label class="qr-edit-label" for="input-${qr.id}">
+            Destination URL
+          </label>
+
+          <div class="qr-edit-row">
+            <input
+              id="input-${qr.id}"
+              class="qr-edit-input"
+              type="url"
+              value="${safeTarget}"
+              placeholder="https://example.com"
+            />
+            <button
+              type="button"
+              class="btn-primary qr-save-btn"
+              data-qr-id="${qr.id}"
+            >
+              Save
+            </button>
+          </div>
+        </article>
+      `;
     })
-    .join("");
+  );
+
+  grid.innerHTML = htmlBlocks.join("");
+
 
   grid.querySelectorAll<HTMLButtonElement>(".qr-save-btn").forEach((button) => {
     button.addEventListener("click", async () => {

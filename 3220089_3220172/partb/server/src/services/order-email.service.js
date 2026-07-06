@@ -1,7 +1,13 @@
-import { sendEmail } from "./email.service.js";
-import { nowIso } from "../utils/ids.js";
+import QRCode from "qrcode";
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
+import { nowIso } from "../utils/ids.js";
+import { sendEmail } from "./email.service.js";
+
+
+import { uploadQrToStorage } from "../utils/uploadQrToStorage.js";
+import { generateQrBufferLikeFrontend } from "../utils/qrcode.js";
+
 
 function money(value, currency = "EUR") {
   return new Intl.NumberFormat("el-GR", {
@@ -246,28 +252,19 @@ function adminOrderHtml(order) {
   });
 }
 
+
+
 export async function sendPaidOrderEmails(order) {
   const db = getDB();
   const orderRef = db.collection(COLLECTIONS.ORDERS).doc(order.id);
-  const freshSnap = await orderRef.get();
 
-  if (!freshSnap.exists) {
-    console.warn("Paid order email skipped: order not found", {
-      orderId: order.id,
-    });
-    return;
-  }
+  const freshSnap = await orderRef.get();
+  if (!freshSnap.exists) return;
 
   const freshOrder = { id: freshSnap.id, ...freshSnap.data() };
 
-  if (freshOrder.emails?.paidOrderSentAt) {
-    console.log("Paid order emails already sent", {
-      orderId: freshOrder.id,
-    });
-    return;
-  }
+  if (freshOrder.emails?.paidOrderSentAt) return;
 
-  const customerEmail = freshOrder.customer?.email;
   const adminEmail = process.env.ADMIN_EMAIL;
   const from = process.env.EMAIL_ORDER || process.env.EMAIL_FROM;
 
@@ -276,28 +273,99 @@ export async function sendPaidOrderEmails(order) {
     adminOrderEmail: null,
   };
 
-  if (customerEmail) {
+  // =========================
+  // CUSTOMER EMAIL
+  // =========================
+  if (freshOrder.customer?.email) {
     await sendEmail({
       from,
-      to: customerEmail,
-      subject: `Your Skanare order ${freshOrder.orderNumber || freshOrder.id} is confirmed`,
+      to: freshOrder.customer.email,
+      subject: `Order ${freshOrder.orderNumber} confirmed`,
       html: customerOrderHtml(freshOrder),
     });
 
-    sent.customerOrderEmail = customerEmail;
+    sent.customerOrderEmail = freshOrder.customer.email;
   }
 
+  // =========================
+  // ADMIN EMAIL
+  // =========================
   if (adminEmail) {
+    const attachments = [];
+    const downloadLinks = [];
+
+    const QR_BASE_URL =
+      import.meta.env.QR_REDIRECT_BASE_URL ||
+    "https://redirectqr-qrk4dnnhta-ew.a.run.app";
+
+    // =========================
+    // FETCH QR FROM FIRESTORE
+    // =========================
+    const qrSnap = await db
+      .collection("qrCodes")
+      .where("orderId", "==", freshOrder.id)
+      .get();
+
+    for (const doc of qrSnap.docs) {
+      const qr = doc.data();
+
+      const qrUrl = `${QR_BASE_URL}/${qr.shortId}`;
+
+      // SAME AS FRONTEND
+      const buffer = await generateQrBufferLikeFrontend(qrUrl);
+
+      // =========================
+      // UPLOAD PNG TO STORAGE
+      // =========================
+      const uploaded = await uploadQrToStorage(freshOrder.id, buffer);
+
+      downloadLinks.push(uploaded.url);
+
+      // =========================
+      // EMAIL ATTACHMENT
+      // =========================
+      attachments.push({
+        filename: `qr-${qr.productTitle}.png`,
+        content: buffer,
+      });
+    }
+
+    // =========================
+    // SEND EMAIL
+    // =========================
     await sendEmail({
       from,
       to: adminEmail,
-      subject: `New paid order ${freshOrder.orderNumber || freshOrder.id}`,
-      html: adminOrderHtml(freshOrder),
+      subject: `New paid order ${freshOrder.orderNumber}`,
+      html: `
+        ${adminOrderHtml(freshOrder)}
+
+        <hr/>
+
+        <h3>QR Downloads</h3>
+        ${downloadLinks
+          .map((l) => `<a href="${l}" target="_blank">Download QR</a>`)
+          .join("<br/>")}
+      `,
+      attachments,
     });
 
     sent.adminOrderEmail = adminEmail;
+
+    // =========================
+    // SAVE LINKS TO ORDER
+    // =========================
+    await orderRef.set(
+      {
+        qrFiles: downloadLinks,
+      },
+      { merge: true }
+    );
   }
 
+  // =========================
+  // MARK SENT
+  // =========================
   await orderRef.set(
     {
       emails: {

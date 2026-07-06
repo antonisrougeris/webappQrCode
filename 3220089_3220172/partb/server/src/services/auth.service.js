@@ -117,3 +117,21 @@ export async function getCurrentUser(uid) {
     ...snap.data(),
   };
 }
+
+
+export async function checkEmailExists(email) {
+  if (!email) throw new ApiError(400, "Missing email");
+
+  const auth = getAuthService();
+
+  try {
+    await auth.getUserByEmail(email);
+    return { exists: true };
+  } catch (err) {
+    if (err?.code === "auth/user-not-found") {
+      return { exists: false };
+    }
+
+    throw err;
+  }
+}

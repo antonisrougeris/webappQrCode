@@ -4,8 +4,11 @@ import {
   registerUser,
   loginUser,
   getCurrentUser,
+  checkEmailExists,
 } from "../services/auth.service.js";
 import { mergeGuestCartIntoUserCart } from "../services/cart.service.js";
+
+
 
 function getUserCartId(user) {
   return user?.uid || user?.id || user?.userId || null;
@@ -49,4 +52,12 @@ export const login = asyncHandler(async (req, res) => {
 export const me = asyncHandler(async (req, res) => {
   const user = await getCurrentUser(req.user?.uid);
   return ok(res, { user });
+});
+
+export const checkEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const result = await checkEmailExists(email);
+
+  return ok(res, result);
 });

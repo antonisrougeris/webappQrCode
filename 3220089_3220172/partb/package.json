@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "pdfkit": "^0.19.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6"
+  }
+}

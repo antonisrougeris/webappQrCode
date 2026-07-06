@@ -46,8 +46,9 @@ export async function connectDB() {
 
   if (!getApps().length) {
     initializeApp({
-      credential: createFirebaseCredentials(),
-    });
+  credential: createFirebaseCredentials(),
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET, // 👈 ADD THIS
+});
   }
 
   db = getFirestore();

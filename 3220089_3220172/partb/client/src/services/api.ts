@@ -83,6 +83,7 @@ export interface RegisterPayload {
   email: string;
   password?: string;
   idToken: string;
+  emailVerified?: boolean;
 }
 
 export interface LoginPayload {

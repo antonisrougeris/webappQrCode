@@ -3,7 +3,7 @@
 import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";
 import { checkout } from "../../services/checkout";
-import { getMe } from "../../services/api";
+import { apiRequest, getMe } from "../../services/api";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 import { setFlashToast } from "../../utils/toast.ts";
 
@@ -209,14 +209,24 @@ function getRequiredFormString(
   return value;
 }
 
+function restoreAfterAuth(): void {
+  const flag = localStorage.getItem("skanare_returning_from_auth");
+
+  if (flag === "1") {
+    restoreCheckoutDraft();
+    localStorage.removeItem("skanare_returning_from_auth");
+  }
+}
+
+
 
 
 document.addEventListener("DOMContentLoaded", () => {
+  restoreAfterAuth();
   restoreCheckoutDraft();
-  void render();
-
   firebaseAuth.onAuthStateChanged(() => {
     setPayButtonState();
+    void render();
   });
 
   document
@@ -252,16 +262,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const user = firebaseAuth.currentUser;
 
-      if (!user) {
+      
+if (!user) {
   saveCheckoutDraft(e.target as HTMLFormElement);
 
-  setFlashToast("Please sign in or create an account before checkout.");
+  const form = new FormData(e.target as HTMLFormElement);
 
-  window.location.href =
-    "/src/pages/login/login.html?redirect=" +
-    encodeURIComponent("/src/pages/checkout/checkout.html");
+  const email = String(form.get("email") || "").trim();
+  const firstName = String(form.get("firstName") || "").trim();
+  const lastName = String(form.get("lastName") || "").trim();
+
+  if (!email) {
+    setFlashToast("Email is required");
+    return;
+  }
+
+  const res = await apiRequest<{ exists: boolean }>("/auth/check-email", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+
+const payload = new URLSearchParams({
+  redirect: "/src/pages/checkout/checkout.html",
+  email,
+  firstName,
+  lastName,
+});
+
+  if (res.exists) {
+    window.location.href = `/src/pages/login/login.html?${payload}`;
+  } else {
+    window.location.href = `/src/pages/register/register.html?${payload}`;
+  }
+
   return;
 }
+
 const me = await getMe();
 
 if (!me?.emailVerified) {

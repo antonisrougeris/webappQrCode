@@ -4,6 +4,9 @@ import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
 import { normalizeUrlOrThrow } from "../utils/validators.js";
 
+import QRCode from "qrcode";
+
+
 export async function getQrCodesForUser(userId) {
   if (!userId) throw new ApiError(401, "Missing user id");
 
@@ -39,4 +42,18 @@ export async function updateQrCodeTarget({ userId, qrId, targetUrl }) {
   const updatedAt = nowIso();
   await qrRef.update({ targetUrl: normalizedTargetUrl, updatedAt });
   return { ...qrCode, targetUrl: normalizedTargetUrl, updatedAt };
+}
+
+
+export async function generateQrBuffer(url) {
+  return QRCode.toBuffer(url, {
+    type: "png",
+    width: 1000,              // PRINT QUALITY
+    margin: 2,
+    errorCorrectionLevel: "H",
+    color: {
+      dark: "#000000",
+      light: "#FFFFFF",
+    },
+  });
 }

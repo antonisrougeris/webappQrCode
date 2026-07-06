@@ -16,6 +16,9 @@ import { register, sendVerificationCode } from "../../services/api";
 initNav();
 void updateCartBadge();
 initMobileMenu();
+document.addEventListener("DOMContentLoaded", () => {
+  applyPrefill();
+});
 
 const form = document.getElementById("registerForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
@@ -37,6 +40,24 @@ function goToRedirect(delay = 800): void {
   }, delay);
 }
 
+function applyPrefill(): void {
+  const params = new URLSearchParams(window.location.search);
+
+  if (!form) return;
+
+  const firstName = params.get("firstName");
+  const lastName = params.get("lastName");
+  const email = params.get("email");
+
+  const fn = form.querySelector<HTMLInputElement>('input[name="firstName"]');
+  const ln = form.querySelector<HTMLInputElement>('input[name="lastName"]');
+  const em = form.querySelector<HTMLInputElement>('input[name="email"]');
+
+  if (fn && firstName) fn.value = firstName;
+  if (ln && lastName) ln.value = lastName;
+  if (em && email) em.value = email;
+}
+
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -51,46 +72,45 @@ form?.addEventListener("submit", async (e) => {
 
   if (statusEl) statusEl.textContent = "Registering...";
 
-  try {
-    const credentials = await createUserWithEmailAndPassword(
-      firebaseAuth,
-      email,
-      password
-    );
+try {
+  const credentials = await createUserWithEmailAndPassword(
+    firebaseAuth,
+    email,
+    password
+  );
 
-await sendVerificationCode();
+  const token = await credentials.user.getIdToken();
+  saveToken(token);
 
-window.location.href =
-  "/src/pages/verify-email/verify-email.html?redirect=" +
-  encodeURIComponent(getRedirectUrl());
+  await register({
+    firstName,
+    lastName,
+    email,
+    password,
+    idToken: token,
+  });
 
-    const token = await credentials.user.getIdToken();
-    saveToken(token);
+  await sendVerificationCode();
 
-    await register({
-      firstName,
-      lastName,
-      email,
-      password,
-      idToken: token,
-    });
-
-    if (statusEl) {
-  statusEl.textContent =
-    "Registration successful. Please check your email to verify your account.";
-}
-
-  await firebaseAuth.signOut();
-
-return;
-  } catch (err: any) {
-    console.error("Register error:", err);
-
-    if (statusEl) {
-      statusEl.textContent = err.message || "Registration failed";
-    }
+  if (statusEl) {
+    statusEl.textContent =
+      "Registration successful. Please check your email to verify your account.";
   }
-});
+
+  window.location.href =
+    "/src/pages/verify-email/verify-email.html?redirect=" +
+    encodeURIComponent(getRedirectUrl());
+
+  return;
+} catch (err: any) {
+  console.error("Register error:", err);
+
+  if (statusEl) {
+    statusEl.textContent = err.message || "Registration failed";
+  }
+}}
+
+);
 
 googleBtn?.addEventListener("click", async () => {
   try {
@@ -107,6 +127,7 @@ googleBtn?.addEventListener("click", async () => {
       lastName: result.user.displayName?.split(" ").slice(1).join(" ") || "",
       email: result.user.email || "",
       idToken: token,
+      emailVerified: true,
     });
 
     if (statusEl) {

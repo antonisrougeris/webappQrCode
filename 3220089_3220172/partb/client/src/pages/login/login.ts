@@ -25,6 +25,8 @@ const registerLink = document.getElementById(
 
 document.addEventListener("DOMContentLoaded", () => {
   showFlashToast();
+    applyPrefill();
+
 });
 
 function getRedirectUrl(): string {
@@ -49,8 +51,22 @@ function applyRegisterRedirect(): void {
 
 function goToRedirect(delay = 800): void {
   setTimeout(() => {
-    window.location.href = getRedirectUrl();
+    const redirect = getRedirectUrl();
+
+    // 🔥 optional safety: restore checkout flag
+    localStorage.setItem("skanare_returning_from_auth", "1");
+
+    window.location.href = redirect;
   }, delay);
+}
+
+function applyPrefill() {
+  const email = new URLSearchParams(window.location.search).get("email");
+
+  if (!email || !form) return;
+
+  const emailInput = form.querySelector<HTMLInputElement>('input[name="email"]');
+  if (emailInput) emailInput.value = email;
 }
 
 initNav();
@@ -69,37 +85,45 @@ if (form) {
     const password = String(formData.get("password") || "");
 
     try {
+      // 1. Firebase Auth login
       const credentials = await signInWithEmailAndPassword(
         firebaseAuth,
         email,
         password
       );
-await credentials.user.reload();
 
-if (!credentials.user.emailVerified) {
-  await firebaseAuth.signOut();
-  removeToken();
-
-  if (statusEl) {
-    statusEl.textContent =
-      "Please verify your email before continuing. Check your inbox.";
-  }
-
-  return;
-}
       const token = await credentials.user.getIdToken();
       saveToken(token);
 
-      await login({
+      // 2. Backend login (Firestore user fetch)
+      const res = await login({
         email,
         idToken: token,
       });
+
+      const user = res?.user;
+
+      if (!user) {
+        throw new Error("User not returned from server");
+      }
+
+      // 3. Firestore verification check (SOURCE OF TRUTH)
+      if (!user.emailVerified) {
+        await firebaseAuth.signOut();
+        removeToken();
+
+        if (statusEl) {
+          statusEl.textContent = "Please verify your email before continuing.";
+        }
+        return;
+      }
 
       if (statusEl) statusEl.textContent = "Login successful! Redirecting...";
 
       goToRedirect();
     } catch (err: any) {
       console.error("Login error:", err);
+
       if (statusEl) {
         statusEl.textContent = err?.message || "Login failed";
       }
@@ -122,6 +146,7 @@ googleBtn?.addEventListener("click", async () => {
       lastName: result.user.displayName?.split(" ").slice(1).join(" ") || "",
       email: result.user.email || "",
       idToken: token,
+      emailVerified: true,
     });
 
     if (statusEl) statusEl.textContent = "Login successful! Redirecting...";
