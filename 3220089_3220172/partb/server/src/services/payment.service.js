@@ -116,16 +116,15 @@ function generateShortId(length = 6) {
     .slice(0, length);
 }
 
-async function generateUniqueShortId(tx, db) {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+async function generateUniqueShortId(db) {
+  for (let attempt = 0; attempt < 10; attempt++) {
     const shortId = generateShortId(6);
 
-    const snap = await tx.get(
-      db
-        .collection(COLLECTIONS.QR_CODES)
-        .where("shortId", "==", shortId)
-        .limit(1)
-    );
+    const snap = await db
+      .collection(COLLECTIONS.QR_CODES)
+      .where("shortId", "==", shortId)
+      .limit(1)
+      .get();
 
     if (snap.empty) return shortId;
   }
@@ -251,7 +250,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
         if (!item.customQr) continue;
 
         const qrId = createId("qr");
-const shortId = await generateUniqueShortId(tx, db);
+const shortId = await generateUniqueShortId(db);
 
 tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
   id: qrId,
