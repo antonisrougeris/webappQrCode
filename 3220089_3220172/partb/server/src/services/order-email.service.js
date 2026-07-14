@@ -313,7 +313,8 @@ export async function sendPaidOrderEmails(order) {
 
       // SAME AS FRONTEND
 const buffer = await generatePrintQrImage(qrUrl, {
-  color: qr.qrConfig?.color || "#000000",
+  qrColor: qr.qrConfig?.qrColor || qr.qrConfig?.color || "#000000",
+  textColor: qr.qrConfig?.textColor || qr.qrConfig?.qrColor || qr.qrConfig?.color || "#000000",
   text: qr.qrConfig?.textPrint || "SCAN ME",
   textPosition: qr.qrConfig?.textPosition || "bottom",
 });

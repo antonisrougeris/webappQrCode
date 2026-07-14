@@ -15,7 +15,8 @@
   "qrConfig": {
     "textPrint": "SCAN ME",
     "textPosition": "bottom",
-    "color": "#ffffff",
+    "qrColor": "#ffffff",
+    "textColor": "#ffffff",
     "size": 3540
   },
   "images": [
@@ -87,7 +88,8 @@
   "qrConfig": {
     "textPrint": "SCAN TO DISCOVER",
     "textPosition": "bottom",
-    "color": "#000000",
+    "qrColor": "#000000",
+    "textColor": "#000000",
     "size": 3540
   },
   "images": [
@@ -155,11 +157,12 @@
   "qrConfig": {
     "textPrint": "WANNA RIDE WITH ME?",
     "textPosition": "bottom",
-    "color": "#ffffff",
+    "qrColor": "#ffffff",
+    "textColor": "#ffffff",
     "size": 3540
   },
   "images": [
-    "/assets/img/products/classic-black.png"
+    "/assets/img/products/black-wanna-ride.png"
   ],
   "variants": [
     {
@@ -224,7 +227,8 @@
   "qrConfig": {
     "textPrint": "SCAN FOR A DATE",
     "textPosition": "bottom",
-    "color": "#1a73e8",
+    "qrColor": ["#ff6a00", "#ee0979"],
+    "textColor": "#000000",
     "size": 3540
   },
   "images": [

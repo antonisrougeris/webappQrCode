@@ -1,99 +1,79 @@
 import QRCode from "qrcode";
 import { createCanvas, loadImage, registerFont } from "canvas";
 import path from "path";
+import {
+  colorizeQrImage,
+  trimTransparent,
+  resolveFillStyle,
+  wrapText,
+} from "./qrImageHelpers.js";
 
 registerFont(path.join(process.cwd(), "fonts", "DejaVuSans-Bold.ttf"), {
   family: "PrintFont",
 });
 
-// Σπάει το text σε γραμμές ώστε καμία να μην ξεπερνάει το maxWidth
-function wrapText(ctx, text, maxWidth) {
-  const words = text.split(" ");
-  const lines = [];
-  let currentLine = words[0] || "";
-
-  for (let i = 1; i < words.length; i++) {
-    const testLine = currentLine + " " + words[i];
-    const { width: testWidth } = ctx.measureText(testLine);
-
-    if (testWidth <= maxWidth) {
-      currentLine = testLine;
-    } else {
-      lines.push(currentLine);
-      currentLine = words[i];
-    }
-  }
-  lines.push(currentLine);
-  return lines;
-}
-
 export async function generatePrintQrImage(url, config = {}) {
   try {
-    const color = config.color || "#000000";
+    const qrColor = config.qrColor || config.color || "#000000";
+    const textColor = config.textColor || qrColor;
     const text = config.textPrint || config.text || "SCAN ME";
     const textPosition = config.textPosition === "top" ? "top" : "bottom";
     const width = Number(config.size) || 3540;
+    const gap = Number(config.gap) ?? Math.round(width * 0.02);
 
-    const qrBuffer = await QRCode.toBuffer(url, {
+    const qrRawBuffer = await QRCode.toBuffer(url, {
       type: "png",
       width,
       margin: 4,
       errorCorrectionLevel: "H",
-      color: { dark: color, light: "#00000000" },
+      color: { dark: "#000000", light: "#00000000" },
     });
 
-    const qrImage = await loadImage(qrBuffer);
+    let qrCanvas = await loadImage(qrRawBuffer);
+    qrCanvas = colorizeQrImage(qrCanvas, qrColor);
+    qrCanvas = trimTransparent(qrCanvas);
 
-    // Μεγαλύτερο text, μικρότερο κενό από το QR
+    const qrW = qrCanvas.width;
+    const qrH = qrCanvas.height;
+
     const fontSize = Math.round(width * 0.1);
     const padding = Math.round(width * 0.05);
-    const gap = Math.round(width * 0.012);
     const lineHeight = Math.round(fontSize * 1.15);
-    const maxTextWidth = width - padding * 2;
+    const maxTextWidth = qrW;
 
-    // Χρειαζόμαστε ένα context ΠΡΙΝ φτιάξουμε το τελικό canvas, για να μετρήσουμε το text
-    const measureCanvas = createCanvas(width, 10);
+    const measureCanvas = createCanvas(10, 10);
     const measureCtx = measureCanvas.getContext("2d");
     measureCtx.font = `bold ${fontSize}px "PrintFont"`;
-
     const lines = wrapText(measureCtx, text.toUpperCase(), maxTextWidth);
     const textBlockHeight = lines.length * lineHeight;
 
-    const canvasHeight =
-      qrImage.height + padding * 2 + textBlockHeight + gap;
+    const canvasWidth = qrW + padding * 2;
+    const canvasHeight = qrH + padding * 2 + textBlockHeight + gap;
 
-    const canvas = createCanvas(width, canvasHeight);
+    const canvas = createCanvas(canvasWidth, canvasHeight);
     const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    ctx.clearRect(0, 0, width, canvasHeight);
-    ctx.fillStyle = color;
     ctx.font = `bold ${fontSize}px "PrintFont"`;
     ctx.textAlign = "center";
+    ctx.fillStyle = resolveFillStyle(ctx, textColor, canvasWidth, textBlockHeight);
     ctx.textBaseline = "top";
 
-    const center = width / 2;
+    const center = canvasWidth / 2;
 
     if (textPosition === "top") {
-      lines.forEach((line, i) => {
-        ctx.fillText(line, center, padding + i * lineHeight);
-      });
-      ctx.drawImage(qrImage, 0, padding + textBlockHeight + gap);
+      lines.forEach((line, i) => ctx.fillText(line, center, padding + i * lineHeight));
+      ctx.drawImage(qrCanvas, padding, padding + textBlockHeight + gap);
     } else {
-      ctx.drawImage(qrImage, 0, padding);
-      const textStartY = padding + qrImage.height + gap;
-      lines.forEach((line, i) => {
-        ctx.fillText(line, center, textStartY + i * lineHeight);
-      });
+      ctx.drawImage(qrCanvas, padding, padding);
+      const textStartY = padding + qrH + gap;
+      lines.forEach((line, i) => ctx.fillText(line, center, textStartY + i * lineHeight));
     }
 
     const buffer = canvas.toBuffer("image/png");
     console.log("PRINT FINAL IMAGE:", {
-      color,
-      text,
-      textPosition,
-      width,
-      lines: lines.length,
-      bytes: buffer.length,
+      qrColor, textColor, text, textPosition,
+      canvasWidth, canvasHeight, lines: lines.length, bytes: buffer.length,
     });
     return buffer;
   } catch (err) {
