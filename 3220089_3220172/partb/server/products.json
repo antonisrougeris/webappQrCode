@@ -20,7 +20,7 @@
     "size": 3540
   },
   "images": [
-    "/assets/img/products/classic-black.png"
+    "/assets/img/products/black-scan-me.png"
   ],
   "variants": [
     {
@@ -93,7 +93,7 @@
     "size": 3540
   },
   "images": [
-    "/assets/img/products/classic-white.png"
+    "/assets/img/products/white-scan-to-discover.png"
   ],
   "variants": [
     {
