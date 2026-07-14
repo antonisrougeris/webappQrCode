@@ -19,8 +19,9 @@ export async function generatePrintQrImage(url, config = {}) {
     const text = config.textPrint || config.text || "SCAN ME";
     const textPosition = config.textPosition === "top" ? "top" : "bottom";
     const width = Number(config.size) || 3540;
-    const gap = Number(config.gap) ?? Math.round(width * 0.02);
-
+    
+const parsedGap = Number(config.gap);
+const gap = Number.isFinite(parsedGap) ? parsedGap : Math.round(width * 0.02);
     const qrRawBuffer = await QRCode.toBuffer(url, {
       type: "png",
       width,
