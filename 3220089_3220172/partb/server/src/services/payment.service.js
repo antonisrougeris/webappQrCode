@@ -249,32 +249,69 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       for (const item of order.items || []) {
         if (!item.customQr) continue;
 
-        const qrId = createId("qr");const product = order.items.find(i => i.productId === item.productId);
-
-const qrConfig = product?.qrConfig || {
-  textPrint: "SCAN ME",
-  textPosition: "bottom",
-  color: "#000000"
-};
+       const qrId = createId("qr");
 const shortId = await generateUniqueShortId(db);
 
+const qrConfig = {
+  textPrint:
+    String(item.qrConfig?.textPrint || "SCAN ME").trim(),
 
-tx.set(db.collection(COLLECTIONS.QR_CODES).doc(qrId), {
-  id: qrId,
-  shortId,
-  userId: order.ownerType === "user" ? order.ownerId : null,
-  guestId: order.ownerType === "guest" ? order.ownerId : null,
+  textPosition:
+    item.qrConfig?.textPosition === "top"
+      ? "top"
+      : "bottom",
+
+  color:
+    /^#[0-9a-fA-F]{6}$/.test(
+      String(item.qrConfig?.color || "")
+    )
+      ? item.qrConfig.color
+      : "#000000",
+
+  size:
+    Number(item.qrConfig?.size) > 0
+      ? Number(item.qrConfig.size)
+      : 3540,
+};
+
+console.log("QR CONFIG FROM ORDER SNAPSHOT:", {
   orderId: order.id,
   productId: item.productId,
-  productTitle: item.title,
-  targetUrl: item.qrDestination || "",
-  // ✅ NEW
-qrConfig,
-
-  scans: 0,
-  createdAt: paidAt,
-  updatedAt: paidAt,
+  itemQrConfig: item.qrConfig,
+  finalQrConfig: qrConfig,
 });
+
+
+
+tx.set(
+  db.collection(COLLECTIONS.QR_CODES).doc(qrId),
+  {
+    id: qrId,
+    shortId,
+
+    userId:
+      order.ownerType === "user"
+        ? order.ownerId
+        : null,
+
+    guestId:
+      order.ownerType === "guest"
+        ? order.ownerId
+        : null,
+
+    orderId: order.id,
+    productId: item.productId,
+    productTitle: item.title,
+    targetUrl: item.qrDestination || "",
+
+    qrConfig,
+
+    scans: 0,
+    createdAt: paidAt,
+    updatedAt: paidAt,
+  }
+);
+
       }
     }
 

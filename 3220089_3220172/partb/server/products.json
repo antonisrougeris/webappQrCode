@@ -15,7 +15,8 @@
     "qrConfig": {
   "textPrint": "SCAN ME",
   "textPosition": "bottom",
-  "color": "#ffffff"
+  "color": "#ffffff",
+  "size": 3540
 },
     "images": [
       "/assets/img/products/classic-black.png",
@@ -87,7 +88,8 @@
     "qrConfig": {
   "textPrint": "SCAN ME",
   "textPosition": "bottom",
-  "color": "#000000"
+  "color": "#000000",
+  "size": 3540
 },
     "images": [
       "/assets/img/products/classic-white.png"
@@ -153,7 +155,8 @@
         "qrConfig": {
   "textPrint": "SCAN ME",
   "textPosition": "bottom",
-  "color": "#ffffff"
+  "color": "#ffffff",
+  "size": 3540
 },
     "images": [
       "/assets/img/products/oversized-black.png"
@@ -219,7 +222,8 @@
     "qrConfig": {
   "textPrint": "SCAN ME",
   "textPosition": "bottom",
-  "color": "#1a73e8"
+  "color": "#1a73e8",
+  "size": 3540
 },
     "images": [
       "/assets/img/products/color-qr-tee.png"
@@ -285,7 +289,8 @@
         "qrConfig": {
   "textPrint": "SCAN ME",
   "textPosition": "bottom",
-  "color": "#ffffff"
+  "color": "#ffffff",
+  "size": 3540
 },
     "images": [
       "/assets/img/products/qr-card.png"
@@ -326,7 +331,8 @@
         "qrConfig": {
   "textPrint": "SCAN ME",
   "textPosition": "bottom",
-  "color": "#ffffff"
+  "color": "#ffffff",
+  "size": 3540
 },
     "images": [
       "/assets/img/products/qr-keychain.png"
@@ -367,7 +373,8 @@
         "qrConfig": {
   "textPrint": "SCAN ME",
   "textPosition": "bottom",
-  "color": "#ffffff"
+  "color": "#ffffff",
+  "size": 3540
 },
     "images": [
       "/assets/img/products/qr-tote-bag.png"
@@ -408,7 +415,8 @@
         "qrConfig": {
   "textPrint": "SCAN ME",
   "textPosition": "bottom",
-  "color": "#ffffff"
+  "color": "#ffffff",
+  "size": 3540
 },
     "images": [
       "/assets/img/products/qr-stickers.png"

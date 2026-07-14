@@ -123,12 +123,46 @@ export async function checkoutCartForOwner({
         patch: { ...stockPatch, updatedAt: createdAt },
       });
 
-      // IMPORTANT: price always comes from product/variant server-side, never from cart/client.
-      const unitPrice = toNumber(variant?.price ?? product.price, 0);
-      const lineTotal = unitPrice * quantity;
-      subtotal += lineTotal;
 
-      orderItems.push({
+const unitPrice = toNumber(variant?.price ?? product.price, 0);
+const lineTotal = unitPrice * quantity;
+subtotal += lineTotal;
+
+
+console.log("PRODUCT QR CONFIG DURING CHECKOUT:", {
+  productId: product.id,
+  title: product.title,
+  customQr: product.customQr,
+  qrConfig: product.qrConfig,
+});
+
+
+const orderItemQrConfig = product.customQr
+  ? {
+      textPrint:
+        String(product.qrConfig?.textPrint || "SCAN ME").trim(),
+
+      textPosition:
+        product.qrConfig?.textPosition === "top"
+          ? "top"
+          : "bottom",
+
+      color:
+        product.qrConfig?.color || "#000000",
+
+      size:
+        product.qrConfig?.size || 3540,
+    }
+  : null;
+
+
+console.log("ORDER ITEM QR CONFIG:", {
+  productId: product.id,
+  qrConfig: orderItemQrConfig,
+});
+
+
+orderItems.push({
         id: item.id || createId("orderitem"),
         productId: product.id,
         slug: product.slug || product.id,
@@ -147,8 +181,14 @@ export async function checkoutCartForOwner({
               color: variant.color || "",
             }
           : null,
-        qrDestination: item.qrDestination || null,
-        customQr: !!item.customQr,
+        
+
+          qrDestination: item.qrDestination || null,
+customQr: Boolean(product.customQr),
+
+qrConfig: orderItemQrConfig,
+
+
       });
     }
 

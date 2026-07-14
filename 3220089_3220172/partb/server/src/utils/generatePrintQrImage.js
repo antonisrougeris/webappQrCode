@@ -1,55 +1,58 @@
 import QRCode from "qrcode";
-import { createCanvas, loadImage } from "canvas";
+import { createCanvas, loadImage, registerFont } from "canvas";
+import path from "path";
+
+// module-level, τρέχει μία φορά
+registerFont(path.join(process.cwd(), "fonts", "DejaVuSans-Bold.ttf"), {
+  family: "PrintFont",
+});
 
 export async function generatePrintQrImage(url, config = {}) {
-  const {
-    color = "#000000",
-    text = "SCAN ME",
-    textPosition = "bottom",
-    fontSize = 120,
-    width = 3540,
-  } = config;
+  try {
+    const color = config.color || "#000000";
+    const text = config.textPrint || config.text || "SCAN ME";
+    const textPosition = config.textPosition === "top" ? "top" : "bottom";
+    const width = Number(config.size) || 3540;
 
-  // 1. QR (transparent background)
-  const qrBuffer = await QRCode.toBuffer(url, {
-    type: "png",
-    width,
-    margin: 4,
-    color: {
-      dark: color,
-      light: "#00000000",
-    },
-    errorCorrectionLevel: "H",
-  });
+    const qrBuffer = await QRCode.toBuffer(url, {
+      type: "png",
+      width,
+      margin: 4,
+      errorCorrectionLevel: "H",
+      color: { dark: color, light: "#00000000" },
+    });
 
-  const qrImage = await loadImage(qrBuffer);
+    const qrImage = await loadImage(qrBuffer);
 
-  // 2. Canvas setup
-  const padding = 200;
-  const textHeight = fontSize + 80;
+    const fontSize = Math.round(width * 0.08);
+    const padding = Math.round(width * 0.05);
+    const gap = Math.round(width * 0.03);
+    const canvasHeight = qrImage.height + padding * 2 + fontSize + gap;
 
-  const height = qrImage.height + textHeight + padding;
+    const canvas = createCanvas(width, canvasHeight);
+    const ctx = canvas.getContext("2d");
 
-  const canvas = createCanvas(qrImage.width, height);
-  const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, width, canvasHeight);
+    ctx.fillStyle = color;
+    ctx.font = `bold ${fontSize}px "PrintFont"`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
 
-  // transparent background
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const center = width / 2;
 
-  // text styling
-  ctx.fillStyle = "#000000";
-  ctx.font = `bold ${fontSize}px Arial`;
-  ctx.textAlign = "center";
+    if (textPosition === "top") {
+      ctx.fillText(text, center, padding);
+      ctx.drawImage(qrImage, 0, padding + fontSize + gap);
+    } else {
+      ctx.drawImage(qrImage, 0, padding);
+      ctx.fillText(text, center, padding + qrImage.height + gap);
+    }
 
-  const x = canvas.width / 2;
-
-  if (textPosition === "top") {
-    ctx.fillText(text, x, fontSize + 40);
-    ctx.drawImage(qrImage, 0, textHeight, qrImage.width, qrImage.height);
-  } else {
-    ctx.drawImage(qrImage, 0, 0, qrImage.width, qrImage.height);
-    ctx.fillText(text, x, qrImage.height + fontSize);
+    const buffer = canvas.toBuffer("image/png");
+    console.log("PRINT FINAL IMAGE:", { color, text, textPosition, width, bytes: buffer.length });
+    return buffer;
+  } catch (err) {
+    console.error("generatePrintQrImage ERROR:", err);
+    throw err;
   }
-
-  return canvas.toBuffer("image/png");
 }
