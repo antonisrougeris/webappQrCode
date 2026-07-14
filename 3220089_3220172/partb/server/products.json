@@ -1,278 +1,284 @@
 [
   {
-    "id": "classic-black",
-    "slug": "qr-classic-tee-black",
-    "title": "QR Classic Tee - Black",
-    "shortDescription": "Unisex custom QR t-shirt in black.",
-    "description": "100% organic cotton t-shirt with custom editable QR print. High-quality durable print, 180 g/m² fabric density and medium fit for everyday wear.",
-    "category": "tshirt",
-    "price": 29.9,
-    "currency": "EUR",
-    "stock": 20,
-    "featured": true,
-    "active": true,
-    "customQr": true,
-    "qrConfig": {
-  "textPrint": "SCAN ME",
-  "textPosition": "bottom",
-  "color": "#ffffff",
-  "size": 3540
-},
-    "images": [
-      "/assets/img/products/classic-black.png",
-      "/assets/img/products/classic-white.png"
-    ],
-    "variants": [
-      {
-        "sku": "CLASSIC-BLACK-S",
-        "size": "S",
-        "color": "Black",
-        "stock": 4
-      },
-      {
-        "sku": "CLASSIC-BLACK-M",
-        "size": "M",
-        "color": "Black",
-        "stock": 5
-      },
-      {
-        "sku": "CLASSIC-BLACK-L",
-        "size": "L",
-        "color": "Black",
-        "stock": 5
-      },
-      {
-        "sku": "CLASSIC-BLACK-XL",
-        "size": "XL",
-        "color": "Black",
-        "stock": 3
-      },
-      {
-        "sku": "CLASSIC-BLACK-2XL",
-        "size": "2XL",
-        "color": "Black",
-        "stock": 3
-      }
-    ],
-    "reviews": [
-      {
-        "name": "Maria",
-        "rating": 5,
-        "comment": "Great quality and the QR code scans perfectly."
-      },
-      {
-        "name": "Alex",
-        "rating": 5,
-        "comment": "Nice fit and fast delivery."
-      },
-      {
-        "name": "Nikos",
-        "rating": 4,
-        "comment": "Very good print quality."
-      }
-    ]
+  "id": "classic-black",
+  "slug": "qr-classic-tee-black",
+  "title": "QR Classic Tee - Black",
+  "shortDescription": "Black unisex custom QR t-shirt with white QR print.",
+  "description": "100% organic cotton black t-shirt with custom editable white QR print. High-quality durable print, 180 g/m² fabric density and medium fit for everyday wear.",
+  "category": "tshirt",
+  "price": 29.9,
+  "currency": "EUR",
+  "stock": 20,
+  "featured": true,
+  "active": true,
+  "customQr": true,
+  "qrConfig": {
+    "textPrint": "SCAN ME",
+    "textPosition": "bottom",
+    "color": "#ffffff",
+    "size": 3540
   },
+  "images": [
+    "/assets/img/products/classic-black.png"
+  ],
+  "variants": [
+    {
+      "sku": "CLASSIC-BLACK-S",
+      "size": "S",
+      "color": "Black",
+      "stock": 4
+    },
+    {
+      "sku": "CLASSIC-BLACK-M",
+      "size": "M",
+      "color": "Black",
+      "stock": 5
+    },
+    {
+      "sku": "CLASSIC-BLACK-L",
+      "size": "L",
+      "color": "Black",
+      "stock": 5
+    },
+    {
+      "sku": "CLASSIC-BLACK-XL",
+      "size": "XL",
+      "color": "Black",
+      "stock": 3
+    },
+    {
+      "sku": "CLASSIC-BLACK-2XL",
+      "size": "2XL",
+      "color": "Black",
+      "stock": 3
+    }
+  ],
+  "reviews": [
+    {
+      "name": "Maria",
+      "rating": 5,
+      "comment": "Great quality and the QR code scans perfectly."
+    },
+    {
+      "name": "Alex",
+      "rating": 5,
+      "comment": "Nice fit and fast delivery."
+    },
+    {
+      "name": "Nikos",
+      "rating": 4,
+      "comment": "Very good print quality."
+    }
+  ]
+},
   {
-    "id": "classic-white",
-    "slug": "qr-classic-tee-white",
-    "title": "QR Classic Tee - White",
-    "shortDescription": "Unisex custom QR t-shirt in white.",
-    "description": "Premium white t-shirt with editable QR print. Soft organic cotton feel with a clean minimal look and comfortable regular fit.",
-    "category": "tshirt",
-    "price": 29.9,
-    "currency": "EUR",
-    "stock": 20,
-    "featured": true,
-    "active": true,
-    "customQr": true,
-    "qrConfig": {
-  "textPrint": "SCAN ME",
-  "textPosition": "bottom",
-  "color": "#000000",
-  "size": 3540
-},
-    "images": [
-      "/assets/img/products/classic-white.png"
-    ],
-    "variants": [
-      {
-        "sku": "CLASSIC-WHITE-S",
-        "size": "S",
-        "color": "White",
-        "stock": 4
-      },
-      {
-        "sku": "CLASSIC-WHITE-M",
-        "size": "M",
-        "color": "White",
-        "stock": 5
-      },
-      {
-        "sku": "CLASSIC-WHITE-L",
-        "size": "L",
-        "color": "White",
-        "stock": 5
-      },
-      {
-        "sku": "CLASSIC-WHITE-XL",
-        "size": "XL",
-        "color": "White",
-        "stock": 3
-      },
-      {
-        "sku": "CLASSIC-WHITE-2XL",
-        "size": "2XL",
-        "color": "White",
-        "stock": 3
-      }
-    ],
-    "reviews": [
-      {
-        "name": "Eleni",
-        "rating": 5,
-        "comment": "Clean design and comfortable fabric."
-      },
-      {
-        "name": "George",
-        "rating": 4,
-        "comment": "The QR print looks sharp."
-      }
-    ]
+  "id": "classic-white",
+  "slug": "qr-classic-tee-white",
+  "title": "QR Classic Tee - White",
+  "shortDescription": "White unisex custom QR t-shirt with black QR print.",
+  "description": "Premium white t-shirt with custom editable black QR print. Soft organic cotton feel with a clean minimal look and comfortable regular fit.",
+  "category": "tshirt",
+  "price": 29.9,
+  "currency": "EUR",
+  "stock": 20,
+  "featured": true,
+  "active": true,
+  "customQr": true,
+  "qrConfig": {
+    "textPrint": "SCAN TO DISCOVER",
+    "textPosition": "bottom",
+    "color": "#000000",
+    "size": 3540
   },
+  "images": [
+    "/assets/img/products/classic-white.png"
+  ],
+  "variants": [
+    {
+      "sku": "CLASSIC-WHITE-S",
+      "size": "S",
+      "color": "White",
+      "stock": 4
+    },
+    {
+      "sku": "CLASSIC-WHITE-M",
+      "size": "M",
+      "color": "White",
+      "stock": 5
+    },
+    {
+      "sku": "CLASSIC-WHITE-L",
+      "size": "L",
+      "color": "White",
+      "stock": 5
+    },
+    {
+      "sku": "CLASSIC-WHITE-XL",
+      "size": "XL",
+      "color": "White",
+      "stock": 3
+    },
+    {
+      "sku": "CLASSIC-WHITE-2XL",
+      "size": "2XL",
+      "color": "White",
+      "stock": 3
+    }
+  ],
+  "reviews": [
+    {
+      "name": "Eleni",
+      "rating": 5,
+      "comment": "Clean design and comfortable fabric."
+    },
+    {
+      "name": "George",
+      "rating": 4,
+      "comment": "The QR print looks sharp."
+    }
+  ]
+},
+
   {
-    "id": "oversized-black",
-    "slug": "qr-oversized-tee-black",
-    "title": "QR Oversized Tee",
-    "shortDescription": "Oversized black QR t-shirt with heavy cotton feel.",
-    "description": "Streetwear-inspired oversized black t-shirt with editable QR print and premium heavyweight cotton for a more structured fit.",
-    "category": "tshirt",
-    "price": 34.9,
-    "currency": "EUR",
-    "stock": 15,
-    "featured": true,
-    "active": true,
-    "customQr": true,
-        "qrConfig": {
-  "textPrint": "SCAN ME",
-  "textPosition": "bottom",
-  "color": "#ffffff",
-  "size": 3540
-},
-    "images": [
-      "/assets/img/products/oversized-black.png"
-    ],
-    "variants": [
-      {
-        "sku": "OVERSIZED-BLACK-S",
-        "size": "S",
-        "color": "Black",
-        "stock": 3
-      },
-      {
-        "sku": "OVERSIZED-BLACK-M",
-        "size": "M",
-        "color": "Black",
-        "stock": 4
-      },
-      {
-        "sku": "OVERSIZED-BLACK-L",
-        "size": "L",
-        "color": "Black",
-        "stock": 4
-      },
-      {
-        "sku": "OVERSIZED-BLACK-XL",
-        "size": "XL",
-        "color": "Black",
-        "stock": 2
-      },
-      {
-        "sku": "OVERSIZED-BLACK-2XL",
-        "size": "2XL",
-        "color": "Black",
-        "stock": 2
-      }
-    ],
-    "reviews": [
-      {
-        "name": "Kostas",
-        "rating": 5,
-        "comment": "Perfect oversized fit."
-      },
-      {
-        "name": "Anna",
-        "rating": 5,
-        "comment": "Premium feel and strong print."
-      }
-    ]
+  "id": "classic-black-ride",
+  "slug": "qr-classic-tee-black-ride",
+  "title": "QR Classic Tee - Black",
+  "shortDescription": "Black unisex custom QR t-shirt with custom white QR print.",
+  "description": "100% organic cotton black t-shirt with editable QR print. High-quality durable print, 180 g/m² fabric density and comfortable medium fit for everyday wear.",
+  "category": "tshirt",
+  "price": 29.9,
+  "currency": "EUR",
+  "stock": 20,
+  "featured": true,
+  "active": true,
+  "customQr": true,
+  "qrConfig": {
+    "textPrint": "WANNA RIDE WITH ME?",
+    "textPosition": "bottom",
+    "color": "#ffffff",
+    "size": 3540
   },
+  "images": [
+    "/assets/img/products/classic-black.png"
+  ],
+  "variants": [
+    {
+      "sku": "CLASSIC-BLACK-RIDE-S",
+      "size": "S",
+      "color": "Black",
+      "stock": 4
+    },
+    {
+      "sku": "CLASSIC-BLACK-RIDE-M",
+      "size": "M",
+      "color": "Black",
+      "stock": 5
+    },
+    {
+      "sku": "CLASSIC-BLACK-RIDE-L",
+      "size": "L",
+      "color": "Black",
+      "stock": 5
+    },
+    {
+      "sku": "CLASSIC-BLACK-RIDE-XL",
+      "size": "XL",
+      "color": "Black",
+      "stock": 3
+    },
+    {
+      "sku": "CLASSIC-BLACK-RIDE-2XL",
+      "size": "2XL",
+      "color": "Black",
+      "stock": 3
+    }
+  ],
+  "reviews": [
+    {
+      "name": "Kostas",
+      "rating": 5,
+      "comment": "Great quality and unique QR design."
+    },
+    {
+      "name": "Anna",
+      "rating": 5,
+      "comment": "The print looks premium."
+    }
+  ]
+},
+  
+  
   {
-    "id": "color-qr-tee",
-    "slug": "qr-color-tee",
-    "title": "QR Color Tee",
-    "shortDescription": "Custom t-shirt with colored QR print.",
-    "description": "T-shirt with editable colored QR code print. Built for users who want a more playful and personalized QR product look.",
-    "category": "tshirt",
-    "price": 32.9,
-    "currency": "EUR",
-    "stock": 12,
-    "featured": true,
-    "active": true,
-    "customQr": true,
-    "qrConfig": {
-  "textPrint": "SCAN ME",
-  "textPosition": "bottom",
-  "color": "#1a73e8",
-  "size": 3540
-},
-    "images": [
-      "/assets/img/products/color-qr-tee.png"
-    ],
-    "variants": [
-      {
-        "sku": "COLOR-QR-BLUE-S",
-        "size": "S",
-        "color": "Blue",
-        "stock": 2
-      },
-      {
-        "sku": "COLOR-QR-BLUE-M",
-        "size": "M",
-        "color": "Blue",
-        "stock": 3
-      },
-      {
-        "sku": "COLOR-QR-BLUE-L",
-        "size": "L",
-        "color": "Blue",
-        "stock": 3
-      },
-      {
-        "sku": "COLOR-QR-BLUE-XL",
-        "size": "XL",
-        "color": "Blue",
-        "stock": 2
-      },
-      {
-        "sku": "COLOR-QR-BLUE-2XL",
-        "size": "2XL",
-        "color": "Blue",
-        "stock": 2
-      }
-    ],
-    "reviews": [
-      {
-        "name": "Sofia",
-        "rating": 5,
-        "comment": "The colored QR looks amazing."
-      },
-      {
-        "name": "Dimitris",
-        "rating": 4,
-        "comment": "Good quality and unique style."
-      }
-    ]
+  "id": "color-qr-tee",
+  "slug": "qr-code-t-shirt-nightfall",
+  "title": "QR Code T-Shirt Unisex - Scan Me - NIGHTFALL",
+  "shortDescription": "White unisex t-shirt with blue QR print.",
+  "description": "Premium white t-shirt with custom blue QR print. A clean minimal design with a unique QR code style, comfortable fit and high-quality durable print.",
+  "category": "tshirt",
+  "price": 29.9,
+  "currency": "EUR",
+  "stock": 12,
+  "featured": true,
+  "active": true,
+  "customQr": true,
+  "qrConfig": {
+    "textPrint": "SCAN FOR A DATE",
+    "textPosition": "bottom",
+    "color": "#1a73e8",
+    "size": 3540
   },
+  "images": [
+    "/assets/img/products/nightfall.png"
+  ],
+  "variants": [
+    {
+      "sku": "NIGHTFALL-S",
+      "size": "S",
+      "color": "White",
+      "stock": 2
+    },
+    {
+      "sku": "NIGHTFALL-M",
+      "size": "M",
+      "color": "White",
+      "stock": 3
+    },
+    {
+      "sku": "NIGHTFALL-L",
+      "size": "L",
+      "color": "White",
+      "stock": 3
+    },
+    {
+      "sku": "NIGHTFALL-XL",
+      "size": "XL",
+      "color": "White",
+      "stock": 2
+    },
+    {
+      "sku": "NIGHTFALL-2XL",
+      "size": "2XL",
+      "color": "White",
+      "stock": 2
+    }
+  ],
+  "reviews": [
+    {
+      "name": "Sofia",
+      "rating": 5,
+      "comment": "The blue QR design looks amazing."
+    },
+    {
+      "name": "Dimitris",
+      "rating": 4,
+      "comment": "Unique style and great quality."
+    }
+  ]
+}
+
+
+
+,
   {
     "id": "qr-card",
     "slug": "qr-card",
