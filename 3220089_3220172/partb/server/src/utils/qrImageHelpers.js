@@ -3,13 +3,16 @@ import { createCanvas } from "canvas";
 export function resolveFillStyle(ctx, colorConfig, w, h) {
   if (typeof colorConfig === "string") return colorConfig;
 
-  const { type = "linear", colors = ["#000000", "#000000"], angle = 0 } = colorConfig;
+  // Δέξου είτε array ["#a","#b"] είτε object { type, colors, angle }
+  const isArray = Array.isArray(colorConfig);
+  const type = isArray ? "linear" : (colorConfig.type || "linear");
+  const colors = isArray ? colorConfig : (colorConfig.colors || ["#000000", "#000000"]);
+  const angle = isArray ? 0 : (colorConfig.angle || 0);
+
+  if (!colors || colors.length < 2) return typeof colors?.[0] === "string" ? colors[0] : "#000000";
 
   if (type === "radial") {
-    const grad = ctx.createRadialGradient(
-      w / 2, h / 2, 0,
-      w / 2, h / 2, Math.max(w, h) / 2
-    );
+    const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) / 2);
     colors.forEach((c, i) => grad.addColorStop(i / (colors.length - 1), c));
     return grad;
   }
