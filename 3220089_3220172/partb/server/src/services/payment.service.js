@@ -252,6 +252,36 @@ export async function markOrderPaidFromVivaWebhook(payload) {
        const qrId = createId("qr");
 const shortId = await generateUniqueShortId(db);
 
+// Δέχεται: hex string "#rrggbb", array ["#a","#b",...], ή object {type,colors,angle}
+function sanitizeQrColor(input, fallback = "#000000") {
+  const isValidHex = (v) => /^#[0-9a-fA-F]{6}$/.test(String(v || ""));
+
+  // Απλό hex string
+  if (typeof input === "string") {
+    return isValidHex(input) ? input : fallback;
+  }
+
+  // Array μορφή: ["#ff6a00", "#ee0979"]
+  if (Array.isArray(input)) {
+    const validColors = input.filter(isValidHex);
+    return validColors.length >= 2 ? validColors : fallback;
+  }
+
+  // Object μορφή: { type, colors, angle }
+  if (input && typeof input === "object" && Array.isArray(input.colors)) {
+    const validColors = input.colors.filter(isValidHex);
+    if (validColors.length >= 2) {
+      return {
+        type: input.type === "radial" ? "radial" : "linear",
+        colors: validColors,
+        angle: Number.isFinite(Number(input.angle)) ? Number(input.angle) : 0,
+      };
+    }
+  }
+
+  return fallback;
+}
+
 const qrConfig = {
   textPrint:
     String(item.qrConfig?.textPrint || "SCAN ME").trim(),
@@ -261,12 +291,15 @@ const qrConfig = {
       ? "top"
       : "bottom",
 
-  color:
-    /^#[0-9a-fA-F]{6}$/.test(
-      String(item.qrConfig?.color || "")
-    )
-      ? item.qrConfig.color
-      : "#000000",
+  qrColor: sanitizeQrColor(
+    item.qrConfig?.qrColor ?? item.qrConfig?.color
+  ),
+
+  textColor: sanitizeQrColor(
+    item.qrConfig?.textColor ??
+      item.qrConfig?.qrColor ??
+      item.qrConfig?.color
+  ),
 
   size:
     Number(item.qrConfig?.size) > 0

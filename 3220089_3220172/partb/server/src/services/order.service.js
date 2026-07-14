@@ -147,15 +147,21 @@ const orderItemQrConfig = product.customQr
           ? "top"
           : "bottom",
 
-      color:
-        product.qrConfig?.color || "#000000",
+      qrColor:
+        product.qrConfig?.qrColor || product.qrConfig?.color || "#000000",
+
+      textColor:
+        product.qrConfig?.textColor ||
+        product.qrConfig?.qrColor ||
+        product.qrConfig?.color ||
+        "#000000",
 
       size:
         product.qrConfig?.size || 3540,
     }
   : null;
 
-
+  
 console.log("ORDER ITEM QR CONFIG:", {
   productId: product.id,
   qrConfig: orderItemQrConfig,

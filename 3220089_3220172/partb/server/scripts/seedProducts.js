@@ -110,11 +110,13 @@ return {
   customQr: Boolean(product.customQr),
 
   // ✅ NEW FIELD
-  qrConfig: {
-    textPrint: product?.qrConfig?.textPrint || "SCAN ME",
-    textPosition: product?.qrConfig?.textPosition || "bottom",
-    color: product?.qrConfig?.color || "#000000"
-  },
+qrConfig: {
+  textPrint: product?.qrConfig?.textPrint || "SCAN ME",
+  textPosition: product?.qrConfig?.textPosition || "bottom",
+  qrColor: product?.qrConfig?.qrColor || product?.qrConfig?.color || "#000000",
+  textColor: product?.qrConfig?.textColor || product?.qrConfig?.qrColor || product?.qrConfig?.color || "#000000",
+  size: product?.qrConfig?.size || 3540,
+},
 
   variants: Array.isArray(product.variants) ? product.variants : [],
   reviews: Array.isArray(product.reviews) ? product.reviews : [],

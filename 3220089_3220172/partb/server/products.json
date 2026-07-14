@@ -1,8 +1,8 @@
 [
   {
-  "id": "classic-black",
-  "slug": "qr-classic-tee-black",
-  "title": "QR Classic Tee - Black",
+ "id": "scan-me-black",
+    "slug": "scan-me-t-shirt-black",
+    "title": "Scan Me T-Shirt - Black",
   "shortDescription": "Black unisex custom QR t-shirt with white QR print.",
   "description": "100% organic cotton black t-shirt with custom editable white QR print. High-quality durable print, 180 g/m² fabric density and medium fit for everyday wear.",
   "category": "tshirt",
@@ -73,9 +73,9 @@
   ]
 },
   {
-  "id": "classic-white",
-  "slug": "qr-classic-tee-white",
-  "title": "QR Classic Tee - White",
+  "id": "discover-me-white",
+    "slug": "discover-me-t-shirt-white",
+    "title": "Discover Me T-Shirt - White",
   "shortDescription": "White unisex custom QR t-shirt with black QR print.",
   "description": "Premium white t-shirt with custom editable black QR print. Soft organic cotton feel with a clean minimal look and comfortable regular fit.",
   "category": "tshirt",
@@ -142,9 +142,9 @@
 },
 
   {
-  "id": "classic-black-ride",
-  "slug": "qr-classic-tee-black-ride",
-  "title": "QR Classic Tee - Black",
+"id": "ride-with-me-black",
+    "slug": "ride-with-me-t-shirt-black",
+    "title": "Ride With Me T-Shirt - Black",
   "shortDescription": "Black unisex custom QR t-shirt with custom white QR print.",
   "description": "100% organic cotton black t-shirt with editable QR print. High-quality durable print, 180 g/m² fabric density and comfortable medium fit for everyday wear.",
   "category": "tshirt",
@@ -212,9 +212,9 @@
   
   
   {
-  "id": "color-qr-tee",
-  "slug": "qr-code-t-shirt-nightfall",
-  "title": "QR Code T-Shirt Unisex - Scan Me - NIGHTFALL",
+"id": "scan-for-a-date-nightfall",
+    "slug": "scan-for-a-date-t-shirt-nightfall",
+    "title": "Scan For A Date T-Shirt - Nightfall",
   "shortDescription": "White unisex t-shirt with blue QR print.",
   "description": "Premium white t-shirt with custom blue QR print. A clean minimal design with a unique QR code style, comfortable fit and high-quality durable print.",
   "category": "tshirt",
