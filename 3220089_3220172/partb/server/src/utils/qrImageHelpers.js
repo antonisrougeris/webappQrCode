@@ -69,6 +69,19 @@ export function trimTransparent(canvas) {
   const trimmedW = right - left + 1;
   const trimmedH = bottom - top + 1;
 
+  // ⚠️ SAFETY: αν δεν βρέθηκε κανένα opaque pixel, μην επιστρέψεις 0-size canvas
+  if (
+    trimmedW <= 0 ||
+    trimmedH <= 0 ||
+    !Number.isFinite(trimmedW) ||
+    !Number.isFinite(trimmedH)
+  ) {
+    console.warn(
+      "trimTransparent: no opaque pixels found (fully transparent QR), returning original canvas untouched"
+    );
+    return canvas;
+  }
+
   const trimmed = createCanvas(trimmedW, trimmedH);
   trimmed.getContext("2d").drawImage(
     canvas,

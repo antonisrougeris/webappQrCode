@@ -33,6 +33,13 @@ export async function generatePrintQrImage(url, config = {}) {
     qrCanvas = colorizeQrImage(qrCanvas, qrColor);
     qrCanvas = trimTransparent(qrCanvas);
 
+    // ⚠️ SAFETY: επιβεβαίωσε ότι το QR canvas έχει έγκυρες διαστάσεις
+    if (!qrCanvas || !qrCanvas.width || !qrCanvas.height) {
+      throw new Error(
+        `Invalid QR canvas after colorize/trim (width=${qrCanvas?.width}, height=${qrCanvas?.height}). qrColor was: ${JSON.stringify(qrColor)}`
+      );
+    }
+
     const qrW = qrCanvas.width;
     const qrH = qrCanvas.height;
 
@@ -49,6 +56,18 @@ export async function generatePrintQrImage(url, config = {}) {
 
     const canvasWidth = qrW + padding * 2;
     const canvasHeight = qrH + padding * 2 + textBlockHeight + gap;
+
+    // ⚠️ SAFETY: επιβεβαίωσε έγκυρες διαστάσεις πριν το createCanvas
+    if (
+      !Number.isFinite(canvasWidth) ||
+      !Number.isFinite(canvasHeight) ||
+      canvasWidth <= 0 ||
+      canvasHeight <= 0
+    ) {
+      throw new Error(
+        `Invalid final canvas dimensions: ${canvasWidth}x${canvasHeight} (qrW=${qrW}, qrH=${qrH}, padding=${padding}, textBlockHeight=${textBlockHeight}, gap=${gap})`
+      );
+    }
 
     const canvas = createCanvas(canvasWidth, canvasHeight);
     const ctx = canvas.getContext("2d");
