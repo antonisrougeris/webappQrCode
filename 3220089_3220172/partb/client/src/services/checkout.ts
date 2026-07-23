@@ -22,6 +22,7 @@ export interface CheckoutShippingAddress {
 export interface CheckoutPayload {
   customer: CheckoutCustomer;
   shippingAddress: CheckoutShippingAddress;
+  phoneCountryCode: string;
   delivery?: "home" | "boxnow";
   locker?: string;
   notes?: string;

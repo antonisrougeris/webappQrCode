@@ -10,9 +10,12 @@ export interface ProductVariant {
 }
 
 export interface ProductReview {
+  id?: string;
   name: string;
   rating: number;
   comment: string;
+  verifiedPurchase?: boolean;
+  createdAt?: string;
 }
 
 export interface Product {

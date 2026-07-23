@@ -266,6 +266,7 @@ async function renderCrossSell(cartItems: CartItem[]): Promise<string> {
       .filter(
         (product) =>
           product.active !== false &&
+          product.category === "accessory" &&
           !currentIds.has(product.id) &&
           !currentIds.has(product._id || "")
       )

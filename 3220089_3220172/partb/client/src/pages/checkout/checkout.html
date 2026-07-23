@@ -126,8 +126,28 @@
               <input name="lastName" placeholder="Last name" required />
             </div>
     
-            <input name="email" placeholder="Email" required />
-            <input name="phone" placeholder="Phone" required />
+            <input name="email" type="email" autocomplete="email" placeholder="Email" required />
+            <div class="checkout-phone-field">
+              <select name="phoneCountryCode" aria-label="Phone country code" required>
+                <option value="GR">Greece (+30)</option>
+                <option value="CY">Cyprus (+357)</option>
+                <option value="GB">United Kingdom (+44)</option>
+                <option value="DE">Germany (+49)</option>
+                <option value="FR">France (+33)</option>
+                <option value="IT">Italy (+39)</option>
+                <option value="ES">Spain (+34)</option>
+                <option value="US">United States (+1)</option>
+                <option value="CA">Canada (+1)</option>
+                <option value="AU">Australia (+61)</option>
+                <option value="NL">Netherlands (+31)</option>
+                <option value="BE">Belgium (+32)</option>
+                <option value="AT">Austria (+43)</option>
+                <option value="PT">Portugal (+351)</option>
+                <option value="IE">Ireland (+353)</option>
+              </select>
+              <input name="phoneNumber" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="Phone number" maxlength="15" required />
+            </div>
+            <small id="phoneValidationMessage" class="field-error" aria-live="polite"></small>
           </div>
     
           <!-- ADDRESS -->
@@ -137,10 +157,27 @@
             <input name="address" placeholder="Address" required />
             <div class="row">
               <input name="city" placeholder="City" required />
-              <input name="postalCode" placeholder="Postal code" required />
+              <input name="postalCode" inputmode="numeric" maxlength="10" placeholder="Postal code" required />
             </div>
     
-            <input name="country" placeholder="Country" required />
+            <select name="country" required>
+              <option value="" disabled selected>Select country</option>
+              <option value="Greece">Greece</option>
+              <option value="Cyprus">Cyprus</option>
+              <option value="United Kingdom">United Kingdom</option>
+              <option value="Germany">Germany</option>
+              <option value="France">France</option>
+              <option value="Italy">Italy</option>
+              <option value="Spain">Spain</option>
+              <option value="United States">United States</option>
+              <option value="Canada">Canada</option>
+              <option value="Australia">Australia</option>
+              <option value="Netherlands">Netherlands</option>
+              <option value="Belgium">Belgium</option>
+              <option value="Austria">Austria</option>
+              <option value="Portugal">Portugal</option>
+              <option value="Ireland">Ireland</option>
+            </select>
           </div>
     
           <!-- DELIVERY -->

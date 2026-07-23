@@ -14,7 +14,7 @@ function isLive() {
 }
 
 function getVivaBaseApi() {
-  return isLive() ? VIVA_LIVE_API : VIVA_DEMO_API;
+  return process.env.VIVA_API_BASE || (isLive() ? VIVA_LIVE_API : VIVA_DEMO_API);
 }
 
 function getVivaAccountsBase() {
@@ -22,7 +22,18 @@ function getVivaAccountsBase() {
 }
 
 function getVivaCheckoutBase() {
-  return isLive() ? VIVA_LIVE_CHECKOUT : VIVA_DEMO_CHECKOUT;
+  return process.env.VIVA_CHECKOUT_BASE || (isLive() ? VIVA_LIVE_CHECKOUT : VIVA_DEMO_CHECKOUT);
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text.slice(0, 500) };
+  }
 }
 
 function getVivaWebBase() {
@@ -60,12 +71,11 @@ async function getVivaAccessToken() {
     }),
   });
 
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
+  const payload = await readJsonResponse(response);
 
   if (!response.ok) {
     console.error("Viva auth failed:", response.status, payload);
-    throw new ApiError(502, "Failed to authenticate with Viva", payload);
+    throw new ApiError(502, `Failed to authenticate with Viva (${response.status})`, payload);
   }
 
   if (!payload?.access_token) {
@@ -104,7 +114,7 @@ export async function createVivaPaymentOrder(order) {
       email: order.customer.email,
       fullName: `${order.customer.firstName} ${order.customer.lastName}`.trim(),
       phone: order.customer.phone || "",
-      countryCode: "GR",
+      countryCode: order.customer.phoneCountryCode || "GR",
       requestLang: "el-GR",
     },
 
@@ -137,15 +147,20 @@ export async function createVivaPaymentOrder(order) {
     body: JSON.stringify(body),
   });
 
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
+  const payload = await readJsonResponse(response);
 
   if (!response.ok) {
     console.error("Viva create order failed:", response.status, payload);
-    throw new ApiError(502, "Failed to create Viva payment order", payload);
+    throw new ApiError(502, `Failed to create Viva payment order (${response.status})`, payload);
   }
 
-  const orderCode = String(payload?.orderCode || payload?.OrderCode || "");
+  const orderCode = String(
+    payload?.orderCode ||
+      payload?.OrderCode ||
+      payload?.order?.orderCode ||
+      payload?.order?.OrderCode ||
+      ""
+  );
 
   if (!orderCode) {
     throw new ApiError(502, "Viva did not return an order code", payload);

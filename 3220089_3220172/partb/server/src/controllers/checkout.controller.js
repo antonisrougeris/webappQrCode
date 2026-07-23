@@ -19,6 +19,7 @@ export const checkout = asyncHandler(async (req, res) => {
     ownerId: owner.id,
     ownerType: owner.type,
     customer: body.customer,
+    phoneCountryCode: body.phoneCountryCode,
     shippingAddress: body.shippingAddress,
     delivery: body.delivery,
     locker: body.locker || null,

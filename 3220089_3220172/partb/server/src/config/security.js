@@ -1,7 +1,7 @@
 export function getAllowedOrigins() {
   return String(process.env.CORS_ORIGIN || "")
     .split(",")
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
     .filter(Boolean);
 }
 
@@ -15,18 +15,22 @@ export function corsOptions() {
 
   return {
     origin(origin, callback) {
-  if (!origin) return callback(null, true);
+      // Επιτρέπει curl, Postman, server-to-server requests
+      // που δεν στέλνουν Origin header.
+      if (!origin) {
+        return callback(null, true);
+      }
 
-  const allowed = getAllowedOrigins();
+      const normalizedOrigin = origin.replace(/\/+$/, "");
 
-  if (allowed.includes(origin)) {
-    return callback(null, true);
-  }
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
 
-  console.warn("Blocked CORS origin:", origin);
+      console.warn("Blocked CORS origin:", origin);
+      return callback(null, false);
+    },
 
-  return callback(null, false); // NO crash
-},
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

@@ -4,4 +4,5 @@ export const COLLECTIONS = {
   CARTS: "carts",
   ORDERS: "orders",
   QR_CODES: "qrCodes",
+  REVIEWS: "reviews",
 };

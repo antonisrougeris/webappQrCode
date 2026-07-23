@@ -9,8 +9,10 @@ export interface Order {
   currency?: string;
   items?: CartItem[];
   createdAt?: string;
+  paymentStatus?: string;
 }
 
 export async function getOrders(): Promise<Order[]> {
-  return apiRequest<Order[]>("/orders");
+  const response = await apiRequest<{ orders?: Order[] } | Order[]>("/orders");
+  return Array.isArray(response) ? response : response.orders || [];
 }

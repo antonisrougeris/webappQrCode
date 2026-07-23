@@ -11,6 +11,9 @@ import {
   type ProductReview,
 } from "../../services/products";
 import { addCartItem } from "../../services/cart";
+import { firebaseAuth } from "../../services/firebase";
+import { getOrders } from "../../services/orders";
+import { createProductReview, getProductReviews } from "../../services/reviews";
 
 import { showToast } from "../../utils/toast.ts";
 
@@ -132,10 +135,70 @@ function renderReviews(reviews: ProductReview[]): void {
             ${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}
           </div>
           <p>${review.comment}</p>
+          ${review.verifiedPurchase ? '<small class="verified-review">Verified purchase</small>' : ""}
         </article>
       `
     )
     .join("");
+}
+
+async function setupReviewForm(productId: string): Promise<void> {
+  const form = document.getElementById("reviewForm") as HTMLFormElement | null;
+  const eligibility = document.getElementById("reviewEligibility");
+  if (!form || !eligibility) return;
+
+  const user = firebaseAuth.currentUser;
+  if (!user) {
+    eligibility.textContent = "Sign in and purchase this product to leave a review.";
+    return;
+  }
+
+  const orders = await getOrders();
+  const hasPurchased = orders.some(
+    (order) =>
+      order.paymentStatus === "paid" &&
+      order.items?.some(
+        (item) => String(item.productId || item.id) === String(productId)
+      )
+  );
+
+  if (!hasPurchased) {
+    eligibility.textContent = "A completed purchase is required to leave a review.";
+    return;
+  }
+
+  form.hidden = false;
+  eligibility.textContent = "You purchased this product. Share your experience.";
+  const nameInput = form.elements.namedItem("name") as HTMLInputElement | null;
+  if (nameInput && !nameInput.value) {
+    nameInput.value = user.displayName || user.email?.split("@")[0] || "";
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+
+    const data = new FormData(form);
+    const button = form.querySelector<HTMLButtonElement>("button[type='submit']");
+    if (button) button.disabled = true;
+
+    try {
+      await createProductReview(productId, {
+        name: String(data.get("name") || "").trim(),
+        rating: Number(data.get("rating") || 0),
+        comment: String(data.get("comment") || "").trim(),
+      });
+      const reviews = await getProductReviews(productId);
+      renderReviews(reviews);
+      form.reset();
+      if (nameInput) nameInput.value = user.displayName || user.email?.split("@")[0] || "";
+      eligibility.textContent = "Your verified review was added.";
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Failed to submit review.");
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
 }
 
 function setupVariantControls(
@@ -258,7 +321,12 @@ async function renderRelatedProducts(currentProduct: Product): Promise<void> {
     const products = await getProducts();
 
     const related = products
-      .filter((item) => item.id !== currentProduct.id && item.active !== false)
+      .filter(
+        (item) =>
+          item.id !== currentProduct.id &&
+          item.active !== false &&
+          item.category === "accessory"
+      )
       .sort(() => Math.random() - 0.5)
       .slice(0, 4);
 
@@ -359,7 +427,7 @@ async function renderRelatedProducts(currentProduct: Product): Promise<void> {
 
 
 function getProductIdentifier(): string | null {
-  const queryId = getQueryParam("id");
+  const queryId = getQueryParam("id") || getQueryParam("productId") || getQueryParam("slug");
   if (queryId) return queryId;
 
   const match = window.location.pathname.match(/\/product\/([^/]+)$/);
@@ -370,7 +438,23 @@ function getProductIdentifier(): string | null {
   return null;
 }
 
+function removeReviewQueryParams(): void {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("name") && !params.has("rating") && !params.has("comment")) {
+    return;
+  }
+
+  ["name", "rating", "comment"].forEach((key) => params.delete(key));
+  const query = params.toString();
+  window.history.replaceState(
+    {},
+    document.title,
+    `${window.location.pathname}${query ? `?${query}` : ""}`
+  );
+}
+
 async function initProductDetailsPage(): Promise<void> {
+  removeReviewQueryParams();
   
   const details = document.getElementById("productDetails");
   if (!details) return;
@@ -579,8 +663,14 @@ injectProductSchema(product);
       thumbnailsEl.innerHTML = "";
     }
 
-    const reviews = getFallbackReviews(product);
-    renderReviews(reviews);
+    try {
+      const reviews = await getProductReviews(product.id);
+      renderReviews(reviews.length ? reviews : getFallbackReviews(product));
+      await setupReviewForm(product.id);
+    } catch (reviewError) {
+      console.error("Failed to load reviews:", reviewError);
+      renderReviews(getFallbackReviews(product));
+    }
 
     const getSelectedVariant = setupVariantControls(product);
     selectedVariantStock = getSelectedVariant()?.stock ?? product.stock ?? 0;
