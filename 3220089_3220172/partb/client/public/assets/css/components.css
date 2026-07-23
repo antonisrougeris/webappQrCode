@@ -2796,3 +2796,12 @@ body.cart-open {
     height: 20px;
   }
 }
+
+
+.account-btn {
+  touch-action: manipulation;
+}
+
+.account-dropdown {
+  z-index: 100;
+}
