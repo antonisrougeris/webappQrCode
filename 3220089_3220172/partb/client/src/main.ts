@@ -59,6 +59,72 @@ function initCountdown(): void {
   const interval = setInterval(tick, 1000);
 }
 
+function initPromoPopup(): void {
+  const overlay = document.getElementById("promoOverlay");
+  const closeBtn = document.getElementById("promoClose");
+  const copyBtn = document.getElementById("promoCopyBtn") as HTMLButtonElement | null;
+  const codeEl = document.getElementById("promoCode");
+
+  if (!overlay || !closeBtn || !copyBtn || !codeEl) return;
+
+  const STORAGE_KEY = "skanare_promo_dismissed";
+
+  function closePromo(): void {
+    overlay?.classList.add("hidden");
+    document.body.classList.remove("cart-open");
+    try {
+      sessionStorage.setItem(STORAGE_KEY, "1");
+    } catch {
+      // ignore storage errors (private browsing etc.)
+    }
+  }
+
+  let alreadyDismissed = false;
+  try {
+    alreadyDismissed = sessionStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    alreadyDismissed = false;
+  }
+
+  if (!alreadyDismissed) {
+    setTimeout(() => {
+      overlay.classList.remove("hidden");
+    }, 1500);
+  }
+
+  closeBtn.addEventListener("click", closePromo);
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closePromo();
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    const code = codeEl.textContent?.trim() || "";
+
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = code;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    const originalText = copyBtn.textContent || "Copy code";
+    copyBtn.textContent = "Copied!";
+    copyBtn.classList.add("copied");
+
+    setTimeout(() => {
+      copyBtn.textContent = originalText;
+      copyBtn.classList.remove("copied");
+    }, 1500);
+  });
+}
+
+initPromoPopup();
+
 initCountdown();
 
 initNav();
