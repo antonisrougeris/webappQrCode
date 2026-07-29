@@ -2805,3 +2805,82 @@ body.cart-open {
 .account-dropdown {
   z-index: 100;
 }
+
+
+/* coming soon */
+
+.coming-soon-bar {
+  background: #0a0a0a;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1001; /* πάνω από το .site-header που είναι 1000 */
+}
+
+.coming-soon-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+}
+
+.coming-soon-label {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.coming-soon-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 38px;
+}
+
+.cs-unit span {
+  font-weight: 950;
+  font-size: 0.95rem;
+  line-height: 1;
+  background: #fff;
+  color: #0a0a0a;
+  border-radius: 8px;
+  padding: 4px 6px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.cs-unit small {
+  margin-top: 3px;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+.cs-sep {
+  font-weight: 900;
+  opacity: 0.5;
+}
+
+@media (max-width: 480px) {
+  .coming-soon-label { font-size: 0.68rem; }
+  .cs-unit span { font-size: 0.82rem; padding: 3px 5px; min-width: 26px; }
+}
+
+
+
+.sticky-header-group {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}

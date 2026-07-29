@@ -21,6 +21,46 @@ async function initGuestSession(): Promise<void> {
   }
 }
 
+function initCountdown(): void {
+  const bar = document.getElementById("comingSoonBar");
+  const targetDate = new Date("2026-08-10T00:00:00").getTime(); // 12 μέρες από σήμερα
+
+  function pad(n: number): string {
+    return n.toString().padStart(2, "0");
+  }
+
+  function tick(): void {
+    const now = Date.now();
+    const diff = targetDate - now;
+
+    if (diff <= 0) {
+      bar?.remove(); // κρύψε το bar όταν λήξει το countdown
+      clearInterval(interval);
+      return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+
+    const daysEl = document.getElementById("cs-days");
+    const hoursEl = document.getElementById("cs-hours");
+    const minutesEl = document.getElementById("cs-minutes");
+    const secondsEl = document.getElementById("cs-seconds");
+
+    if (daysEl) daysEl.textContent = pad(days);
+    if (hoursEl) hoursEl.textContent = pad(hours);
+    if (minutesEl) minutesEl.textContent = pad(minutes);
+    if (secondsEl) secondsEl.textContent = pad(seconds);
+  }
+
+  tick();
+  const interval = setInterval(tick, 1000);
+}
+
+initCountdown();
+
 initNav();
 initMobileMenu();
 void initGuestSession().then(() => updateCartBadge());
