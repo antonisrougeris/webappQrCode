@@ -170,3 +170,36 @@ export interface AddToCartInput {
 export async function addToCart(payload: AddToCartInput) {
   return addCartItem(payload);
 }
+
+
+/* =========================================================
+   PASSWORD RESET
+========================================================= */
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
+export async function requestPasswordReset(
+  email: string
+): Promise<{ success?: boolean; message?: string }> {
+  return apiRequest("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(
+  payload: ResetPasswordPayload
+): Promise<{ success?: boolean; message?: string }> {
+  return apiRequest("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

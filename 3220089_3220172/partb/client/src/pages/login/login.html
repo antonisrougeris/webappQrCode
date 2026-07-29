@@ -128,21 +128,33 @@
   
         <input name="email" type="email" placeholder="Email" required />
         <input name="password" type="password" placeholder="Password" required />
+     <div class="auth-links">
+
+        <p class="auth-switch">
+    Forgot your password?
+    <a id="forgotLink" href="/src/pages/forgot-password/forgot-password.html">Reset it</a>
+  </p>
+
+  </div>
+
   
         <button type="submit" class="auth-submit">
           Sign in
         </button>
   
+
         <p id="status" class="auth-status"></p>
   
       </form>
   
-      <p class="auth-switch">
-        Don’t have an account?
-<a id="registerLink" href="/src/pages/register/register.html">Sign up</a>
-      </p>
+     <div class="auth-links">
   
-    </div>
+
+  <p class="auth-switch">
+    Don't have an account?
+    <a id="registerLink" href="/src/pages/register/register.html">Sign up</a>
+  </p>
+</div>
   
   </main>
   
