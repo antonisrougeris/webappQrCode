@@ -16,9 +16,9 @@ export async function uploadQrToStorage(orderId, buffer) {
   });
 
   const [url] = await file.getSignedUrl({
-    action: "read",
-    expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
-  });
+  action: "read",
+  expires: Date.now() + 1000 * 60 * 60 * 24 * 365, // 1 year
+});
 
   return { filePath, url };
 }
