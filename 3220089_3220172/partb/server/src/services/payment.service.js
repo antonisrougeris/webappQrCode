@@ -5,7 +5,11 @@ import { createId, nowIso } from "../utils/ids.js";
 
 import { sendPaidOrderEmails } from "./order-email.service.js";
 
-import crypto from "crypto";
+import {
+  reserveUniqueQrShortId,
+  writeQrShortIdReservation,
+} from "./qr-id.service.js";
+
 
 function getEventData(payload) {
   return payload?.EventData || payload?.eventData || payload?.data || payload;
@@ -108,29 +112,104 @@ export async function attachVivaPaymentToOrder({
     );
 }
 
-function generateShortId(length = 6) {
-  return crypto
-    .randomBytes(8)
-    .toString("base64url")
-    .replace(/[-_]/g, "")
-    .slice(0, length);
-}
 
-async function generateUniqueShortId(db) {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const shortId = generateShortId(6);
 
-    const snap = await db
-      .collection(COLLECTIONS.QR_CODES)
-      .where("shortId", "==", shortId)
-      .limit(1)
-      .get();
+function sanitizeQrColor(input, fallback = "#000000") {
+  const isValidHex = (value) =>
+    /^#[0-9a-fA-F]{6}$/.test(String(value || ""));
 
-    if (snap.empty) return shortId;
+  if (typeof input === "string") {
+    return isValidHex(input) ? input : fallback;
   }
 
-  throw new ApiError(500, "Could not generate unique QR short id");
+  if (Array.isArray(input)) {
+    const validColors = input.filter(isValidHex);
+
+    return validColors.length >= 2
+      ? validColors
+      : fallback;
+  }
+
+  if (
+    input &&
+    typeof input === "object" &&
+    Array.isArray(input.colors)
+  ) {
+    const validColors = input.colors.filter(isValidHex);
+
+    if (validColors.length >= 2) {
+      return {
+        type:
+          input.type === "radial"
+            ? "radial"
+            : "linear",
+
+        colors: validColors,
+
+        angle: Number.isFinite(Number(input.angle))
+          ? Number(input.angle)
+          : 0,
+      };
+    }
+  }
+
+  return fallback;
 }
+
+function buildQrConfig(item) {
+  return {
+    textPrint:
+      String(item.qrConfig?.textPrint || "SCAN ME").trim(),
+
+    textPosition:
+      item.qrConfig?.textPosition === "top"
+        ? "top"
+        : "bottom",
+
+    qrColor: sanitizeQrColor(
+      item.qrConfig?.qrColor ??
+        item.qrConfig?.color
+    ),
+
+    textColor: sanitizeQrColor(
+      item.qrConfig?.textColor ??
+        item.qrConfig?.qrColor ??
+        item.qrConfig?.color
+    ),
+
+    size:
+      Number(item.qrConfig?.size) > 0
+        ? Number(item.qrConfig.size)
+        : 3540,
+  };
+}
+
+function getItemSku(item) {
+  return String(
+    item.sku ??
+    item.variant?.sku ??
+    ""
+  ).trim();
+}
+
+function buildQrInventoryKey(item) {
+  const sku = getItemSku(item);
+
+  if (sku) {
+    return `${item.productId}::${sku}`;
+  }
+
+  const size = String(item.variant?.size || "").trim();
+  const color = String(item.variant?.color || "").trim();
+
+  return [
+    item.productId,
+    size || "-",
+    color || "-",
+  ].join("::");
+}
+
+
 
 export async function markOrderPaidFromVivaWebhook(payload) {
   let paidOrderForEmail = null;
@@ -220,6 +299,81 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       db.collection(COLLECTIONS.QR_CODES).where("orderId", "==", order.id)
     );
 
+
+    const qrAssignments = [];
+
+if (existingQrSnap.empty) {
+  const alreadySelectedQrRefs = new Set();
+
+  for (const item of order.items || []) {
+    if (!item.customQr) continue;
+
+    const quantity = Math.max(
+  1,
+  Math.trunc(Number(item.quantity || 1))
+);
+
+    const sku = getItemSku(item);
+    const inventoryKey = buildQrInventoryKey(item);
+    const qrConfig = buildQrConfig(item);
+
+    const availableQrQuery = db
+  .collection(COLLECTIONS.QR_CODES)
+  .where("status", "==", "available")
+  .where("inventoryKey", "==", inventoryKey)
+  .limit(quantity + alreadySelectedQrRefs.size);
+
+const availableQrSnap = await tx.get(availableQrQuery);
+
+const availableDocs = availableQrSnap.docs.filter(
+  (doc) => !alreadySelectedQrRefs.has(doc.ref.path)
+);
+
+    for (
+      let unitIndex = 0;
+      unitIndex < quantity;
+      unitIndex += 1
+    ) {
+      const availableDoc = availableDocs[unitIndex];
+
+      if (availableDoc) {
+        alreadySelectedQrRefs.add(
+          availableDoc.ref.path
+        );
+
+        qrAssignments.push({
+          type: "existing",
+          ref: availableDoc.ref,
+          item,
+          sku,
+          inventoryKey,
+          qrConfig,
+        });
+
+        continue;
+      }
+
+      const qrId = createId("qr");
+
+      const {
+        shortId,
+        reservationRef,
+      } = await reserveUniqueQrShortId(tx, db);
+
+      qrAssignments.push({
+        type: "new",
+        qrId,
+        shortId,
+        reservationRef,
+        item,
+        sku,
+        inventoryKey,
+        qrConfig,
+      });
+    }
+  }
+}
+
     const expectedAmount = Math.round(Number(order.total || 0) * 100);
 
     if (amount && expectedAmount && amount !== expectedAmount) {
@@ -245,108 +399,99 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       updatedAt: paidAt,
     });
 
-    if (existingQrSnap.empty) {
-      for (const item of order.items || []) {
-        if (!item.customQr) continue;
+    for (const assignment of qrAssignments) {
+  const item = assignment.item;
 
-       const qrId = createId("qr");
-const shortId = await generateUniqueShortId(db);
+  const userId =
+    order.ownerType === "user"
+      ? order.ownerId
+      : null;
 
-// Δέχεται: hex string "#rrggbb", array ["#a","#b",...], ή object {type,colors,angle}
-function sanitizeQrColor(input, fallback = "#000000") {
-  const isValidHex = (v) => /^#[0-9a-fA-F]{6}$/.test(String(v || ""));
+  const guestId =
+    order.ownerType === "guest"
+      ? order.ownerId
+      : null;
 
-  // Απλό hex string
-  if (typeof input === "string") {
-    return isValidHex(input) ? input : fallback;
-  }
+  if (assignment.type === "existing") {
+  tx.update(assignment.ref, {
+    status: "assigned",
 
-  // Array μορφή: ["#ff6a00", "#ee0979"]
-  if (Array.isArray(input)) {
-    const validColors = input.filter(isValidHex);
-    return validColors.length >= 2 ? validColors : fallback;
-  }
-
-  // Object μορφή: { type, colors, angle }
-  if (input && typeof input === "object" && Array.isArray(input.colors)) {
-    const validColors = input.colors.filter(isValidHex);
-    if (validColors.length >= 2) {
-      return {
-        type: input.type === "radial" ? "radial" : "linear",
-        colors: validColors,
-        angle: Number.isFinite(Number(input.angle)) ? Number(input.angle) : 0,
-      };
-    }
-  }
-
-  return fallback;
-}
-
-const qrConfig = {
-  textPrint:
-    String(item.qrConfig?.textPrint || "SCAN ME").trim(),
-
-  textPosition:
-    item.qrConfig?.textPosition === "top"
-      ? "top"
-      : "bottom",
-
-  qrColor: sanitizeQrColor(
-    item.qrConfig?.qrColor ?? item.qrConfig?.color
-  ),
-
-  textColor: sanitizeQrColor(
-    item.qrConfig?.textColor ??
-      item.qrConfig?.qrColor ??
-      item.qrConfig?.color
-  ),
-
-  size:
-    Number(item.qrConfig?.size) > 0
-      ? Number(item.qrConfig.size)
-      : 3540,
-};
-
-console.log("QR CONFIG FROM ORDER SNAPSHOT:", {
-  orderId: order.id,
-  productId: item.productId,
-  itemQrConfig: item.qrConfig,
-  finalQrConfig: qrConfig,
-});
-
-
-
-tx.set(
-  db.collection(COLLECTIONS.QR_CODES).doc(qrId),
-  {
-    id: qrId,
-    shortId,
-
-    userId:
-      order.ownerType === "user"
-        ? order.ownerId
-        : null,
-
-    guestId:
-      order.ownerType === "guest"
-        ? order.ownerId
-        : null,
+    userId,
+    guestId,
 
     orderId: order.id,
+
     productId: item.productId,
     productTitle: item.title,
-    targetUrl: item.qrDestination || "",
 
-    qrConfig,
+    sku: assignment.sku,
+
+    inventoryKey: assignment.inventoryKey,
+
+    variant: item.variant || null,
+
+    targetUrl:
+      item.qrDestination ||
+      "https://skanare.com",
+
+    fulfillmentMode: "preprinted",
+
+    assignedAt: paidAt,
+    updatedAt: paidAt,
+  });
+
+  continue;
+}
+
+  const qrRef = db
+    .collection(COLLECTIONS.QR_CODES)
+    .doc(assignment.qrId);
+
+  writeQrShortIdReservation(
+    tx,
+    assignment.reservationRef,
+    {
+      qrId: assignment.qrId,
+      shortId: assignment.shortId,
+      createdAt: paidAt,
+    }
+  );
+
+  tx.set(qrRef, {
+    id: assignment.qrId,
+    shortId: assignment.shortId,
+
+    status: "assigned",
+
+    productId: item.productId,
+    productTitle: item.title,
+
+    sku: assignment.sku,
+
+    inventoryKey: assignment.inventoryKey,
+
+    variant: item.variant || null,
+
+    userId,
+    guestId,
+
+    orderId: order.id,
+
+    targetUrl:
+      item.qrDestination ||
+      "https://skanare.com",
+
+    qrConfig: assignment.qrConfig,
+
+    fulfillmentMode: "made_to_order",
 
     scans: 0,
-    createdAt: paidAt,
-    updatedAt: paidAt,
-  }
-);
 
-      }
-    }
+    createdAt: paidAt,
+    assignedAt: paidAt,
+    updatedAt: paidAt,
+  });
+}
 
     paidOrderForEmail = {
       ...order,

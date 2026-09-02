@@ -170,86 +170,105 @@ console.log("ORDER ITEM QR CONFIG:", {
 
 
 orderItems.push({
-        id: item.id || createId("orderitem"),
-        productId: product.id,
-        slug: product.slug || product.id,
-        title: product.title,
-        image: Array.isArray(product.images)
-          ? product.images[0] || null
-          : product.image || null,
-        quantity,
-        unitPrice,
-        currency: product.currency || "EUR",
-        lineTotal,
-        variant: variant
-          ? {
-              sku: variant.sku || "",
-              size: variant.size || "",
-              color: variant.color || "",
-            }
-          : null,
-        
+  id: item.id || createId("orderitem"),
 
-          qrDestination: item.qrDestination || null,
-customQr: Boolean(product.customQr),
+  productId: product.id,
+  slug: product.slug || product.id,
+  title: product.title,
 
-qrConfig: orderItemQrConfig,
+  image: Array.isArray(product.images)
+    ? product.images[0] || null
+    : product.image || null,
 
+  quantity,
+  unitPrice,
+  currency: product.currency || "EUR",
+  lineTotal,
 
-      });
+  sku: variant?.sku || "",
+
+  variant: variant
+    ? {
+        sku: variant.sku || "",
+        size: variant.size || "",
+        color: variant.color || "",
+      }
+    : null,
+
+  qrDestination: item.qrDestination || null,
+
+  customQr: Boolean(product.customQr),
+
+  qrConfig: orderItemQrConfig,
+});
+
     }
 
     const shippingCost = calculateShipping(subtotal, delivery);
     const total = subtotal + shippingCost;
 
     const order = {
-      id: orderId,
-      orderNumber,
-      ownerId,
-      ownerType,
-      customer: {
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        email: customer.email,
-        phone: customer.phone || "",
-        phoneCountryCode: phoneCountryCode || "GR",
-      },
-      shippingAddress: {
-        firstName: shippingAddress.firstName || customer.firstName,
-        lastName: shippingAddress.lastName || customer.lastName,
-        email: shippingAddress.email || customer.email,
-        phone: shippingAddress.phone || customer.phone || "",
-        country: shippingAddress.country || "Greece",
-        city: shippingAddress.city,
-        postalCode: shippingAddress.postalCode || "",
-        addressLine1: shippingAddress.addressLine1,
-        addressLine2: shippingAddress.addressLine2 || "",
-      },
-      delivery: delivery || "home",
-      locker: locker || null,
-      notes: notes || "",
-      items: orderItems,
-      subtotal,
-      shippingCost,
-      total,
-      currency: "EUR",
-      status: "pending",
-      paymentStatus: "pending",
-      paymentProvider: "manual",
-      qrCodesCreated: orderItems.filter((item) => item.customQr).length,
-      createdAt,
-      updatedAt: createdAt,
-    };
+  id: orderId,
+  orderNumber,
+  ownerId,
+  ownerType,
+
+  customer: {
+    firstName: customer.firstName,
+    lastName: customer.lastName,
+    email: customer.email,
+    phone: customer.phone || "",
+    phoneCountryCode: phoneCountryCode || "GR",
+  },
+
+  shippingAddress: {
+    firstName: shippingAddress.firstName || customer.firstName,
+    lastName: shippingAddress.lastName || customer.lastName,
+    email: shippingAddress.email || customer.email,
+    phone: shippingAddress.phone || customer.phone || "",
+    country: shippingAddress.country || "Greece",
+    city: shippingAddress.city,
+    postalCode: shippingAddress.postalCode || "",
+    addressLine1: shippingAddress.addressLine1,
+    addressLine2: shippingAddress.addressLine2 || "",
+  },
+
+  delivery: delivery || "home",
+  locker: locker || null,
+  notes: notes || "",
+
+  items: orderItems,
+
+  subtotal,
+  shippingCost,
+  total,
+  currency: "EUR",
+
+  status: "pending",
+  paymentStatus: "pending",
+  paymentProvider: "manual",
+
+  qrCodesRequired: orderItems
+    .filter((item) => item.customQr)
+    .reduce(
+      (total, item) =>
+        total + Number(item.quantity || 0),
+      0
+    ),
+
+  createdAt,
+  updatedAt: createdAt,
+};
 
     for (const update of stockUpdates) tx.update(update.ref, update.patch);
     tx.set(db.collection(COLLECTIONS.ORDERS).doc(orderId), order);
 
     return {
-      orderId,
-      orderNumber,
-      qrCodesCreated: order.qrCodesCreated,
-      order,
-    };
+  orderId,
+  orderNumber,
+  qrCodesRequired: order.qrCodesRequired,
+  order,
+};
   });
 
   return result;
