@@ -9,6 +9,9 @@ import { uploadQrToStorage } from "../utils/uploadQrToStorage.js";
 import { generatePrintQrImage } from "../utils/generatePrintQrImage.js";
 
 
+import { generatePrintSheet } from "../utils/generatePrintSheet.js";
+
+
 function money(value, currency = "EUR") {
   return new Intl.NumberFormat("el-GR", {
     style: "currency",
@@ -312,11 +315,36 @@ export async function sendPaidOrderEmails(order) {
       const qrUrl = `${QR_BASE_URL}/${qr.shortId}`;
 
       // SAME AS FRONTEND
-const buffer = await generatePrintQrImage(qrUrl, {
-  qrColor: qr.qrConfig?.qrColor || qr.qrConfig?.color || "#000000",
-  textColor: qr.qrConfig?.textColor || qr.qrConfig?.qrColor || qr.qrConfig?.color || "#000000",
-  text: qr.qrConfig?.textPrint || "SCAN ME",
-  textPosition: qr.qrConfig?.textPosition || "bottom",
+const qrBuffer = await generatePrintQrImage(
+  qrUrl,
+  {
+    qrColor:
+      qr.qrConfig?.qrColor ||
+      qr.qrConfig?.color ||
+      "#000000",
+
+    textColor:
+      qr.qrConfig?.textColor ||
+      qr.qrConfig?.qrColor ||
+      qr.qrConfig?.color ||
+      "#000000",
+
+    text:
+      qr.qrConfig?.textPrint ||
+      "SCAN ME",
+
+    textPosition:
+      qr.qrConfig?.textPosition ||
+      "bottom",
+  }
+);
+
+const buffer = await generatePrintSheet({
+  qrBuffer,
+
+  shirtColor:
+    qr.variant?.color ||
+    "Black",
 });
       // =========================
       // UPLOAD PNG TO STORAGE

@@ -11,6 +11,14 @@ import {
   writeQrShortIdReservation,
 } from "../src/services/qr-id.service.js";
 
+import { sendEmail } from "../src/services/email.service.js";
+
+import { uploadQrToStorage } from "../src/utils/uploadQrToStorage.js";
+
+import { generatePrintQrImage } from "../src/utils/generatePrintQrImage.js";
+
+import { generatePrintSheet } from "../src/utils/generatePrintSheet.js";
+
 const PUBLIC_QR_BASE_URL =
   process.env.QR_PUBLIC_BASE_URL ||
   "https://go.skanare.com";
@@ -25,6 +33,10 @@ async function main() {
   ] = process.argv.slice(2);
 
   const quantity = Number(quantityArg);
+
+  // =========================
+  // VALIDATION
+  // =========================
 
   if (!productId) {
     throw new Error("Missing productId");
@@ -44,101 +56,347 @@ async function main() {
     );
   }
 
+  // =========================
+  // DATABASE
+  // =========================
+
   await connectDB();
+
   const db = getDB();
 
-  const sku = String(skuArg).trim();
+  // =========================
+  // FETCH PRODUCT
+  // =========================
+
+  const productRef = db
+    .collection(COLLECTIONS.PRODUCTS)
+    .doc(productId);
+
+  const productSnap = await productRef.get();
+
+  if (!productSnap.exists) {
+    throw new Error(
+      `Product not found in Firestore: ${productId}`
+    );
+  }
+
+  const product = {
+    id: productSnap.id,
+    ...productSnap.data(),
+  };
+
+  console.log("PRODUCT FOUND:", {
+    id: product.id,
+    title: product.title,
+    qrConfig: product.qrConfig,
+  });
+
+  // =========================
+  // SKU / INVENTORY
+  // =========================
+
+  const sku =
+    String(skuArg).trim();
 
   const inventoryKey =
     `${productId}::${sku}`;
 
   const created = [];
 
+  const downloadLinks = [];
+
+  // =========================
+  // CREATE STOCK
+  // =========================
+
   for (
     let index = 0;
     index < quantity;
     index += 1
   ) {
-    const result = await db.runTransaction(
-      async (tx) => {
-        const qrId = createId("qr");
+    // =========================
+    // CREATE FIRESTORE QR
+    // =========================
 
-        const {
-          shortId,
-          reservationRef,
-        } = await reserveUniqueQrShortId(
-          tx,
-          db
-        );
+    const result =
+      await db.runTransaction(
+        async (tx) => {
+          const qrId =
+            createId("qr");
 
-        const createdAt = nowIso();
-
-        const qrRef = db
-          .collection(COLLECTIONS.QR_CODES)
-          .doc(qrId);
-
-        writeQrShortIdReservation(
-          tx,
-          reservationRef,
-          {
-            qrId,
+          const {
             shortId,
-            createdAt,
-          }
-        );
+            reservationRef,
+          } =
+            await reserveUniqueQrShortId(
+              tx,
+              db
+            );
 
-        tx.set(qrRef, {
-          id: qrId,
-          shortId,
+          const createdAt =
+            nowIso();
 
-          status: "available",
+          const qrRef = db
+            .collection(
+              COLLECTIONS.QR_CODES
+            )
+            .doc(qrId);
 
-          productId,
+          writeQrShortIdReservation(
+            tx,
+            reservationRef,
+            {
+              qrId,
+              shortId,
+              createdAt,
+            }
+          );
 
-          sku,
+          tx.set(qrRef, {
+            id: qrId,
 
-          inventoryKey,
+            shortId,
 
-          variant: {
+            status:
+              "available",
+
+            productId,
+
+            productTitle:
+              product.title || "",
+
             sku,
-            size: sizeArg || "",
-            color: colorArg || "",
-          },
 
-          userId: null,
-          guestId: null,
-          orderId: null,
+            inventoryKey,
 
-          targetUrl: "https://skanare.com",
+            variant: {
+              sku,
 
-          scans: 0,
+              size:
+                sizeArg || "",
 
-          fulfillmentMode: "preprinted",
+              color:
+                colorArg || "",
+            },
 
-          createdAt,
-          updatedAt: createdAt,
-        });
+            qrConfig:
+              product.qrConfig ||
+              null,
 
-        return {
-          qrId,
-          shortId,
-          url:
-            `${PUBLIC_QR_BASE_URL}/${shortId}`,
-        };
-      }
-    );
+            userId: null,
+
+            guestId: null,
+
+            orderId: null,
+
+            targetUrl:
+              "https://skanare.com",
+
+            scans: 0,
+
+            fulfillmentMode:
+              "preprinted",
+
+            printStatus:
+              "pending",
+
+            createdAt,
+
+            updatedAt:
+              createdAt,
+          });
+
+          return {
+            qrId,
+
+            shortId,
+
+            url:
+              `${PUBLIC_QR_BASE_URL}/${shortId}`,
+          };
+        }
+      );
 
     created.push(result);
 
     console.log(
       `[${index + 1}/${quantity}] ${result.url}`
     );
+
+    try {
+      // =========================
+      // GENERATE MAIN QR ARTWORK
+      // =========================
+
+      const qrBuffer =
+        await generatePrintQrImage(
+          result.url,
+          {
+            qrColor:
+              product.qrConfig
+                ?.qrColor ||
+              product.qrConfig
+                ?.color ||
+              "#000000",
+
+            textColor:
+              product.qrConfig
+                ?.textColor ||
+              product.qrConfig
+                ?.qrColor ||
+              product.qrConfig
+                ?.color ||
+              "#000000",
+
+            textPrint:
+              product.qrConfig
+                ?.textPrint ||
+              "SCAN ME",
+
+            textPosition:
+              product.qrConfig
+                ?.textPosition ||
+              "bottom",
+
+            size:
+              product.qrConfig
+                ?.size ||
+              3540,
+          }
+        );
+
+      // =========================
+      // GENERATE A3 DTF SHEET
+      // =========================
+
+      const a3Buffer =
+        await generatePrintSheet({
+          qrBuffer,
+
+          shirtColor:
+            colorArg ||
+            "Black",
+        });
+
+      // =========================
+      // UPLOAD A3 TO STORAGE
+      // SAME LOGIC AS ORDER EMAIL
+      // =========================
+
+      console.log(
+        `Uploading A3 print file for ${result.shortId}...`
+      );
+
+      const uploaded =
+        await uploadQrToStorage(
+          `stock-${result.qrId}`,
+          a3Buffer
+        );
+
+      if (!uploaded?.url) {
+        throw new Error(
+          `A3 upload did not return URL for QR ${result.shortId}`
+        );
+      }
+
+      console.log(
+        `A3 uploaded: ${uploaded.url}`
+      );
+
+      downloadLinks.push({
+        qrId:
+          result.qrId,
+
+        shortId:
+          result.shortId,
+
+        qrUrl:
+          result.url,
+
+        printUrl:
+          uploaded.url,
+      });
+
+      // =========================
+      // UPDATE QR PRINT INFO
+      // =========================
+
+      const generatedAt =
+        nowIso();
+
+      await db
+        .collection(
+          COLLECTIONS.QR_CODES
+        )
+        .doc(result.qrId)
+        .set(
+          {
+            printStatus:
+              "uploaded",
+
+            printGeneratedAt:
+              generatedAt,
+
+            printFileUrl:
+              uploaded.url,
+
+            updatedAt:
+              generatedAt,
+          },
+          {
+            merge: true,
+          }
+        );
+    } catch (error) {
+      // =========================
+      // MARK PRINT FAILED
+      // IMPORTANT:
+      // QR REMAINS AVAILABLE
+      // =========================
+
+      const failedAt =
+        nowIso();
+
+      await db
+        .collection(
+          COLLECTIONS.QR_CODES
+        )
+        .doc(result.qrId)
+        .set(
+          {
+            printStatus:
+              "failed",
+
+            printError:
+              String(
+                error?.message ||
+                error
+              ),
+
+            printFailedAt:
+              failedAt,
+
+            updatedAt:
+              failedAt,
+          },
+          {
+            merge: true,
+          }
+        );
+
+      throw error;
+    }
   }
 
-  const outputDirectory = path.resolve(
-    process.cwd(),
-    "exports"
-  );
+  // =========================
+  // CREATE CSV
+  // =========================
+
+  const outputDirectory =
+    path.resolve(
+      process.cwd(),
+      "exports"
+    );
 
   fs.mkdirSync(
     outputDirectory,
@@ -147,27 +405,48 @@ async function main() {
     }
   );
 
-  const outputFile = path.join(
-    outputDirectory,
-    `qr-stock-${productId}-${sku}-${Date.now()}.csv`
-  );
+  const outputFile =
+    path.join(
+      outputDirectory,
+
+      `qr-stock-${productId}-${sku}-${Date.now()}.csv`
+    );
 
   const csv = [
-    "qrId,shortId,url,productId,sku,inventoryKey,size,color",
+    "qrId,shortId,url,productId,sku,inventoryKey,size,color,printUrl",
 
-    ...created.map((item) =>
-      [
-        item.qrId,
-        item.shortId,
-        item.url,
-        productId,
-        sku,
-        inventoryKey,
-        sizeArg,
-        colorArg,
-      ]
-        .map(csvEscape)
-        .join(",")
+    ...created.map(
+      (item) => {
+        const printInfo =
+          downloadLinks.find(
+            (link) =>
+              link.qrId ===
+              item.qrId
+          );
+
+        return [
+          item.qrId,
+
+          item.shortId,
+
+          item.url,
+
+          productId,
+
+          sku,
+
+          inventoryKey,
+
+          sizeArg,
+
+          colorArg,
+
+          printInfo?.printUrl ||
+            "",
+        ]
+          .map(csvEscape)
+          .join(",");
+      }
     ),
   ].join("\n");
 
@@ -177,33 +456,297 @@ async function main() {
     "utf8"
   );
 
+  // =========================
+  // EMAIL CONFIG
+  // =========================
+
+  const adminEmail =
+    process.env.ADMIN_EMAIL;
+
+  const from =
+    process.env.EMAIL_ORDER ||
+    process.env.EMAIL_FROM;
+
+  if (!adminEmail) {
+    throw new Error(
+      "ADMIN_EMAIL is missing from .env"
+    );
+  }
+
+  if (!from) {
+    throw new Error(
+      "EMAIL_ORDER / EMAIL_FROM is missing from .env"
+    );
+  }
+
+  if (
+    downloadLinks.length === 0
+  ) {
+    throw new Error(
+      "No print download links were generated"
+    );
+  }
+
+  // =========================
+  // CREATE EMAIL DOWNLOAD BUTTONS
+  // =========================
+
+  const downloadLinksHtml =
+    downloadLinks
+      .map(
+        (
+          item,
+          index
+        ) => `
+          <div
+            style="
+              margin:20px 0;
+              padding:18px;
+              background:#f7f7f7;
+              border-radius:12px;
+            "
+          >
+            <p style="margin:0 0 6px;">
+              <strong>
+                Print ${index + 1}
+              </strong>
+            </p>
+
+            <p style="margin:0 0 6px;">
+              QR ID:
+              ${item.shortId}
+            </p>
+
+            <p style="margin:0 0 14px;">
+              QR URL:
+              ${item.qrUrl}
+            </p>
+
+            <a
+              href="${item.printUrl}"
+              target="_blank"
+              style="
+                display:inline-block;
+                background:#111111;
+                color:#ffffff;
+                text-decoration:none;
+                padding:12px 18px;
+                border-radius:8px;
+                font-weight:bold;
+              "
+            >
+              Download A3 DTF Print
+            </a>
+          </div>
+        `
+      )
+      .join("");
+
+  // =========================
+  // ADMIN EMAIL
+  // =========================
+
   console.log("");
-  console.log("===========================");
-  console.log("QR STOCK CREATED");
-  console.log("===========================");
-  console.log(`Product: ${productId}`);
-  console.log(`SKU: ${sku}`);
-  console.log(`Quantity: ${quantity}`);
-  console.log(`Inventory key: ${inventoryKey}`);
-  console.log(`CSV: ${outputFile}`);
+
+  console.log(
+    `Sending print email to ${adminEmail}...`
+  );
+
+  await sendEmail({
+    from,
+
+    to:
+      adminEmail,
+
+    subject:
+      `QR Stock Print - ${product.title} - ${sku}`,
+
+    html: `
+      <h2>
+        New QR Stock Ready for Printing
+      </h2>
+
+      <p>
+        <strong>
+          Product:
+        </strong>
+        ${product.title}
+      </p>
+
+      <p>
+        <strong>
+          Product ID:
+        </strong>
+        ${productId}
+      </p>
+
+      <p>
+        <strong>
+          SKU:
+        </strong>
+        ${sku}
+      </p>
+
+      <p>
+        <strong>
+          Size:
+        </strong>
+        ${sizeArg || "-"}
+      </p>
+
+      <p>
+        <strong>
+          Color:
+        </strong>
+        ${colorArg || "-"}
+      </p>
+
+      <p>
+        <strong>
+          Quantity:
+        </strong>
+        ${quantity}
+      </p>
+
+      <h3>
+        A3 DTF Print Files
+      </h3>
+
+      <p>
+        Use the buttons below to
+        download the generated
+        print files.
+      </p>
+
+      ${downloadLinksHtml}
+    `,
+  });
+
+  // =========================
+  // MARK EMAIL AS SENT
+  // =========================
+
+  const emailSentAt =
+    nowIso();
+
+  for (
+    const item
+    of created
+  ) {
+    await db
+      .collection(
+        COLLECTIONS.QR_CODES
+      )
+      .doc(item.qrId)
+      .set(
+        {
+          printStatus:
+            "email_sent",
+
+          adminPrintEmailSentAt:
+            emailSentAt,
+
+          updatedAt:
+            emailSentAt,
+        },
+        {
+          merge: true,
+        }
+      );
+  }
+
+  // =========================
+  // FINISHED
+  // =========================
+
+  console.log("");
+
+  console.log(
+    "==========================="
+  );
+
+  console.log(
+    "QR STOCK CREATED"
+  );
+
+  console.log(
+    "==========================="
+  );
+
+  console.log(
+    `Product: ${productId}`
+  );
+
+  console.log(
+    `SKU: ${sku}`
+  );
+
+  console.log(
+    `Quantity: ${quantity}`
+  );
+
+  console.log(
+    `Inventory key: ${inventoryKey}`
+  );
+
+  console.log(
+    `CSV: ${outputFile}`
+  );
+
+  console.log(
+    `Admin email: ${adminEmail}`
+  );
+
+  console.log("");
+
+  console.log(
+    "PRINT FILES:"
+  );
+
+  for (
+    const item
+    of downloadLinks
+  ) {
+    console.log(
+      `${item.shortId}: ${item.printUrl}`
+    );
+  }
+
+  console.log("");
+
+  console.log(
+    "Print email sent successfully."
+  );
 }
 
-function csvEscape(value) {
-  const text = String(value ?? "");
+function csvEscape(
+  value
+) {
+  const text =
+    String(
+      value ?? ""
+    );
 
-  return `"${text.replaceAll('"', '""')}"`;
+  return `"${text.replaceAll(
+    '"',
+    '""'
+  )}"`;
 }
 
 main()
   .then(() => {
     process.exit(0);
   })
-  .catch((error) => {
-    console.error(
-      "QR stock generation failed:"
-    );
+  .catch(
+    (error) => {
+      console.error(
+        "QR stock generation failed:"
+      );
 
-    console.error(error);
+      console.error(
+        error
+      );
 
-    process.exit(1);
-  });
+      process.exit(1);
+    }
+  );
