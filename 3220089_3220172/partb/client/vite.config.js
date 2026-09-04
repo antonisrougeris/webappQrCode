@@ -42,6 +42,41 @@ export default defineConfig({
           __dirname,
           "src/pages/payment/payment_failure.html"
         ),
+
+        about: resolve(
+          __dirname,
+          "src/pages/about/about.html"
+        ),
+
+        paymentSecurity: resolve(
+          __dirname,
+          "src/pages/payment-security/payment-security.html"
+        ),
+
+        shippingPolicy: resolve(
+          __dirname,
+          "src/pages/shipping-policy/shipping-policy.html"
+        ),
+
+        refundPolicy: resolve(
+          __dirname,
+          "src/pages/refund-policy/refund-policy.html"
+        ),
+
+        privacyPolicy: resolve(
+          __dirname,
+          "src/pages/privacy-policy/privacy-policy.html"
+        ),
+
+        terms: resolve(
+          __dirname,
+          "src/pages/terms/terms.html"
+        ),
+
+        cookiePolicy: resolve(
+          __dirname,
+          "src/pages/cookie-policy/cookie-policy.html"
+        ),
       },
     },
   },
