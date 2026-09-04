@@ -19,15 +19,60 @@ import { showFlashToast } from "../../utils/toast.ts";
 const form = document.getElementById("loginForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
 const googleBtn = document.querySelector<HTMLButtonElement>(".auth-google");
+
 const registerLink = document.getElementById(
   "registerLink"
 ) as HTMLAnchorElement | null;
 
+const forgotPasswordLink = document.getElementById(
+  "forgotPasswordLink"
+) as HTMLAnchorElement | null;
+
 document.addEventListener("DOMContentLoaded", () => {
   showFlashToast();
-    applyPrefill();
 
+  applyPrefill();
+  applyForgotPasswordLink();
+
+  const emailInput =
+    form?.querySelector<HTMLInputElement>(
+      'input[name="email"]'
+    );
+
+  emailInput?.addEventListener(
+    "input",
+    applyForgotPasswordLink
+  );
 });
+
+
+function applyForgotPasswordLink(): void {
+  if (!forgotPasswordLink) return;
+
+  const emailInput = form?.querySelector<HTMLInputElement>(
+    'input[name="email"]'
+  );
+
+  const email = emailInput?.value.trim() || "";
+
+  const params = new URLSearchParams();
+
+  if (email) {
+    params.set("email", email);
+  }
+
+  const redirect = getRedirectUrl();
+
+  if (redirect && redirect !== "/index.html") {
+    params.set("redirect", redirect);
+  }
+
+  const query = params.toString();
+
+  forgotPasswordLink.href =
+    "/src/pages/forgot-password/forgot-password.html" +
+    (query ? `?${query}` : "");
+}
 
 function getRedirectUrl(): string {
   const redirect = new URLSearchParams(window.location.search).get("redirect");
@@ -61,12 +106,20 @@ function goToRedirect(delay = 800): void {
 }
 
 function applyPrefill() {
-  const email = new URLSearchParams(window.location.search).get("email");
+  const email = new URLSearchParams(
+    window.location.search
+  ).get("email");
 
   if (!email || !form) return;
 
-  const emailInput = form.querySelector<HTMLInputElement>('input[name="email"]');
-  if (emailInput) emailInput.value = email;
+  const emailInput =
+    form.querySelector<HTMLInputElement>(
+      'input[name="email"]'
+    );
+
+  if (emailInput) {
+    emailInput.value = email;
+  }
 }
 
 initNav();

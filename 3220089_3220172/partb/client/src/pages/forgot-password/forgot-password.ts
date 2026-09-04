@@ -14,6 +14,15 @@ const requestStatus = document.getElementById("requestStatus");
 const resetForm = document.getElementById("resetForm") as HTMLFormElement | null;
 const resetStatus = document.getElementById("resetStatus");
 const targetEmailEl = document.getElementById("targetEmail");
+const forgotEmailInput =
+  document.getElementById(
+    "forgotEmail"
+  ) as HTMLInputElement | null;
+
+const backToLoginLink =
+  document.getElementById(
+    "backToLoginLink"
+  ) as HTMLAnchorElement | null;
 
 const resendBtn = document.getElementById("resendCode") as HTMLButtonElement | null;
 
@@ -24,9 +33,90 @@ const otpHidden = document.getElementById("otpValue") as HTMLInputElement | null
 
 let currentEmail = "";
 
+function getRedirectUrl(): string | null {
+  const redirect =
+    new URLSearchParams(
+      window.location.search
+    ).get("redirect");
+
+  if (
+    redirect &&
+    redirect.startsWith("/") &&
+    !redirect.startsWith("//")
+  ) {
+    return redirect;
+  }
+
+  return null;
+}
+
+function applyForgotPasswordContext(): void {
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  const email =
+    params.get("email")?.trim() || "";
+
+  if (email) {
+    currentEmail = email;
+
+    if (forgotEmailInput) {
+      forgotEmailInput.value = email;
+    }
+  }
+
+  updateBackToLoginLink();
+}
+
+function updateBackToLoginLink(): void {
+  if (!backToLoginLink) return;
+
+  const params =
+    new URLSearchParams();
+
+  const email =
+    forgotEmailInput?.value.trim() ||
+    currentEmail;
+
+  if (email) {
+    params.set("email", email);
+  }
+
+  const redirect =
+    getRedirectUrl();
+
+  if (redirect) {
+    params.set(
+      "redirect",
+      redirect
+    );
+  }
+
+  const query =
+    params.toString();
+
+  backToLoginLink.href =
+    "/src/pages/login/login.html" +
+    (query ? `?${query}` : "");
+}
+
 initNav();
 initMobileMenu();
 void updateCartBadge();
+
+applyForgotPasswordContext();
+
+forgotEmailInput?.addEventListener(
+  "input",
+  () => {
+    currentEmail =
+      forgotEmailInput.value.trim();
+
+    updateBackToLoginLink();
+  }
+);
 
 /* =========================
    OTP INPUT HANDLING
@@ -101,6 +191,7 @@ requestForm?.addEventListener("submit", async (event) => {
     await requestPasswordReset(email);
 
     currentEmail = email;
+    updateBackToLoginLink();
     if (targetEmailEl) targetEmailEl.textContent = email;
 
     requestStep?.classList.add("hidden");
@@ -118,6 +209,7 @@ requestForm?.addEventListener("submit", async (event) => {
     }
 
     currentEmail = email;
+    updateBackToLoginLink();
     if (targetEmailEl) targetEmailEl.textContent = email;
 
     requestStep?.classList.add("hidden");
@@ -170,9 +262,29 @@ resetForm?.addEventListener("submit", async (event) => {
     }
 
     setTimeout(() => {
-      window.location.href =
-        "/src/pages/login/login.html?email=" + encodeURIComponent(currentEmail);
-    }, 1200);
+  const params =
+    new URLSearchParams();
+
+  params.set(
+    "email",
+    currentEmail
+  );
+
+  const redirect =
+    getRedirectUrl();
+
+  if (redirect) {
+    params.set(
+      "redirect",
+      redirect
+    );
+  }
+
+  window.location.href =
+    "/src/pages/login/login.html?" +
+    params.toString();
+}, 1200);
+
   } catch (err: any) {
     console.error("Reset password failed:", err);
 
