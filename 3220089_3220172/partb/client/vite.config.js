@@ -23,6 +23,12 @@ export default defineConfig({
 
         login: resolve(__dirname, "src/pages/login/login.html"),
 
+        forgotPassword: resolve(
+    __dirname,
+    "src/pages/forgot-password/forgot-password.html"
+  ),
+
+
         verify_email: resolve(__dirname, "src/pages/verify-email/verify-email.html"),
 
         register: resolve(__dirname, "src/pages/register/register.html"),
