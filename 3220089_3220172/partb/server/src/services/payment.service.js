@@ -5,11 +5,17 @@ import { createId, nowIso } from "../utils/ids.js";
 
 import { sendPaidOrderEmails } from "./order-email.service.js";
 
+
+
 import {
   reserveUniqueQrShortId,
   writeQrShortIdReservation,
 } from "./qr-id.service.js";
 
+
+import {
+  issueOrderReceipt,
+} from "./oxygen.service.js";
 
 function getEventData(payload) {
   return payload?.EventData || payload?.eventData || payload?.data || payload;
@@ -527,17 +533,127 @@ const availableDocs = availableQrSnap.docs.filter(
   });
 
   if (paidOrderForEmail) {
-    try {
-      console.log("Calling sendPaidOrderEmails...");
-      await sendPaidOrderEmails(paidOrderForEmail);
-      console.log("sendPaidOrderEmails completed.");
-    } catch (error) {
-      console.error("Paid order email failed", {
-        orderId: paidOrderForEmail.id,
-        message: error?.message,
-        stack: error?.stack,
-        error,
-      });
-    }
+  try {
+    const receipt =
+      await issueOrderReceipt(
+        paidOrderForEmail
+      );
+
+    const issuedAt =
+      nowIso();
+
+    await getDB()
+      .collection(
+        COLLECTIONS.ORDERS
+      )
+      .doc(
+        paidOrderForEmail.id
+      )
+      .set(
+        {
+          invoice: {
+            provider:
+              "oxygen",
+
+            status:
+              receipt.status ||
+              "issued",
+
+            mock:
+              Boolean(
+                receipt.mock
+              ),
+
+            externalId:
+              receipt.id ||
+              null,
+
+            number:
+              receipt.number ||
+              null,
+
+            mark:
+              receipt.mark ||
+              null,
+
+            pdfUrl:
+              receipt.pdfUrl ||
+              null,
+
+            issuedAt:
+              receipt.issuedAt ||
+              issuedAt,
+
+            updatedAt:
+              issuedAt,
+          },
+
+          updatedAt:
+            issuedAt,
+        },
+        {
+          merge: true,
+        }
+      );
+
+    console.log(
+      "Order receipt stored",
+      {
+        orderId:
+          paidOrderForEmail.id,
+
+        mock:
+          Boolean(
+            receipt.mock
+          ),
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Order receipt issue failed",
+      {
+        orderId:
+          paidOrderForEmail.id,
+
+        message:
+          error?.message,
+      }
+    );
+
+    const failedAt =
+      nowIso();
+
+    await getDB()
+      .collection(
+        COLLECTIONS.ORDERS
+      )
+      .doc(
+        paidOrderForEmail.id
+      )
+      .set(
+        {
+          invoice: {
+            provider:
+              "oxygen",
+
+            status:
+              "failed",
+
+            error:
+              error?.message ||
+              "Receipt issue failed",
+
+            updatedAt:
+              failedAt,
+          },
+
+          updatedAt:
+            failedAt,
+        },
+        {
+          merge: true,
+        }
+      );
   }
+}
 }

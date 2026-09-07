@@ -5231,7 +5231,7 @@ body.cart-open {
  */
 
 .product-stock.is-in-stock {
-  color: #6e9b7c;
+  color: #07dd4f;
 }
 
 
@@ -5249,12 +5249,12 @@ body.cart-open {
 
   border-radius: 50%;
 
-  background: #8bb89a;
+  background: #07dd4f;
 }
 
 
 .product-stock.is-out-of-stock {
-  color: #a56d6d;
+  color: #c12a2a;
 }
 
 
