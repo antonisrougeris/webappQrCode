@@ -20,7 +20,9 @@
     "size": 3540
   },
   "images": [
-    "/assets/img/products/black-scan-me.png"
+    "/assets/img/products/scan-me-black/scan-me-black-back.png",
+    "/assets/img/products/scan-me-black/scan-me-black-front.png",
+    "/assets/img/products/scan-me-black/scan-me-black-neck.png"
   ],
   "variants": [
     {
