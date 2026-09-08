@@ -7009,6 +7009,29 @@ body.cart-open {
 }
 
 
+/* LEFT ARROW ALWAYS BELONGS TO COLUMN 1 */
+.product-gallery-arrow--prev {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+
+/* IMAGE ALWAYS BELONGS TO CENTER COLUMN */
+.product-main-image {
+  grid-column: 2;
+  grid-row: 1;
+
+  min-width: 0;
+}
+
+
+/* RIGHT ARROW ALWAYS BELONGS TO COLUMN 3 */
+.product-gallery-arrow--next {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+
 /* =========================================================
    ACTUAL IMAGE VIEWPORT
    ========================================================= */
