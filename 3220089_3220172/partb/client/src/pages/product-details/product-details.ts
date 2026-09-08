@@ -609,59 +609,413 @@ injectProductSchema(product);
       badgeEl.textContent = "";
     }
 
-    const productImages = unique([...(product.images || []), product.image]);
-    const firstImage = productImages[0] || "";
+    /* =========================================================
+   PRODUCT IMAGE GALLERY
+   ========================================================= */
 
-    const setMainImage = (src: string): void => {
-      if (!imageEl || !src) return;
+const productImages = unique([
+  ...(product.images || []),
+  product.image,
+]);
 
-      imageEl.src = src;
-      imageEl.alt = product.title;
-      imageEl.hidden = false;
+const firstImage = productImages[0] || "";
 
-      if (imageFallback) imageFallback.hidden = true;
+const imageStage = document.getElementById(
+  "productImageStage"
+) as HTMLElement | null;
 
-      thumbnailsEl
-        ?.querySelectorAll<HTMLButtonElement>(".product-thumbnail")
-        .forEach((btn) => {
-          btn.classList.toggle("active", btn.dataset.src === src);
-        });
-    };
+const imageViewport =
+  document.getElementById(
+    "productImageViewport"
+  ) as HTMLElement | null;
 
-    if (firstImage) {
-      setMainImage(firstImage);
-    } else if (imageFallback) {
-      imageFallback.hidden = false;
-      if (imageEl) imageEl.hidden = true;
-    }
+const prevImageBtn = document.getElementById(
+  "productImagePrev"
+) as HTMLButtonElement | null;
 
-    if (thumbnailsEl && productImages.length > 1) {
-      thumbnailsEl.hidden = false;
-      thumbnailsEl.innerHTML = productImages
-        .map(
-          (src, index) => `
-            <button
-              type="button"
-              class="product-thumbnail ${index === 0 ? "active" : ""}"
-              data-src="${src}"
-            >
-              <img src="${src}" alt="${product.title} photo ${index + 1}" />
-            </button>
-          `
-        )
-        .join("");
+const nextImageBtn = document.getElementById(
+  "productImageNext"
+) as HTMLButtonElement | null;
 
-      thumbnailsEl
-        .querySelectorAll<HTMLButtonElement>(".product-thumbnail")
-        .forEach((btn) => {
-          btn.addEventListener("click", () =>
-            setMainImage(btn.dataset.src || "")
+let currentImageIndex = 0;
+
+
+/* -------------------------
+   SET MAIN IMAGE
+------------------------- */
+
+const setMainImage = (src: string): void => {
+  if (!imageEl || !src) return;
+
+  const index = productImages.indexOf(src);
+
+  if (index >= 0) {
+    currentImageIndex = index;
+  }
+
+  imageEl.src = src;
+  imageEl.alt = product.title;
+  imageEl.hidden = false;
+
+  /* Reset zoom when changing image */
+  imageEl.style.transform = "scale(1)";
+  imageEl.style.transformOrigin = "center center";
+
+  imageStage?.classList.remove("is-zooming");
+
+  if (imageFallback) {
+    imageFallback.hidden = true;
+  }
+
+  thumbnailsEl
+    ?.querySelectorAll<HTMLButtonElement>(
+      ".product-thumbnail"
+    )
+    .forEach((btn) => {
+      btn.classList.toggle(
+        "active",
+        btn.dataset.src === src
+      );
+    });
+};
+
+
+/* -------------------------
+   CHANGE IMAGE BY INDEX
+------------------------- */
+
+const showImageAtIndex = (index: number): void => {
+  if (productImages.length === 0) return;
+
+  currentImageIndex =
+    (index + productImages.length) %
+    productImages.length;
+
+  setMainImage(
+    productImages[currentImageIndex]
+  );
+};
+
+
+const showPreviousImage = (): void => {
+  showImageAtIndex(currentImageIndex - 1);
+};
+
+
+const showNextImage = (): void => {
+  showImageAtIndex(currentImageIndex + 1);
+};
+
+
+/* -------------------------
+   FIRST IMAGE
+------------------------- */
+
+if (firstImage) {
+  setMainImage(firstImage);
+} else if (imageFallback) {
+  imageFallback.hidden = false;
+
+  if (imageEl) {
+    imageEl.hidden = true;
+  }
+}
+
+
+/* -------------------------
+   SHOW / HIDE ARROWS
+------------------------- */
+
+const hasMultipleImages =
+  productImages.length > 1;
+
+if (prevImageBtn) {
+  prevImageBtn.hidden = !hasMultipleImages;
+}
+
+if (nextImageBtn) {
+  nextImageBtn.hidden = !hasMultipleImages;
+}
+
+
+/* -------------------------
+   ARROW BUTTONS
+------------------------- */
+
+prevImageBtn?.addEventListener(
+  "click",
+  (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    showPreviousImage();
+  }
+);
+
+
+nextImageBtn?.addEventListener(
+  "click",
+  (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    showNextImage();
+  }
+);
+
+
+/* -------------------------
+   THUMBNAILS
+------------------------- */
+
+if (
+  thumbnailsEl &&
+  productImages.length > 1
+) {
+  thumbnailsEl.hidden = false;
+
+  thumbnailsEl.innerHTML =
+    productImages
+      .map(
+        (src, index) => `
+          <button
+            type="button"
+            class="product-thumbnail ${
+              index === 0 ? "active" : ""
+            }"
+            data-src="${src}"
+            aria-label="Show product photo ${index + 1}"
+          >
+            <img
+              src="${src}"
+              alt="${product.title} photo ${index + 1}"
+            />
+          </button>
+        `
+      )
+      .join("");
+
+  thumbnailsEl
+    .querySelectorAll<HTMLButtonElement>(
+      ".product-thumbnail"
+    )
+    .forEach((btn) => {
+      btn.addEventListener(
+        "click",
+        () => {
+          setMainImage(
+            btn.dataset.src || ""
           );
-        });
-    } else if (thumbnailsEl) {
-      thumbnailsEl.hidden = true;
-      thumbnailsEl.innerHTML = "";
+        }
+      );
+    });
+
+} else if (thumbnailsEl) {
+
+  thumbnailsEl.hidden = true;
+  thumbnailsEl.innerHTML = "";
+}
+
+
+/* =========================================================
+   DESKTOP ZOOM
+   ONLY OVER THE REAL VISIBLE IMAGE
+   ========================================================= */
+
+function resetProductZoom(): void {
+  if (!imageEl || !imageViewport) return;
+
+  imageEl.style.transform =
+    "scale(1)";
+
+  imageEl.style.transformOrigin =
+    "center center";
+
+  imageViewport.classList.remove(
+    "is-zooming"
+  );
+
+  imageViewport.style.cursor =
+    "default";
+}
+
+
+function getVisibleImageRect() {
+  if (
+    !imageEl ||
+    !imageViewport ||
+    !imageEl.naturalWidth ||
+    !imageEl.naturalHeight
+  ) {
+    return null;
+  }
+
+  const container =
+    imageViewport.getBoundingClientRect();
+
+  const naturalWidth =
+    imageEl.naturalWidth;
+
+  const naturalHeight =
+    imageEl.naturalHeight;
+
+  /*
+   * Same calculation as object-fit: contain
+   */
+  const scale = Math.min(
+    container.width / naturalWidth,
+    container.height / naturalHeight
+  );
+
+  const width =
+    naturalWidth * scale;
+
+  const height =
+    naturalHeight * scale;
+
+  const left =
+    container.left +
+    (container.width - width) / 2;
+
+  const top =
+    container.top +
+    (container.height - height) / 2;
+
+  return {
+    left,
+    top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+  };
+}
+
+
+if (
+  imageViewport &&
+  imageEl
+) {
+
+  imageViewport.addEventListener(
+    "mousemove",
+    (event) => {
+
+      if (
+        !window.matchMedia(
+          "(hover: hover) and (pointer: fine)"
+        ).matches
+      ) {
+        return;
+      }
+
+      if (imageEl.hidden) {
+        return;
+      }
+
+      const imageRect =
+        getVisibleImageRect();
+
+      if (!imageRect) {
+        resetProductZoom();
+        return;
+      }
+
+      /*
+       * Is the mouse REALLY over
+       * the visible photo?
+       */
+      const insideImage =
+        event.clientX >= imageRect.left &&
+        event.clientX <= imageRect.right &&
+        event.clientY >= imageRect.top &&
+        event.clientY <= imageRect.bottom;
+
+      /*
+       * Mouse is inside the container,
+       * but NOT over the real photo.
+       */
+      if (!insideImage) {
+        resetProductZoom();
+        return;
+      }
+
+
+      /*
+       * Now we're actually over
+       * visible image pixels.
+       */
+
+      imageViewport.classList.add(
+        "is-zooming"
+      );
+
+      imageViewport.style.cursor =
+        "zoom-in";
+
+
+      const x =
+        ((event.clientX -
+          imageRect.left) /
+          imageRect.width) *
+        100;
+
+      const y =
+        ((event.clientY -
+          imageRect.top) /
+          imageRect.height) *
+        100;
+
+
+      imageEl.style.transformOrigin =
+        `${x}% ${y}%`;
+
+      imageEl.style.transform =
+        "scale(2)";
     }
+  );
+
+
+  imageViewport.addEventListener(
+    "mouseleave",
+    () => {
+      resetProductZoom();
+    }
+  );
+}
+
+
+/* =========================================================
+   KEYBOARD LEFT / RIGHT
+   ========================================================= */
+
+if (imageStage) {
+
+  imageStage.setAttribute(
+    "tabindex",
+    "0"
+  );
+
+  imageStage.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (productImages.length <= 1) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        showPreviousImage();
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        showNextImage();
+      }
+    }
+  );
+}
 
     try {
       const reviews = await getProductReviews(product.id);
