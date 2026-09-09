@@ -12,6 +12,9 @@ const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 import { setFlashToast } from "../../utils/toast.ts";
 
 
+const BYPASS_BOXNOW_LOCKER = true;
+const TEST_BOXNOW_LOCKER_ID = "TEST_LOCKER";
+
 function saveCheckoutDraft(formEl: HTMLFormElement): void {
   const form = new FormData(formEl)
   const draft: Record<string, string> = {};
@@ -439,6 +442,25 @@ function restoreAfterAuth(): void {
 
 
 document.addEventListener("DOMContentLoaded", () => {
+
+    if (BYPASS_BOXNOW_LOCKER) {
+    const lockerInput =
+      document.getElementById("lockerInput") as HTMLInputElement | null;
+
+    if (lockerInput) {
+      lockerInput.value = TEST_BOXNOW_LOCKER_ID;
+    }
+
+    const lockerMessage =
+      document.getElementById("lockerValidationMessage");
+
+    if (lockerMessage) {
+      lockerMessage.textContent = "";
+      lockerMessage.hidden = true;
+    }
+
+    console.log("BOX NOW bypass enabled:", TEST_BOXNOW_LOCKER_ID);
+  }
   restoreAfterAuth();
   restoreCheckoutDraft();
 
@@ -592,33 +614,26 @@ if (!me?.emailVerified) {
     user.email || ""
   );
 
-        const delivery = "boxnow" as const;
-const locker =
+const delivery = "boxnow" as const;
+
+let locker =
   String(
     form.get("locker") || ""
   ).trim();
 
+if (BYPASS_BOXNOW_LOCKER) {
+  locker = TEST_BOXNOW_LOCKER_ID;
+}
+
 const lockerValidationMessage =
-  document.getElementById(
-    "lockerValidationMessage"
-  );
+  document.getElementById("lockerValidationMessage");
 
 if (!locker) {
   if (lockerValidationMessage) {
     lockerValidationMessage.textContent =
       "Please select a BOX NOW locker.";
-
     lockerValidationMessage.hidden = false;
   }
-
-  document
-    .querySelector<HTMLElement>(
-      ".boxnow-widget-button"
-    )
-    ?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
 
   return;
 }
@@ -628,33 +643,30 @@ if (lockerValidationMessage) {
   lockerValidationMessage.hidden = true;
 }
         const result = await checkout({
-          customer: {
-            firstName,
-            lastName,
-            email,
-            phone,
-          },
-          shippingAddress: {
-  firstName,
-  lastName,
-  email,
-  phone,
+  customer: {
+    firstName,
+    lastName,
+    email,
+    phone,
+  },
 
-  country: "Greece",
+  shippingAddress: {
+    firstName,
+    lastName,
+    email,
+    phone,
+    country: "Greece",
+    city: "",
+    postalCode: "",
+    addressLine1: "",
+    addressLine2: "",
+  },
 
-  city: "",
-
-  postalCode: "",
-
-  addressLine1: "",
-
-  addressLine2: "",
-},
-          delivery,
-          locker: String(form.get("locker") || "").trim(),
-          phoneCountryCode,
-          notes: "",
-        });
+  delivery,
+  locker,
+  phoneCountryCode,
+  notes: "",
+});
 
         if (result.checkoutUrl) {
           window.location.href = result.checkoutUrl;
