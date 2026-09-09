@@ -95,10 +95,14 @@ function getCartItemQr(item: CartItem): string {
   return item.qrDestination || "";
 }
 
-function calculateShipping(subtotal: number, delivery: string): number {
-  if (subtotal >= 50) return 0;
-  if (delivery === "boxnow") return 2.0;
-  return 3.5;
+function calculateShipping(
+  subtotal: number
+): number {
+  if (subtotal >= 50) {
+    return 0;
+  }
+
+  return 2.0;
 }
 
 function setPayButtonState(): void {
@@ -124,12 +128,7 @@ async function render(): Promise<void> {
   const cart = await getCart();
   const items: CartItem[] = cart?.items || [];
 
-  const delivery =
-    (
-      document.querySelector(
-        "input[name='delivery']:checked"
-      ) as HTMLInputElement | null
-    )?.value || "home";
+
 
   const container = document.getElementById("checkoutItems");
   if (!container) return;
@@ -180,8 +179,11 @@ async function render(): Promise<void> {
     .join("");
 
   const discountedSubtotal = subtotal * (1 - discount / 100);
-  const shipping = calculateShipping(discountedSubtotal, delivery);
-  const total = discountedSubtotal + shipping;
+const shipping =
+  calculateShipping(
+    discountedSubtotal
+  );
+    const total = discountedSubtotal + shipping;
 
   document.getElementById("subtotal")!.textContent =
     formatPrice(discountedSubtotal);
@@ -191,17 +193,49 @@ async function render(): Promise<void> {
 
   document.getElementById("total")!.textContent = formatPrice(total);
 
-  const msg = document.getElementById("freeShippingMsg");
+  const msg =
+  document.getElementById(
+    "freeShippingMsg"
+  );
 
-  if (msg) {
-    if (discountedSubtotal < 50) {
-      msg.textContent = `Add ${(50 - discountedSubtotal).toFixed(
-        2
-      )}€ for FREE shipping`;
-    } else {
-      msg.textContent = "You unlocked FREE shipping 🎉";
-    }
+if (msg) {
+
+  msg.classList.remove(
+    "is-unlocked"
+  );
+
+  if (discountedSubtotal < 50) {
+
+    const amountLeft =
+      50 - discountedSubtotal;
+
+    msg.textContent =
+      `Add ${formatPrice(
+        amountLeft
+      )} for FREE shipping`;
+
+  } else if (
+    discountedSubtotal < 80
+  ) {
+
+    const amountLeft =
+      80 - discountedSubtotal;
+
+    msg.textContent =
+      `Add ${formatPrice(
+        amountLeft
+      )} more to get a FREE sticker set`;
+
+  } else {
+
+    msg.textContent =
+      "FREE Skanare sticker set added 🎁";
+
+    msg.classList.add(
+      "is-unlocked"
+    );
   }
+}
 }
 
 function getRequiredFormString(
@@ -346,63 +380,88 @@ function updatePhoneValidity(): void {
   }
 }
 
-function readAndValidateCheckoutForm(form: FormData, fallbackEmail = "") {
-  const firstName = getRequiredFormString(form, "firstName", "First name");
-  const lastName = getRequiredFormString(form, "lastName", "Last name");
-  const email = String(form.get("email") || "").trim() || fallbackEmail;
-  const phoneCountryCode = getRequiredFormString(
-    form,
-    "phoneCountryCode",
-    "Phone country"
-  );
-  const phoneNumber = getRequiredFormString(form, "phoneNumber", "Phone");
-  const country = getRequiredFormString(form, "country", "Country");
-  const countryCode = COUNTRY_CODES_BY_NAME[country];
-  const city = getRequiredFormString(form, "city", "City");
-  const postalCode = getRequiredFormString(form, "postalCode", "Postal code");
-  const addressLine1 = getRequiredFormString(form, "address", "Address");
+function readAndValidateCheckoutForm(
+  form: FormData,
+  fallbackEmail = ""
+) {
+  const firstName =
+    getRequiredFormString(
+      form,
+      "firstName",
+      "First name"
+    );
 
-  const phoneValidationMessage = getPhoneValidationMessage(
-    phoneNumber,
-    phoneCountryCode
-  );
-  if (phoneValidationMessage) throw new Error(phoneValidationMessage);
+  const lastName =
+    getRequiredFormString(
+      form,
+      "lastName",
+      "Last name"
+    );
+
+  const email =
+    String(
+      form.get("email") || ""
+    ).trim() ||
+    fallbackEmail;
+
+  const phoneCountryCode =
+    getRequiredFormString(
+      form,
+      "phoneCountryCode",
+      "Phone country"
+    );
+
+  const phoneNumber =
+    getRequiredFormString(
+      form,
+      "phoneNumber",
+      "Phone"
+    );
+
+
+  const phoneValidationMessage =
+    getPhoneValidationMessage(
+      phoneNumber,
+      phoneCountryCode
+    );
+
+  if (phoneValidationMessage) {
+    throw new Error(
+      phoneValidationMessage
+    );
+  }
+
 
   if (!isValidEmail(email)) {
-    throw new Error("Enter a valid email address.");
+    throw new Error(
+      "Enter a valid email address."
+    );
   }
 
-  if (!countryCode) {
-    throw new Error("Select a valid country.");
-  }
 
-  const parsedPhone = parsePhoneNumberFromString(phoneNumber, phoneCountryCode as CountryCode);
+  const parsedPhone =
+    parsePhoneNumberFromString(
+      phoneNumber,
+      phoneCountryCode as CountryCode
+    );
+
+
   if (!parsedPhone) {
-    throw new Error("Enter a valid phone number for the selected country.");
+    throw new Error(
+      "Enter a valid phone number."
+    );
   }
 
-  if (addressLine1.length < 5) {
-    throw new Error("Address must be at least 5 characters.");
-  }
-
-  if (city.length < 2) {
-    throw new Error("City must be at least 2 characters.");
-  }
-
-  if (!isValidPostalCode(postalCode, countryCode)) {
-    throw new Error("Enter a valid postal code for the selected country.");
-  }
 
   return {
     firstName,
     lastName,
     email,
-    phone: parsedPhone.number,
+
+    phone:
+      parsedPhone.number,
+
     phoneCountryCode,
-    country,
-    city,
-    postalCode,
-    addressLine1,
   };
 }
 
@@ -421,6 +480,23 @@ function restoreAfterAuth(): void {
 document.addEventListener("DOMContentLoaded", () => {
   restoreAfterAuth();
   restoreCheckoutDraft();
+
+  const editCartButton =
+  document.getElementById(
+    "checkoutEditCart"
+  ) as HTMLButtonElement | null;
+
+editCartButton?.addEventListener(
+  "click",
+  () => {
+    const cartButton =
+      document.querySelector<HTMLElement>(
+        "[data-cart-link], .cart-link"
+      );
+
+    cartButton?.click();
+  }
+);
 
   const checkoutForm = document.getElementById("checkoutForm") as HTMLFormElement | null;
   checkoutForm?.addEventListener("input", (event) => {
@@ -442,13 +518,7 @@ document.addEventListener("DOMContentLoaded", () => {
     void render();
   });
 
-  document
-    .querySelectorAll<HTMLInputElement>("input[name='delivery']")
-    .forEach((radio) => {
-      radio.addEventListener("change", () => {
-        void render();
-      });
-    });
+
 
   document.getElementById("applyDiscount")?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -549,13 +619,53 @@ if (!me?.emailVerified) {
           throw new Error("Your cart is empty.");
         }
 
-        const { firstName, lastName, email, phone, phoneCountryCode, country, city, postalCode, addressLine1 } =
-          readAndValidateCheckoutForm(form, user.email || "");
+        const {
+  firstName,
+  lastName,
+  email,
+  phone,
+  phoneCountryCode,
+} =
+  readAndValidateCheckoutForm(
+    form,
+    user.email || ""
+  );
 
-        const delivery = String(form.get("delivery") || "home") as
-          | "home"
-          | "boxnow";
+        const delivery = "boxnow" as const;
+const locker =
+  String(
+    form.get("locker") || ""
+  ).trim();
 
+const lockerValidationMessage =
+  document.getElementById(
+    "lockerValidationMessage"
+  );
+
+if (!locker) {
+  if (lockerValidationMessage) {
+    lockerValidationMessage.textContent =
+      "Please select a BOX NOW locker.";
+
+    lockerValidationMessage.hidden = false;
+  }
+
+  document
+    .querySelector<HTMLElement>(
+      ".boxnow-widget-button"
+    )
+    ?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+  return;
+}
+
+if (lockerValidationMessage) {
+  lockerValidationMessage.textContent = "";
+  lockerValidationMessage.hidden = true;
+}
         const result = await checkout({
           customer: {
             firstName,
@@ -564,16 +674,21 @@ if (!me?.emailVerified) {
             phone,
           },
           shippingAddress: {
-            firstName,
-            lastName,
-            email,
-            phone,
-            country,
-            city,
-            postalCode,
-            addressLine1,
-            addressLine2: "",
-          },
+  firstName,
+  lastName,
+  email,
+  phone,
+
+  country: "Greece",
+
+  city: "",
+
+  postalCode: "",
+
+  addressLine1: "",
+
+  addressLine2: "",
+},
           delivery,
           locker: String(form.get("locker") || "").trim(),
           phoneCountryCode,

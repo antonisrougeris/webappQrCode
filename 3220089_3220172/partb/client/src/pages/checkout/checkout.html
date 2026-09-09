@@ -108,156 +108,790 @@
     </div>
   </header>
 
-    <main class="checkout-page">
+<main class="checkout-page">
 
-      <div class="checkout-page__container">
-    
-        <!-- LEFT -->
-        <form id="checkoutForm" class="checkout-page__form">
-    
-          <h2>Checkout</h2>
-    
-          <!-- CONTACT -->
-          <div class="checkout-page__section">
-            <h3>Contact</h3>
-    
-            <div class="row">
-              <input name="firstName" placeholder="First name" required />
-              <input name="lastName" placeholder="Last name" required />
-            </div>
-    
-            <input name="email" type="email" autocomplete="email" placeholder="Email" required />
+  <div class="checkout-page__container">
+
+    <!-- =========================================
+         LEFT — CUSTOMER + DELIVERY
+         ========================================= -->
+    <form
+      id="checkoutForm"
+      class="checkout-page__form"
+    >
+
+      <header class="checkout-heading">
+        <span class="checkout-eyebrow">
+          Secure checkout
+        </span>
+
+        <h1>Checkout</h1>
+
+        <p class="checkout-hero-text">
+  Enter your details and select the BOX NOW locker where you want to receive your order.
+</p>
+      </header>
+
+
+      <!-- CONTACT -->
+      <section class="checkout-page__section">
+
+        <div class="checkout-section-heading">
+          <span>01</span>
+
+          <div>
+            <h2>Contact</h2>
+            <p>
+              We'll use these details for your order
+              updates.
+            </p>
+          </div>
+        </div>
+
+
+        <div class="checkout-fields">
+
+          <div class="checkout-field-row">
+
+            <label class="checkout-field">
+              <span>First name</span>
+
+              <input
+                name="firstName"
+                autocomplete="given-name"
+                placeholder="First name"
+                required
+              />
+            </label>
+
+
+            <label class="checkout-field">
+              <span>Last name</span>
+
+              <input
+                name="lastName"
+                autocomplete="family-name"
+                placeholder="Last name"
+                required
+              />
+            </label>
+
+          </div>
+
+
+          <label class="checkout-field">
+            <span>Email</span>
+
+            <input
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="you@example.com"
+              required
+            />
+          </label>
+
+
+          <div class="checkout-field">
+
+            <span>Phone number</span>
+
             <div class="checkout-phone-field">
-              <select name="phoneCountryCode" aria-label="Phone country code" required>
-                <option value="GR">Greece (+30)</option>
-                <option value="CY">Cyprus (+357)</option>
-                <option value="GB">United Kingdom (+44)</option>
-                <option value="DE">Germany (+49)</option>
-                <option value="FR">France (+33)</option>
-                <option value="IT">Italy (+39)</option>
-                <option value="ES">Spain (+34)</option>
-                <option value="US">United States (+1)</option>
-                <option value="CA">Canada (+1)</option>
-                <option value="AU">Australia (+61)</option>
-                <option value="NL">Netherlands (+31)</option>
-                <option value="BE">Belgium (+32)</option>
-                <option value="AT">Austria (+43)</option>
-                <option value="PT">Portugal (+351)</option>
-                <option value="IE">Ireland (+353)</option>
-              </select>
-              <input name="phoneNumber" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="Phone number" maxlength="15" required />
-            </div>
-            <small id="phoneValidationMessage" class="field-error" aria-live="polite"></small>
-          </div>
-    
-          <!-- ADDRESS -->
-          <div class="checkout-page__section">
-            <h3>Shipping</h3>
-    
-            <input name="address" placeholder="Address" required />
-            <div class="row">
-              <input name="city" placeholder="City" required />
-              <input name="postalCode" inputmode="numeric" maxlength="10" placeholder="Postal code" required />
-            </div>
-    
-            <select name="country" required>
-              <option value="" disabled selected>Select country</option>
-              <option value="Greece">Greece</option>
-              <option value="Cyprus">Cyprus</option>
-              <option value="United Kingdom">United Kingdom</option>
-              <option value="Germany">Germany</option>
-              <option value="France">France</option>
-              <option value="Italy">Italy</option>
-              <option value="Spain">Spain</option>
-              <option value="United States">United States</option>
-              <option value="Canada">Canada</option>
-              <option value="Australia">Australia</option>
-              <option value="Netherlands">Netherlands</option>
-              <option value="Belgium">Belgium</option>
-              <option value="Austria">Austria</option>
-              <option value="Portugal">Portugal</option>
-              <option value="Ireland">Ireland</option>
-            </select>
-          </div>
-    
-          <!-- DELIVERY -->
-          <div class="checkout-page__section">
-            <h3>Delivery</h3>
-    
-            <label>
-              <input type="radio" name="delivery" value="home" checked />
-              Home delivery
-            </label>
-    
-            <label>
-              <input type="radio" name="delivery" value="boxnow" />
-              Box Now locker
-            </label>
-    
-            <div id="boxnowmap"></div>
 
-<button class="boxnow-widget-button">
-  📍 Select Box Now Locker
+              <select
+                name="phoneCountryCode"
+                aria-label="Phone country code"
+                required
+              >
+                <option value="GR">
+                  Greece (+30)
+                </option>
+
+                <option value="CY">
+                  Cyprus (+357)
+                </option>
+              </select>
+
+              <input
+                name="phoneNumber"
+                type="tel"
+                inputmode="numeric"
+                autocomplete="tel-national"
+                placeholder="Phone number"
+                maxlength="15"
+                required
+              />
+
+            </div>
+
+            <small
+              id="phoneValidationMessage"
+              class="field-error"
+              aria-live="polite"
+            ></small>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- BOX NOW -->
+      <section class="checkout-page__section">
+
+        <div class="checkout-section-heading">
+
+          <span>02</span>
+
+          <div>
+            <h2>Delivery</h2>
+
+            <p>
+              Your order will be delivered to a
+              BOX NOW locker.
+            </p>
+          </div>
+
+        </div>
+
+
+        <!-- fixed delivery method -->
+        <input
+          type="hidden"
+          name="delivery"
+          value="boxnow"
+        />
+
+
+        <div class="boxnow-delivery">
+
+          <div class="boxnow-delivery__top">
+
+            <div class="boxnow-delivery__brand">
+              <strong>BOX NOW</strong>
+
+              <span>
+                Locker delivery
+              </span>
+            </div>
+
+            <span class="boxnow-delivery__price">
+              €2.00
+            </span>
+
+          </div>
+
+
+          <p class="boxnow-delivery__description">
+              Choose a BOX NOW locker for your delivery.
+
+          </p>
+
+
+          <div id="boxnowmap"></div>
+
+
+          <button
+  id="selectLockerBtn"
+  class="boxnow-locker-btn"
+  type="button"
+>
+  Choose a BOX NOW locker
 </button>
 
-<input
-  id="lockerInput"
-  name="locker"
-  placeholder="Selected locker will appear here"
-/>
+<small
+  id="lockerValidationMessage"
+  class="field-error locker-error"
+  aria-live="polite"
+  hidden
+></small>
 
-                    </div>
-    
-                    <button type="submit" class="checkout-page__btn">
-                      Pay with Viva
-                    </button>
-    
-        </form>
-    
-        <!-- RIGHT -->
-        <div class="checkout-page__summary">
-    
-          <div id="checkoutItems"></div>
 
-          <div class="checkout-discount">
-            <input id="discountInput" placeholder="Discount code or gift card" />
-            <button id="applyDiscount">Apply</button>
-          </div>
-          
-    
-          <div class="checkout-line">
-            <span>Subtotal</span>
-            <span id="subtotal"></span>
-          </div>
-    
-          <p id="freeShippingMsg" class="checkout-free-msg"></p>
+          <div
+            id="selectedLockerBox"
+            class="selected-locker"
+            hidden
+          >
 
-          <div class="checkout-line">
-            <span>Shipping</span>
-            <span id="shipping">€3.50</span>
+            <span class="selected-locker__icon">
+              ✓
+            </span>
+
+            <div>
+              <small>Selected locker</small>
+
+              <strong id="selectedLockerText">
+                BOX NOW locker selected
+              </strong>
+
+              
+            </div>
+
+            
+
           </div>
-    
-          <div class="checkout-total">
-            <span>Total</span>
-            <strong id="total"></strong>
-          </div>
-    
+
+
+          <input
+            id="lockerInput"
+            name="locker"
+            type="hidden"
+          />
+
         </div>
-    
+
+      </section>
+
+
+      <button
+        type="submit"
+        class="checkout-page__btn"
+      >
+        Pay with viva.com
+      </button>
+
+
+      <div class="checkout-secure-note">
+        
+
+        Secure payment powered by viva.com
       </div>
-    
-    </main>
+
+    </form>
+
+
+    <!-- =========================================
+         RIGHT — ORDER SUMMARY
+         ========================================= -->
+    <aside class="checkout-page__summary">
+
+      <div class="checkout-summary-heading">
+        <h2>Your order</h2>
+
+        <button
+  id="checkoutEditCart"
+  class="checkout-edit-cart"
+  type="button"
+>
+  Edit cart
+</button>
+      </div>
+
+
+      <div
+        id="checkoutItems"
+        class="checkout-items"
+      ></div>
+
+
+      <div class="checkout-summary-divider"></div>
+
+
+      <div class="checkout-discount">
+
+        <input
+          id="discountInput"
+          placeholder="Discount code"
+        />
+
+        <button
+          id="applyDiscount"
+          type="button"
+        >
+          Apply
+        </button>
+
+      </div>
+
+
+      <div class="checkout-summary-divider"></div>
+
+
+      <div class="checkout-line">
+        <span>Subtotal</span>
+
+        <span id="subtotal"></span>
+      </div>
+
+
+      <p
+        id="freeShippingMsg"
+        class="checkout-free-msg"
+      ></p>
+
+
+      <div class="checkout-line">
+        <span>BOX NOW delivery</span>
+
+        <span id="shipping"></span>
+      </div>
+
+
+      <div class="checkout-total">
+        <span>Total</span>
+
+        <strong id="total"></strong>
+
+        
+      </div>
+      <div class="checkout-summary-footer">
+  <a href="/src/pages/refund-returns/refund-policy.html">
+    Refund policy
+  </a>
+
+  <a href="/src/pages/terms/terms.html">
+    Terms of service
+  </a>
+
+  <a href="/src/pages/contact/contact.html">
+    Contact information
+  </a>
+</div>
+
+
+      
+
+    </aside>
+
+  </div>
+
+</main>
       
       
 
-  <footer class="site-footer">
-    <div class="container footer-grid">
-      <div><div class="logo-text">Skanare</span></div><p>Modern QR clothing for creators, brands and events.</p></div>
-      <div><h4>Shop</h4><ul><li><a href="/src/pages/products/products.html?category=tshirt">T-Shirts</a></li><li><a href="/src/pages/products/products.html?category=accessory">Accessories</a></li></ul></div>
-      <div><h4>Support</h4><p>Email: hello@skanare.com</p><p>Free QR link updates.</p></div>
+<footer class="site-footer">
+
+  <div class="container footer-main">
+
+    <!-- =====================================
+         BRAND
+    ====================================== -->
+
+    <div class="footer-brand">
+
+      <a
+        href="/index.html"
+        class="footer-logo"
+      >
+        Skanare
+      </a>
+
+      <p class="footer-description">
+        QR clothing and accessories that connect
+        what you wear with your digital world.
+      </p>
+
+      <p class="footer-tagline">
+        Dynamic QR. Your link. Your story.
+      </p>
+
+      <a
+        href="mailto:hello@skanare.com"
+        class="footer-email"
+      >
+        hello@skanare.com
+      </a>
+
     </div>
-    <div class="container footer-bottom"><small>&copy; 2026 skanare.</small></div>
-  </footer>
+
+
+    <!-- =====================================
+         DESKTOP FOOTER NAVIGATION
+    ====================================== -->
+
+    <div class="footer-desktop-nav">
+
+      <!-- MY ACCOUNT -->
+
+      <div class="footer-column">
+
+        <h4>
+          My Account
+        </h4>
+
+        <ul>
+
+          <li>
+            <a href="/src/pages/my-qr/my-qr.html">
+              <span>My QR Codes</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a href="/src/pages/login/login.html">
+              <span>Sign In</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a href="/src/pages/register/register.html">
+              <span>Create Account</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+        </ul>
+
+      </div>
+
+
+      <!-- SHOP -->
+
+      <div class="footer-column">
+
+        <h4>
+          Shop
+        </h4>
+
+        <ul>
+
+          <li>
+            <a
+              href="/src/pages/products/products.html?category=tshirt"
+            >
+              <span>QR Clothing</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="/src/pages/products/products.html?category=accessory"
+            >
+              <span>QR Accessories</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a href="/index.html#how">
+              <span>How it works</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+        </ul>
+
+      </div>
+
+
+      <!-- COMPANY -->
+
+      <div class="footer-column">
+
+        <h4>
+          Company
+        </h4>
+
+        <ul>
+
+          <li>
+            <a href="/src/pages/about/about.html">
+              <span>About Us</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a href="/src/pages/contact/contact.html">
+              <span>Contact</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a href="/index.html#faq">
+              <span>FAQ</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="/src/pages/payment-security/payment-security.html"
+            >
+              <span>Payment &amp; Security</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+        </ul>
+
+      </div>
+
+
+      <!-- POLICIES -->
+
+      <div class="footer-column">
+
+        <h4>
+          Policies
+        </h4>
+
+        <ul>
+
+          <li>
+            <a
+              href="/src/pages/shipping-policy/shipping-policy.html"
+            >
+              <span>Shipping Policy</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="/src/pages/refund-policy/refund-policy.html"
+            >
+              <span>Refund &amp; Returns</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="/src/pages/privacy-policy/privacy-policy.html"
+            >
+              <span>Privacy Policy</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="/src/pages/terms/terms.html"
+            >
+              <span>Terms of Service</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="/src/pages/cookie-policy/cookie-policy.html"
+            >
+              <span>Cookie Policy</span>
+              <span class="footer-arrow">↗</span>
+            </a>
+          </li>
+
+        </ul>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================================
+         MOBILE FOOTER ACCORDION
+    ====================================== -->
+
+    <div class="footer-mobile-nav">
+
+      <!-- MY ACCOUNT -->
+
+      <details class="footer-mobile-section">
+
+        <summary>
+
+          <span>
+            My Account
+          </span>
+
+          <span class="footer-chevron"></span>
+
+        </summary>
+
+        <div class="footer-mobile-content">
+
+          <a href="/src/pages/my-qr/my-qr.html">
+            My QR Codes
+          </a>
+
+          <a href="/src/pages/login/login.html">
+            Sign In
+          </a>
+
+          <a href="/src/pages/register/register.html">
+            Create Account
+          </a>
+
+        </div>
+
+      </details>
+
+
+      <!-- SHOP -->
+
+      <details class="footer-mobile-section">
+
+        <summary>
+
+          <span>
+            Shop
+          </span>
+
+          <span class="footer-chevron"></span>
+
+        </summary>
+
+        <div class="footer-mobile-content">
+
+          <a
+            href="/src/pages/products/products.html?category=tshirt"
+          >
+            QR Clothing
+          </a>
+
+          <a
+            href="/src/pages/products/products.html?category=accessory"
+          >
+            QR Accessories
+          </a>
+
+          <a href="/index.html#how">
+            How it works
+          </a>
+
+        </div>
+
+      </details>
+
+      
+
+
+      <!-- COMPANY -->
+
+      <details class="footer-mobile-section">
+
+        <summary>
+
+          <span>
+            Company
+          </span>
+
+          <span class="footer-chevron"></span>
+
+        </summary>
+
+        <div class="footer-mobile-content">
+
+          <a href="/src/pages/about/about.html">
+            About Us
+          </a>
+
+          <a href="/src/pages/contact/contact.html">
+            Contact
+          </a>
+
+          <a href="/index.html#faq">
+            FAQ
+          </a>
+
+          <a
+            href="/src/pages/payment-security/payment-security.html"
+          >
+            Payment &amp; Security
+          </a>
+
+        </div>
+
+      </details>
+
+
+      <!-- POLICIES -->
+
+      <details class="footer-mobile-section">
+
+        <summary>
+
+          <span>
+            Policies
+          </span>
+
+          <span class="footer-chevron"></span>
+
+        </summary>
+
+        <div class="footer-mobile-content">
+
+          <a
+            href="/src/pages/shipping-policy/shipping-policy.html"
+          >
+            Shipping Policy
+          </a>
+
+          <a
+            href="/src/pages/refund-policy/refund-policy.html"
+          >
+            Refund &amp; Returns
+          </a>
+
+          <a
+            href="/src/pages/privacy-policy/privacy-policy.html"
+          >
+            Privacy Policy
+          </a>
+
+          <a
+            href="/src/pages/terms/terms.html"
+          >
+            Terms of Service
+          </a>
+
+          <a
+            href="/src/pages/cookie-policy/cookie-policy.html"
+          >
+            Cookie Policy
+          </a>
+
+        </div>
+
+      </details>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================
+       FOOTER BOTTOM
+  ====================================== -->
+
+  <div class="container footer-bottom">
+
+    <small>
+      © 2026 Skanare. All rights reserved.
+    </small>
+
+    <div class="footer-bottom-links">
+
+      <a
+        href="/src/pages/privacy-policy/privacy-policy.html"
+      >
+        Privacy
+      </a>
+
+      <a
+        href="/src/pages/terms/terms.html"
+      >
+        Terms
+      </a>
+
+      <a
+        href="/src/pages/cookie-policy/cookie-policy.html"
+      >
+        Cookies
+      </a>
+
+    </div>
+
+  </div>
+
+</footer>
 
   <div id="cartOverlay" class="cart-overlay hidden"></div>
 
@@ -273,31 +907,80 @@
   <script type="module" src="/src/pages/cart/cart.ts"></script>
 
 
-  <script>
-    var _bn_map_widget_config = {
-      partnerId: 1,
-  
-      parentElement: "#boxnowmap",
-  
-      type: "popup",
-  
-      afterSelect: function(selected) {
-        console.log(selected);
-  
-        document.getElementById("lockerInput").value =
-          selected.boxnowLockerId;
-  
-        alert("Selected: " + selected.boxnowLockerAddressLine1);
+<script>
+  var _bn_map_widget_config = {
+    parentElement: "#boxnowmap",
+
+    type: "popup",
+
+    buttonSelector: ".boxnow-widget-button",
+
+    afterSelect: function (selected) {
+      console.log(
+        "BOX NOW locker selected:",
+        selected
+      );
+
+      var lockerInput =
+        document.getElementById(
+          "lockerInput"
+        );
+
+      var lockerBox =
+        document.getElementById(
+          "selectedLockerBox"
+        );
+
+      var lockerText =
+        document.getElementById(
+          "selectedLockerText"
+        );
+
+      var lockerMessage =
+        document.getElementById(
+          "lockerValidationMessage"
+        );
+
+      if (lockerInput) {
+        lockerInput.value =
+          selected.boxnowLockerId || "";
       }
+
+      if (lockerText) {
+        lockerText.textContent =
+          selected.boxnowLockerAddressLine1 ||
+          "BOX NOW locker selected";
+      }
+
+      if (lockerBox) {
+        lockerBox.hidden = false;
+      }
+
+      if (lockerMessage) {
+        lockerMessage.textContent = "";
+        lockerMessage.hidden = true;
+      }
+    }
+  };
+
+  (function (d) {
+    var e = d.createElement("script");
+
+    e.src =
+      "https://widget-cdn.boxnow.gr/map-widget/client/v5.js";
+
+    e.async = true;
+    e.defer = true;
+
+    e.onerror = function () {
+      console.error(
+        "BOX NOW widget failed to load"
+      );
     };
-  
-    (function(d) {
-      var e = d.createElement("script");
-      e.src = "https://widgetcdn.boxnow.gr/map-widget/client/v5.js";
-      e.async = true;
-      e.defer = true;
-      d.getElementsByTagName("head")[0].appendChild(e);
-    })(document);
-  </script>
+
+    d.getElementsByTagName("head")[0]
+      .appendChild(e);
+  })(document);
+</script>
 </body>
 </html>
