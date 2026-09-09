@@ -252,27 +252,8 @@ function getRequiredFormString(
   return value;
 }
 
-const COUNTRY_NAMES: Record<string, string> = {
-  GR: "Greece",
-  CY: "Cyprus",
-  GB: "United Kingdom",
-  DE: "Germany",
-  FR: "France",
-  IT: "Italy",
-  ES: "Spain",
-  US: "United States",
-  CA: "Canada",
-  AU: "Australia",
-  NL: "Netherlands",
-  BE: "Belgium",
-  AT: "Austria",
-  PT: "Portugal",
-  IE: "Ireland",
-};
 
-const COUNTRY_CODES_BY_NAME = Object.fromEntries(
-  Object.entries(COUNTRY_NAMES).map(([code, name]) => [name, code])
-) as Record<string, string>;
+
 
 const PHONE_RULES: Record<string, { length: number; prefix?: RegExp }> = {
   GR: { length: 10, prefix: /^69/ },
@@ -296,27 +277,7 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
-function isValidPostalCode(postalCode: string, countryCode: string): boolean {
-  const patterns: Record<string, RegExp> = {
-    GR: /^\d{5}$/,
-    CY: /^\d{4}$/,
-    GB: /^[A-Z0-9 ]{5,8}$/i,
-    DE: /^\d{5}$/,
-    FR: /^\d{5}$/,
-    IT: /^\d{5}$/,
-    ES: /^\d{5}$/,
-    US: /^\d{5}(-\d{4})?$/,
-    CA: /^[A-Z]\d[A-Z][ -]?\d[A-Z]\d$/i,
-    AU: /^\d{4}$/,
-    NL: /^\d{4}\s?[A-Z]{2}$/i,
-    BE: /^\d{4}$/,
-    AT: /^\d{4}$/,
-    PT: /^\d{4}-?\d{3}$/,
-    IE: /^[A-Z0-9 ]{3,7}$/i,
-  };
 
-  return patterns[countryCode]?.test(postalCode) ?? false;
-}
 
 function keepDigitsOnly(input: HTMLInputElement): void {
   input.value = input.value.replace(/\D/g, "");
