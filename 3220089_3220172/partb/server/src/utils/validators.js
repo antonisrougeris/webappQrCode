@@ -67,29 +67,36 @@ function validPostalCodeForCountry(postalCode, countryCode) {
 
 export const checkoutSchema = z.object({
   phoneCountryCode: countrySchema.default("GR"),
+
   customer: z.object({
     firstName: z.string().trim().min(1).max(80),
     lastName: z.string().trim().min(1).max(80),
     email: z.string().trim().email().max(254),
     phone: requiredPhoneSchema,
   }),
+
   shippingAddress: z.object({
     firstName: z.string().trim().max(80).optional(),
     lastName: z.string().trim().max(80).optional(),
     email: z.string().trim().email().max(254).optional(),
     phone: z.string().trim().max(40).optional(),
-    country: z.string().trim().min(1).max(80),
-    city: z.string().trim().min(2).max(120),
-    postalCode: z.string().trim().min(1).max(20),
-    addressLine1: z.string().trim().min(5).max(180),
+
+    country: z.string().trim().max(80).optional().default(""),
+    city: z.string().trim().max(120).optional().default(""),
+    postalCode: z.string().trim().max(20).optional().default(""),
+    addressLine1: z.string().trim().max(180).optional().default(""),
     addressLine2: z.string().trim().max(180).optional().default(""),
   }),
+
   delivery: z.enum(["home", "boxnow"]).optional().default("home"),
+
   locker: z.any().optional().nullable(),
+
   notes: z.string().trim().max(1000).optional().default(""),
 }).superRefine((checkout, context) => {
   const countryCode = checkout.phoneCountryCode;
 
+  // Customer phone is always required and must be valid
   if (!validPhoneForCountry(checkout.customer.phone, countryCode)) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
@@ -98,7 +105,11 @@ export const checkoutSchema = z.object({
     });
   }
 
-  if (!validPhoneForCountry(checkout.shippingAddress.phone, countryCode)) {
+  // Validate shipping phone only if one was supplied
+  if (
+    checkout.shippingAddress.phone &&
+    !validPhoneForCountry(checkout.shippingAddress.phone, countryCode)
+  ) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["shippingAddress", "phone"],
@@ -106,27 +117,72 @@ export const checkoutSchema = z.object({
     });
   }
 
-  const addressCountry = supportedCountries.find(
-    (code) => code === checkout.shippingAddress.country
-  ) || ({
-    Greece: "GR",
-    Cyprus: "CY",
-    "United Kingdom": "GB",
-    Germany: "DE",
-    France: "FR",
-    Italy: "IT",
-    Spain: "ES",
-    "United States": "US",
-    Canada: "CA",
-    Australia: "AU",
-    Netherlands: "NL",
-    Belgium: "BE",
-    Austria: "AT",
-    Portugal: "PT",
-    Ireland: "IE",
-  })[checkout.shippingAddress.country];
+  // BOX NOW does not require a home shipping address
+  if (checkout.delivery === "boxnow") {
+    if (!checkout.locker) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["locker"],
+        message: "BOX NOW locker is required",
+      });
+    }
 
-  if (!addressCountry || !validPostalCodeForCountry(checkout.shippingAddress.postalCode, addressCountry)) {
+    return;
+  }
+
+  // Home delivery requires a complete shipping address
+  const { country, city, postalCode, addressLine1 } =
+    checkout.shippingAddress;
+
+  if (!country) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["shippingAddress", "country"],
+      message: "Country is required",
+    });
+  }
+
+  if (!city || city.length < 2) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["shippingAddress", "city"],
+      message: "City is required",
+    });
+  }
+
+  if (!addressLine1 || addressLine1.length < 5) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["shippingAddress", "addressLine1"],
+      message: "Address is required",
+    });
+  }
+
+  const addressCountry =
+    supportedCountries.find((code) => code === country) ||
+    ({
+      Greece: "GR",
+      Cyprus: "CY",
+      "United Kingdom": "GB",
+      Germany: "DE",
+      France: "FR",
+      Italy: "IT",
+      Spain: "ES",
+      "United States": "US",
+      Canada: "CA",
+      Australia: "AU",
+      Netherlands: "NL",
+      Belgium: "BE",
+      Austria: "AT",
+      Portugal: "PT",
+      Ireland: "IE",
+    })[country];
+
+  if (
+    !postalCode ||
+    !addressCountry ||
+    !validPostalCodeForCountry(postalCode, addressCountry)
+  ) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["shippingAddress", "postalCode"],
