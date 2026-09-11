@@ -8869,3 +8869,2505 @@ body.cart-open {
   }
 
 }
+
+
+
+
+
+/* =========================================================
+   AUTH — MINIMAL SPLIT LAYOUT
+   ========================================================= */
+
+.auth-split {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 0.9fr)
+    minmax(520px, 1.1fr);
+
+  width: 100%;
+  background: #f7f7f5;
+
+  /* IMPORTANT:
+     no border here — clean transition into footer */
+  border: 0;
+}
+
+
+/* =========================================================
+   LEFT BRAND SIDE
+   ========================================================= */
+
+.auth-split__visual {
+  display: flex;
+  align-items: center;
+
+  padding:
+    64px
+    clamp(44px, 5vw, 92px);
+
+  background: #0b0b0b;
+  color: #ffffff;
+
+  border: 0;
+}
+
+
+.auth-split__visual-inner {
+  width: 100%;
+  max-width: 520px;
+}
+
+
+.auth-split__eyebrow {
+  display: block;
+
+  margin-bottom: 18px;
+
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+
+  color: rgba(255, 255, 255, 0.45);
+}
+
+
+.auth-split__title {
+  margin: 0;
+
+  font-size: clamp(46px, 4.3vw, 68px);
+  line-height: 0.96;
+
+  font-weight: 800;
+  letter-spacing: -0.05em;
+
+  color: #ffffff;
+}
+
+
+.auth-split__lead {
+  max-width: 360px;
+
+  margin: 24px 0 0;
+
+  font-size: 15px;
+  line-height: 1.6;
+
+  color: rgba(255, 255, 255, 0.6);
+}
+
+
+/* =========================================================
+   SMALL BRAND NOTE
+   ========================================================= */
+
+.auth-split__brand-note {
+  margin-top: 46px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+
+.auth-split__brand-note > span {
+  width: 32px;
+  height: 1px;
+
+  background: rgba(255, 255, 255, 0.3);
+
+  flex-shrink: 0;
+}
+
+
+.auth-split__brand-note p {
+  margin: 0;
+
+  font-size: 11px;
+  line-height: 1.5;
+
+  letter-spacing: 0.04em;
+
+  color: rgba(255, 255, 255, 0.42);
+}
+
+
+/* =========================================================
+   RIGHT SIDE
+   ========================================================= */
+
+.auth-split__form-side {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    56px
+    clamp(48px, 6vw, 110px);
+
+  background: #f7f7f5;
+
+  border: 0;
+}
+
+
+.auth-panel {
+  width: 100%;
+  max-width: 500px;
+}
+
+
+/* =========================================================
+   HEADING
+   ========================================================= */
+
+.auth-heading {
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+
+.auth-eyebrow {
+  display: block;
+
+  margin-bottom: 10px;
+
+  font-size: 10px;
+  line-height: 1.2;
+
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+
+  color: #777772;
+}
+
+
+.auth-heading h2 {
+  margin: 0;
+
+  font-size: clamp(40px, 3.6vw, 52px);
+  line-height: 0.98;
+
+  font-weight: 800;
+  letter-spacing: -0.045em;
+
+  color: #090909;
+}
+
+
+.auth-sub {
+  max-width: 390px;
+
+  margin: 14px 0 0;
+
+  font-size: 14px;
+  line-height: 1.55;
+
+  color: #72726d;
+}
+
+
+/* =========================================================
+   GOOGLE BUTTON
+   ========================================================= */
+
+.auth-google {
+  width: 100%;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 11px;
+
+  padding: 0 20px;
+
+  border: 1px solid #d4d4cf;
+
+  background: #ffffff;
+  color: #151515;
+
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+
+.auth-google img {
+  width: 18px;
+  height: 18px;
+
+  flex-shrink: 0;
+}
+
+
+.auth-google:hover {
+  border-color: #a9a9a4;
+  background: #fbfbfa;
+}
+
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
+
+.auth-divider {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 22px 0;
+}
+
+
+.auth-divider::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  right: 0;
+
+  height: 1px;
+
+  background: #deded9;
+}
+
+
+.auth-divider span {
+  position: relative;
+  z-index: 1;
+
+  padding: 0 13px;
+
+  background: #f7f7f5;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  color: #9a9a94;
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 14px;
+}
+
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+}
+
+
+.auth-field > span {
+  font-size: 12px;
+  line-height: 1.3;
+
+  font-weight: 600;
+
+  color: #292926;
+}
+
+
+.auth-field input {
+  width: 100%;
+  height: 49px;
+
+  padding: 0 15px;
+
+  border: 1px solid #d4d4cf;
+  border-radius: 0;
+
+  background: #ffffff;
+  color: #111111;
+
+  font: inherit;
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.auth-field input::placeholder {
+  color: #aaa9a3;
+}
+
+
+.auth-field input:focus {
+  border-color: #111111;
+
+  box-shadow: 0 0 0 1px #111111;
+}
+
+
+/* =========================================================
+   FORGOT PASSWORD
+   ========================================================= */
+
+.auth-form-meta {
+  display: flex;
+  justify-content: flex-end;
+
+  margin-top: -3px;
+}
+
+
+.auth-text-link {
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #555550;
+
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+
+.auth-text-link:hover {
+  color: #000000;
+}
+
+
+/* =========================================================
+   SUBMIT
+   ========================================================= */
+
+.auth-submit {
+  width: 100%;
+  height: 50px;
+
+  margin-top: 2px;
+
+  border: 1px solid #090909;
+
+  background: #090909;
+  color: #ffffff;
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+
+.auth-submit:hover {
+  background: #ffffff;
+  color: #090909;
+}
+
+
+.auth-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.auth-status {
+  min-height: 18px;
+
+  margin: 0;
+
+  text-align: center;
+
+  font-size: 12px;
+  line-height: 1.5;
+
+  color: #656560;
+}
+
+
+.auth-status:empty {
+  display: none;
+}
+
+
+/* =========================================================
+   CREATE ACCOUNT
+   ========================================================= */
+
+.auth-account-switch {
+  margin-top: 22px;
+  padding-top: 18px;
+
+  border-top: 1px solid #ddddda;
+
+  display: flex;
+  justify-content: center;
+
+  gap: 6px;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  color: #777772;
+}
+
+
+.auth-account-switch a {
+  color: #111111;
+
+  font-weight: 600;
+
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+
+/* =========================================================
+   SECURE NOTE
+   ========================================================= */
+
+.auth-secure-note {
+  margin-top: 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  font-size: 11px;
+
+  color: #999994;
+}
+
+
+.auth-secure-note svg {
+  width: 14px;
+  height: 14px;
+}
+
+
+/* =========================================================
+   SHORT LAPTOP / SMALL VIEWPORT HEIGHT
+   ========================================================= */
+
+@media (min-width: 901px) and (max-height: 820px) {
+
+  .auth-split {
+    min-height: auto;
+  }
+
+
+  .auth-split__visual,
+  .auth-split__form-side {
+    padding-top: 42px;
+    padding-bottom: 42px;
+  }
+
+
+  .auth-split__title {
+    font-size: clamp(42px, 3.9vw, 58px);
+  }
+
+
+  .auth-split__lead {
+    margin-top: 18px;
+  }
+
+
+  .auth-split__brand-note {
+    margin-top: 30px;
+  }
+
+
+  .auth-heading {
+    margin-bottom: 20px;
+  }
+
+
+  .auth-heading h2 {
+    font-size: 40px;
+  }
+
+
+  .auth-google {
+    height: 46px;
+  }
+
+
+  .auth-divider {
+    margin: 17px 0;
+  }
+
+
+  .auth-field input {
+    height: 44px;
+  }
+
+
+  .auth-submit {
+    height: 46px;
+  }
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .auth-split {
+    grid-template-columns: 1fr;
+  }
+
+
+  .auth-split__visual {
+    padding: 52px 28px;
+  }
+
+
+  .auth-split__visual-inner {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+
+  .auth-split__title {
+    font-size: clamp(44px, 8vw, 62px);
+  }
+
+
+  .auth-split__form-side {
+    padding: 56px 28px 70px;
+  }
+
+
+  .auth-panel {
+    max-width: 520px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+  /*
+   * Mobile:
+   * hide the branding side completely.
+   * User sees the login immediately.
+   */
+
+  .auth-split {
+    display: block;
+
+    width: 100%;
+    min-height: auto;
+
+    background: #f7f7f5;
+
+    border: 0;
+  }
+
+
+  .auth-split__visual {
+    display: none;
+  }
+
+
+  .auth-split__form-side {
+    display: flex;
+
+    align-items: flex-start;
+    justify-content: center;
+
+    padding:
+      48px
+      20px
+      64px;
+
+    background: #f7f7f5;
+
+    border: 0;
+  }
+
+
+  .auth-panel {
+    width: 100%;
+    max-width: none;
+  }
+
+
+  .auth-heading {
+    margin-bottom: 26px;
+  }
+
+
+  .auth-heading h2 {
+    font-size: 40px;
+  }
+
+
+  .auth-sub {
+    max-width: 330px;
+  }
+
+
+  .auth-google,
+  .auth-field input,
+  .auth-submit {
+    height: 50px;
+  }
+
+
+  .auth-account-switch {
+    flex-wrap: wrap;
+    text-align: center;
+  }
+}
+
+
+
+
+
+/* =========================================================
+   REGISTER — AUTH EXTENSIONS
+   ========================================================= */
+
+.auth-panel--register {
+  max-width: 560px;
+}
+
+
+/* =========================================================
+   TWO COLUMN FIELDS
+   ========================================================= */
+
+.auth-field-row {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  gap: 14px;
+}
+
+
+/* =========================================================
+   TERMS
+   ========================================================= */
+
+.auth-terms-note {
+  margin:
+    2px
+    0
+    0;
+
+  font-size: 11px;
+
+  line-height: 1.6;
+
+  text-align: center;
+
+  color: #85857f;
+}
+
+
+.auth-terms-note a {
+  color: #333330;
+
+  font-weight: 500;
+
+  text-decoration: underline;
+
+  text-underline-offset: 2px;
+}
+
+
+.auth-terms-note a:hover {
+  color: #000000;
+}
+
+
+/* =========================================================
+   REGISTER DESKTOP
+   ========================================================= */
+
+.auth-split--register
+.auth-split__form-side {
+  padding-top: 44px;
+  padding-bottom: 44px;
+}
+
+
+/* =========================================================
+   SHORT LAPTOP HEIGHT
+   ========================================================= */
+
+@media
+  (min-width: 901px)
+  and (max-height: 820px) {
+
+  .auth-split--register
+  .auth-split__form-side {
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
+
+
+  .auth-panel--register
+  .auth-heading {
+    margin-bottom: 18px;
+  }
+
+
+  .auth-panel--register
+  .auth-heading h2 {
+    font-size: 38px;
+  }
+
+
+  .auth-panel--register
+  .auth-sub {
+    margin-top: 9px;
+
+    font-size: 13px;
+  }
+
+
+  .auth-panel--register
+  .auth-google {
+    height: 44px;
+  }
+
+
+  .auth-panel--register
+  .auth-divider {
+    margin: 15px 0;
+  }
+
+
+  .auth-panel--register
+  .auth-form {
+    gap: 11px;
+  }
+
+
+  .auth-panel--register
+  .auth-field {
+    gap: 5px;
+  }
+
+
+  .auth-panel--register
+  .auth-field input {
+    height: 42px;
+  }
+
+
+  .auth-panel--register
+  .auth-submit {
+    height: 44px;
+  }
+
+
+  .auth-panel--register
+  .auth-account-switch {
+    margin-top: 15px;
+
+    padding-top: 14px;
+  }
+
+
+  .auth-panel--register
+  .auth-secure-note {
+    margin-top: 10px;
+  }
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .auth-panel--register {
+    max-width: 560px;
+  }
+
+
+  .auth-split--register
+  .auth-split__form-side {
+    padding:
+      52px
+      28px
+      68px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE REGISTER
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+  /*
+   * Left black branding section is already hidden
+   * by the shared auth mobile CSS.
+   */
+
+
+  .auth-split--register
+  .auth-split__form-side {
+    padding:
+      42px
+      20px
+      60px;
+  }
+
+
+  .auth-panel--register {
+    width: 100%;
+
+    max-width: none;
+  }
+
+
+  /*
+   * First / last name and passwords
+   * become vertical on mobile.
+   */
+
+  .auth-field-row {
+    grid-template-columns: 1fr;
+
+    gap: 14px;
+  }
+
+
+  .auth-panel--register
+  .auth-heading {
+    margin-bottom: 24px;
+  }
+
+
+  .auth-panel--register
+  .auth-heading h2 {
+    font-size: 38px;
+  }
+
+
+  .auth-panel--register
+  .auth-sub {
+    max-width: 340px;
+
+    font-size: 14px;
+  }
+
+
+  .auth-terms-note {
+    font-size: 10px;
+
+    line-height: 1.55;
+  }
+
+}
+
+
+
+
+/* =========================================================
+   CONTACT PAGE
+   ========================================================= */
+
+.contact-split {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 0.9fr)
+    minmax(560px, 1.1fr);
+
+  background: #f7f7f5;
+}
+
+
+/* =========================================================
+   LEFT INTRO
+   ========================================================= */
+
+.contact-split__intro {
+  display: flex;
+  align-items: center;
+
+  padding:
+    72px
+    clamp(48px, 6vw, 110px);
+
+  background: #0b0b0b;
+
+  color: #ffffff;
+}
+
+
+.contact-split__intro-inner {
+  width: 100%;
+  max-width: 560px;
+}
+
+
+.contact-eyebrow {
+  display: block;
+
+  margin-bottom: 16px;
+
+  font-size: 10px;
+  line-height: 1.2;
+
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+
+  color: rgba(255, 255, 255, 0.45);
+}
+
+
+.contact-eyebrow--dark {
+  color: #777772;
+}
+
+
+.contact-split__intro h1 {
+  margin: 0;
+
+  font-size: clamp(54px, 5vw, 78px);
+  line-height: 0.95;
+
+  font-weight: 800;
+
+  letter-spacing: -0.055em;
+
+  color: #ffffff;
+}
+
+
+.contact-lead {
+  max-width: 430px;
+
+  margin: 26px 0 0;
+
+  font-size: 16px;
+  line-height: 1.65;
+
+  color: rgba(255, 255, 255, 0.62);
+}
+
+
+/* =========================================================
+   CONTACT DETAILS
+   ========================================================= */
+
+.contact-details {
+  margin-top: 54px;
+
+  border-top:
+    1px solid rgba(255, 255, 255, 0.13);
+}
+
+
+.contact-detail {
+  display: grid;
+
+  grid-template-columns:
+    100px
+    minmax(0, 1fr);
+
+  gap: 20px;
+
+  padding: 20px 0;
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.13);
+}
+
+
+.contact-detail__label {
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  color: rgba(255, 255, 255, 0.4);
+}
+
+
+.contact-detail__value {
+  font-size: 14px;
+
+  line-height: 1.5;
+
+  color: rgba(255, 255, 255, 0.82);
+
+  text-decoration: none;
+}
+
+
+a.contact-detail__value:hover {
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   RIGHT FORM SIDE
+   ========================================================= */
+
+.contact-split__form-side {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    64px
+    clamp(48px, 6vw, 110px);
+
+  background: #f7f7f5;
+}
+
+
+.contact-form-panel {
+  width: 100%;
+  max-width: 600px;
+}
+
+
+.contact-form-heading {
+  margin-bottom: 30px;
+}
+
+
+.contact-form-heading h2 {
+  margin: 0;
+
+  font-size: clamp(40px, 3.6vw, 52px);
+  line-height: 0.98;
+
+  font-weight: 800;
+
+  letter-spacing: -0.045em;
+
+  color: #090909;
+}
+
+
+.contact-form-heading p {
+  max-width: 390px;
+
+  margin: 14px 0 0;
+
+  font-size: 14px;
+  line-height: 1.55;
+
+  color: #72726d;
+}
+
+
+/* =========================================================
+   CONTACT FORM
+   ========================================================= */
+
+.contact-form {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 18px;
+}
+
+
+.contact-field-row {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  gap: 14px;
+}
+
+
+.contact-field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+
+.contact-field > span {
+  font-size: 12px;
+  line-height: 1.3;
+
+  font-weight: 600;
+
+  color: #292926;
+}
+
+
+.contact-field input,
+.contact-field textarea {
+  width: 100%;
+
+  border: 1px solid #d4d4cf;
+  border-radius: 0;
+
+  background: #ffffff;
+
+  color: #111111;
+
+  font: inherit;
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.contact-field input {
+  height: 50px;
+
+  padding: 0 15px;
+}
+
+
+.contact-field textarea {
+  min-height: 170px;
+
+  padding: 14px 15px;
+
+  line-height: 1.55;
+
+  resize: vertical;
+}
+
+
+.contact-field input::placeholder,
+.contact-field textarea::placeholder {
+  color: #aaa9a3;
+}
+
+
+.contact-field input:focus,
+.contact-field textarea:focus {
+  border-color: #111111;
+
+  box-shadow:
+    0 0 0 1px #111111;
+}
+
+
+/* =========================================================
+   SUBMIT
+   ========================================================= */
+
+.contact-submit {
+  width: 100%;
+  height: 52px;
+
+  border: 1px solid #090909;
+
+  background: #090909;
+
+  color: #ffffff;
+
+  font: inherit;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+
+.contact-submit:hover {
+  background: #ffffff;
+
+  color: #090909;
+}
+
+
+/* =========================================================
+   STATUS / NOTE
+   ========================================================= */
+
+.contact-status {
+  min-height: 18px;
+
+  margin: 0;
+
+  text-align: center;
+
+  font-size: 12px;
+  line-height: 1.5;
+
+  color: #656560;
+}
+
+
+.contact-status:empty {
+  display: none;
+}
+
+
+.contact-secure-note {
+  margin-top: 18px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  font-size: 11px;
+
+  color: #999994;
+}
+
+
+.contact-secure-note svg {
+  width: 15px;
+  height: 15px;
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   HOW IT WORKS
+   ========================================================= */
+
+.contact-how {
+  padding:
+    86px
+    0
+    92px;
+
+  background: #ffffff;
+}
+
+
+.contact-how__heading {
+  max-width: 680px;
+
+  margin-bottom: 48px;
+}
+
+
+.contact-how__heading h2 {
+  margin: 0;
+
+  font-size: clamp(36px, 4vw, 52px);
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: -0.045em;
+
+  color: #090909;
+}
+
+
+.contact-how__grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  border-top: 1px solid #ddddda;
+}
+
+
+.contact-how__item {
+  padding:
+    28px
+    34px
+    22px
+    0;
+
+  border-right: 1px solid #ddddda;
+}
+
+
+.contact-how__item:last-child {
+  border-right: 0;
+  padding-left: 34px;
+}
+
+
+.contact-how__item:nth-child(2) {
+  padding-left: 34px;
+}
+
+
+.contact-how__number {
+  display: block;
+
+  margin-bottom: 26px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  color: #999994;
+}
+
+
+.contact-how__item h3 {
+  margin: 0;
+
+  font-size: 18px;
+  line-height: 1.3;
+
+  font-weight: 700;
+
+  color: #111111;
+}
+
+
+.contact-how__item p {
+  max-width: 300px;
+
+  margin: 10px 0 0;
+
+  font-size: 13px;
+  line-height: 1.6;
+
+  color: #777772;
+}
+
+
+/* =========================================================
+   SHORT LAPTOP HEIGHT
+   ========================================================= */
+
+@media
+  (min-width: 901px)
+  and (max-height: 820px) {
+
+  .contact-split__intro,
+  .contact-split__form-side {
+    padding-top: 44px;
+    padding-bottom: 44px;
+  }
+
+
+  .contact-split__intro h1 {
+    font-size: 54px;
+  }
+
+
+  .contact-details {
+    margin-top: 36px;
+  }
+
+
+  .contact-form-heading {
+    margin-bottom: 22px;
+  }
+
+
+  .contact-form-heading h2 {
+    font-size: 40px;
+  }
+
+
+  .contact-field textarea {
+    min-height: 130px;
+  }
+
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .contact-split {
+    grid-template-columns: 1fr;
+  }
+
+
+  .contact-split__intro {
+    padding:
+      56px
+      28px;
+  }
+
+
+  .contact-split__intro-inner {
+    max-width: 620px;
+
+    margin: 0 auto;
+  }
+
+
+  .contact-split__form-side {
+    padding:
+      56px
+      28px
+      70px;
+  }
+
+
+  .contact-form-panel {
+    max-width: 620px;
+  }
+
+
+  .contact-how__grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .contact-how__item,
+  .contact-how__item:nth-child(2),
+  .contact-how__item:last-child {
+    padding:
+      24px
+      0;
+
+    border-right: 0;
+    border-bottom: 1px solid #ddddda;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+  /*
+   * Same logic as auth:
+   * mobile goes directly to useful content.
+   */
+
+  .contact-split__intro {
+    padding:
+      44px
+      20px;
+  }
+
+
+  .contact-split__intro h1 {
+    font-size: 46px;
+  }
+
+
+  .contact-lead {
+    margin-top: 18px;
+
+    font-size: 14px;
+  }
+
+
+  .contact-details {
+    margin-top: 32px;
+  }
+
+
+  .contact-detail {
+    grid-template-columns: 1fr;
+
+    gap: 8px;
+
+    padding: 16px 0;
+  }
+
+
+  .contact-split__form-side {
+    padding:
+      46px
+      20px
+      60px;
+  }
+
+
+  .contact-form-heading {
+    margin-bottom: 24px;
+  }
+
+
+  .contact-form-heading h2 {
+    font-size: 38px;
+  }
+
+
+  .contact-field-row {
+    grid-template-columns: 1fr;
+
+    gap: 18px;
+  }
+
+
+  .contact-field textarea {
+    min-height: 150px;
+  }
+
+
+  .contact-how {
+    padding:
+      64px
+      20px
+      70px;
+  }
+
+
+  .contact-how__heading {
+    margin-bottom: 34px;
+  }
+
+
+
+
+  .contact-how__heading h2 {
+    font-size: 38px;
+  }
+
+}
+
+
+
+
+
+/* =========================================================
+   PRODUCTS PAGE
+   Compact / Minimal
+   ========================================================= */
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.products-hero {
+  background: #f7f7f5;
+  color: #090909;
+
+  border-bottom: 1px solid #e2e2de;
+}
+
+
+.products-hero__inner {
+  padding-top: 34px;
+  padding-bottom: 36px;
+}
+
+
+.products-eyebrow {
+  display: block;
+
+  margin-bottom: 12px;
+
+  font-size: 9px;
+  line-height: 1.2;
+
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+
+  color: #85857f;
+}
+
+
+.products-eyebrow--dark {
+  color: #85857f;
+}
+
+
+.products-hero__content {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(300px, 0.75fr);
+
+  align-items: end;
+
+  gap: clamp(40px, 7vw, 110px);
+}
+
+
+.products-hero h1 {
+  margin: 0;
+
+  font-size: clamp(38px, 4.2vw, 60px);
+  line-height: 0.94;
+
+  font-weight: 800;
+
+  letter-spacing: -0.05em;
+
+  color: #090909;
+}
+
+
+.products-hero__copy {
+  padding-bottom: 2px;
+}
+
+
+.products-hero__copy p {
+  max-width: 390px;
+
+  margin: 0;
+
+  font-size: 14px;
+  line-height: 1.6;
+
+  color: #666661;
+}
+
+
+.products-hero__link {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  margin-top: 17px;
+
+  color: #090909;
+
+  font-size: 10px;
+  line-height: 1;
+
+  font-weight: 700;
+
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+
+  text-decoration: none;
+}
+
+
+.products-hero__link:hover {
+  text-decoration: underline;
+
+  text-underline-offset: 4px;
+}
+
+
+.products-hero__link span {
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   SHOP
+   ========================================================= */
+
+.products-shop {
+  padding:
+    36px
+    0
+    76px;
+
+  background: #ffffff;
+}
+
+
+.products-shop__header {
+  display: grid;
+
+  grid-template-columns:
+    minmax(220px, 1fr)
+    auto;
+
+  align-items: end;
+
+  gap: 30px;
+
+  margin-bottom: 26px;
+}
+
+
+.products-shop__header h2 {
+  margin: 0;
+
+  font-size: clamp(32px, 3vw, 44px);
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: -0.04em;
+
+  color: #090909;
+}
+
+
+/* =========================================================
+   FILTERS
+   ========================================================= */
+
+.products-filters {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+
+.products-filter {
+  position: relative;
+
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+
+  border: 1px solid #d8d8d3;
+
+  background: #ffffff;
+}
+
+
+.products-filter:focus-within {
+  border-color: #111111;
+}
+
+
+.products-filter--search {
+  width: 255px;
+
+  padding:
+    0
+    13px;
+
+  gap: 9px;
+}
+
+
+.products-filter--search svg {
+  width: 16px;
+  height: 16px;
+
+  flex-shrink: 0;
+
+  color: #787873;
+}
+
+
+.products-filter input {
+  width: 100%;
+  height: 100%;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #111111;
+
+  font: inherit;
+
+  font-size: 13px;
+}
+
+
+.products-filter input::placeholder {
+  color: #999994;
+}
+
+
+.products-filter--category {
+  width: 190px;
+
+  padding:
+    0
+    12px;
+}
+
+
+.products-filter select {
+  width: 100%;
+  height: 100%;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #111111;
+
+  font: inherit;
+
+  font-size: 13px;
+
+  cursor: pointer;
+}
+
+
+
+
+
+
+
+/* =========================================================
+   PRODUCTS PAGE — MINIMAL CATALOG
+   ========================================================= */
+
+
+/* =========================================================
+   MAIN SHOP
+   ========================================================= */
+
+.products-shop {
+  padding:
+    44px
+    0
+    78px;
+
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   INTRO
+   ========================================================= */
+
+.products-shop__intro {
+  display: flex;
+
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 50px;
+
+  margin-bottom: 30px;
+}
+
+
+.products-shop__intro-copy {
+  max-width: 760px;
+}
+
+
+.products-eyebrow {
+  display: block;
+
+  margin-bottom: 9px;
+
+  font-size: 9px;
+  line-height: 1.2;
+
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+
+  color: #85857f;
+}
+
+
+.products-shop__intro h1 {
+  margin: 0;
+
+  font-size:
+    clamp(38px, 4vw, 56px);
+
+  line-height: 0.98;
+
+  font-weight: 800;
+
+  letter-spacing: -0.045em;
+
+  color: #090909;
+}
+
+
+.products-shop__intro p {
+  max-width: 610px;
+
+  margin:
+    13px
+    0
+    0;
+
+  font-size: 14px;
+  line-height: 1.55;
+
+  color: #71716c;
+}
+
+
+/* =========================================================
+   HOW LINK
+   ========================================================= */
+
+.products-how-link {
+  flex-shrink: 0;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  padding-bottom: 4px;
+
+  color: #111111;
+
+  font-size: 10px;
+  line-height: 1;
+
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  text-decoration: none;
+}
+
+
+.products-how-link:hover {
+  text-decoration: underline;
+
+  text-underline-offset: 4px;
+}
+
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.products-toolbar {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    250px;
+
+  gap: 10px;
+
+  margin-bottom: 30px;
+}
+
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+.products-search {
+  position: relative;
+
+  height: 52px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  padding:
+    0
+    16px;
+
+  border:
+    1px solid #d8d8d3;
+
+  background: #ffffff;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.products-search:focus-within {
+  border-color: #111111;
+
+  box-shadow:
+    0 0 0 1px #111111;
+}
+
+
+.products-search svg {
+  width: 18px;
+  height: 18px;
+
+  flex-shrink: 0;
+
+  color: #777772;
+}
+
+
+.products-search input {
+  flex: 1;
+
+  min-width: 0;
+
+  width: 100%;
+  height: 100%;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #111111;
+
+  font: inherit;
+  font-size: 14px;
+}
+
+
+.products-search input::placeholder {
+  color: #999994;
+}
+
+
+/* =========================================================
+   CATEGORY
+   ========================================================= */
+
+.products-category {
+  position: relative;
+
+  height: 52px;
+
+  border:
+    1px solid #d8d8d3;
+
+  background: #ffffff;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.products-category:focus-within {
+  border-color: #111111;
+
+  box-shadow:
+    0 0 0 1px #111111;
+}
+
+
+.products-category select {
+  width: 100%;
+  height: 100%;
+
+  padding:
+    0
+    48px
+    0
+    16px;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #111111;
+
+  font: inherit;
+  font-size: 14px;
+
+  cursor: pointer;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+
+.products-category__arrow {
+  position: absolute;
+
+  top: 50%;
+  right: 16px;
+
+  width: 16px;
+  height: 16px;
+
+  transform:
+    translateY(-50%);
+
+  pointer-events: none;
+
+  color: #111111;
+}
+
+
+/* =========================================================
+   GRID
+   ========================================================= */
+
+.products-grid {
+  width: 100%;
+
+  column-gap: 22px;
+  row-gap: 38px;
+}
+
+
+/*
+ * Intentionally DO NOT override
+ * .card / product-card styles here.
+ */
+
+
+/* =========================================================
+   STATES
+   ========================================================= */
+
+.products-state {
+  margin-top: 28px;
+
+  text-align: center;
+}
+
+
+.products-state__message {
+  margin: 0;
+
+  font-size: 13px;
+  line-height: 1.6;
+
+  color: #777772;
+}
+
+
+.products-state__message--error {
+  color: #b42318;
+}
+
+
+/* =========================================================
+   HOW IT WORKS
+   ========================================================= */
+
+.products-how {
+  padding:
+    64px
+    0
+    70px;
+
+  background: #f7f7f5;
+
+  border-top:
+    1px solid #e2e2de;
+}
+
+
+.products-how__heading {
+  margin-bottom: 34px;
+}
+
+
+.products-how__heading .products-eyebrow {
+  margin-bottom: 9px;
+}
+
+
+.products-how__heading h2 {
+  margin: 0;
+
+  font-size:
+    clamp(32px, 3.2vw, 46px);
+
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: -0.04em;
+
+  color: #090909;
+}
+
+
+.products-how__grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  border-top:
+    1px solid #d9d9d4;
+}
+
+
+.products-how__item {
+  padding:
+    22px
+    28px
+    10px
+    0;
+
+  border-right:
+    1px solid #d9d9d4;
+}
+
+
+.products-how__item:nth-child(2) {
+  padding-left: 28px;
+}
+
+
+.products-how__item:last-child {
+  padding-left: 28px;
+
+  border-right: 0;
+}
+
+
+.products-how__number {
+  display: block;
+
+  margin-bottom: 20px;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  color: #999994;
+}
+
+
+.products-how__item h3 {
+  margin: 0;
+
+  font-size: 17px;
+  line-height: 1.3;
+
+  font-weight: 700;
+
+  color: #111111;
+}
+
+
+.products-how__item p {
+  max-width: 310px;
+
+  margin:
+    8px
+    0
+    0;
+
+  font-size: 13px;
+  line-height: 1.55;
+
+  color: #777772;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .products-shop {
+    padding-top: 38px;
+  }
+
+
+  .products-shop__intro {
+    align-items: flex-start;
+
+    gap: 30px;
+  }
+
+
+  .products-shop__intro h1 {
+    font-size: 42px;
+  }
+
+
+  .products-toolbar {
+    grid-template-columns:
+      minmax(0, 1fr)
+      210px;
+  }
+
+
+  .products-how__grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .products-how__item,
+  .products-how__item:nth-child(2),
+  .products-how__item:last-child {
+    padding:
+      20px
+      0;
+
+    border-right: 0;
+
+    border-bottom:
+      1px solid #d9d9d4;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+  .products-shop {
+    padding:
+      30px
+      0
+      56px;
+  }
+
+
+  .products-shop__intro {
+    display: block;
+
+    margin-bottom: 24px;
+  }
+
+
+  .products-shop__intro h1 {
+    font-size: 36px;
+  }
+
+
+  .products-shop__intro p {
+    margin-top: 11px;
+
+    font-size: 13px;
+  }
+
+
+  .products-how-link {
+    margin-top: 18px;
+  }
+
+
+  .products-toolbar {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    margin-bottom: 24px;
+  }
+
+
+  .products-search,
+  .products-category {
+    width: 100%;
+
+    height: 48px;
+  }
+
+
+  .products-grid {
+    column-gap: 14px;
+    row-gap: 28px;
+  }
+
+
+  .products-how {
+    padding:
+      50px
+      0
+      56px;
+  }
+
+
+  .products-how__heading {
+    margin-bottom: 26px;
+  }
+
+
+  .products-how__heading h2 {
+    font-size: 34px;
+  }
+
+}
