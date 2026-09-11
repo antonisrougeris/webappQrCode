@@ -8,6 +8,7 @@
   <!-- Responsive viewport for mobile-first layout -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <link rel="icon" type="image/webp" href="/assets/img/logo_Image.png">
   <!-- Stylesheets: reset -> theme -> layout -> components -->
   <link rel="stylesheet" href="/assets/css/reset.css" />
   <link rel="stylesheet" href="/assets/css/theme.css" />
@@ -160,71 +161,98 @@
     
     </section>
 
-    <section id="defaultHero" class="hero">
-      <div class="container hero-content">
-        <div>
-          <span class="eyebrow">Change your QR destination anytime</span>
-          <h1>Wear your link</h1>
-          <p>Premium clothes and accessories with your personal QR code. Scan it, open your link, and update the destination whenever you want from your account for FREE.</p>
-          <div class="hero-actions">
-            <a class="btn-primary" href="#tshirts">Shop T-Shirts</a>
-            <a class="btn-outline" href="#how">See how it works</a>
-          </div>
-        </div>
-        <div class="hero-visual">
+<section id="defaultHero" class="home-hero">
+  <div class="container home-hero__inner">
 
-          <!-- T-SHIRT -->
-          <div class="tshirt-mockup">
-        
-            <!-- SVG shirt -->
-            <svg class="tshirt-svg" viewBox="0 0 200 200">
-              <path d="M50 40 L70 20 L130 20 L150 40 L170 60 L150 80 L150 170 L50 170 L50 80 L30 60 Z"
-                fill="#111" />
-        
-              <!-- QR πάνω στο shirt -->
-              <image
-  href="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://skanare.com"
-  x="60"
-  y="70"
-  width="80"
-  height="80"
-/>
-            </svg>
-        
-          </div>
-        
-          <!-- PHONE CARD -->
-          <div class="phone-card">
-            <div class="phone-screen">
-        
-              <strong>Your QR profile</strong>
-        
-              <img
-  class="qr-real small"
-  src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=https://skanare.com/antonios"
-  alt="Example QR code for a Skanare profile"
-  width="90"
-  height="90"
-/>
-        
-              <div class="link-chip">
-                skanare.com/antonios
-              </div>
-        
-              <a class="btn-primary" href="#">Update link</a>
-        
-            </div>
-          </div>
-        
-          <!-- BADGE -->
-          <div class="float-badge">
-            One QR. Unlimited links.
-          </div>
-        
-        </div>
-        
+    <!-- =========================================
+         LEFT CONTENT
+         ========================================= -->
+
+    <div class="home-hero__content">
+
+      <span class="home-hero__eyebrow">
+        Dynamic QR clothing
+      </span>
+
+      <h1 class="home-hero__title">
+        Wear the link.
+        <span>Change the story.</span>
+      </h1>
+
+      <p class="home-hero__description">
+        QR clothing and accessories with a destination you can update anytime —
+        without changing the printed code.
+      </p>
+
+      <div class="home-hero__actions">
+
+        <a
+          href="#tshirts"
+          class="home-hero__primary"
+        >
+          Shop QR clothing
+          <span aria-hidden="true">→</span>
+        </a>
+
+        <a
+          href="#how"
+          class="home-hero__secondary"
+        >
+          How it works
+        </a>
+
       </div>
-    </section>
+
+      <div class="home-hero__meta">
+
+        <div class="home-hero__meta-item">
+          <strong>01</strong>
+          <span>Scan</span>
+        </div>
+
+        <div class="home-hero__meta-item">
+          <strong>02</strong>
+          <span>Open</span>
+        </div>
+
+        <div class="home-hero__meta-item">
+          <strong>03</strong>
+          <span>Update anytime</span>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =========================================
+         RIGHT FASHION / TECH VISUAL
+         ========================================= -->
+
+<div class="home-hero__visual">
+  <picture class="home-hero__image-wrap">
+
+    <source
+      media="(max-width: 640px)"
+      srcset="/assets/img/hero-fashion-mobile.webp"
+    />
+
+    <img
+      src="/assets/img/hero-fashion-2x.webp"
+      alt="Skanare dynamic QR clothing"
+      class="home-hero__image"
+      width="1220"
+      height="796"
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
+    />
+
+  </picture>
+</div>
+
+  </div>
+</section>
 
 <section id="tshirts" class="section">
   <div class="container">
