@@ -8382,3 +8382,490 @@ body.cart-open {
   outline: 2px solid #111;
   outline-offset: 3px;
 }
+
+
+
+/* =========================================================
+   PAYMENT RESULT — FAILED
+   ========================================================= */
+
+.payment-result-page {
+  min-height: 620px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 96px 24px 120px;
+  background: #f7f7f5;
+  border-bottom: 1px solid #e7e7e3;
+}
+
+.payment-result {
+  width: 100%;
+  max-width: 620px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+/* ---------------------------------------------------------
+   ICON
+   --------------------------------------------------------- */
+
+.payment-result__icon {
+  width: 72px;
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 30px;
+
+  border-radius: 50%;
+}
+
+.payment-result__icon svg {
+  width: 34px;
+  height: 34px;
+}
+
+.payment-result__icon--failed {
+  background: #fff0f0;
+  color: #d92d20;
+}
+
+
+/* ---------------------------------------------------------
+   EYEBROW
+   --------------------------------------------------------- */
+
+.payment-result__eyebrow {
+  display: block;
+
+  margin-bottom: 14px;
+
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  color: #6d6d68;
+}
+
+
+/* ---------------------------------------------------------
+   TITLE
+   --------------------------------------------------------- */
+
+.payment-result h1 {
+  margin: 0;
+
+  font-size: clamp(42px, 5vw, 64px);
+  line-height: 0.98;
+
+  font-weight: 800;
+  letter-spacing: -0.045em;
+
+  color: #090909;
+}
+
+
+/* ---------------------------------------------------------
+   TEXT
+   --------------------------------------------------------- */
+
+.payment-result__text {
+  max-width: 480px;
+
+  margin: 28px 0 0;
+
+  font-size: 18px;
+  line-height: 1.55;
+
+  color: #30302d;
+}
+
+.payment-result__subtext {
+  max-width: 470px;
+
+  margin: 10px 0 0;
+
+  font-size: 15px;
+  line-height: 1.6;
+
+  color: #777772;
+}
+
+
+/* ---------------------------------------------------------
+   RETURN TO CHECKOUT BUTTON
+   --------------------------------------------------------- */
+
+.payment-result__button {
+  min-width: 230px;
+  height: 54px;
+
+  margin-top: 34px;
+  padding: 0 24px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+
+  border: 1px solid #090909;
+  border-radius: 2px;
+
+  background: #090909;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  text-decoration: none;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.payment-result__button span {
+  font-size: 18px;
+  line-height: 1;
+
+  transition: transform 0.2s ease;
+}
+
+.payment-result__button:hover {
+  background: #ffffff;
+  color: #090909;
+}
+
+.payment-result__button:hover span {
+  transform: translateX(4px);
+}
+
+.payment-result__button:active {
+  transform: translateY(1px);
+}
+
+.payment-result__button:focus-visible {
+  outline: 2px solid #090909;
+  outline-offset: 4px;
+}
+
+
+/* ---------------------------------------------------------
+   SECURE PAYMENT
+   --------------------------------------------------------- */
+
+.payment-result__secure {
+  margin-top: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #888883;
+}
+
+.payment-result__secure svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .payment-result-page {
+    min-height: 560px;
+    padding: 80px 24px 100px;
+  }
+
+  .payment-result h1 {
+    font-size: 48px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .payment-result-page {
+    min-height: auto;
+    padding: 72px 20px 88px;
+  }
+
+  .payment-result {
+    max-width: 100%;
+  }
+
+  .payment-result__icon {
+    width: 64px;
+    height: 64px;
+
+    margin-bottom: 26px;
+  }
+
+  .payment-result__icon svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .payment-result__eyebrow {
+    margin-bottom: 12px;
+    font-size: 11px;
+  }
+
+  .payment-result h1 {
+    font-size: 42px;
+  }
+
+  .payment-result__text {
+    margin-top: 22px;
+
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .payment-result__subtext {
+    margin-top: 8px;
+
+    font-size: 14px;
+  }
+
+  .payment-result__button {
+    width: 100%;
+    min-width: 0;
+
+    margin-top: 30px;
+  }
+
+  .payment-result__secure {
+    margin-top: 20px;
+  }
+}
+
+
+
+
+
+/* =========================================================
+   PAYMENT RESULT — SUCCESS
+   ========================================================= */
+
+.payment-result--success {
+  max-width: 680px;
+}
+
+
+/* ---------------------------------------------------------
+   SUCCESS ICON
+   --------------------------------------------------------- */
+
+.payment-result__icon--success {
+  background: #edf8f0;
+  color: #16823b;
+}
+
+
+/* ---------------------------------------------------------
+   ORDER SUMMARY
+   --------------------------------------------------------- */
+
+.payment-order-summary {
+  width: 100%;
+  max-width: 540px;
+
+  margin-top: 34px;
+
+  border-top: 1px solid #deded9;
+  border-bottom: 1px solid #deded9;
+
+  padding: 22px 0;
+}
+
+
+/* LOADING */
+
+.payment-order-summary__loading {
+  font-size: 13px;
+  line-height: 1.5;
+
+  color: #7a7a75;
+
+  text-align: center;
+}
+
+
+/* ---------------------------------------------------------
+   ORDER SUMMARY CONTENT
+   --------------------------------------------------------- */
+
+.payment-order-summary__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+
+  padding: 9px 0;
+
+  font-size: 14px;
+}
+
+.payment-order-summary__row span {
+  color: #777772;
+}
+
+.payment-order-summary__row strong {
+  color: #111111;
+
+  font-weight: 600;
+
+  text-align: right;
+}
+
+
+/* ---------------------------------------------------------
+   TOTAL
+   --------------------------------------------------------- */
+
+.payment-order-summary__row--total {
+  margin-top: 8px;
+
+  padding-top: 18px;
+
+  border-top: 1px solid #e3e3de;
+
+  font-size: 16px;
+}
+
+.payment-order-summary__row--total span,
+.payment-order-summary__row--total strong {
+  color: #090909;
+
+  font-weight: 700;
+}
+
+
+/* ---------------------------------------------------------
+   ORDER ID
+   --------------------------------------------------------- */
+
+.payment-order-summary__order-id {
+  margin-top: 14px;
+
+  font-size: 12px;
+  line-height: 1.5;
+
+  color: #999994;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   SUCCESS ACTIONS
+   ========================================================= */
+
+.payment-result__actions {
+  width: 100%;
+  max-width: 540px;
+
+  margin-top: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+}
+
+
+/* ---------------------------------------------------------
+   PRIMARY
+   --------------------------------------------------------- */
+
+.payment-result__button--primary {
+  margin-top: 0;
+
+  flex: 1;
+}
+
+
+/* ---------------------------------------------------------
+   SECONDARY
+   --------------------------------------------------------- */
+
+.payment-result__button--secondary {
+  margin-top: 0;
+
+  flex: 1;
+
+  background: transparent;
+
+  color: #090909;
+}
+
+.payment-result__button--secondary:hover {
+  background: #090909;
+
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   SUCCESS RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+  .payment-result--success {
+    max-width: 100%;
+  }
+
+  .payment-order-summary {
+    margin-top: 28px;
+
+    padding: 20px 0;
+  }
+
+  .payment-order-summary__row {
+    gap: 16px;
+
+    font-size: 13px;
+  }
+
+  .payment-result__actions {
+    margin-top: 28px;
+
+    flex-direction: column;
+
+    gap: 10px;
+  }
+
+  .payment-result__button--primary,
+  .payment-result__button--secondary {
+    width: 100%;
+
+    flex: none;
+  }
+
+}

@@ -669,9 +669,13 @@ if (lockerValidationMessage) {
 });
 
         if (result.checkoutUrl) {
-          window.location.href = result.checkoutUrl;
-          return;
-        }
+  saveCheckoutDraft(formEl);
+
+  window.location.href =
+    result.checkoutUrl;
+
+  return;
+}
 
         setFlashToast("Order created, but payment URL was not returned.");
       } catch (error) {
