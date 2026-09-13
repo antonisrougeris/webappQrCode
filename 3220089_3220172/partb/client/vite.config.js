@@ -77,6 +77,10 @@ export default defineConfig({
           __dirname,
           "src/pages/cookie-policy/cookie-policy.html"
         ),
+        admin: resolve(
+          __dirname,
+          "src/pages/admin/admin.html"
+        ),
       },
     },
   },

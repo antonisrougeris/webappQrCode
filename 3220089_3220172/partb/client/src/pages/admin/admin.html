@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <title>Skanare Admin</title>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
+
+  <meta
+    name="robots"
+    content="noindex, nofollow"
+  />
+
+  <link
+    rel="icon"
+    type="image/webp"
+    href="/assets/img/skanare-logo.webp"
+  />
+
+  <link
+    rel="stylesheet"
+    href="./admin.css"
+  />
+</head>
+
+<body>
+
+  <!-- ==========================================
+       LOGIN
+       ========================================== -->
+
+  <section
+    id="adminLogin"
+    class="admin-login"
+  >
+
+    <div class="admin-login__panel">
+
+      <div class="admin-login__brand">
+
+        <img
+          src="/assets/img/skanare-logo.webp"
+          alt="Skanare"
+        />
+
+        <span>
+          SKANARE
+        </span>
+
+      </div>
+
+
+      <span class="admin-eyebrow">
+        Private administration
+      </span>
+
+      <h1>
+        Admin access
+      </h1>
+
+      <p>
+        Sign in with your administrator account.
+      </p>
+
+
+      <form
+        id="adminLoginForm"
+        class="admin-login__form"
+      >
+
+        <label>
+          <span>Email</span>
+
+          <input
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+          />
+        </label>
+
+
+        <label>
+          <span>Password</span>
+
+          <input
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+        </label>
+
+
+        <button type="submit">
+          Sign in
+        </button>
+
+
+        <p
+          id="adminLoginStatus"
+          class="admin-status"
+        ></p>
+
+      </form>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- ==========================================
+       ADMIN APP
+       ========================================== -->
+
+  <div
+    id="adminApp"
+    class="admin-shell hidden"
+  >
+
+    <!-- SIDEBAR -->
+
+    <aside class="admin-sidebar">
+
+      <div class="admin-sidebar__brand">
+
+        <img
+          src="/assets/img/skanare-logo.webp"
+          alt=""
+        />
+
+        <div>
+          <strong>
+            SKANARE
+          </strong>
+
+          <span>
+            ADMIN
+          </span>
+        </div>
+
+      </div>
+
+
+      <nav class="admin-nav">
+
+        <button
+          class="admin-nav__item is-active"
+          data-view="dashboard"
+        >
+          <span class="admin-nav__icon">
+            ◫
+          </span>
+
+          Dashboard
+        </button>
+
+
+        <button
+          class="admin-nav__item"
+          data-view="orders"
+        >
+          <span class="admin-nav__icon">
+            ▤
+          </span>
+
+          Orders
+        </button>
+
+
+        <button
+          class="admin-nav__item"
+          data-view="products"
+        >
+          <span class="admin-nav__icon">
+            □
+          </span>
+
+          Products
+        </button>
+
+
+        <button
+          class="admin-nav__item"
+          data-view="customers"
+        >
+          <span class="admin-nav__icon">
+            ♙
+          </span>
+
+          Customers
+        </button>
+
+
+        <button
+          class="admin-nav__item"
+          data-view="qr"
+        >
+          <span class="admin-nav__icon">
+            ⌗
+          </span>
+
+          QR Codes
+        </button>
+
+
+        <button
+          class="admin-nav__item"
+          data-view="payments"
+        >
+          <span class="admin-nav__icon">
+            €
+          </span>
+
+          Payments
+        </button>
+
+      </nav>
+
+
+      <div class="admin-sidebar__bottom">
+
+        <a
+          href="/"
+          target="_blank"
+        >
+          View store ↗
+        </a>
+
+        <button
+          id="adminLogout"
+          type="button"
+        >
+          Sign out
+        </button>
+
+      </div>
+
+    </aside>
+
+
+
+    <!-- MAIN -->
+
+    <main class="admin-main">
+
+      <!-- TOPBAR -->
+
+      <header class="admin-topbar">
+
+        <div>
+
+          <span class="admin-eyebrow">
+            Skanare administration
+          </span>
+
+          <h1 id="adminPageTitle">
+            Dashboard
+          </h1>
+
+        </div>
+
+
+        <div class="admin-topbar__right">
+
+          <button
+            id="adminRefresh"
+            class="admin-icon-button"
+            type="button"
+            title="Refresh"
+          >
+            ↻
+          </button>
+
+          <div class="admin-user">
+
+            <span class="admin-user__dot"></span>
+
+            <div>
+              <strong id="adminUserEmail">
+                Admin
+              </strong>
+
+              <span>
+                Administrator
+              </span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </header>
+
+
+
+      <!-- =======================================
+           DASHBOARD
+           ======================================= -->
+
+      <section
+        id="view-dashboard"
+        class="admin-view"
+      >
+
+        <div
+          id="adminStats"
+          class="admin-stats"
+        >
+
+          <article class="admin-stat">
+
+            <span>
+              Revenue
+            </span>
+
+            <strong id="statRevenue">
+              —
+            </strong>
+
+            <small>
+              Paid orders
+            </small>
+
+          </article>
+
+
+          <article class="admin-stat">
+
+            <span>
+              Orders
+            </span>
+
+            <strong id="statOrders">
+              —
+            </strong>
+
+            <small>
+              Total orders
+            </small>
+
+          </article>
+
+
+          <article class="admin-stat">
+
+            <span>
+              Customers
+            </span>
+
+            <strong id="statCustomers">
+              —
+            </strong>
+
+            <small>
+              Registered users
+            </small>
+
+          </article>
+
+
+          <article class="admin-stat">
+
+            <span>
+              Active QRs
+            </span>
+
+            <strong id="statQr">
+              —
+            </strong>
+
+            <small>
+              Customer QR codes
+            </small>
+
+          </article>
+
+        </div>
+
+
+        <div class="admin-section">
+
+          <div class="admin-section__header">
+
+            <div>
+
+              <span class="admin-eyebrow">
+                Latest activity
+              </span>
+
+              <h2>
+                Recent orders
+              </h2>
+
+            </div>
+
+
+            <button
+              class="admin-text-button"
+              type="button"
+              data-open-view="orders"
+            >
+              View all →
+            </button>
+
+          </div>
+
+
+          <div class="admin-table-wrap">
+
+            <table class="admin-table">
+
+              <thead>
+
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Payment</th>
+                  <th>Total</th>
+                  <th></th>
+                </tr>
+
+              </thead>
+
+              <tbody id="recentOrdersBody"></tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =======================================
+           ORDERS
+           ======================================= -->
+
+      <section
+        id="view-orders"
+        class="admin-view hidden"
+      >
+
+        <div class="admin-toolbar">
+
+          <div class="admin-search">
+
+            <span>⌕</span>
+
+            <input
+              id="orderSearch"
+              type="search"
+              placeholder="Search order, customer or email"
+            />
+
+          </div>
+
+
+          <select id="orderStatusFilter">
+
+            <option value="all">
+              All orders
+            </option>
+
+            <option value="paid">
+              Paid
+            </option>
+
+            <option value="pending">
+              Pending
+            </option>
+
+            <option value="failed">
+              Failed
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="admin-section">
+
+          <div class="admin-table-wrap">
+
+            <table class="admin-table">
+
+              <thead>
+
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  <th>Items</th>
+                  <th>Payment</th>
+                  <th>Delivery</th>
+                  <th>Total</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+
+              </thead>
+
+              <tbody id="ordersBody"></tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =======================================
+           PRODUCTS
+           ======================================= -->
+
+      <section
+        id="view-products"
+        class="admin-view hidden"
+      >
+
+        <div class="admin-section">
+
+          <div class="admin-section__header">
+
+            <div>
+              <span class="admin-eyebrow">
+                Catalog
+              </span>
+
+              <h2>
+                Products
+              </h2>
+            </div>
+
+          </div>
+
+
+          <div
+            id="adminProductsGrid"
+            class="admin-products-grid"
+          ></div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- CUSTOMERS -->
+
+      <section
+        id="view-customers"
+        class="admin-view hidden"
+      >
+
+        <div class="admin-section">
+
+          <div class="admin-section__header">
+
+            <div>
+
+              <span class="admin-eyebrow">
+                Accounts
+              </span>
+
+              <h2>
+                Customers
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="customersList"
+            class="admin-list"
+          ></div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- QR -->
+
+      <section
+        id="view-qr"
+        class="admin-view hidden"
+      >
+
+        <div class="admin-section">
+
+          <div class="admin-section__header">
+
+            <div>
+
+              <span class="admin-eyebrow">
+                Dynamic links
+              </span>
+
+              <h2>
+                QR Codes
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="qrAdminList"
+            class="admin-list"
+          ></div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- PAYMENTS -->
+
+      <section
+        id="view-payments"
+        class="admin-view hidden"
+      >
+
+        <div class="admin-section">
+
+          <div class="admin-section__header">
+
+            <div>
+
+              <span class="admin-eyebrow">
+                Viva Smart Checkout
+              </span>
+
+              <h2>
+                Payments
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="paymentsList"
+            class="admin-list"
+          ></div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+
+  <!-- ==========================================
+       ORDER DRAWER
+       ========================================== -->
+
+  <div
+    id="adminDrawerOverlay"
+    class="admin-drawer-overlay hidden"
+  ></div>
+
+
+  <aside
+    id="adminOrderDrawer"
+    class="admin-order-drawer hidden"
+  >
+
+    <header class="admin-order-drawer__header">
+
+      <div>
+
+        <span class="admin-eyebrow">
+          Order details
+        </span>
+
+        <h2 id="drawerOrderId">
+          Order
+        </h2>
+
+      </div>
+
+
+      <button
+        id="closeAdminDrawer"
+        type="button"
+      >
+        ✕
+      </button>
+
+    </header>
+
+
+    <div
+      id="adminOrderDrawerContent"
+      class="admin-order-drawer__content"
+    ></div>
+
+  </aside>
+
+
+  <script
+    type="module"
+    src="./admin.ts"
+  ></script>
+
+</body>
+</html>
