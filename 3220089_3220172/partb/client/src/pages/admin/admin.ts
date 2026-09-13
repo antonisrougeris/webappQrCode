@@ -39,7 +39,6 @@ const refreshButton =
   );
 
 
-let currentDashboard: any = null;
 
 
 /* ==============================================
@@ -416,7 +415,6 @@ async function loadDashboard() {
       "/dashboard"
     );
 
-  currentDashboard = data;
 
   setText(
     "statRevenue",
