@@ -103,6 +103,22 @@ router.patch(
   updateOrderReceipt
 );
 
+router.post(
+  "/orders/:id/receipt-file",
+
+  receiptUpload.single(
+    "file"
+  ),
+
+  uploadOrderReceiptPdf
+);
+
+
+router.post(
+  "/orders/:id/ship",
+  shipOrderAndNotify
+);
+
 
 /* =========================
    PRODUCTS
@@ -133,6 +149,14 @@ router.post(
   archiveAdminProduct
 );
 
+/* =========================
+   QR INVENTORY
+   ========================= */
+
+router.post(
+  "/inventory/generate",
+  generateAdminQrStock
+);
 
 /* =========================
    CUSTOMERS

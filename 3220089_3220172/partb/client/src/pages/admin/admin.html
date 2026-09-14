@@ -2,771 +2,377 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>Skanare Admin</title>
+  <link rel="icon" type="image/webp" href="/assets/img/skanare-logo.webp" />
+  <link rel="stylesheet" href="./admin.css" />
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  />
+  <!-- New admin UI styles kept here so admin.css does not need to change yet. -->
+  <style>
+    .admin-muted { color:#7b7b73; font-size:13px; }
+    .admin-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .admin-primary-button,
+    .admin-secondary-button,
+    .admin-danger-button {
+      min-height:40px; padding:0 16px; border:1px solid #111; background:#111; color:#fff;
+      font:inherit; font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+      cursor:pointer;
+    }
+    .admin-secondary-button { background:#fff; color:#111; border-color:#d8d8d1; }
+    .admin-danger-button { background:#fff; color:#9b1c1c; border-color:#e3bcbc; }
+    .admin-primary-button:disabled,
+    .admin-secondary-button:disabled,
+    .admin-danger-button:disabled { opacity:.45; cursor:not-allowed; }
 
-  <meta
-    name="robots"
-    content="noindex, nofollow"
-  />
+    .fulfillment-list { display:grid; gap:14px; margin-top:20px; }
+    .fulfillment-card { background:#fff; border:1px solid #deded8; padding:20px; }
+    .fulfillment-card__top { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; }
+    .fulfillment-card__id { font-size:17px; font-weight:750; margin-top:4px; }
+    .fulfillment-card__meta { display:flex; flex-wrap:wrap; gap:12px 20px; margin-top:14px; font-size:13px; color:#66665f; }
+    .fulfillment-card__items { display:grid; gap:8px; margin:16px 0; }
+    .fulfillment-card__item { display:flex; gap:12px; align-items:center; padding:10px 0; border-top:1px solid #eeeeea; }
+    .fulfillment-card__item img { width:54px; height:54px; object-fit:cover; border:1px solid #ecece7; }
+    .fulfillment-card__item strong { display:block; }
+    .fulfillment-card__item span { display:block; color:#6f6f68; font-size:12px; margin-top:2px; }
+    .fulfillment-card__footer { display:flex; justify-content:space-between; gap:14px; align-items:center; padding-top:14px; border-top:1px solid #eeeeea; }
 
-  <link
-    rel="icon"
-    type="image/webp"
-    href="/assets/img/skanare-logo.webp"
-  />
+    .workflow-pill { display:inline-flex; align-items:center; min-height:26px; padding:0 9px; border-radius:99px; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; background:#f3f3ef; }
+    .workflow-pill--to_prepare { background:#fff4cf; }
+    .workflow-pill--preparing { background:#e7f1ff; }
+    .workflow-pill--ready { background:#e8f7e8; }
+    .workflow-pill--shipped { background:#ededed; }
+    .workflow-pill--completed { background:#e4f5ea; }
+    .workflow-pill--cancelled { background:#fde7e7; }
 
-  <link
-    rel="stylesheet"
-    href="./admin.css"
-  />
+    .product-toolbar-note { margin:4px 0 0; color:#74746d; font-size:13px; }
+    .admin-product__body { padding-top:12px; }
+    .admin-product__meta { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-top:8px; }
+    .admin-product__stock-box { margin-top:14px; padding-top:14px; border-top:1px solid #ecece7; }
+    .admin-product__stock-row { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .admin-product__variant-list { display:grid; gap:5px; margin-top:10px; font-size:12px; color:#5d5d57; }
+    .admin-product__variant { display:flex; justify-content:space-between; gap:10px; }
+    .admin-product__actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+
+    .admin-modal-shell { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:24px; }
+    .admin-modal-shell.hidden { display:none !important; }
+    .admin-modal__backdrop { position:absolute; inset:0; background:rgba(0,0,0,.48); }
+    .admin-modal__panel { position:relative; z-index:1; width:min(920px, 96vw); max-height:92vh; overflow:auto; background:#fff; border:1px solid #dadad3; box-shadow:0 24px 80px rgba(0,0,0,.24); }
+    .admin-modal__header { position:sticky; top:0; z-index:2; display:flex; justify-content:space-between; gap:18px; align-items:flex-start; padding:22px 24px; background:#fff; border-bottom:1px solid #e4e4de; }
+    .admin-modal__header h2 { margin:3px 0 0; }
+    .admin-modal__body { padding:24px; }
+    .admin-modal__footer { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:24px; padding-top:18px; border-top:1px solid #e6e6e0; }
+
+    .admin-form-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
+    .admin-form-grid--3 { grid-template-columns:repeat(3, minmax(0,1fr)); }
+    .admin-field { display:grid; gap:7px; margin-bottom:14px; }
+    .admin-field > span { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#66665f; }
+    .admin-field input,
+    .admin-field select,
+    .admin-field textarea { width:100%; box-sizing:border-box; min-height:42px; padding:10px 12px; border:1px solid #d8d8d1; background:#fff; color:#111; font:inherit; }
+    .admin-field textarea { min-height:96px; resize:vertical; }
+    .admin-checkbox-row { display:flex; flex-wrap:wrap; gap:18px; margin:4px 0 16px; }
+    .admin-checkbox-row label { display:flex; gap:8px; align-items:center; font-size:13px; }
+
+    .admin-subsection { margin-top:22px; padding-top:20px; border-top:1px solid #e8e8e2; }
+    .admin-subsection__header { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:12px; }
+    .admin-subsection__header h3 { margin:0; font-size:16px; }
+
+    .dynamic-row { display:grid; grid-template-columns:1.2fr .7fr .9fr .65fr auto; gap:8px; align-items:end; margin-bottom:8px; }
+    .dynamic-row--review { grid-template-columns:1fr .45fr 2fr auto; }
+    .dynamic-row .admin-field { margin:0; }
+    .dynamic-row button { min-height:42px; }
+
+    .drawer-process-summary { display:grid; gap:10px; }
+    .drawer-item { display:grid; grid-template-columns:64px 1fr; gap:12px; align-items:start; padding:12px 0; border-bottom:1px solid #ecece7; }
+    .drawer-item img { width:64px; height:64px; object-fit:cover; border:1px solid #ecece7; }
+    .drawer-item__meta { color:#6b6b64; font-size:12px; margin-top:3px; }
+    .drawer-qr { padding:10px 12px; background:#f7f7f4; border:1px solid #e6e6e0; margin-top:8px; font-size:12px; }
+    .warehouse-checklist { display:grid; gap:8px; }
+    .warehouse-checklist label { display:flex; align-items:center; gap:9px; padding:8px 0; border-bottom:1px solid #efefeb; }
+    .drawer-status-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .receipt-file-name { margin-top:7px; font-size:12px; color:#66665f; }
+    .admin-inline-status { min-height:20px; margin-top:10px; font-size:12px; color:#55554f; }
+    .admin-inline-status.is-error { color:#a11a1a; }
+    .admin-inline-status.is-success { color:#19743c; }
+
+    @media (max-width: 760px) {
+      .admin-form-grid, .admin-form-grid--3 { grid-template-columns:1fr; }
+      .dynamic-row, .dynamic-row--review { grid-template-columns:1fr; border:1px solid #e7e7e2; padding:10px; }
+      .fulfillment-card__top, .fulfillment-card__footer { align-items:flex-start; flex-direction:column; }
+      .admin-modal-shell { padding:8px; }
+      .admin-modal__body { padding:18px; }
+    }
+  </style>
 </head>
-
 <body>
-
-  <!-- ==========================================
-       LOGIN
-       ========================================== -->
-
-  <section
-    id="adminLogin"
-    class="admin-login"
-  >
-
+  <!-- LOGIN -->
+  <section id="adminLogin" class="admin-login">
     <div class="admin-login__panel">
-
       <div class="admin-login__brand">
-
-        <img
-          src="/assets/img/skanare-logo.webp"
-          alt="Skanare"
-        />
-
-        <span>
-          SKANARE
-        </span>
-
+        <img src="/assets/img/skanare-logo.webp" alt="Skanare" />
+        <span>SKANARE</span>
       </div>
-
-
-      <span class="admin-eyebrow">
-        Private administration
-      </span>
-
-      <h1>
-        Admin access
-      </h1>
-
-      <p>
-        Sign in with your administrator account.
-      </p>
-
-
-      <form
-        id="adminLoginForm"
-        class="admin-login__form"
-      >
-
-        <label>
-          <span>Email</span>
-
-          <input
-            name="email"
-            type="email"
-            autocomplete="email"
-            required
-          />
-        </label>
-
-
-        <label>
-          <span>Password</span>
-
-          <input
-            name="password"
-            type="password"
-            autocomplete="current-password"
-            required
-          />
-        </label>
-
-
-        <button type="submit">
-          Sign in
-        </button>
-
-
-        <p
-          id="adminLoginStatus"
-          class="admin-status"
-        ></p>
-
+      <span class="admin-eyebrow">Private administration</span>
+      <h1>Admin access</h1>
+      <p>Sign in with your administrator account.</p>
+      <form id="adminLoginForm" class="admin-login__form">
+        <label><span>Email</span><input name="email" type="email" autocomplete="email" required /></label>
+        <label><span>Password</span><input name="password" type="password" autocomplete="current-password" required /></label>
+        <button type="submit">Sign in</button>
+        <p id="adminLoginStatus" class="admin-status"></p>
       </form>
-
     </div>
-
   </section>
 
-
-
-  <!-- ==========================================
-       ADMIN APP
-       ========================================== -->
-
-  <div
-    id="adminApp"
-    class="admin-shell hidden"
-  >
-
-    <!-- SIDEBAR -->
-
+  <!-- ADMIN APP -->
+  <div id="adminApp" class="admin-shell hidden">
     <aside class="admin-sidebar">
-
       <div class="admin-sidebar__brand">
-
-        <img
-          src="/assets/img/skanare-logo.webp"
-          alt=""
-        />
-
-        <div>
-          <strong>
-            SKANARE
-          </strong>
-
-          <span>
-            ADMIN
-          </span>
-        </div>
-
+        <img src="/assets/img/skanare-logo.webp" alt="" />
+        <div><strong>SKANARE</strong><span>ADMIN</span></div>
       </div>
-
 
       <nav class="admin-nav">
-
-        <button
-          class="admin-nav__item is-active"
-          data-view="dashboard"
-        >
-          <span class="admin-nav__icon">
-            ◫
-          </span>
-
-          Dashboard
-        </button>
-
-        <button class="admin-nav__item" type="button" data-view="fulfillment">
-          <span class="admin-nav__icon">▣</span>
-          <span>Fulfillment</span>
-          <span id="fulfillmentBadge" class="nav-badge" hidden></span>
-        </button>
-
-
-        <button
-          class="admin-nav__item"
-          data-view="orders"
-        >
-          <span class="admin-nav__icon">
-            ▤
-          </span>
-
-          Orders
-        </button>
-
-
-        <button
-          class="admin-nav__item"
-          data-view="products"
-        >
-          <span class="admin-nav__icon">
-            □
-          </span>
-
-          Products
-        </button>
-
-
-        <button
-          class="admin-nav__item"
-          data-view="customers"
-        >
-          <span class="admin-nav__icon">
-            ♙
-          </span>
-
-          Customers
-        </button>
-
-
-        <button
-          class="admin-nav__item"
-          data-view="qr"
-        >
-          <span class="admin-nav__icon">
-            ⌗
-          </span>
-
-          QR Codes
-        </button>
-
-
-        <button
-          class="admin-nav__item"
-          data-view="payments"
-        >
-          <span class="admin-nav__icon">
-            €
-          </span>
-
-          Payments
-        </button>
-
+        <button class="admin-nav__item is-active" data-view="dashboard" type="button"><span class="admin-nav__icon">◫</span>Dashboard</button>
+        <button class="admin-nav__item" data-view="fulfillment" type="button"><span class="admin-nav__icon">▣</span><span>Fulfillment</span><span id="fulfillmentBadge" class="nav-badge" hidden></span></button>
+        <button class="admin-nav__item" data-view="orders" type="button"><span class="admin-nav__icon">▤</span>Orders</button>
+        <button class="admin-nav__item" data-view="products" type="button"><span class="admin-nav__icon">□</span>Products</button>
+        <button class="admin-nav__item" data-view="customers" type="button"><span class="admin-nav__icon">♙</span>Customers</button>
+        <button class="admin-nav__item" data-view="qr" type="button"><span class="admin-nav__icon">⌗</span>QR Codes</button>
+        <button class="admin-nav__item" data-view="payments" type="button"><span class="admin-nav__icon">€</span>Payments</button>
       </nav>
 
-
       <div class="admin-sidebar__bottom">
-
-        <a
-          href="/"
-          target="_blank"
-        >
-          View store ↗
-        </a>
-
-        <button
-          id="adminLogout"
-          type="button"
-        >
-          Sign out
-        </button>
-
+        <a href="/" target="_blank">View store ↗</a>
+        <button id="adminLogout" type="button">Sign out</button>
       </div>
-
     </aside>
 
-
-
-    <!-- MAIN -->
-
     <main class="admin-main">
-
-      <!-- TOPBAR -->
-
       <header class="admin-topbar">
-
-        <div>
-
-          <span class="admin-eyebrow">
-            Skanare administration
-          </span>
-
-          <h1 id="adminPageTitle">
-            Dashboard
-          </h1>
-
-        </div>
-
-
+        <div><span class="admin-eyebrow">Skanare administration</span><h1 id="adminPageTitle">Dashboard</h1></div>
         <div class="admin-topbar__right">
-
-          <button
-            id="adminRefresh"
-            class="admin-icon-button"
-            type="button"
-            title="Refresh"
-          >
-            ↻
-          </button>
-
-          <div class="admin-user">
-
-            <span class="admin-user__dot"></span>
-
-            <div>
-              <strong id="adminUserEmail">
-                Admin
-              </strong>
-
-              <span>
-                Administrator
-              </span>
-            </div>
-
-          </div>
-
+          <button id="adminRefresh" class="admin-icon-button" type="button" title="Refresh">↻</button>
+          <div class="admin-user"><span class="admin-user__dot"></span><div><strong id="adminUserEmail">Admin</strong><span>Administrator</span></div></div>
         </div>
-
       </header>
 
-
-
-      <!-- =======================================
-           DASHBOARD
-           ======================================= -->
-
-      <section
-        id="view-dashboard"
-        class="admin-view"
-      >
-
-        <div
-          id="adminStats"
-          class="admin-stats"
-        >
-
-          <article class="admin-stat">
-
-            <span>
-              Revenue
-            </span>
-
-            <strong id="statRevenue">
-              —
-            </strong>
-
-            <small>
-              Paid orders
-            </small>
-
-          </article>
-
-
-          <article class="admin-stat">
-
-            <span>
-              Orders
-            </span>
-
-            <strong id="statOrders">
-              —
-            </strong>
-
-            <small>
-              Total orders
-            </small>
-
-          </article>
-
-
-          <article class="admin-stat">
-
-            <span>
-              Customers
-            </span>
-
-            <strong id="statCustomers">
-              —
-            </strong>
-
-            <small>
-              Registered users
-            </small>
-
-          </article>
-
-
-          <article class="admin-stat">
-
-            <span>
-              Active QRs
-            </span>
-
-            <strong id="statQr">
-              —
-            </strong>
-
-            <small>
-              Customer QR codes
-            </small>
-
-          </article>
-
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="admin-view">
+        <div id="adminStats" class="admin-stats">
+          <article class="admin-stat"><span>Revenue</span><strong id="statRevenue">—</strong><small>Paid orders</small></article>
+          <article class="admin-stat"><span>Orders</span><strong id="statOrders">—</strong><small>Total orders</small></article>
+          <article class="admin-stat"><span>Customers</span><strong id="statCustomers">—</strong><small>Registered users</small></article>
+          <article class="admin-stat"><span>Active QRs</span><strong id="statQr">—</strong><small>Customer QR codes</small></article>
         </div>
-
-
         <div class="admin-section">
-
           <div class="admin-section__header">
-
-            <div>
-
-              <span class="admin-eyebrow">
-                Latest activity
-              </span>
-
-              <h2>
-                Recent orders
-              </h2>
-
-            </div>
-
-
-            <button
-              class="admin-text-button"
-              type="button"
-              data-open-view="orders"
-            >
-              View all →
-            </button>
-
+            <div><span class="admin-eyebrow">Latest activity</span><h2>Recent orders</h2></div>
+            <button class="admin-text-button" type="button" data-open-view="orders">View all →</button>
           </div>
-
-
           <div class="admin-table-wrap">
-
             <table class="admin-table">
-
-              <thead>
-
-                <tr>
-                  <th>Order</th>
-                  <th>Customer</th>
-                  <th>Date</th>
-                  <th>Payment</th>
-                  <th>Total</th>
-                  <th></th>
-                </tr>
-
-              </thead>
-
+              <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Payment</th><th>Total</th><th></th></tr></thead>
               <tbody id="recentOrdersBody"></tbody>
-
             </table>
-
           </div>
-
         </div>
-
       </section>
 
-
-
-      <!-- =======================================
-           FULFILLMENT
-           ======================================= -->
+      <!-- FULFILLMENT -->
       <section id="view-fulfillment" class="admin-view hidden">
         <div class="admin-section__header">
-          <div><span class="admin-eyebrow">Warehouse workflow</span><h2>Fulfillment</h2><p>Prepare paid orders, verify QR items, attach the receipt and ship.</p></div>
+          <div>
+            <span class="admin-eyebrow">Warehouse workflow</span>
+            <h2>Fulfillment</h2>
+            <p>Prepare paid orders, verify the assigned QR, add the receipt and dispatch the parcel.</p>
+          </div>
           <button id="refreshFulfillment" class="admin-text-button" type="button">Refresh ↻</button>
         </div>
+
         <div class="admin-stats">
           <article class="admin-stat"><span>To prepare</span><strong id="fulfillmentToPrepare">0</strong><small>Paid orders</small></article>
           <article class="admin-stat"><span>Preparing</span><strong id="fulfillmentPreparing">0</strong><small>In warehouse</small></article>
           <article class="admin-stat"><span>Ready</span><strong id="fulfillmentReady">0</strong><small>Waiting to ship</small></article>
           <article class="admin-stat"><span>Shipped</span><strong id="fulfillmentShipped">0</strong><small>Dispatched</small></article>
         </div>
-        <div id="fulfillmentList" class="admin-list"></div>
+
+        <div id="fulfillmentList" class="fulfillment-list"></div>
       </section>
 
-      <!-- =======================================
-           ORDERS
-           ======================================= -->
-
-      <section
-        id="view-orders"
-        class="admin-view hidden"
-      >
-
+      <!-- ORDERS -->
+      <section id="view-orders" class="admin-view hidden">
         <div class="admin-toolbar">
-
-          <div class="admin-search">
-
-            <span>⌕</span>
-
-            <input
-              id="orderSearch"
-              type="search"
-              placeholder="Search order, customer or email"
-            />
-
-          </div>
-
-
+          <div class="admin-search"><span>⌕</span><input id="orderSearch" type="search" placeholder="Search order, customer or email" /></div>
           <select id="orderStatusFilter">
-
-            <option value="all">
-              All orders
-            </option>
-
-            <option value="paid">
-              Paid
-            </option>
-
-            <option value="pending">
-              Pending
-            </option>
-
-            <option value="failed">
-              Failed
-            </option>
-
+            <option value="all">All orders</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
           </select>
-
         </div>
-
-
         <div class="admin-section">
-
           <div class="admin-table-wrap">
-
             <table class="admin-table">
-
-              <thead>
-
-                <tr>
-                  <th>Order</th>
-                  <th>Customer</th>
-                  <th>Items</th>
-                  <th>Payment</th>
-                  <th>Delivery</th>
-                  <th>Total</th>
-                  <th>Date</th>
-                  <th></th>
-                </tr>
-
-              </thead>
-
+              <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Payment</th><th>Delivery</th><th>Total</th><th>Date</th><th></th></tr></thead>
               <tbody id="ordersBody"></tbody>
-
             </table>
-
           </div>
-
         </div>
-
       </section>
 
-
-
-      <!-- =======================================
-           PRODUCTS
-           ======================================= -->
-
-      <section
-        id="view-products"
-        class="admin-view hidden"
-      >
-
+      <!-- PRODUCTS -->
+      <section id="view-products" class="admin-view hidden">
         <div class="admin-section">
-
           <div class="admin-section__header">
-
             <div>
-              <span class="admin-eyebrow">
-                Catalog
-              </span>
-
-              <h2>
-                Products
-              </h2>
+              <span class="admin-eyebrow">Catalog & inventory</span>
+              <h2>Products</h2>
+              <p class="product-toolbar-note">Fallback stock stays available, while QR stock creates real preprinted QR inventory exactly like your stock script.</p>
             </div>
-            <button id="addProductButton" class="admin-text-button" type="button">+ Add product</button>
+            <div class="admin-actions">
+              <button id="openAddStockButton" class="admin-secondary-button" type="button">+ Add QR stock</button>
+              <button id="addProductButton" class="admin-primary-button" type="button">+ Add product</button>
+            </div>
           </div>
-
-
-          <div
-            id="adminProductsGrid"
-            class="admin-products-grid"
-          ></div>
-
+          <div id="adminProductsGrid" class="admin-products-grid"></div>
         </div>
-
       </section>
-
-
 
       <!-- CUSTOMERS -->
-
-      <section
-        id="view-customers"
-        class="admin-view hidden"
-      >
-
-        <div class="admin-section">
-
-          <div class="admin-section__header">
-
-            <div>
-
-              <span class="admin-eyebrow">
-                Accounts
-              </span>
-
-              <h2>
-                Customers
-              </h2>
-
-            </div>
-
-          </div>
-
-
-          <div
-            id="customersList"
-            class="admin-list"
-          ></div>
-
-        </div>
-
+      <section id="view-customers" class="admin-view hidden">
+        <div class="admin-section"><div class="admin-section__header"><div><span class="admin-eyebrow">Accounts</span><h2>Customers</h2></div></div><div id="customersList" class="admin-list"></div></div>
       </section>
-
-
 
       <!-- QR -->
-
-      <section
-        id="view-qr"
-        class="admin-view hidden"
-      >
-
-        <div class="admin-section">
-
-          <div class="admin-section__header">
-
-            <div>
-
-              <span class="admin-eyebrow">
-                Dynamic links
-              </span>
-
-              <h2>
-                QR Codes
-              </h2>
-
-            </div>
-
-          </div>
-
-
-          <div
-            id="qrAdminList"
-            class="admin-list"
-          ></div>
-
-        </div>
-
+      <section id="view-qr" class="admin-view hidden">
+        <div class="admin-section"><div class="admin-section__header"><div><span class="admin-eyebrow">Dynamic links</span><h2>QR Codes</h2></div></div><div id="qrAdminList" class="admin-list"></div></div>
       </section>
-
-
 
       <!-- PAYMENTS -->
-
-      <section
-        id="view-payments"
-        class="admin-view hidden"
-      >
-
-        <div class="admin-section">
-
-          <div class="admin-section__header">
-
-            <div>
-
-              <span class="admin-eyebrow">
-                Viva Smart Checkout
-              </span>
-
-              <h2>
-                Payments
-              </h2>
-
-            </div>
-
-          </div>
-
-
-          <div
-            id="paymentsList"
-            class="admin-list"
-          ></div>
-
-        </div>
-
+      <section id="view-payments" class="admin-view hidden">
+        <div class="admin-section"><div class="admin-section__header"><div><span class="admin-eyebrow">Viva Smart Checkout</span><h2>Payments</h2></div></div><div id="paymentsList" class="admin-list"></div></div>
       </section>
-
     </main>
-
   </div>
 
-
-
-  <!-- ==========================================
-       ORDER DRAWER
-       ========================================== -->
-
-  <div
-    id="adminDrawerOverlay"
-    class="admin-drawer-overlay hidden"
-  ></div>
-
-
-  <aside
-    id="adminOrderDrawer"
-    class="admin-order-drawer hidden"
-  >
-
+  <!-- ORDER / FULFILLMENT DRAWER -->
+  <div id="adminDrawerOverlay" class="admin-drawer-overlay hidden"></div>
+  <aside id="adminOrderDrawer" class="admin-order-drawer hidden">
     <header class="admin-order-drawer__header">
-
-      <div>
-
-        <span class="admin-eyebrow">
-          Order details
-        </span>
-
-        <h2 id="drawerOrderId">
-          Order
-        </h2>
-
-      </div>
-
-
-      <button
-        id="closeAdminDrawer"
-        type="button"
-      >
-        ✕
-      </button>
-
+      <div><span class="admin-eyebrow">Order processing</span><h2 id="drawerOrderId">Order</h2></div>
+      <button id="closeAdminDrawer" type="button">✕</button>
     </header>
-
-
-    <div
-      id="adminOrderDrawerContent"
-      class="admin-order-drawer__content"
-    ></div>
-
+    <div id="adminOrderDrawerContent" class="admin-order-drawer__content"></div>
   </aside>
 
-
-  <!-- PRODUCT MODAL -->
-  <div id="productModal" class="admin-drawer-overlay hidden">
-    <section class="admin-order-drawer" style="display:block">
-      <header class="admin-order-drawer__header">
+  <!-- ADD / EDIT PRODUCT MODAL -->
+  <div id="productModal" class="admin-modal-shell hidden" aria-hidden="true">
+    <div class="admin-modal__backdrop" data-close-product-modal></div>
+    <section class="admin-modal__panel" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+      <header class="admin-modal__header">
         <div><span class="admin-eyebrow">Catalog management</span><h2 id="productModalTitle">Add product</h2></div>
-        <button type="button" data-close-product-modal>✕</button>
+        <button class="admin-icon-button" type="button" data-close-product-modal>✕</button>
       </header>
-      <form id="productForm" class="admin-order-drawer__content">
+      <form id="productForm" class="admin-modal__body">
         <input id="productEditingId" type="hidden" />
-        <div class="admin-detail-group"><label>Product name<input id="productTitle" type="text" required /></label></div>
-        <div class="admin-detail-group"><label>Price (€)<input id="productPrice" type="number" min="0" step="0.01" required /></label><label>Initial stock<input id="productStock" type="number" min="0" step="1" required /></label></div>
-        <div class="admin-detail-group"><label>Category<input id="productCategory" type="text" /></label><label>SKU<input id="productSku" type="text" /></label></div>
-        <div class="admin-detail-group"><label>Image URL<input id="productImage" type="url" /></label><label>Description<textarea id="productDescription" rows="5"></textarea></label></div>
-        <div class="admin-detail-group"><label><input id="productActive" type="checkbox" checked /> Active product</label><label><input id="productFeatured" type="checkbox" /> Featured</label></div>
-        <button class="admin-text-button" type="submit">Save product</button>
-        <button class="admin-text-button" type="button" data-close-product-modal>Cancel</button>
+
+        <div class="admin-form-grid">
+          <label class="admin-field"><span>Product ID</span><input id="productId" type="text" placeholder="scan-me-black" required /></label>
+          <label class="admin-field"><span>Slug</span><input id="productSlug" type="text" placeholder="scan-me-t-shirt-black" required /></label>
+        </div>
+
+        <label class="admin-field"><span>Title</span><input id="productTitle" type="text" placeholder="Scan Me T-Shirt - Black" required /></label>
+        <label class="admin-field"><span>Short description</span><input id="productShortDescription" type="text" /></label>
+        <label class="admin-field"><span>Description</span><textarea id="productDescription" rows="5"></textarea></label>
+
+        <div class="admin-form-grid--3 admin-form-grid">
+          <label class="admin-field"><span>Category</span><input id="productCategory" type="text" placeholder="tshirt" /></label>
+          <label class="admin-field"><span>Price</span><input id="productPrice" type="number" min="0" step="0.01" required /></label>
+          <label class="admin-field"><span>Currency</span><input id="productCurrency" type="text" value="EUR" maxlength="6" /></label>
+        </div>
+
+        <div class="admin-form-grid">
+          <label class="admin-field"><span>Fallback stock</span><input id="productStock" type="number" min="0" step="1" value="0" /></label>
+          <label class="admin-field"><span>Low stock warning</span><input id="productLowStockThreshold" type="number" min="0" step="1" value="3" /></label>
+        </div>
+
+        <div class="admin-checkbox-row">
+          <label><input id="productFeatured" type="checkbox" /> Featured</label>
+          <label><input id="productActive" type="checkbox" checked /> Active</label>
+          <label><input id="productCustomQr" type="checkbox" checked /> Custom QR product</label>
+        </div>
+
+        <div class="admin-subsection">
+          <div class="admin-subsection__header"><h3>QR print configuration</h3></div>
+          <div class="admin-form-grid--3 admin-form-grid">
+            <label class="admin-field"><span>Print text</span><input id="qrTextPrint" type="text" value="SCAN ME" /></label>
+            <label class="admin-field"><span>Text position</span><select id="qrTextPosition"><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
+            <label class="admin-field"><span>Print size</span><input id="qrPrintSize" type="number" min="1" step="1" value="3540" /></label>
+          </div>
+          <div class="admin-form-grid">
+            <label class="admin-field"><span>QR color</span><input id="qrColor" type="text" value="#000000" /></label>
+            <label class="admin-field"><span>Text color</span><input id="qrTextColor" type="text" value="#000000" /></label>
+          </div>
+        </div>
+
+        <div class="admin-subsection">
+          <div class="admin-subsection__header"><h3>Images</h3><span class="admin-muted">One path or URL per line</span></div>
+          <label class="admin-field"><span>Image paths / URLs</span><textarea id="productImages" rows="5" placeholder="/assets/img/products/.../back.png&#10;/assets/img/products/.../front.png"></textarea></label>
+        </div>
+
+        <div class="admin-subsection">
+          <div class="admin-subsection__header"><h3>Variants</h3><button id="addVariantRowButton" class="admin-secondary-button" type="button">+ Add variant</button></div>
+          <div id="variantRows"></div>
+        </div>
+
+        <div class="admin-subsection">
+          <div class="admin-subsection__header"><h3>Reviews</h3><button id="addReviewRowButton" class="admin-secondary-button" type="button">+ Add review</button></div>
+          <div id="reviewRows"></div>
+        </div>
+
+        <p id="productFormStatus" class="admin-inline-status"></p>
+        <div class="admin-modal__footer">
+          <button class="admin-secondary-button" type="button" data-close-product-modal>Cancel</button>
+          <button id="saveProductButton" class="admin-primary-button" type="submit">Create product</button>
+        </div>
       </form>
     </section>
   </div>
 
-  <script
-    type="module"
-    src="./admin.ts"
-  ></script>
+  <!-- QR STOCK MODAL -->
+  <div id="stockModal" class="admin-modal-shell hidden" aria-hidden="true">
+    <div class="admin-modal__backdrop" data-close-stock-modal></div>
+    <section class="admin-modal__panel" role="dialog" aria-modal="true" aria-labelledby="stockModalTitle" style="width:min(720px,96vw)">
+      <header class="admin-modal__header">
+        <div><span class="admin-eyebrow">Preprinted QR inventory</span><h2 id="stockModalTitle">Add QR stock</h2></div>
+        <button class="admin-icon-button" type="button" data-close-stock-modal>✕</button>
+      </header>
+      <form id="stockForm" class="admin-modal__body">
+        <label class="admin-field"><span>Product</span><select id="stockProductId" required></select></label>
+        <label class="admin-field"><span>Variant / SKU</span><select id="stockVariantSelect"></select></label>
 
+        <div class="admin-form-grid--3 admin-form-grid">
+          <label class="admin-field"><span>SKU</span><input id="stockSku" type="text" required /></label>
+          <label class="admin-field"><span>Size</span><input id="stockSize" type="text" placeholder="Leave empty when not applicable" /></label>
+          <label class="admin-field"><span>Color</span><input id="stockColor" type="text" /></label>
+        </div>
+
+        <label class="admin-field"><span>Quantity to generate</span><input id="stockQuantity" type="number" min="1" max="1000" step="1" value="1" required /></label>
+        <div class="admin-detail-group">
+          <strong>What this does</strong>
+          <p class="admin-muted">Creates real QR inventory with status <b>available</b>, the selected inventoryKey, printable QR artwork / A3 file and the same admin print workflow as generate-qr-stock.js.</p>
+        </div>
+        <p id="stockFormStatus" class="admin-inline-status"></p>
+        <div class="admin-modal__footer">
+          <button class="admin-secondary-button" type="button" data-close-stock-modal>Cancel</button>
+          <button id="generateStockButton" class="admin-primary-button" type="submit">Generate QR stock</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script type="module" src="./admin.ts"></script>
 </body>
 </html>

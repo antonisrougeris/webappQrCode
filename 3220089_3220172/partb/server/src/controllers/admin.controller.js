@@ -8,8 +8,15 @@ import { ok } from "../utils/response.js";
 import { ApiError } from "../utils/apiError.js";
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
-import { nowIso } from "../utils/ids.js";
+import {
+  createId,
+  nowIso,
+} from "../utils/ids.js";
 
+import {
+  createId,
+  nowIso,
+} from "../utils/ids.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -763,45 +770,70 @@ export const getAdminQrCodes =
           snapshotToDocs(snapshot)
         )
           .map((qr) => ({
-            id:
-              qr.id,
 
-            shortId:
-              qr.shortId || "",
+  id:
+    qr.id,
 
-            userId:
-              qr.userId || null,
+  shortId:
+    qr.shortId || "",
 
-            guestId:
-              qr.guestId || null,
+  status:
+    qr.status || "",
 
-            orderId:
-              qr.orderId || "",
+  userId:
+    qr.userId || null,
 
-            productId:
-              qr.productId || "",
+  guestId:
+    qr.guestId || null,
 
-            productTitle:
-              qr.productTitle || "",
+  orderId:
+    qr.orderId || "",
 
-            targetUrl:
-              qr.targetUrl || "",
+  productId:
+    qr.productId || "",
 
-            scans:
-              Number(
-                qr.scans || 0
-              ),
+  productTitle:
+    qr.productTitle || "",
 
-            createdAt:
-              qr.createdAt || null,
+  sku:
+    qr.sku || "",
 
-            updatedAt:
-              qr.updatedAt || null,
+  inventoryKey:
+    qr.inventoryKey || "",
 
-            lastScannedAt:
-              qr.lastScannedAt ||
-              null,
-          }));
+  variant:
+    qr.variant || null,
+
+  fulfillmentMode:
+    qr.fulfillmentMode || "",
+
+  targetUrl:
+    qr.targetUrl || "",
+
+  scans:
+    Number(
+      qr.scans || 0
+    ),
+
+  printStatus:
+    qr.printStatus || "",
+
+  printFileUrl:
+    qr.printFileUrl || "",
+
+  assignedAt:
+    qr.assignedAt || null,
+
+  createdAt:
+    qr.createdAt || null,
+
+  updatedAt:
+    qr.updatedAt || null,
+
+  lastScannedAt:
+    qr.lastScannedAt ||
+    null,
+}));
 
 
       return res
@@ -935,6 +967,171 @@ function cleanNumber(value, fallback = 0) {
 function cleanInteger(value, fallback = 0) {
   const number = Number(value);
   return Number.isInteger(number) ? number : fallback;
+}
+
+function cleanImages(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) =>
+      cleanString(item, 1500)
+    )
+    .filter(Boolean)
+    .slice(0, 20);
+}
+
+
+function cleanVariants(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((variant) => {
+
+      const stock = Math.max(
+        0,
+        cleanInteger(
+          variant?.stock,
+          0
+        )
+      );
+
+      return {
+        sku:
+          cleanString(
+            variant?.sku,
+            200
+          ),
+
+        size:
+          cleanString(
+            variant?.size,
+            100
+          ),
+
+        color:
+          cleanString(
+            variant?.color,
+            100
+          ),
+
+        stock,
+      };
+    })
+    .filter(
+      (variant) =>
+        Boolean(variant.sku)
+    )
+    .slice(0, 100);
+}
+
+
+function cleanReviews(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((review) => ({
+      name:
+        cleanString(
+          review?.name,
+          200
+        ),
+
+      rating:
+        Math.min(
+          5,
+          Math.max(
+            1,
+            cleanInteger(
+              review?.rating,
+              5
+            )
+          )
+        ),
+
+      comment:
+        cleanString(
+          review?.comment,
+          2000
+        ),
+    }))
+    .filter(
+      (review) =>
+        review.name ||
+        review.comment
+    )
+    .slice(0, 100);
+}
+
+
+function cleanQrConfig(value) {
+
+  const config =
+    value &&
+    typeof value === "object"
+      ? value
+      : {};
+
+  const qrColor =
+    cleanString(
+      config.qrColor ||
+      config.color ||
+      "#000000",
+      20
+    );
+
+  const textColor =
+    cleanString(
+      config.textColor ||
+      qrColor ||
+      "#000000",
+      20
+    );
+
+  return {
+
+    textPrint:
+      cleanString(
+        config.textPrint ||
+        "SCAN ME",
+        100
+      ),
+
+    textPosition:
+      config.textPosition === "top"
+        ? "top"
+        : "bottom",
+
+    qrColor,
+
+    textColor,
+
+    size:
+      Math.max(
+        100,
+        cleanInteger(
+          config.size,
+          3540
+        )
+      ),
+  };
+}
+
+
+function safeFileName(value) {
+  return String(
+    value || "receipt.pdf"
+  )
+    .replace(
+      /[^a-zA-Z0-9._-]/g,
+      "_"
+    )
+    .slice(0, 180);
 }
 
 function fulfillmentStatus(order) {
@@ -1295,175 +1492,74 @@ export const updateOrderReceipt = asyncHandler(
    POST /api/admin/products
    ========================================================= */
 
-export const createAdminProduct = asyncHandler(
-  async (req, res) => {
-    const db = getDB();
+export const createAdminProduct =
+  asyncHandler(
+    async (req, res) => {
 
-    const title = cleanString(req.body?.title, 200);
+      const db = getDB();
 
-    if (!title) {
-      throw new ApiError(400, "Product title is required");
-    }
+      const title =
+        cleanString(
+          req.body?.title,
+          200
+        );
 
-    const requestedId = cleanString(
-      req.body?.id || req.body?.slug || title,
-      200
-    );
-
-    const id = normalizeProductId({
-      id: requestedId,
-    });
-
-    if (!id) {
-      throw new ApiError(400, "Invalid product ID");
-    }
-
-    const ref = db
-      .collection(PRODUCTS_COLLECTION)
-      .doc(id);
-
-    const existing = await ref.get();
-
-    if (existing.exists) {
-      throw new ApiError(
-        409,
-        "A product with this ID already exists"
-      );
-    }
-
-    const price = cleanNumber(req.body?.price);
-
-    if (price < 0) {
-      throw new ApiError(400, "Price cannot be negative");
-    }
-
-    const stock = cleanInteger(req.body?.stock);
-
-    if (stock < 0) {
-      throw new ApiError(400, "Stock cannot be negative");
-    }
-
-    const images = Array.isArray(req.body?.images)
-      ? req.body.images
-          .map((image) => cleanString(image, 1500))
-          .filter(Boolean)
-          .slice(0, 20)
-      : [];
-
-    const variants = Array.isArray(req.body?.variants)
-      ? req.body.variants
-      : [];
-
-    const product = {
-      id,
-
-      slug:
-        normalizeProductId({
-          id: req.body?.slug || id,
-        }) || id,
-
-      title,
-
-      shortDescription:
-        cleanString(req.body?.shortDescription, 500),
-
-      description:
-        cleanString(req.body?.description, 10000),
-
-      category:
-        cleanString(req.body?.category, 200) ||
-        "General",
-
-      price,
-
-      currency:
-        cleanString(req.body?.currency, 10) ||
-        "EUR",
-
-      stock,
-
-      variants,
-
-      images,
-
-      active:
-        req.body?.active !== false,
-
-      featured:
-        Boolean(req.body?.featured),
-
-      customQr:
-        Boolean(req.body?.customQr),
-
-      sku:
-        cleanString(req.body?.sku, 200),
-
-      lowStockThreshold:
-        Math.max(
-          0,
-          cleanInteger(req.body?.lowStockThreshold, 3)
-        ),
-
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    };
-
-    await ref.set(product);
-
-    return res.status(201).json({
-      success: true,
-      product: {
-        ...product,
-        image: images[0] || "",
-      },
-    });
-  }
-);
-
-
-/* =========================================================
-   UPDATE PRODUCT
-   PATCH /api/admin/products/:id
-   ========================================================= */
-
-export const updateAdminProduct = asyncHandler(
-  async (req, res) => {
-    const db = getDB();
-
-    const id = cleanString(req.params.id, 200);
-
-    const ref = db
-      .collection(PRODUCTS_COLLECTION)
-      .doc(id);
-
-    const snapshot = await ref.get();
-
-    if (!snapshot.exists) {
-      throw new ApiError(404, "Product not found");
-    }
-
-    const allowedFields = [
-      "title",
-      "shortDescription",
-      "description",
-      "category",
-      "currency",
-      "sku",
-    ];
-
-    const update = {};
-
-    for (const field of allowedFields) {
-      if (req.body?.[field] !== undefined) {
-        update[field] = cleanString(
-          req.body[field],
-          field === "description" ? 10000 : 500
+      if (!title) {
+        throw new ApiError(
+          400,
+          "Product title is required"
         );
       }
-    }
 
-    if (req.body?.price !== undefined) {
-      const price = cleanNumber(req.body.price);
+
+      const requestedId =
+        cleanString(
+          req.body?.id ||
+          req.body?.slug ||
+          title,
+          200
+        );
+
+
+      const id =
+        normalizeProductId({
+          id: requestedId,
+        });
+
+
+      if (!id) {
+        throw new ApiError(
+          400,
+          "Invalid product ID"
+        );
+      }
+
+
+      const ref =
+        db
+          .collection(
+            PRODUCTS_COLLECTION
+          )
+          .doc(id);
+
+
+      const existing =
+        await ref.get();
+
+
+      if (existing.exists) {
+        throw new ApiError(
+          409,
+          "A product with this ID already exists"
+        );
+      }
+
+
+      const price =
+        cleanNumber(
+          req.body?.price
+        );
+
 
       if (price < 0) {
         throw new ApiError(
@@ -1472,73 +1568,443 @@ export const updateAdminProduct = asyncHandler(
         );
       }
 
-      update.price = price;
-    }
 
-    if (req.body?.active !== undefined) {
-      update.active = Boolean(req.body.active);
-    }
-
-    if (req.body?.featured !== undefined) {
-      update.featured = Boolean(
-        req.body.featured
-      );
-    }
-
-    if (req.body?.customQr !== undefined) {
-      update.customQr = Boolean(
-        req.body.customQr
-      );
-    }
-
-    if (Array.isArray(req.body?.images)) {
-      update.images = req.body.images
-        .map((image) =>
-          cleanString(image, 1500)
-        )
-        .filter(Boolean)
-        .slice(0, 20);
-    }
-
-    if (Array.isArray(req.body?.variants)) {
-      update.variants = req.body.variants;
-    }
-
-    if (
-      req.body?.lowStockThreshold !==
-      undefined
-    ) {
-      update.lowStockThreshold = Math.max(
-        0,
+      const stock =
         cleanInteger(
-          req.body.lowStockThreshold
-        )
+          req.body?.stock
+        );
+
+
+      if (stock < 0) {
+        throw new ApiError(
+          400,
+          "Stock cannot be negative"
+        );
+      }
+
+
+      const images =
+        cleanImages(
+          req.body?.images
+        );
+
+
+      const variants =
+        cleanVariants(
+          req.body?.variants
+        );
+
+
+      const reviews =
+        cleanReviews(
+          req.body?.reviews
+        );
+
+
+      const qrConfig =
+        cleanQrConfig(
+          req.body?.qrConfig
+        );
+
+
+      const slug =
+        normalizeProductId({
+          id:
+            req.body?.slug ||
+            id,
+        }) || id;
+
+
+      const createdAt =
+        nowIso();
+
+
+      const product = {
+
+        id,
+
+        slug,
+
+        title,
+
+        shortDescription:
+          cleanString(
+            req.body
+              ?.shortDescription,
+            500
+          ),
+
+        description:
+          cleanString(
+            req.body
+              ?.description,
+            10000
+          ),
+
+        category:
+          cleanString(
+            req.body?.category,
+            200
+          ) ||
+          "General",
+
+        price,
+
+        currency:
+          cleanString(
+            req.body?.currency,
+            10
+          ) ||
+          "EUR",
+
+        /*
+         * Fallback sellable stock.
+         *
+         * We keep this because you
+         * explicitly want the shop
+         * to continue selling even
+         * when pre-generated QR
+         * inventory reaches zero.
+         */
+        stock,
+
+        featured:
+          Boolean(
+            req.body?.featured
+          ),
+
+        active:
+          req.body?.active !==
+          false,
+
+        customQr:
+          req.body?.customQr !==
+          false,
+
+        qrConfig,
+
+        images,
+
+        variants,
+
+        reviews,
+
+        lowStockThreshold:
+          Math.max(
+            0,
+            cleanInteger(
+              req.body
+                ?.lowStockThreshold,
+              3
+            )
+          ),
+
+        createdAt,
+
+        updatedAt:
+          createdAt,
+      };
+
+
+      await ref.set(
+        product
       );
+
+
+      return res
+        .status(201)
+        .json({
+
+          success: true,
+
+          product: {
+            ...product,
+
+            image:
+              images[0] ||
+              "",
+          },
+        });
     }
+  );
 
-    update.updatedAt = nowIso();
 
-    await ref.update(update);
+/* =========================================================
+   UPDATE PRODUCT
+   PATCH /api/admin/products/:id
+   ========================================================= */
 
-    const updated = await ref.get();
+export const updateAdminProduct =
+  asyncHandler(
+    async (req, res) => {
 
-    const product = {
-      id: updated.id,
-      ...updated.data(),
-    };
+      const db = getDB();
 
-    return res.status(200).json({
-      success: true,
-      product: {
-        ...product,
-        image:
-          Array.isArray(product.images)
-            ? product.images[0] || ""
-            : "",
-      },
-    });
-  }
-);
+      const id =
+        cleanString(
+          req.params.id,
+          200
+        );
+
+
+      const ref =
+        db
+          .collection(
+            PRODUCTS_COLLECTION
+          )
+          .doc(id);
+
+
+      const snapshot =
+        await ref.get();
+
+
+      if (!snapshot.exists) {
+        throw new ApiError(
+          404,
+          "Product not found"
+        );
+      }
+
+
+      const update = {};
+
+
+      if (
+        req.body?.slug !==
+        undefined
+      ) {
+
+        const slug =
+          normalizeProductId({
+            id:
+              req.body.slug,
+          });
+
+        if (!slug) {
+          throw new ApiError(
+            400,
+            "Invalid product slug"
+          );
+        }
+
+        update.slug =
+          slug;
+      }
+
+
+      const stringFields = [
+        "title",
+        "shortDescription",
+        "description",
+        "category",
+        "currency",
+      ];
+
+
+      for (
+        const field
+        of stringFields
+      ) {
+
+        if (
+          req.body?.[field] !==
+          undefined
+        ) {
+
+          update[field] =
+            cleanString(
+              req.body[field],
+              field ===
+              "description"
+                ? 10000
+                : 500
+            );
+        }
+      }
+
+
+      if (
+        req.body?.price !==
+        undefined
+      ) {
+
+        const price =
+          cleanNumber(
+            req.body.price
+          );
+
+        if (price < 0) {
+          throw new ApiError(
+            400,
+            "Price cannot be negative"
+          );
+        }
+
+        update.price =
+          price;
+      }
+
+
+      if (
+        req.body?.stock !==
+        undefined
+      ) {
+
+        const stock =
+          cleanInteger(
+            req.body.stock
+          );
+
+        if (stock < 0) {
+          throw new ApiError(
+            400,
+            "Stock cannot be negative"
+          );
+        }
+
+        update.stock =
+          stock;
+      }
+
+
+      if (
+        req.body?.active !==
+        undefined
+      ) {
+        update.active =
+          Boolean(
+            req.body.active
+          );
+      }
+
+
+      if (
+        req.body?.featured !==
+        undefined
+      ) {
+        update.featured =
+          Boolean(
+            req.body.featured
+          );
+      }
+
+
+      if (
+        req.body?.customQr !==
+        undefined
+      ) {
+        update.customQr =
+          Boolean(
+            req.body.customQr
+          );
+      }
+
+
+      if (
+        req.body?.images !==
+        undefined
+      ) {
+        update.images =
+          cleanImages(
+            req.body.images
+          );
+      }
+
+
+      if (
+        req.body?.variants !==
+        undefined
+      ) {
+        update.variants =
+          cleanVariants(
+            req.body.variants
+          );
+      }
+
+
+      if (
+        req.body?.reviews !==
+        undefined
+      ) {
+        update.reviews =
+          cleanReviews(
+            req.body.reviews
+          );
+      }
+
+
+      if (
+        req.body?.qrConfig !==
+        undefined
+      ) {
+        update.qrConfig =
+          cleanQrConfig(
+            req.body.qrConfig
+          );
+      }
+
+
+      if (
+        req.body
+          ?.lowStockThreshold !==
+        undefined
+      ) {
+
+        update
+          .lowStockThreshold =
+          Math.max(
+            0,
+            cleanInteger(
+              req.body
+                .lowStockThreshold
+            )
+          );
+      }
+
+
+      update.updatedAt =
+        nowIso();
+
+
+      await ref.update(
+        update
+      );
+
+
+      const updated =
+        await ref.get();
+
+
+      const product = {
+        id:
+          updated.id,
+
+        ...updated.data(),
+      };
+
+
+      return res
+        .status(200)
+        .json({
+
+          success: true,
+
+          product: {
+            ...product,
+
+            image:
+              Array.isArray(
+                product.images
+              )
+                ? product
+                    .images[0] ||
+                  ""
+                : "",
+          },
+        });
+    }
+  );
 
 
 /* =========================================================
@@ -1695,3 +2161,1149 @@ export const archiveAdminProduct = asyncHandler(
     });
   }
 );
+
+
+/* =========================================================
+   GENERATE PREPRINTED QR STOCK
+   POST /api/admin/inventory/generate
+   ========================================================= */
+
+export const generateAdminQrStock =
+  asyncHandler(
+    async (req, res) => {
+
+      const db = getDB();
+
+      const productId =
+        cleanString(
+          req.body?.productId,
+          200
+        );
+
+      const sku =
+        cleanString(
+          req.body?.sku,
+          200
+        );
+
+      const size =
+        cleanString(
+          req.body?.size,
+          100
+        );
+
+      const color =
+        cleanString(
+          req.body?.color,
+          100
+        );
+
+      const quantity =
+        cleanInteger(
+          req.body?.quantity
+        );
+
+
+      if (!productId) {
+        throw new ApiError(
+          400,
+          "Product ID is required"
+        );
+      }
+
+
+      if (!sku) {
+        throw new ApiError(
+          400,
+          "SKU is required"
+        );
+      }
+
+
+      if (
+        quantity < 1 ||
+        quantity > 100
+      ) {
+        throw new ApiError(
+          400,
+          "Quantity must be between 1 and 100"
+        );
+      }
+
+
+      const productRef =
+        db
+          .collection(
+            PRODUCTS_COLLECTION
+          )
+          .doc(productId);
+
+
+      const productSnap =
+        await productRef.get();
+
+
+      if (
+        !productSnap.exists
+      ) {
+        throw new ApiError(
+          404,
+          "Product not found"
+        );
+      }
+
+
+      const product = {
+        id:
+          productSnap.id,
+
+        ...productSnap.data(),
+      };
+
+
+      const inventoryKey =
+        `${productId}::${sku}`;
+
+
+      const publicQrBaseUrl =
+        process.env
+          .QR_PUBLIC_BASE_URL ||
+        "https://go.skanare.com";
+
+
+      const created = [];
+
+      const printLinks = [];
+
+
+      for (
+        let index = 0;
+        index < quantity;
+        index += 1
+      ) {
+
+        const result =
+          await db.runTransaction(
+            async (tx) => {
+
+              const qrId =
+                createId("qr");
+
+
+              const {
+                shortId,
+                reservationRef,
+              } =
+                await reserveUniqueQrShortId(
+                  tx,
+                  db
+                );
+
+
+              const createdAt =
+                nowIso();
+
+
+              const qrRef =
+                db
+                  .collection(
+                    QR_CODES_COLLECTION
+                  )
+                  .doc(qrId);
+
+
+              writeQrShortIdReservation(
+                tx,
+                reservationRef,
+                {
+                  qrId,
+                  shortId,
+                  createdAt,
+                }
+              );
+
+
+              tx.set(
+                qrRef,
+                {
+                  id:
+                    qrId,
+
+                  shortId,
+
+                  status:
+                    "available",
+
+                  productId,
+
+                  productTitle:
+                    product.title ||
+                    "",
+
+                  sku,
+
+                  inventoryKey,
+
+                  variant: {
+                    sku,
+                    size,
+                    color,
+                  },
+
+                  qrConfig:
+                    product.qrConfig ||
+                    null,
+
+                  userId:
+                    null,
+
+                  guestId:
+                    null,
+
+                  orderId:
+                    null,
+
+                  targetUrl:
+                    "https://skanare.com",
+
+                  scans:
+                    0,
+
+                  fulfillmentMode:
+                    "preprinted",
+
+                  printStatus:
+                    "pending",
+
+                  createdAt,
+
+                  updatedAt:
+                    createdAt,
+                }
+              );
+
+
+              return {
+                qrId,
+                shortId,
+
+                url:
+                  `${publicQrBaseUrl}/${shortId}`,
+              };
+            }
+          );
+
+
+        created.push(
+          result
+        );
+
+
+        try {
+
+          /*
+           * Same QR artwork logic
+           * as generate-qr-stock.js
+           */
+
+          const qrBuffer =
+            await generatePrintQrImage(
+              result.url,
+              {
+                qrColor:
+                  product
+                    .qrConfig
+                    ?.qrColor ||
+                  product
+                    .qrConfig
+                    ?.color ||
+                  "#000000",
+
+                textColor:
+                  product
+                    .qrConfig
+                    ?.textColor ||
+                  product
+                    .qrConfig
+                    ?.qrColor ||
+                  "#000000",
+
+                textPrint:
+                  product
+                    .qrConfig
+                    ?.textPrint ||
+                  "SCAN ME",
+
+                textPosition:
+                  product
+                    .qrConfig
+                    ?.textPosition ||
+                  "bottom",
+
+                size:
+                  product
+                    .qrConfig
+                    ?.size ||
+                  3540,
+              }
+            );
+
+
+          const a3Buffer =
+            await generatePrintSheet({
+              qrBuffer,
+
+              shirtColor:
+                color ||
+                "Black",
+            });
+
+
+          const uploaded =
+            await uploadQrToStorage(
+              `stock-${result.qrId}`,
+              a3Buffer
+            );
+
+
+          if (
+            !uploaded?.url
+          ) {
+            throw new Error(
+              "QR print upload did not return URL"
+            );
+          }
+
+
+          const generatedAt =
+            nowIso();
+
+
+          await db
+            .collection(
+              QR_CODES_COLLECTION
+            )
+            .doc(
+              result.qrId
+            )
+            .set(
+              {
+                printStatus:
+                  "uploaded",
+
+                printGeneratedAt:
+                  generatedAt,
+
+                printFileUrl:
+                  uploaded.url,
+
+                updatedAt:
+                  generatedAt,
+              },
+              {
+                merge: true,
+              }
+            );
+
+
+          printLinks.push({
+            qrId:
+              result.qrId,
+
+            shortId:
+              result.shortId,
+
+            qrUrl:
+              result.url,
+
+            printUrl:
+              uploaded.url,
+          });
+
+
+        } catch (error) {
+
+          const failedAt =
+            nowIso();
+
+
+          await db
+            .collection(
+              QR_CODES_COLLECTION
+            )
+            .doc(
+              result.qrId
+            )
+            .set(
+              {
+                printStatus:
+                  "failed",
+
+                printError:
+                  String(
+                    error?.message ||
+                    error
+                  ),
+
+                printFailedAt:
+                  failedAt,
+
+                updatedAt:
+                  failedAt,
+              },
+              {
+                merge: true,
+              }
+            );
+
+
+          throw error;
+        }
+      }
+
+
+      /*
+       * Send the same kind of
+       * admin print email.
+       */
+
+      const adminEmail =
+        process.env
+          .ADMIN_EMAIL;
+
+      const from =
+        process.env
+          .EMAIL_ORDER ||
+        process.env
+          .EMAIL_FROM;
+
+
+      if (
+        adminEmail &&
+        from &&
+        printLinks.length
+      ) {
+
+        const linksHtml =
+          printLinks
+            .map(
+              (
+                item,
+                index
+              ) => `
+                <div style="
+                  margin:20px 0;
+                  padding:18px;
+                  background:#f7f7f7;
+                ">
+                  <p>
+                    <strong>
+                      Print ${index + 1}
+                    </strong>
+                  </p>
+
+                  <p>
+                    QR ID:
+                    ${item.shortId}
+                  </p>
+
+                  <a
+                    href="${item.printUrl}"
+                    target="_blank"
+                  >
+                    Download A3 DTF Print
+                  </a>
+                </div>
+              `
+            )
+            .join("");
+
+
+        await sendEmail({
+          from,
+
+          to:
+            adminEmail,
+
+          subject:
+            `QR Stock Print - ${product.title} - ${sku}`,
+
+          html: `
+            <h2>
+              New QR Stock Ready for Printing
+            </h2>
+
+            <p>
+              <strong>Product:</strong>
+              ${product.title}
+            </p>
+
+            <p>
+              <strong>SKU:</strong>
+              ${sku}
+            </p>
+
+            <p>
+              <strong>Size:</strong>
+              ${size || "-"}
+            </p>
+
+            <p>
+              <strong>Color:</strong>
+              ${color || "-"}
+            </p>
+
+            <p>
+              <strong>Quantity:</strong>
+              ${quantity}
+            </p>
+
+            ${linksHtml}
+          `,
+        });
+
+
+        const emailSentAt =
+          nowIso();
+
+
+        for (
+          const item
+          of created
+        ) {
+
+          await db
+            .collection(
+              QR_CODES_COLLECTION
+            )
+            .doc(
+              item.qrId
+            )
+            .set(
+              {
+                printStatus:
+                  "email_sent",
+
+                adminPrintEmailSentAt:
+                  emailSentAt,
+
+                updatedAt:
+                  emailSentAt,
+              },
+              {
+                merge: true,
+              }
+            );
+        }
+      }
+
+
+      return res
+        .status(201)
+        .json({
+
+          success: true,
+
+          count:
+            created.length,
+
+          inventoryKey,
+
+          created:
+            created.map(
+              (item) => ({
+
+                qrId:
+                  item.qrId,
+
+                shortId:
+                  item.shortId,
+
+                url:
+                  item.url,
+
+                printUrl:
+                  printLinks
+                    .find(
+                      (print) =>
+                        print.qrId ===
+                        item.qrId
+                    )
+                    ?.printUrl ||
+                  null,
+              })
+            ),
+        });
+    }
+  );
+
+
+  /* =========================================================
+   UPLOAD RECEIPT PDF
+   POST /api/admin/orders/:id/receipt-file
+   ========================================================= */
+
+export const uploadOrderReceiptPdf =
+  asyncHandler(
+    async (req, res) => {
+
+      const db = getDB();
+
+      const orderId =
+        cleanString(
+          req.params.id,
+          200
+        );
+
+
+      if (!req.file) {
+        throw new ApiError(
+          400,
+          "Receipt PDF is required"
+        );
+      }
+
+
+      if (
+        req.file.mimetype !==
+        "application/pdf"
+      ) {
+        throw new ApiError(
+          400,
+          "Receipt must be a PDF"
+        );
+      }
+
+
+      const orderRef =
+        db
+          .collection(
+            ORDERS_COLLECTION
+          )
+          .doc(orderId);
+
+
+      const orderSnap =
+        await orderRef.get();
+
+
+      if (
+        !orderSnap.exists
+      ) {
+        throw new ApiError(
+          404,
+          "Order not found"
+        );
+      }
+
+
+      const order =
+        orderSnap.data();
+
+
+      if (
+        !isPaidOrder(order)
+      ) {
+        throw new ApiError(
+          400,
+          "Receipt can only be uploaded for a paid order"
+        );
+      }
+
+
+      const fileName =
+        safeFileName(
+          req.file
+            .originalname ||
+          "receipt.pdf"
+        );
+
+
+      const storagePath =
+        `receipts/${orderId}/${Date.now()}-${fileName}`;
+
+
+      const bucket =
+        getStorage()
+          .bucket();
+
+
+      const file =
+        bucket.file(
+          storagePath
+        );
+
+
+      await file.save(
+        req.file.buffer,
+        {
+          resumable:
+            false,
+
+          metadata: {
+            contentType:
+              "application/pdf",
+
+            metadata: {
+              orderId,
+
+              uploadedBy:
+                req.user?.uid ||
+                "",
+            },
+          },
+        }
+      );
+
+
+      const uploadedAt =
+        nowIso();
+
+
+      const receipt = {
+
+        ...(
+          order.receipt ||
+          {}
+        ),
+
+        number:
+          cleanString(
+            req.body?.number,
+            200
+          ),
+
+        mark:
+          cleanString(
+            req.body?.mark,
+            200
+          ),
+
+        uploaded:
+          true,
+
+        fileName,
+
+        storagePath,
+
+        contentType:
+          "application/pdf",
+
+        uploadedAt,
+
+        uploadedBy:
+          req.user?.uid ||
+          null,
+
+        sentToCustomer:
+          false,
+      };
+
+
+      await orderRef.set(
+        {
+          receipt,
+
+          updatedAt:
+            uploadedAt,
+        },
+        {
+          merge: true,
+        }
+      );
+
+
+      return res
+        .status(200)
+        .json({
+
+          success: true,
+
+          receipt,
+        });
+    }
+  );
+
+
+  /* =========================================================
+   SHIP ORDER + SEND CUSTOMER EMAIL
+   POST /api/admin/orders/:id/ship
+   ========================================================= */
+
+export const shipOrderAndNotify =
+  asyncHandler(
+    async (req, res) => {
+
+      const db = getDB();
+
+      const orderId =
+        cleanString(
+          req.params.id,
+          200
+        );
+
+
+      const orderRef =
+        db
+          .collection(
+            ORDERS_COLLECTION
+          )
+          .doc(orderId);
+
+
+      const orderSnap =
+        await orderRef.get();
+
+
+      if (
+        !orderSnap.exists
+      ) {
+        throw new ApiError(
+          404,
+          "Order not found"
+        );
+      }
+
+
+      const order = {
+        id:
+          orderSnap.id,
+
+        ...orderSnap.data(),
+      };
+
+
+      if (
+        !isPaidOrder(order)
+      ) {
+        throw new ApiError(
+          400,
+          "Only paid orders can be shipped"
+        );
+      }
+
+
+      /*
+       * Idempotency:
+       * pressing the button again
+       * must NOT resend the email.
+       */
+
+      if (
+        order.emails
+          ?.shippedOrderSentAt
+      ) {
+
+        return res
+          .status(200)
+          .json({
+
+            success: true,
+
+            alreadySent:
+              true,
+
+            message:
+              "Order was already shipped and customer was already notified",
+          });
+      }
+
+
+      const customerEmail =
+        cleanString(
+          order.customer?.email,
+          320
+        );
+
+
+      if (!customerEmail) {
+        throw new ApiError(
+          400,
+          "Customer email is missing"
+        );
+      }
+
+
+      if (
+        !order.receipt
+          ?.uploaded ||
+        !order.receipt
+          ?.storagePath
+      ) {
+        throw new ApiError(
+          400,
+          "Upload the receipt PDF before shipping"
+        );
+      }
+
+
+      if (
+        !order.warehouse
+          ?.checklist
+          ?.packed
+      ) {
+        throw new ApiError(
+          400,
+          "Complete the warehouse checklist and mark the order as packed first"
+        );
+      }
+
+
+      const from =
+        process.env
+          .EMAIL_ORDER ||
+        process.env
+          .EMAIL_FROM;
+
+
+      if (!from) {
+        throw new ApiError(
+          500,
+          "EMAIL_ORDER / EMAIL_FROM is not configured"
+        );
+      }
+
+
+      /*
+       * Fetch private receipt PDF
+       * from Firebase Storage.
+       */
+
+      const bucket =
+        getStorage()
+          .bucket();
+
+
+      const receiptFile =
+        bucket.file(
+          order.receipt
+            .storagePath
+        );
+
+
+      const [
+        receiptBuffer,
+      ] =
+        await receiptFile
+          .download();
+
+
+      const shipping =
+        order.shipping ||
+        {};
+
+
+      const trackingText =
+        shipping.trackingNumber ||
+        shipping.parcelId ||
+        "—";
+
+
+      const trackingButton =
+        shipping.trackingUrl
+          ? `
+            <p style="
+              margin:28px 0;
+            ">
+              <a
+                href="${shipping.trackingUrl}"
+                target="_blank"
+                style="
+                  display:inline-block;
+                  background:#111;
+                  color:#fff;
+                  padding:14px 20px;
+                  text-decoration:none;
+                "
+              >
+                Track your order
+              </a>
+            </p>
+          `
+          : "";
+
+
+      await sendEmail({
+
+        from,
+
+        to:
+          customerEmail,
+
+        subject:
+          "Your Skanare order is on its way",
+
+        html: `
+          <div style="
+            font-family:Arial,sans-serif;
+            max-width:600px;
+            margin:0 auto;
+            color:#111;
+          ">
+
+            <p style="
+              letter-spacing:3px;
+              font-weight:700;
+            ">
+              SKANARE
+            </p>
+
+            <h1>
+              Your order is on the way.
+            </h1>
+
+            <p>
+              Hi ${
+                order.customer
+                  ?.firstName ||
+                ""
+              },
+            </p>
+
+            <p>
+              Your Skanare order has been prepared and shipped.
+            </p>
+
+            <p>
+              <strong>
+                Order
+              </strong>
+              <br>
+              ${
+                order.orderNumber ||
+                order.id
+              }
+            </p>
+
+            <p>
+              <strong>
+                Delivery
+              </strong>
+              <br>
+              ${
+                shipping.carrier ||
+                order.delivery ||
+                "BOX NOW"
+              }
+            </p>
+
+            <p>
+              <strong>
+                Tracking
+              </strong>
+              <br>
+              ${trackingText}
+            </p>
+
+            ${trackingButton}
+
+            <p>
+              Your receipt is attached to this email.
+            </p>
+
+            <p style="
+              margin-top:40px;
+            ">
+              Thank you for choosing Skanare.
+            </p>
+
+          </div>
+        `,
+
+        attachments: [
+          {
+            filename:
+              order.receipt
+                .fileName ||
+              `Skanare-${order.id}-receipt.pdf`,
+
+            content:
+              receiptBuffer,
+          },
+        ],
+      });
+
+
+      const shippedAt =
+        nowIso();
+
+
+      await orderRef.set(
+        {
+
+          fulfillmentStatus:
+            "shipped",
+
+          shippedAt,
+
+          shipping: {
+            ...shipping,
+
+            status:
+              "shipped",
+
+            shippedAt,
+
+            updatedAt:
+              shippedAt,
+          },
+
+          receipt: {
+            ...order.receipt,
+
+            sentToCustomer:
+              true,
+
+            sentAt:
+              shippedAt,
+          },
+
+          emails: {
+            ...(
+              order.emails ||
+              {}
+            ),
+
+            shippedOrderSentAt:
+              shippedAt,
+          },
+
+          history: [
+            ...(
+              Array.isArray(
+                order.history
+              )
+                ? order.history
+                : []
+            ),
+
+            buildOrderHistoryEntry(
+              req,
+              "order_shipped",
+              {
+                customerEmail,
+              }
+            ),
+          ],
+
+          updatedAt:
+            shippedAt,
+        },
+        {
+          merge: true,
+        }
+      );
+
+
+      return res
+        .status(200)
+        .json({
+
+          success: true,
+
+          shippedAt,
+
+          customerEmail,
+        });
+    }
+  );
