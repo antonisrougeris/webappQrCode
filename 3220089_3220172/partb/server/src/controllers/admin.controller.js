@@ -3,6 +3,7 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { randomUUID } from "crypto";
 
 import { getStorage } from "firebase-admin/storage";
 
@@ -1259,7 +1260,6 @@ export const updateOrderFulfillment = asyncHandler(
       "to_prepare",
       "preparing",
       "ready",
-      "shipped",
       "completed",
       "cancelled",
     ];
@@ -1472,34 +1472,27 @@ export const updateOrderReceipt = asyncHandler(
       throw new ApiError(404, "Order not found");
     }
 
+    const currentReceipt = snapshot.data()?.receipt || {};
+
+    /*
+     * IMPORTANT:
+     * This endpoint edits only timologio metadata.
+     * It must never wipe an already uploaded PDF.
+     */
     const receipt = {
-      ...(snapshot.data()?.receipt || {}),
-
-      number:
-        cleanString(req.body?.number, 200),
-
-      mark:
-        cleanString(req.body?.mark, 200),
-
-      fileName:
-        cleanString(req.body?.fileName, 300),
-
-      storagePath:
-        cleanString(req.body?.storagePath, 1000),
-
-      uploaded:
-        Boolean(req.body?.uploaded),
-
-      uploadedAt:
-        req.body?.uploaded
-          ? nowIso()
-          : null,
-
-      uploadedBy:
-        req.body?.uploaded
-          ? req.user?.uid || null
-          : null,
+      ...currentReceipt,
     };
+
+    if (req.body?.number !== undefined) {
+      receipt.number = cleanString(req.body.number, 200);
+    }
+
+    if (req.body?.mark !== undefined) {
+      receipt.mark = cleanString(req.body.mark, 200);
+    }
+
+    receipt.updatedAt = nowIso();
+    receipt.updatedBy = req.user?.uid || null;
 
     await ref.update({
       receipt,
@@ -2185,6 +2178,63 @@ export const archiveAdminProduct = asyncHandler(
     return res.status(200).json({
       success: true,
       id,
+    });
+  }
+);
+
+
+/* =========================================================
+   UPLOAD PRODUCT IMAGES
+   POST /api/admin/product-images
+   ========================================================= */
+
+export const uploadAdminProductImages = asyncHandler(
+  async (req, res) => {
+    const files = Array.isArray(req.files) ? req.files : [];
+
+    if (!files.length) {
+      throw new ApiError(400, "Choose at least one product image");
+    }
+
+    const bucket = getStorage().bucket();
+    const uploaded = [];
+
+    for (const file of files) {
+      const originalName = safeFileName(file.originalname || "product-image");
+      const storagePath =
+        `products/${Date.now()}-${randomUUID()}-${originalName}`;
+
+      const downloadToken = randomUUID();
+      const storageFile = bucket.file(storagePath);
+
+      await storageFile.save(file.buffer, {
+        resumable: false,
+        metadata: {
+          contentType: file.mimetype,
+          cacheControl: "public,max-age=31536000,immutable",
+          metadata: {
+            firebaseStorageDownloadTokens: downloadToken,
+            uploadedBy: req.user?.uid || "",
+          },
+        },
+      });
+
+      const url =
+        `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/` +
+        `${encodeURIComponent(storagePath)}?alt=media&token=${downloadToken}`;
+
+      uploaded.push({
+        url,
+        storagePath,
+        fileName: originalName,
+        contentType: file.mimetype,
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      urls: uploaded.map((item) => item.url),
+      images: uploaded,
     });
   }
 );
@@ -3118,6 +3168,24 @@ export const shipOrderAndNotify =
       const shipping =
         order.shipping ||
         {};
+
+      const shippingReference =
+        String(
+          shipping.trackingNumber ||
+          shipping.parcelId ||
+          ""
+        ).trim();
+
+      if (
+        !shippingReference ||
+        shippingReference === "0" ||
+        shippingReference === "—"
+      ) {
+        throw new ApiError(
+          400,
+          "Save a BOX NOW parcel ID or tracking number before shipping"
+        );
+      }
 
 
       const trackingText =

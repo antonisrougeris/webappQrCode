@@ -32,6 +32,9 @@ let currentFulfillmentOrders: any[] = [];
 let currentProducts: any[] = [];
 let currentQrCodes: any[] = [];
 
+let existingProductImages: string[] = [];
+let pendingProductImageFiles: File[] = [];
+
 /* =========================================================
    API
    ========================================================= */
@@ -493,6 +496,23 @@ async function openOrder(orderId: string) {
   const receipt = order.receipt || {};
   const shipping = order.shipping || {};
 
+  const receiptReady = Boolean(receipt.uploaded && receipt.storagePath);
+  const packedReady = Boolean(checklist.packed);
+  const shippingReference =
+    String(shipping.trackingNumber || shipping.parcelId || "").trim();
+  const shippingReady =
+    Boolean(shippingReference) &&
+    shippingReference !== "0" &&
+    shippingReference !== "—";
+  const customerAlreadyNotified = Boolean(order.emails?.shippedOrderSentAt);
+
+  const canShipAndEmail =
+    order.paymentStatus === "paid" &&
+    receiptReady &&
+    packedReady &&
+    shippingReady &&
+    !customerAlreadyNotified;
+
   setText("drawerOrderId", order.orderNumber || order.id);
 
   const content = document.getElementById("adminOrderDrawerContent");
@@ -509,7 +529,6 @@ async function openOrder(orderId: string) {
           <button class="admin-secondary-button" data-drawer-status="to_prepare">To prepare</button>
           <button class="admin-secondary-button" data-drawer-status="preparing">Preparing</button>
           <button class="admin-secondary-button" data-drawer-status="ready">Ready</button>
-          <button class="admin-secondary-button" data-drawer-status="shipped">Shipped</button>
           <button class="admin-secondary-button" data-drawer-status="completed">Completed</button>
         ` : `<span class="admin-muted">Fulfillment becomes available after payment.</span>`}
       </div>
@@ -597,8 +616,37 @@ async function openOrder(orderId: string) {
 
     <div class="admin-detail-group">
       <h3>Dispatch</h3>
-      <p class="admin-muted">The final action should mark the order shipped and send the shipping email from orders@skanare.com with tracking and the receipt PDF attached.</p>
-      <button id="shipAndEmailButton" class="admin-primary-button" type="button">Mark shipped & send customer email</button>
+      <p class="admin-muted">
+        This is the only action that should set the order to Shipped. It sends the customer email and attaches the stored receipt PDF.
+      </p>
+
+      <div class="warehouse-checklist" style="margin:12px 0">
+        <label><input type="checkbox" disabled ${packedReady ? "checked" : ""} /> <span>Order packed</span></label>
+        <label><input type="checkbox" disabled ${receiptReady ? "checked" : ""} /> <span>Receipt PDF uploaded</span></label>
+        <label><input type="checkbox" disabled ${shippingReady ? "checked" : ""} /> <span>BOX NOW parcel / tracking saved</span></label>
+      </div>
+
+      ${
+        customerAlreadyNotified
+          ? `<p class="admin-inline-status is-success">Customer shipping email already sent ${order.emails?.shippedOrderSentAt ? `on ${escapeHtml(formatDate(order.emails.shippedOrderSentAt))}` : ""}.</p>`
+          : ""
+      }
+
+      <button
+        id="shipAndEmailButton"
+        class="admin-primary-button"
+        type="button"
+        ${canShipAndEmail ? "" : "disabled"}
+      >
+        ${customerAlreadyNotified ? "Customer already notified" : "Mark shipped & send customer email"}
+      </button>
+
+      ${
+        !customerAlreadyNotified && !canShipAndEmail
+          ? `<p class="admin-muted" style="margin-top:8px">Complete the three requirements above before dispatch.</p>`
+          : ""
+      }
+
       <p id="shipStatus" class="admin-inline-status"></p>
     </div>
   `;
@@ -671,6 +719,7 @@ function bindOrderDrawerActions(order: any) {
         }),
       });
       setInlineStatus(statusEl, "Checklist saved.", "success");
+      await openOrder(order.id);
     } catch (error) {
       setInlineStatus(statusEl, errorMessage(error), "error");
     }
@@ -733,6 +782,7 @@ function bindOrderDrawerActions(order: any) {
       });
 
       setInlineStatus(statusEl, "Shipping details saved.", "success");
+      await openOrder(order.id);
     } catch (error) {
       setInlineStatus(statusEl, errorMessage(error), "error");
     }
@@ -741,7 +791,7 @@ function bindOrderDrawerActions(order: any) {
   document.getElementById("shipAndEmailButton")?.addEventListener("click", async () => {
     const statusEl = document.getElementById("shipStatus");
 
-    if (!window.confirm("Mark this order as shipped and send the customer email?")) {
+    if (!window.confirm("Send the shipping email now? The saved receipt PDF will be attached and the order will be marked as shipped.")) {
       return;
     }
 
@@ -812,12 +862,19 @@ function renderProducts() {
     .map((product: any) => {
       const variants = Array.isArray(product.variants) ? product.variants : [];
       const fallbackStock = Number(product.stock || 0);
+      const active = product.active !== false;
 
       return `
-        <article class="admin-product">
+        <article class="admin-product ${active ? "" : "is-inactive"}">
           ${product.image ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.title || "")}">` : ""}
           <div class="admin-product__body">
-            <h3>${escapeHtml(product.title || "")}</h3>
+            <h3>
+              ${escapeHtml(product.title || "")}
+              <span class="admin-product__status ${active ? "" : "admin-product__status--inactive"}">
+                ${active ? "Active" : "Archived"}
+              </span>
+            </h3>
+
             <p>${formatMoney(Number(product.price || 0))}</p>
             <div class="admin-muted">${escapeHtml(product.id || "")} · ${escapeHtml(product.category || "General")}</div>
 
@@ -825,17 +882,18 @@ function renderProducts() {
               <div class="admin-product__stock-row">
                 <span>Fallback stock</span>
                 <div class="admin-actions">
-                  <button type="button" class="admin-icon-button" data-stock-operation="remove" data-product-id="${escapeHtml(product.id)}">−</button>
+                  <button type="button" class="admin-icon-button" data-stock-operation="remove" data-product-id="${escapeHtml(product.id)}" ${active ? "" : "disabled"}>−</button>
                   <strong>${fallbackStock}</strong>
-                  <button type="button" class="admin-icon-button" data-stock-operation="add" data-product-id="${escapeHtml(product.id)}">+</button>
+                  <button type="button" class="admin-icon-button" data-stock-operation="add" data-product-id="${escapeHtml(product.id)}" ${active ? "" : "disabled"}>+</button>
                 </div>
               </div>
+
               ${variants.length ? `
                 <div class="admin-product__variant-list">
                   ${variants.map((variant: any) => `
                     <div class="admin-product__variant">
-                      <span>${escapeHtml([variant.size || "—", variant.color || "—", variant.sku || ""].filter(Boolean).join(" · "))}</span>
-                      <span>configured stock ${Number(variant.stock || 0)}</span>
+                      <span>${escapeHtml([variant.size || "No size", variant.color || "No color"].join(" · "))}</span>
+                      <span>fallback ${Number(variant.stock || 0)}</span>
                     </div>
                   `).join("")}
                 </div>
@@ -843,9 +901,13 @@ function renderProducts() {
             </div>
 
             <div class="admin-product__actions">
-              <button class="admin-primary-button" type="button" data-add-qr-stock="${escapeHtml(product.id)}">Add QR stock</button>
+              <button class="admin-primary-button" type="button" data-add-qr-stock="${escapeHtml(product.id)}" ${active ? "" : "disabled"}>Add QR stock</button>
               <button class="admin-secondary-button" type="button" data-edit-product="${escapeHtml(product.id)}">Edit</button>
-              <button class="admin-danger-button" type="button" data-archive-product="${escapeHtml(product.id)}">Archive</button>
+              ${
+                active
+                  ? `<button class="admin-danger-button" type="button" data-archive-product="${escapeHtml(product.id)}">Archive</button>`
+                  : `<button class="admin-secondary-button" type="button" disabled>Archived</button>`
+              }
             </div>
           </div>
         </article>
@@ -914,13 +976,16 @@ function openProductModal(product: any = null) {
   resetProductForm();
 
   const editing = Boolean(product);
+
   setInputValue("productEditingId", product?.id || "");
   setInputValue("productId", product?.id || "");
   setInputValue("productSlug", product?.slug || "");
   setInputValue("productTitle", product?.title || "");
   setInputValue("productShortDescription", product?.shortDescription || "");
   setInputValue("productDescription", product?.description || "");
-  setInputValue("productCategory", product?.category || "");
+
+  populateProductCategories(product?.category || "");
+
   setInputValue("productPrice", product?.price ?? "");
   setInputValue("productCurrency", product?.currency || "EUR");
   setInputValue("productStock", product?.stock ?? 0);
@@ -935,21 +1000,25 @@ function openProductModal(product: any = null) {
   setInputValue("qrTextColor", product?.qrConfig?.textColor || product?.qrConfig?.qrColor || "#000000");
   setInputValue("qrPrintSize", product?.qrConfig?.size || 3540);
 
-  setInputValue(
-    "productImages",
-    (Array.isArray(product?.images) ? product.images : []).join("\n")
-  );
+  existingProductImages = Array.isArray(product?.images) ? [...product.images] : [];
+  pendingProductImageFiles = [];
+  renderProductImagePreview();
 
   const variantRows = document.getElementById("variantRows");
   if (variantRows) variantRows.innerHTML = "";
 
   const variants = Array.isArray(product?.variants) ? product.variants : [];
-  if (variants.length) variants.forEach((variant: any) => addVariantRow(variant));
-  else addVariantRow();
+  if (variants.length) {
+    variants.forEach((variant: any) => addVariantRow(variant));
+  } else {
+    addVariantRow();
+  }
 
   const reviewRows = document.getElementById("reviewRows");
   if (reviewRows) reviewRows.innerHTML = "";
 
+  // IMPORTANT: new products start with zero reviews.
+  // Existing reviews are shown only when they already exist on that product.
   const reviews = Array.isArray(product?.reviews) ? product.reviews : [];
   reviews.forEach((review: any) => addReviewRow(review));
 
@@ -967,37 +1036,291 @@ function openProductModal(product: any = null) {
 function closeProductModal() {
   productModal?.classList.add("hidden");
   productModal?.setAttribute("aria-hidden", "true");
+  pendingProductImageFiles = [];
 }
 
 function resetProductForm() {
   productForm?.reset();
+
+  setChecked("productFeatured", false);
   setChecked("productActive", true);
   setChecked("productCustomQr", true);
+
   setInputValue("productCurrency", "EUR");
   setInputValue("productStock", 0);
   setInputValue("productLowStockThreshold", 3);
+
   setInputValue("qrTextPrint", "SCAN ME");
   setInputValue("qrTextPosition", "bottom");
   setInputValue("qrColor", "#000000");
   setInputValue("qrTextColor", "#000000");
   setInputValue("qrPrintSize", 3540);
+
+  document.getElementById("variantRows")?.replaceChildren();
+  document.getElementById("reviewRows")?.replaceChildren();
+
+  existingProductImages = [];
+  pendingProductImageFiles = [];
+  renderProductImagePreview();
+}
+
+function populateProductCategories(selectedCategory = "") {
+  const select = document.getElementById("productCategory") as HTMLSelectElement | null;
+  if (!select) return;
+
+  const categories = Array.from(
+    new Set(
+      currentProducts
+        .map((product) => String(product.category || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  if (selectedCategory && !categories.includes(selectedCategory)) {
+    categories.push(selectedCategory);
+  }
+
+  if (!categories.length) {
+    categories.push("General");
+  }
+
+  select.innerHTML = categories
+    .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(formatCategoryLabel(category))}</option>`)
+    .join("");
+
+  select.value = selectedCategory && categories.includes(selectedCategory)
+    ? selectedCategory
+    : categories[0];
+}
+
+function formatCategoryLabel(category: string) {
+  return String(category || "")
+    .replaceAll("-", " ")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function normalizeSkuPart(value: string) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function generateVariantSku(productId: string, size: string, color: string) {
+  const tokens = [
+    ...normalizeSkuPart(productId).split("-"),
+    ...normalizeSkuPart(color).split("-"),
+    ...normalizeSkuPart(size).split("-"),
+  ].filter(Boolean);
+
+  const uniqueTokens: string[] = [];
+  for (const token of tokens) {
+    if (!uniqueTokens.includes(token)) uniqueTokens.push(token);
+  }
+
+  return uniqueTokens.join("-");
+}
+
+function updateAutoSkuForRow(row: HTMLElement) {
+  if (row.dataset.autoSku !== "true") return;
+
+  const skuInput = row.querySelector<HTMLInputElement>("[data-variant-sku]");
+  const preview = row.querySelector<HTMLElement>("[data-variant-sku-preview]");
+  if (!skuInput || !preview) return;
+
+  const sku = generateVariantSku(
+    inputValue("productId"),
+    childInputValue(row, "[data-variant-size]"),
+    childInputValue(row, "[data-variant-color]")
+  );
+
+  skuInput.value = sku;
+  preview.textContent = sku || "Generated after size / color is selected";
+}
+
+function updateAllAutoSkus() {
+  document
+    .querySelectorAll<HTMLElement>("#variantRows .dynamic-row")
+    .forEach(updateAutoSkuForRow);
 }
 
 function addVariantRow(variant: any = {}) {
   const container = document.getElementById("variantRows");
   if (!container) return;
 
+  const hasExistingSku = Boolean(String(variant.sku || "").trim());
+  const size = String(variant.size || "");
+
+  const knownSizes = ["", "XS", "S", "M", "L", "XL", "2XL"];
+  if (size && !knownSizes.includes(size)) knownSizes.push(size);
+
   const row = document.createElement("div");
   row.className = "dynamic-row";
+  row.dataset.autoSku = hasExistingSku ? "false" : "true";
+
   row.innerHTML = `
-    <label class="admin-field"><span>SKU</span><input data-variant-sku type="text" value="${escapeHtml(variant.sku || "")}" required /></label>
-    <label class="admin-field"><span>Size</span><input data-variant-size type="text" value="${escapeHtml(variant.size || "")}" /></label>
-    <label class="admin-field"><span>Color</span><input data-variant-color type="text" value="${escapeHtml(variant.color || "")}" /></label>
-    <label class="admin-field"><span>Stock</span><input data-variant-stock type="number" min="0" step="1" value="${Number(variant.stock || 0)}" /></label>
+    <label class="admin-field">
+      <span>Size</span>
+      <select data-variant-size>
+        ${knownSizes.map((value) => `
+          <option value="${escapeHtml(value)}" ${value === size ? "selected" : ""}>
+            ${value || "No size / one size"}
+          </option>
+        `).join("")}
+      </select>
+    </label>
+
+    <label class="admin-field">
+      <span>Color</span>
+      <input data-variant-color type="text" value="${escapeHtml(variant.color || "")}" placeholder="Black" />
+    </label>
+
+    <label class="admin-field">
+      <span>Fallback stock</span>
+      <input data-variant-stock type="number" min="0" step="1" value="${Number(variant.stock || 0)}" />
+    </label>
+
+    <label class="admin-field">
+      <span>Internal match code</span>
+      <input data-variant-sku type="hidden" value="${escapeHtml(variant.sku || "")}" />
+      <div class="variant-sku-preview" data-variant-sku-preview>
+        ${escapeHtml(variant.sku || "Generated automatically")}
+      </div>
+    </label>
+
     <button class="admin-danger-button" data-remove-variant type="button">Remove</button>
   `;
+
   container.appendChild(row);
+
+  row.querySelector("[data-variant-size]")?.addEventListener("change", () => updateAutoSkuForRow(row));
+  row.querySelector("[data-variant-color]")?.addEventListener("input", () => updateAutoSkuForRow(row));
+
+  updateAutoSkuForRow(row);
 }
+
+function isAllowedProductImage(file: File) {
+  return ["image/png", "image/jpeg", "image/webp"].includes(file.type);
+}
+
+function addProductImageFiles(files: File[]) {
+  const valid = files.filter(isAllowedProductImage);
+
+  if (valid.length !== files.length) {
+    setInlineStatus(
+      document.getElementById("productFormStatus"),
+      "Only PNG, JPG and WEBP images are allowed.",
+      "error"
+    );
+  }
+
+  pendingProductImageFiles.push(...valid);
+  renderProductImagePreview();
+}
+
+function renderProductImagePreview() {
+  const preview = document.getElementById("productImagePreview");
+  if (!preview) return;
+
+  const existingHtml = existingProductImages.map((url, index) => `
+    <div class="product-image-preview__item">
+      <img src="${escapeHtml(url)}" alt="Product image" />
+      <button type="button" data-remove-existing-image="${index}" aria-label="Remove image">×</button>
+    </div>
+  `);
+
+  const pendingHtml = pendingProductImageFiles.map((file, index) => {
+    const localUrl = URL.createObjectURL(file);
+
+    return `
+      <div class="product-image-preview__item">
+        <img src="${escapeHtml(localUrl)}" alt="${escapeHtml(file.name)}" />
+        <button type="button" data-remove-pending-image="${index}" aria-label="Remove image">×</button>
+      </div>
+    `;
+  });
+
+  preview.innerHTML = [...existingHtml, ...pendingHtml].join("");
+}
+
+async function uploadPendingProductImages(): Promise<string[]> {
+  if (!pendingProductImageFiles.length) return [];
+
+  const formData = new FormData();
+
+  pendingProductImageFiles.forEach((file) => {
+    formData.append("images", file);
+  });
+
+  const response = await adminApi("/product-images", {
+    method: "POST",
+    body: formData,
+  });
+
+  return Array.isArray(response?.urls) ? response.urls : [];
+}
+
+const productImageDropzone = document.getElementById("productImageDropzone");
+const productImageFiles = document.getElementById("productImageFiles") as HTMLInputElement | null;
+
+productImageDropzone?.addEventListener("click", () => {
+  productImageFiles?.click();
+});
+
+productImageDropzone?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    productImageFiles?.click();
+  }
+});
+
+productImageDropzone?.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  productImageDropzone.classList.add("is-dragging");
+});
+
+productImageDropzone?.addEventListener("dragleave", () => {
+  productImageDropzone.classList.remove("is-dragging");
+});
+
+productImageDropzone?.addEventListener("drop", (event) => {
+  event.preventDefault();
+  productImageDropzone.classList.remove("is-dragging");
+
+  addProductImageFiles(Array.from(event.dataTransfer?.files || []));
+});
+
+productImageFiles?.addEventListener("change", () => {
+  addProductImageFiles(Array.from(productImageFiles.files || []));
+  productImageFiles.value = "";
+});
+
+document.getElementById("productImagePreview")?.addEventListener("click", (event) => {
+  const target = event.target as HTMLElement;
+
+  const existingButton = target.closest<HTMLElement>("[data-remove-existing-image]");
+  if (existingButton) {
+    const index = Number(existingButton.dataset.removeExistingImage);
+    if (Number.isInteger(index)) {
+      existingProductImages.splice(index, 1);
+      renderProductImagePreview();
+    }
+    return;
+  }
+
+  const pendingButton = target.closest<HTMLElement>("[data-remove-pending-image]");
+  if (pendingButton) {
+    const index = Number(pendingButton.dataset.removePendingImage);
+    if (Number.isInteger(index)) {
+      pendingProductImageFiles.splice(index, 1);
+      renderProductImagePreview();
+    }
+  }
+});
+
+document.getElementById("productId")?.addEventListener("input", updateAllAutoSkus);
 
 function addReviewRow(review: any = {}) {
   const container = document.getElementById("reviewRows");
@@ -1019,16 +1342,39 @@ productForm?.addEventListener("submit", async (event) => {
 
   const statusEl = document.getElementById("productFormStatus");
   const editingId = inputValue("productEditingId");
-  const payload = collectProductPayload();
 
-  if (!payload.id || !payload.slug || !payload.title) {
+  if (!inputValue("productId") || !inputValue("productSlug") || !inputValue("productTitle")) {
     setInlineStatus(statusEl, "Product ID, slug and title are required.", "error");
     return;
   }
 
-  setInlineStatus(statusEl, editingId ? "Saving product..." : "Creating product...");
+  setInlineStatus(
+    statusEl,
+    pendingProductImageFiles.length
+      ? "Uploading product images..."
+      : editingId
+      ? "Saving product..."
+      : "Creating product..."
+  );
+
+  const submitButton = document.getElementById("saveProductButton") as HTMLButtonElement | null;
+  if (submitButton) submitButton.disabled = true;
 
   try {
+    const uploadedImages = await uploadPendingProductImages();
+    const payload = collectProductPayload();
+
+    payload.images = [
+      ...existingProductImages,
+      ...uploadedImages,
+    ];
+
+    // New products never receive synthetic/default reviews.
+    // Reviews are included only if the admin explicitly added them.
+    if (!editingId && !payload.reviews.length) {
+      payload.reviews = [];
+    }
+
     if (editingId) {
       await adminApi(`/products/${encodeURIComponent(editingId)}`, {
         method: "PATCH",
@@ -1042,10 +1388,16 @@ productForm?.addEventListener("submit", async (event) => {
     }
 
     setInlineStatus(statusEl, "Product saved.", "success");
+
+    pendingProductImageFiles = [];
+    existingProductImages = payload.images;
+
     await loadProducts();
     setTimeout(closeProductModal, 350);
   } catch (error) {
     setInlineStatus(statusEl, errorMessage(error), "error");
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 });
 
@@ -1071,11 +1423,6 @@ function collectProductPayload() {
     }))
     .filter((review) => review.name || review.comment);
 
-  const images = inputValue("productImages")
-    .split("\n")
-    .map((value) => value.trim())
-    .filter(Boolean);
-
   return {
     id: inputValue("productId"),
     slug: inputValue("productSlug"),
@@ -1097,7 +1444,7 @@ function collectProductPayload() {
       textColor: inputValue("qrTextColor") || "#000000",
       size: Number(inputValue("qrPrintSize") || 3540),
     },
-    images,
+    images: [...existingProductImages],
     variants,
     reviews,
   };
@@ -1244,8 +1591,8 @@ stockForm?.addEventListener("submit", async (event) => {
     return;
   }
 
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
-    setInlineStatus(statusEl, "Quantity must be between 1 and 1000.", "error");
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+    setInlineStatus(statusEl, "Quantity must be between 1 and 100.", "error");
     return;
   }
 

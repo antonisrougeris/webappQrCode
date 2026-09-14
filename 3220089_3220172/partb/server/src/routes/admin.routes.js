@@ -23,6 +23,7 @@ import {
   updateAdminProduct,
   updateAdminProductStock,
   archiveAdminProduct,
+  uploadAdminProductImages,
 
   generateAdminQrStock,
 
@@ -30,6 +31,7 @@ import {
   getAdminQrCodes,
   getAdminPayments,
 } from "../controllers/admin.controller.js";
+
 import {
   requireAuth,
 } from "../middleware/auth.js";
@@ -41,11 +43,12 @@ import {
 
 const router = Router();
 
+
 const receiptUpload = multer({
   storage: multer.memoryStorage(),
 
   limits: {
-    fileSize: 8 * 1024 * 1024, // 8 MB
+    fileSize: 8 * 1024 * 1024,
   },
 
   fileFilter: (_req, file, callback) => {
@@ -58,6 +61,33 @@ const receiptUpload = multer({
     callback(null, true);
   },
 });
+
+
+const productImageUpload = multer({
+  storage: multer.memoryStorage(),
+
+  limits: {
+    fileSize: 8 * 1024 * 1024,
+    files: 8,
+  },
+
+  fileFilter: (_req, file, callback) => {
+    const allowed = [
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+    ];
+
+    if (!allowed.includes(file.mimetype)) {
+      return callback(
+        new Error("Only PNG, JPG and WEBP product images are allowed")
+      );
+    }
+
+    callback(null, true);
+  },
+});
+
 
 router.use(
   requireAuth,
@@ -126,14 +156,9 @@ router.patch(
 
 router.post(
   "/orders/:id/receipt-file",
-
-  receiptUpload.single(
-    "file"
-  ),
-
+  receiptUpload.single("file"),
   uploadOrderReceiptPdf
 );
-
 
 router.post(
   "/orders/:id/ship",
@@ -148,6 +173,12 @@ router.post(
 router.get(
   "/products",
   getAdminProducts
+);
+
+router.post(
+  "/product-images",
+  productImageUpload.array("images", 8),
+  uploadAdminProductImages
 );
 
 router.post(
@@ -170,6 +201,7 @@ router.post(
   archiveAdminProduct
 );
 
+
 /* =========================
    QR INVENTORY
    ========================= */
@@ -178,6 +210,7 @@ router.post(
   "/inventory/generate",
   generateAdminQrStock
 );
+
 
 /* =========================
    CUSTOMERS
