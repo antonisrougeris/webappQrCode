@@ -281,27 +281,31 @@ function openView(
 
 
   const titles:
-    Record<string, string> = {
+  Record<string, string> = {
 
-      dashboard:
-        "Dashboard",
+    dashboard:
+      "Dashboard",
 
-      orders:
-        "Orders",
+    fulfillment:
+      "Fulfillment",
 
-      products:
-        "Products",
+    orders:
+      "Orders",
 
-      customers:
-        "Customers",
+    products:
+      "Products",
 
-      qr:
-        "QR Codes",
+    customers:
+      "Customers",
 
-      payments:
-        "Payments",
+    qr:
+      "QR Codes",
 
-    };
+    payments:
+      "Payments",
+
+  };
+  
 
 
   const title =
@@ -379,6 +383,10 @@ async function loadView(
       await loadDashboard();
       break;
 
+    case "fulfillment":
+      await loadFulfillment();
+      break;
+
     case "orders":
       await loadOrders();
       break;
@@ -398,6 +406,245 @@ async function loadView(
     case "payments":
       await loadPayments();
       break;
+
+  }
+
+}
+
+/* ==============================================
+   FULFILLMENT
+   ============================================== */
+
+async function loadFulfillment() {
+
+  try {
+
+    const data =
+      await adminApi(
+        "/fulfillment"
+      );
+
+    console.log(
+      "FULFILLMENT RESPONSE:",
+      data
+    );
+
+    const orders =
+      data.orders || [];
+
+    const summary =
+      data.summary || {};
+
+
+    /*
+     * Counters
+     */
+
+    setText(
+      "fulfillmentToPrepare",
+      String(
+        summary.toPrepare ??
+        orders.filter(
+          (order: any) =>
+            (
+              order.fulfillmentStatus ||
+              "to_prepare"
+            ) === "to_prepare"
+        ).length
+      )
+    );
+
+
+    setText(
+      "fulfillmentPreparing",
+      String(
+        summary.preparing ??
+        orders.filter(
+          (order: any) =>
+            order.fulfillmentStatus ===
+            "preparing"
+        ).length
+      )
+    );
+
+
+    setText(
+      "fulfillmentReady",
+      String(
+        summary.ready ??
+        orders.filter(
+          (order: any) =>
+            order.fulfillmentStatus ===
+            "ready"
+        ).length
+      )
+    );
+
+
+    setText(
+      "fulfillmentShipped",
+      String(
+        summary.shipped ??
+        orders.filter(
+          (order: any) =>
+            order.fulfillmentStatus ===
+            "shipped"
+        ).length
+      )
+    );
+
+
+    /*
+     * Orders container.
+     *
+     * If the HTML already contains
+     * fulfillmentOrders, render the
+     * actual warehouse orders.
+     */
+
+    const container =
+      document.getElementById(
+        "fulfillmentOrders"
+      );
+
+    if (!container) {
+      return;
+    }
+
+
+    if (!orders.length) {
+
+      container.innerHTML = `
+        <div class="admin-empty-state">
+          No paid orders waiting for fulfillment.
+        </div>
+      `;
+
+      return;
+    }
+
+
+    container.innerHTML =
+      orders
+        .map(
+          (order: any) => {
+
+            const status =
+              order.fulfillmentStatus ||
+              "to_prepare";
+
+            const customerName =
+              `${order.customer?.firstName || ""}
+               ${order.customer?.lastName || ""}`
+                .trim();
+
+            return `
+
+              <article
+                class="admin-fulfillment-order"
+              >
+
+                <div>
+
+                  <span
+                    class="admin-badge admin-badge--${escapeHtml(
+                      status
+                    )}"
+                  >
+                    ${escapeHtml(status)}
+                  </span>
+
+                  <h3>
+                    ${escapeHtml(
+                      order.orderNumber ||
+                      order.id
+                    )}
+                  </h3>
+
+                  <p>
+                    ${escapeHtml(
+                      customerName ||
+                      order.customer?.email ||
+                      ""
+                    )}
+                  </p>
+
+                </div>
+
+
+                <div>
+
+                  <strong>
+                    ${
+                      order.items?.length || 0
+                    }
+                    item(s)
+                  </strong>
+
+                  <p>
+                    ${formatMoney(
+                      Number(
+                        order.total || 0
+                      )
+                    )}
+                  </p>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  class="admin-text-button"
+                  data-fulfillment-order-id="${escapeHtml(
+                    order.id
+                  )}"
+                >
+                  Process order
+                </button>
+
+              </article>
+
+            `;
+
+          }
+        )
+        .join("");
+
+
+    container
+      .querySelectorAll<HTMLButtonElement>(
+        "[data-fulfillment-order-id]"
+      )
+      .forEach(
+        (button) => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const orderId =
+                button.dataset
+                  .fulfillmentOrderId;
+
+              if (orderId) {
+                void openOrder(
+                  orderId
+                );
+              }
+
+            }
+          );
+
+        }
+      );
+
+
+  } catch (error) {
+
+    console.error(
+      "Failed to load fulfillment:",
+      error
+    );
 
   }
 

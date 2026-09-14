@@ -392,18 +392,39 @@ const availableDocs = availableQrSnap.docs.filter(
     }
 
     tx.update(ref, {
-      status: "paid",
-      paymentStatus: "paid",
+  status: "paid",
+  paymentStatus: "paid",
 
-      "payment.transactionId": transactionId,
-      "payment.statusId": rawStatusId || null,
-      "payment.amount": amount || expectedAmount,
-      "payment.rawWebhook": payload,
-      "payment.paidAt": paidAt,
-      "payment.updatedAt": paidAt,
+  // ============================
+  // FULFILLMENT
+  // ============================
 
-      updatedAt: paidAt,
-    });
+  fulfillmentStatus: "to_prepare",
+
+  "warehouse.checklist.productPicked": false,
+  "warehouse.checklist.sizeVerified": false,
+  "warehouse.checklist.qrAttached": false,
+  "warehouse.checklist.qrTested": false,
+  "warehouse.checklist.packed": false,
+
+  "receipt.uploaded": false,
+  "receipt.sentToCustomer": false,
+
+  "shipping.status": "pending",
+
+  // ============================
+  // PAYMENT
+  // ============================
+
+  "payment.transactionId": transactionId,
+  "payment.statusId": rawStatusId || null,
+  "payment.amount": amount || expectedAmount,
+  "payment.rawWebhook": payload,
+  "payment.paidAt": paidAt,
+  "payment.updatedAt": paidAt,
+
+  updatedAt: paidAt,
+});
 
     for (const assignment of qrAssignments) {
   const item = assignment.item;
