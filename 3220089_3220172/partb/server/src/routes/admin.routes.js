@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 
 import {
   seedProducts,
@@ -14,6 +15,8 @@ import {
   updateOrderChecklist,
   updateOrderShipping,
   updateOrderReceipt,
+  uploadOrderReceiptPdf,
+  shipOrderAndNotify,
 
   getAdminProducts,
   createAdminProduct,
@@ -21,11 +24,12 @@ import {
   updateAdminProductStock,
   archiveAdminProduct,
 
+  generateAdminQrStock,
+
   getAdminCustomers,
   getAdminQrCodes,
   getAdminPayments,
 } from "../controllers/admin.controller.js";
-
 import {
   requireAuth,
 } from "../middleware/auth.js";
@@ -37,6 +41,23 @@ import {
 
 const router = Router();
 
+const receiptUpload = multer({
+  storage: multer.memoryStorage(),
+
+  limits: {
+    fileSize: 8 * 1024 * 1024, // 8 MB
+  },
+
+  fileFilter: (_req, file, callback) => {
+    if (file.mimetype !== "application/pdf") {
+      return callback(
+        new Error("Only PDF receipts are allowed")
+      );
+    }
+
+    callback(null, true);
+  },
+});
 
 router.use(
   requireAuth,

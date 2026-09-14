@@ -1,24 +1,51 @@
+
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
+import { getStorage } from "firebase-admin/storage";
+
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ok } from "../utils/response.js";
 import { ApiError } from "../utils/apiError.js";
+
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
+
 import {
   createId,
   nowIso,
 } from "../utils/ids.js";
 
 import {
-  createId,
-  nowIso,
-} from "../utils/ids.js";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+  reserveUniqueQrShortId,
+  writeQrShortIdReservation,
+} from "../services/qr-id.service.js";
+
+import {
+  sendEmail,
+} from "../services/email.service.js";
+
+import {
+  uploadQrToStorage,
+} from "../utils/uploadQrToStorage.js";
+
+import {
+  generatePrintQrImage,
+} from "../utils/generatePrintQrImage.js";
+
+import {
+  generatePrintSheet,
+} from "../utils/generatePrintSheet.js";
+
+
+
+const __filename =
+  fileURLToPath(import.meta.url);
+
+const __dirname =
+  dirname(__filename);
 
 
 /* =========================================================
