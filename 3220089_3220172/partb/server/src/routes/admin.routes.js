@@ -2,11 +2,25 @@ import { Router } from "express";
 
 import {
   seedProducts,
+
   adminMe,
   getAdminDashboard,
+
   getAdminOrders,
   getAdminOrder,
+
+  getAdminFulfillment,
+  updateOrderFulfillment,
+  updateOrderChecklist,
+  updateOrderShipping,
+  updateOrderReceipt,
+
   getAdminProducts,
+  createAdminProduct,
+  updateAdminProduct,
+  updateAdminProductStock,
+  archiveAdminProduct,
+
   getAdminCustomers,
   getAdminQrCodes,
   getAdminPayments,
@@ -21,17 +35,8 @@ import {
 } from "../middleware/requireAdmin.js";
 
 
-const router =
-  Router();
+const router = Router();
 
-
-/*
- * Everything below /api/admin
- * requires:
- *
- * 1. valid Firebase user
- * 2. role === admin
- */
 
 router.use(
   requireAuth,
@@ -39,11 +44,14 @@ router.use(
 );
 
 
+/* =========================
+   ADMIN
+   ========================= */
+
 router.get(
   "/me",
   adminMe
 );
-
 
 router.get(
   "/dashboard",
@@ -51,11 +59,14 @@ router.get(
 );
 
 
+/* =========================
+   ORDERS
+   ========================= */
+
 router.get(
   "/orders",
   getAdminOrders
 );
-
 
 router.get(
   "/orders/:id",
@@ -63,11 +74,69 @@ router.get(
 );
 
 
+/* =========================
+   FULFILLMENT
+   ========================= */
+
+router.get(
+  "/fulfillment",
+  getAdminFulfillment
+);
+
+router.patch(
+  "/orders/:id/fulfillment",
+  updateOrderFulfillment
+);
+
+router.patch(
+  "/orders/:id/checklist",
+  updateOrderChecklist
+);
+
+router.patch(
+  "/orders/:id/shipping",
+  updateOrderShipping
+);
+
+router.patch(
+  "/orders/:id/receipt",
+  updateOrderReceipt
+);
+
+
+/* =========================
+   PRODUCTS
+   ========================= */
+
 router.get(
   "/products",
   getAdminProducts
 );
 
+router.post(
+  "/products",
+  createAdminProduct
+);
+
+router.patch(
+  "/products/:id",
+  updateAdminProduct
+);
+
+router.patch(
+  "/products/:id/stock",
+  updateAdminProductStock
+);
+
+router.post(
+  "/products/:id/archive",
+  archiveAdminProduct
+);
+
+
+/* =========================
+   CUSTOMERS
+   ========================= */
 
 router.get(
   "/customers",
@@ -75,11 +144,19 @@ router.get(
 );
 
 
+/* =========================
+   QR CODES
+   ========================= */
+
 router.get(
   "/qr-codes",
   getAdminQrCodes
 );
 
+
+/* =========================
+   PAYMENTS
+   ========================= */
 
 router.get(
   "/payments",
@@ -87,11 +164,10 @@ router.get(
 );
 
 
-/*
- * Existing product seed.
- *
- * Keep it protected by admin.
- */
+/* =========================
+   DEVELOPMENT / SEED
+   ========================= */
+
 router.post(
   "/seed-products",
   seedProducts

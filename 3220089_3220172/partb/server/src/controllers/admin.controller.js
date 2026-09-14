@@ -915,3 +915,783 @@ export const getAdminPayments =
         });
     }
   );
+
+
+
+
+/* =========================================================
+   ADMIN FULFILLMENT / PRODUCT MANAGEMENT
+   ========================================================= */
+
+function cleanString(value, maxLength = 500) {
+  return String(value ?? "").trim().slice(0, maxLength);
+}
+
+function cleanNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function cleanInteger(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isInteger(number) ? number : fallback;
+}
+
+function fulfillmentStatus(order) {
+  if (!isPaidOrder(order)) return "not_paid";
+
+  const status = String(
+    order.fulfillmentStatus || "to_prepare"
+  ).toLowerCase();
+
+  const allowed = [
+    "to_prepare",
+    "preparing",
+    "ready",
+    "shipped",
+    "completed",
+    "cancelled",
+  ];
+
+  return allowed.includes(status)
+    ? status
+    : "to_prepare";
+}
+
+function buildOrderHistoryEntry(req, action, details = {}) {
+  return {
+    action,
+    at: nowIso(),
+    adminUid: req.user?.uid || null,
+    adminEmail: req.user?.email || null,
+    ...details,
+  };
+}
+
+
+/* =========================================================
+   FULFILLMENT LIST
+   GET /api/admin/fulfillment
+   ========================================================= */
+
+export const getAdminFulfillment = asyncHandler(
+  async (_req, res) => {
+    const db = getDB();
+
+    const snapshot = await db
+      .collection(ORDERS_COLLECTION)
+      .limit(500)
+      .get();
+
+    const paidOrders = sortNewestFirst(
+      snapshotToDocs(snapshot).filter(isPaidOrder)
+    ).map((order) => ({
+      ...normalizeOrderForAdmin(order),
+      fulfillmentStatus: fulfillmentStatus(order),
+      receipt: order.receipt || null,
+      warehouse: order.warehouse || {},
+      shipping: order.shipping || {},
+    }));
+
+    return res.status(200).json({
+      orders: paidOrders,
+      count: paidOrders.length,
+
+      summary: {
+        toPrepare: paidOrders.filter(
+          (order) => order.fulfillmentStatus === "to_prepare"
+        ).length,
+
+        preparing: paidOrders.filter(
+          (order) => order.fulfillmentStatus === "preparing"
+        ).length,
+
+        ready: paidOrders.filter(
+          (order) => order.fulfillmentStatus === "ready"
+        ).length,
+
+        shipped: paidOrders.filter(
+          (order) => order.fulfillmentStatus === "shipped"
+        ).length,
+      },
+    });
+  }
+);
+
+
+/* =========================================================
+   UPDATE FULFILLMENT STATUS
+   PATCH /api/admin/orders/:id/fulfillment
+   ========================================================= */
+
+export const updateOrderFulfillment = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+
+    const orderId = cleanString(req.params.id, 200);
+    const status = cleanString(req.body?.status, 50).toLowerCase();
+
+    const allowedStatuses = [
+      "to_prepare",
+      "preparing",
+      "ready",
+      "shipped",
+      "completed",
+      "cancelled",
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      throw new ApiError(400, "Invalid fulfillment status");
+    }
+
+    const ref = db
+      .collection(ORDERS_COLLECTION)
+      .doc(orderId);
+
+    const snapshot = await ref.get();
+
+    if (!snapshot.exists) {
+      throw new ApiError(404, "Order not found");
+    }
+
+    const order = {
+      id: snapshot.id,
+      ...snapshot.data(),
+    };
+
+    if (!isPaidOrder(order)) {
+      throw new ApiError(
+        400,
+        "Only paid orders can enter fulfillment"
+      );
+    }
+
+    const previousStatus = fulfillmentStatus(order);
+
+    const update = {
+      fulfillmentStatus: status,
+      updatedAt: nowIso(),
+
+      history: [
+        ...(Array.isArray(order.history) ? order.history : []),
+
+        buildOrderHistoryEntry(
+          req,
+          "fulfillment_status_changed",
+          {
+            from: previousStatus,
+            to: status,
+          }
+        ),
+      ],
+    };
+
+    if (status === "preparing" && !order.processingStartedAt) {
+      update.processingStartedAt = nowIso();
+    }
+
+    if (status === "ready") {
+      update.readyAt = nowIso();
+    }
+
+    if (status === "shipped") {
+      update.shippedAt = nowIso();
+    }
+
+    if (status === "completed") {
+      update.completedAt = nowIso();
+    }
+
+    await ref.update(update);
+
+    const updated = await ref.get();
+
+    return res.status(200).json({
+      success: true,
+      order: normalizeOrderForAdmin({
+        id: updated.id,
+        ...updated.data(),
+      }),
+    });
+  }
+);
+
+
+/* =========================================================
+   WAREHOUSE CHECKLIST
+   PATCH /api/admin/orders/:id/checklist
+   ========================================================= */
+
+export const updateOrderChecklist = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+
+    const orderId = cleanString(req.params.id, 200);
+
+    const checklist = {
+      productPicked: Boolean(req.body?.productPicked),
+      sizeVerified: Boolean(req.body?.sizeVerified),
+      qrAttached: Boolean(req.body?.qrAttached),
+      qrTested: Boolean(req.body?.qrTested),
+      packed: Boolean(req.body?.packed),
+    };
+
+    const ref = db
+      .collection(ORDERS_COLLECTION)
+      .doc(orderId);
+
+    const snapshot = await ref.get();
+
+    if (!snapshot.exists) {
+      throw new ApiError(404, "Order not found");
+    }
+
+    await ref.update({
+      warehouse: {
+        ...(snapshot.data()?.warehouse || {}),
+        checklist,
+        updatedAt: nowIso(),
+        updatedBy: req.user?.uid || null,
+      },
+
+      updatedAt: nowIso(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      checklist,
+    });
+  }
+);
+
+
+/* =========================================================
+   SHIPPING INFORMATION
+   PATCH /api/admin/orders/:id/shipping
+   ========================================================= */
+
+export const updateOrderShipping = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+
+    const orderId = cleanString(req.params.id, 200);
+
+    const ref = db
+      .collection(ORDERS_COLLECTION)
+      .doc(orderId);
+
+    const snapshot = await ref.get();
+
+    if (!snapshot.exists) {
+      throw new ApiError(404, "Order not found");
+    }
+
+    const current = snapshot.data()?.shipping || {};
+
+    const shipping = {
+      ...current,
+
+      carrier:
+        cleanString(req.body?.carrier, 100) ||
+        current.carrier ||
+        "BOX NOW",
+
+      parcelId:
+        cleanString(req.body?.parcelId, 200),
+
+      trackingNumber:
+        cleanString(req.body?.trackingNumber, 200),
+
+      trackingUrl:
+        cleanString(req.body?.trackingUrl, 1000),
+
+      lockerId:
+        cleanString(req.body?.lockerId, 200),
+
+      lockerName:
+        cleanString(req.body?.lockerName, 300),
+
+      updatedAt: nowIso(),
+    };
+
+    await ref.update({
+      shipping,
+      updatedAt: nowIso(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      shipping,
+    });
+  }
+);
+
+
+/* =========================================================
+   RECEIPT METADATA
+   PATCH /api/admin/orders/:id/receipt
+   ========================================================= */
+
+export const updateOrderReceipt = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+
+    const orderId = cleanString(req.params.id, 200);
+
+    const ref = db
+      .collection(ORDERS_COLLECTION)
+      .doc(orderId);
+
+    const snapshot = await ref.get();
+
+    if (!snapshot.exists) {
+      throw new ApiError(404, "Order not found");
+    }
+
+    const receipt = {
+      ...(snapshot.data()?.receipt || {}),
+
+      number:
+        cleanString(req.body?.number, 200),
+
+      mark:
+        cleanString(req.body?.mark, 200),
+
+      fileName:
+        cleanString(req.body?.fileName, 300),
+
+      storagePath:
+        cleanString(req.body?.storagePath, 1000),
+
+      uploaded:
+        Boolean(req.body?.uploaded),
+
+      uploadedAt:
+        req.body?.uploaded
+          ? nowIso()
+          : null,
+
+      uploadedBy:
+        req.body?.uploaded
+          ? req.user?.uid || null
+          : null,
+    };
+
+    await ref.update({
+      receipt,
+      updatedAt: nowIso(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      receipt,
+    });
+  }
+);
+
+
+/* =========================================================
+   CREATE PRODUCT
+   POST /api/admin/products
+   ========================================================= */
+
+export const createAdminProduct = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+
+    const title = cleanString(req.body?.title, 200);
+
+    if (!title) {
+      throw new ApiError(400, "Product title is required");
+    }
+
+    const requestedId = cleanString(
+      req.body?.id || req.body?.slug || title,
+      200
+    );
+
+    const id = normalizeProductId({
+      id: requestedId,
+    });
+
+    if (!id) {
+      throw new ApiError(400, "Invalid product ID");
+    }
+
+    const ref = db
+      .collection(PRODUCTS_COLLECTION)
+      .doc(id);
+
+    const existing = await ref.get();
+
+    if (existing.exists) {
+      throw new ApiError(
+        409,
+        "A product with this ID already exists"
+      );
+    }
+
+    const price = cleanNumber(req.body?.price);
+
+    if (price < 0) {
+      throw new ApiError(400, "Price cannot be negative");
+    }
+
+    const stock = cleanInteger(req.body?.stock);
+
+    if (stock < 0) {
+      throw new ApiError(400, "Stock cannot be negative");
+    }
+
+    const images = Array.isArray(req.body?.images)
+      ? req.body.images
+          .map((image) => cleanString(image, 1500))
+          .filter(Boolean)
+          .slice(0, 20)
+      : [];
+
+    const variants = Array.isArray(req.body?.variants)
+      ? req.body.variants
+      : [];
+
+    const product = {
+      id,
+
+      slug:
+        normalizeProductId({
+          id: req.body?.slug || id,
+        }) || id,
+
+      title,
+
+      shortDescription:
+        cleanString(req.body?.shortDescription, 500),
+
+      description:
+        cleanString(req.body?.description, 10000),
+
+      category:
+        cleanString(req.body?.category, 200) ||
+        "General",
+
+      price,
+
+      currency:
+        cleanString(req.body?.currency, 10) ||
+        "EUR",
+
+      stock,
+
+      variants,
+
+      images,
+
+      active:
+        req.body?.active !== false,
+
+      featured:
+        Boolean(req.body?.featured),
+
+      customQr:
+        Boolean(req.body?.customQr),
+
+      sku:
+        cleanString(req.body?.sku, 200),
+
+      lowStockThreshold:
+        Math.max(
+          0,
+          cleanInteger(req.body?.lowStockThreshold, 3)
+        ),
+
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+
+    await ref.set(product);
+
+    return res.status(201).json({
+      success: true,
+      product: {
+        ...product,
+        image: images[0] || "",
+      },
+    });
+  }
+);
+
+
+/* =========================================================
+   UPDATE PRODUCT
+   PATCH /api/admin/products/:id
+   ========================================================= */
+
+export const updateAdminProduct = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+
+    const id = cleanString(req.params.id, 200);
+
+    const ref = db
+      .collection(PRODUCTS_COLLECTION)
+      .doc(id);
+
+    const snapshot = await ref.get();
+
+    if (!snapshot.exists) {
+      throw new ApiError(404, "Product not found");
+    }
+
+    const allowedFields = [
+      "title",
+      "shortDescription",
+      "description",
+      "category",
+      "currency",
+      "sku",
+    ];
+
+    const update = {};
+
+    for (const field of allowedFields) {
+      if (req.body?.[field] !== undefined) {
+        update[field] = cleanString(
+          req.body[field],
+          field === "description" ? 10000 : 500
+        );
+      }
+    }
+
+    if (req.body?.price !== undefined) {
+      const price = cleanNumber(req.body.price);
+
+      if (price < 0) {
+        throw new ApiError(
+          400,
+          "Price cannot be negative"
+        );
+      }
+
+      update.price = price;
+    }
+
+    if (req.body?.active !== undefined) {
+      update.active = Boolean(req.body.active);
+    }
+
+    if (req.body?.featured !== undefined) {
+      update.featured = Boolean(
+        req.body.featured
+      );
+    }
+
+    if (req.body?.customQr !== undefined) {
+      update.customQr = Boolean(
+        req.body.customQr
+      );
+    }
+
+    if (Array.isArray(req.body?.images)) {
+      update.images = req.body.images
+        .map((image) =>
+          cleanString(image, 1500)
+        )
+        .filter(Boolean)
+        .slice(0, 20);
+    }
+
+    if (Array.isArray(req.body?.variants)) {
+      update.variants = req.body.variants;
+    }
+
+    if (
+      req.body?.lowStockThreshold !==
+      undefined
+    ) {
+      update.lowStockThreshold = Math.max(
+        0,
+        cleanInteger(
+          req.body.lowStockThreshold
+        )
+      );
+    }
+
+    update.updatedAt = nowIso();
+
+    await ref.update(update);
+
+    const updated = await ref.get();
+
+    const product = {
+      id: updated.id,
+      ...updated.data(),
+    };
+
+    return res.status(200).json({
+      success: true,
+      product: {
+        ...product,
+        image:
+          Array.isArray(product.images)
+            ? product.images[0] || ""
+            : "",
+      },
+    });
+  }
+);
+
+
+/* =========================================================
+   STOCK MANAGEMENT
+   PATCH /api/admin/products/:id/stock
+
+   body examples:
+
+   { "operation": "add", "quantity": 5 }
+   { "operation": "remove", "quantity": 2 }
+   { "operation": "set", "quantity": 20 }
+   ========================================================= */
+
+export const updateAdminProductStock = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+
+    const productId =
+      cleanString(req.params.id, 200);
+
+    const operation =
+      cleanString(
+        req.body?.operation,
+        20
+      ).toLowerCase();
+
+    const quantity =
+      cleanInteger(req.body?.quantity);
+
+    if (
+      !["add", "remove", "set"].includes(
+        operation
+      )
+    ) {
+      throw new ApiError(
+        400,
+        "operation must be add, remove or set"
+      );
+    }
+
+    if (quantity < 0) {
+      throw new ApiError(
+        400,
+        "Quantity cannot be negative"
+      );
+    }
+
+    const ref = db
+      .collection(PRODUCTS_COLLECTION)
+      .doc(productId);
+
+    const result =
+      await db.runTransaction(
+        async (transaction) => {
+          const snapshot =
+            await transaction.get(ref);
+
+          if (!snapshot.exists) {
+            throw new ApiError(
+              404,
+              "Product not found"
+            );
+          }
+
+          const product =
+            snapshot.data();
+
+          const oldStock =
+            cleanInteger(
+              product.stock,
+              0
+            );
+
+          let newStock;
+
+          if (operation === "add") {
+            newStock =
+              oldStock + quantity;
+          } else if (
+            operation === "remove"
+          ) {
+            newStock =
+              oldStock - quantity;
+          } else {
+            newStock = quantity;
+          }
+
+          if (newStock < 0) {
+            throw new ApiError(
+              400,
+              `Insufficient stock. Current stock: ${oldStock}`
+            );
+          }
+
+          transaction.update(ref, {
+            stock: newStock,
+            updatedAt: nowIso(),
+          });
+
+          return {
+            oldStock,
+            newStock,
+          };
+        }
+      );
+
+    return res.status(200).json({
+      success: true,
+      productId,
+      operation,
+      quantity,
+      ...result,
+    });
+  }
+);
+
+
+/* =========================================================
+   ARCHIVE PRODUCT
+   POST /api/admin/products/:id/archive
+   ========================================================= */
+
+export const archiveAdminProduct = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+
+    const id = cleanString(
+      req.params.id,
+      200
+    );
+
+    const ref = db
+      .collection(PRODUCTS_COLLECTION)
+      .doc(id);
+
+    const snapshot = await ref.get();
+
+    if (!snapshot.exists) {
+      throw new ApiError(
+        404,
+        "Product not found"
+      );
+    }
+
+    await ref.update({
+      active: false,
+      archivedAt: nowIso(),
+      updatedAt: nowIso(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      id,
+    });
+  }
+);

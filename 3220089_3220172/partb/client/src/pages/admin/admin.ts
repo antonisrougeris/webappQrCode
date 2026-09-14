@@ -882,7 +882,9 @@ async function loadProducts() {
                     src="${escapeHtml(
                       product.image
                     )}"
-                    alt=""
+                    alt="${escapeHtml(
+                      product.title || ""
+                    )}"
                   >
                 `
                 : ""
@@ -894,18 +896,70 @@ async function loadProducts() {
               )}
             </h3>
 
+
             <p>
               ${formatMoney(
                 Number(
                   product.price || 0
                 )
               )}
-              ·
-              Stock:
-              ${
-                product.stock ?? "—"
-              }
             </p>
+
+
+            <div
+              class="admin-stock-manager"
+              style="
+                display:flex;
+                align-items:center;
+                gap:12px;
+                margin-top:14px;
+              "
+            >
+
+              <span>
+                Stock:
+              </span>
+
+              <button
+                type="button"
+                class="admin-icon-button"
+                data-stock-operation="remove"
+                data-product-id="${escapeHtml(
+                  product.id
+                )}"
+                title="Remove one from stock"
+              >
+                −
+              </button>
+
+
+              <strong
+                style="
+                  min-width:30px;
+                  text-align:center;
+                "
+              >
+                ${
+                  Number(
+                    product.stock || 0
+                  )
+                }
+              </strong>
+
+
+              <button
+                type="button"
+                class="admin-icon-button"
+                data-stock-operation="add"
+                data-product-id="${escapeHtml(
+                  product.id
+                )}"
+                title="Add one to stock"
+              >
+                +
+              </button>
+
+            </div>
 
           </article>
 
@@ -914,6 +968,86 @@ async function loadProducts() {
       .join("");
 
 }
+
+
+document.addEventListener(
+  "click",
+  async (event) => {
+
+    const target =
+      event.target as HTMLElement;
+
+    const button =
+      target.closest<HTMLElement>(
+        "[data-stock-operation]"
+      );
+
+    if (!button) return;
+
+    const productId =
+      button.dataset.productId;
+
+    const operation =
+      button.dataset.stockOperation;
+
+    if (
+      !productId ||
+      !operation
+    ) {
+      return;
+    }
+
+
+    button.setAttribute(
+      "disabled",
+      "true"
+    );
+
+
+    try {
+
+      await adminApi(
+        `/products/${encodeURIComponent(
+          productId
+        )}/stock`,
+        {
+          method: "PATCH",
+
+          body: JSON.stringify({
+            operation,
+            quantity: 1,
+          }),
+        }
+      );
+
+
+      await loadProducts();
+
+
+    } catch (error) {
+
+      console.error(
+        "Stock update failed:",
+        error
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Stock update failed"
+      );
+
+
+    } finally {
+
+      button.removeAttribute(
+        "disabled"
+      );
+
+    }
+
+  }
+);
 
 
 async function loadCustomers() {

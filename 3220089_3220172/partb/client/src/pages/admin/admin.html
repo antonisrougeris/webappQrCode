@@ -160,6 +160,12 @@
           Dashboard
         </button>
 
+        <button class="admin-nav__item" type="button" data-view="fulfillment">
+          <span class="admin-nav__icon">▣</span>
+          <span>Fulfillment</span>
+          <span id="fulfillmentBadge" class="nav-badge" hidden></span>
+        </button>
+
 
         <button
           class="admin-nav__item"
@@ -441,6 +447,23 @@
 
 
       <!-- =======================================
+           FULFILLMENT
+           ======================================= -->
+      <section id="view-fulfillment" class="admin-view hidden">
+        <div class="admin-section__header">
+          <div><span class="admin-eyebrow">Warehouse workflow</span><h2>Fulfillment</h2><p>Prepare paid orders, verify QR items, attach the receipt and ship.</p></div>
+          <button id="refreshFulfillment" class="admin-text-button" type="button">Refresh ↻</button>
+        </div>
+        <div class="admin-stats">
+          <article class="admin-stat"><span>To prepare</span><strong id="fulfillmentToPrepare">0</strong><small>Paid orders</small></article>
+          <article class="admin-stat"><span>Preparing</span><strong id="fulfillmentPreparing">0</strong><small>In warehouse</small></article>
+          <article class="admin-stat"><span>Ready</span><strong id="fulfillmentReady">0</strong><small>Waiting to ship</small></article>
+          <article class="admin-stat"><span>Shipped</span><strong id="fulfillmentShipped">0</strong><small>Dispatched</small></article>
+        </div>
+        <div id="fulfillmentList" class="admin-list"></div>
+      </section>
+
+      <!-- =======================================
            ORDERS
            ======================================= -->
 
@@ -542,7 +565,7 @@
                 Products
               </h2>
             </div>
-
+            <button id="addProductButton" class="admin-text-button" type="button">+ Add product</button>
           </div>
 
 
@@ -719,6 +742,26 @@
 
   </aside>
 
+
+  <!-- PRODUCT MODAL -->
+  <div id="productModal" class="admin-drawer-overlay hidden">
+    <section class="admin-order-drawer" style="display:block">
+      <header class="admin-order-drawer__header">
+        <div><span class="admin-eyebrow">Catalog management</span><h2 id="productModalTitle">Add product</h2></div>
+        <button type="button" data-close-product-modal>✕</button>
+      </header>
+      <form id="productForm" class="admin-order-drawer__content">
+        <input id="productEditingId" type="hidden" />
+        <div class="admin-detail-group"><label>Product name<input id="productTitle" type="text" required /></label></div>
+        <div class="admin-detail-group"><label>Price (€)<input id="productPrice" type="number" min="0" step="0.01" required /></label><label>Initial stock<input id="productStock" type="number" min="0" step="1" required /></label></div>
+        <div class="admin-detail-group"><label>Category<input id="productCategory" type="text" /></label><label>SKU<input id="productSku" type="text" /></label></div>
+        <div class="admin-detail-group"><label>Image URL<input id="productImage" type="url" /></label><label>Description<textarea id="productDescription" rows="5"></textarea></label></div>
+        <div class="admin-detail-group"><label><input id="productActive" type="checkbox" checked /> Active product</label><label><input id="productFeatured" type="checkbox" /> Featured</label></div>
+        <button class="admin-text-button" type="submit">Save product</button>
+        <button class="admin-text-button" type="button" data-close-product-modal>Cancel</button>
+      </form>
+    </section>
+  </div>
 
   <script
     type="module"
