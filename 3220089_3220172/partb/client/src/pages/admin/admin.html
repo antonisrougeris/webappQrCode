@@ -78,8 +78,9 @@
     .admin-subsection__header { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:12px; }
     .admin-subsection__header h3 { margin:0; font-size:16px; }
 
-    .dynamic-row { display:grid; grid-template-columns:1.2fr .7fr .9fr .65fr auto; gap:8px; align-items:end; margin-bottom:8px; }
-    .dynamic-row--review { grid-template-columns:1fr .45fr 2fr auto; }
+    .dynamic-row { display:grid; grid-template-columns:1fr 1fr .8fr auto; gap:8px; align-items:end; margin-bottom:8px; }
+    .dynamic-row--tshirt { grid-template-columns:1fr .8fr auto; }
+    .dynamic-row--accessory { grid-template-columns:1fr .8fr auto; }
     .dynamic-row .admin-field { margin:0; }
     .dynamic-row button { min-height:42px; }
 
@@ -321,7 +322,7 @@
             <div>
               <span class="admin-eyebrow">Catalog & inventory</span>
               <h2>Products</h2>
-              <p class="product-toolbar-note">Fallback stock stays available, while QR stock creates real preprinted QR inventory exactly like your stock script.</p>
+              <p class="product-toolbar-note">Made-to-order stock is set per size / option. Ready physical QR stock is created separately with “Add QR stock”.</p>
             </div>
             <div class="admin-actions">
               <button id="openAddStockButton" class="admin-secondary-button" type="button">+ Add QR stock</button>
@@ -388,11 +389,6 @@
           <label class="admin-field"><span>Currency</span><input id="productCurrency" type="text" value="EUR" maxlength="6" /></label>
         </div>
 
-        <div class="admin-form-grid">
-          <label class="admin-field"><span>Fallback stock</span><input id="productStock" type="number" min="0" step="1" value="0" /></label>
-          <label class="admin-field"><span>Low stock warning</span><input id="productLowStockThreshold" type="number" min="0" step="1" value="3" /></label>
-        </div>
-
         <div class="admin-checkbox-row">
           <label><input id="productFeatured" type="checkbox" /> Featured</label>
           <label><input id="productActive" type="checkbox" checked /> Active</label>
@@ -431,19 +427,20 @@
 
         <div class="admin-subsection">
           <div class="admin-subsection__header">
-            <h3>Options / sizes & colors</h3>
-            <button id="addVariantRowButton" class="admin-secondary-button" type="button">+ Add option</button>
+            <h3>Sellable stock by size / option</h3>
+            <button id="addVariantRowButton" class="admin-secondary-button" type="button">+ Add size / option</button>
           </div>
           <p class="variant-helper">
-            Choose only the size, color and fallback stock. Skanare generates the internal SKU automatically and uses it behind the scenes to match the correct QR inventory.
+            This is the small made-to-order stock you are willing to sell even when that exact QR is not already prepared.
+            It does <strong>not</strong> generate QR codes. Ready physical QR inventory is created later with <strong>Add QR stock</strong>.
+            For a T-shirt, enter one row per size.
           </p>
           <div id="variantRows"></div>
         </div>
 
         <div class="admin-subsection">
-          <div class="admin-subsection__header"><h3>Reviews</h3><button id="addReviewRowButton" class="admin-secondary-button" type="button">+ Add review</button></div>
-          <p class="variant-helper">Optional. A new product starts with zero reviews unless you explicitly add one here.</p>
-          <div id="reviewRows"></div>
+          <div class="admin-subsection__header"><h3>Customer reviews</h3></div>
+          <p class="variant-helper">Reviews are not created from Admin. A new product starts with zero reviews and only real customer reviews are shown on the storefront.</p>
         </div>
 
         <p id="productFormStatus" class="admin-inline-status"></p>
@@ -465,18 +462,16 @@
       </header>
       <form id="stockForm" class="admin-modal__body">
         <label class="admin-field"><span>Product</span><select id="stockProductId" required></select></label>
-        <label class="admin-field"><span>Variant / SKU</span><select id="stockVariantSelect"></select></label>
+        <label class="admin-field"><span>Size / option</span><select id="stockVariantSelect" required></select></label>
 
-        <div class="admin-form-grid--3 admin-form-grid">
-          <label class="admin-field"><span>SKU</span><input id="stockSku" type="text" required /></label>
-          <label class="admin-field"><span>Size</span><input id="stockSize" type="text" placeholder="Leave empty when not applicable" /></label>
-          <label class="admin-field"><span>Color</span><input id="stockColor" type="text" /></label>
-        </div>
+        <input id="stockSku" type="hidden" />
+        <input id="stockSize" type="hidden" />
+        <input id="stockColor" type="hidden" />
 
-        <label class="admin-field"><span>Quantity to generate</span><input id="stockQuantity" type="number" min="1" max="100" step="1" value="1" required /></label>
+        <label class="admin-field"><span>How many ready QR items?</span><input id="stockQuantity" type="number" min="1" max="100" step="1" value="1" required /></label>
         <div class="admin-detail-group">
           <strong>What this does</strong>
-          <p class="admin-muted">Creates real QR inventory with status <b>available</b>, the selected inventoryKey, printable QR artwork / A3 file and the same admin print workflow as generate-qr-stock.js.</p>
+          <p class="admin-muted">Creates real ready QR inventory with status <b>available</b> for the selected size / option, plus the printable QR / A3 file. This is separate from made-to-order stock.</p>
         </div>
         <p id="stockFormStatus" class="admin-inline-status"></p>
         <div class="admin-modal__footer">

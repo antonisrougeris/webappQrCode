@@ -21,7 +21,6 @@ import {
   getAdminProducts,
   createAdminProduct,
   updateAdminProduct,
-  updateAdminProductStock,
   archiveAdminProduct,
   uploadAdminProductImages,
 
@@ -191,10 +190,6 @@ router.patch(
   updateAdminProduct
 );
 
-router.patch(
-  "/products/:id/stock",
-  updateAdminProductStock
-);
 
 router.post(
   "/products/:id/archive",

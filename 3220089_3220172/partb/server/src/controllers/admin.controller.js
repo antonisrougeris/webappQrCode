@@ -1589,20 +1589,6 @@ export const createAdminProduct =
       }
 
 
-      const stock =
-        cleanInteger(
-          req.body?.stock
-        );
-
-
-      if (stock < 0) {
-        throw new ApiError(
-          400,
-          "Stock cannot be negative"
-        );
-      }
-
-
       const images =
         cleanImages(
           req.body?.images
@@ -1614,11 +1600,15 @@ export const createAdminProduct =
           req.body?.variants
         );
 
+      // The only sellable fallback stock is the stock configured per size / option.
+      // Keep top-level stock only as a derived compatibility total for older storefront code.
+      const stock = variants.reduce(
+        (total, variant) => total + Math.max(0, Number(variant.stock || 0)),
+        0
+      );
 
-      const reviews =
-        cleanReviews(
-          req.body?.reviews
-        );
+
+      const reviews = [];
 
 
       const qrConfig =
@@ -1677,15 +1667,7 @@ export const createAdminProduct =
           ) ||
           "EUR",
 
-        /*
-         * Fallback sellable stock.
-         *
-         * We keep this because you
-         * explicitly want the shop
-         * to continue selling even
-         * when pre-generated QR
-         * inventory reaches zero.
-         */
+        // Derived total. The actual made-to-order stock lives on variants[].stock.
         stock,
 
         featured:
@@ -1708,16 +1690,6 @@ export const createAdminProduct =
         variants,
 
         reviews,
-
-        lowStockThreshold:
-          Math.max(
-            0,
-            cleanInteger(
-              req.body
-                ?.lowStockThreshold,
-              3
-            )
-          ),
 
         createdAt,
 
@@ -1867,28 +1839,6 @@ export const updateAdminProduct =
 
 
       if (
-        req.body?.stock !==
-        undefined
-      ) {
-
-        const stock =
-          cleanInteger(
-            req.body.stock
-          );
-
-        if (stock < 0) {
-          throw new ApiError(
-            400,
-            "Stock cannot be negative"
-          );
-        }
-
-        update.stock =
-          stock;
-      }
-
-
-      if (
         req.body?.active !==
         undefined
       ) {
@@ -1936,21 +1886,12 @@ export const updateAdminProduct =
         req.body?.variants !==
         undefined
       ) {
-        update.variants =
-          cleanVariants(
-            req.body.variants
-          );
-      }
-
-
-      if (
-        req.body?.reviews !==
-        undefined
-      ) {
-        update.reviews =
-          cleanReviews(
-            req.body.reviews
-          );
+        const variants = cleanVariants(req.body.variants);
+        update.variants = variants;
+        update.stock = variants.reduce(
+          (total, variant) => total + Math.max(0, Number(variant.stock || 0)),
+          0
+        );
       }
 
 
@@ -1961,24 +1902,6 @@ export const updateAdminProduct =
         update.qrConfig =
           cleanQrConfig(
             req.body.qrConfig
-          );
-      }
-
-
-      if (
-        req.body
-          ?.lowStockThreshold !==
-        undefined
-      ) {
-
-        update
-          .lowStockThreshold =
-          Math.max(
-            0,
-            cleanInteger(
-              req.body
-                .lowStockThreshold
-            )
           );
       }
 
@@ -2025,121 +1948,6 @@ export const updateAdminProduct =
         });
     }
   );
-
-
-/* =========================================================
-   STOCK MANAGEMENT
-   PATCH /api/admin/products/:id/stock
-
-   body examples:
-
-   { "operation": "add", "quantity": 5 }
-   { "operation": "remove", "quantity": 2 }
-   { "operation": "set", "quantity": 20 }
-   ========================================================= */
-
-export const updateAdminProductStock = asyncHandler(
-  async (req, res) => {
-    const db = getDB();
-
-    const productId =
-      cleanString(req.params.id, 200);
-
-    const operation =
-      cleanString(
-        req.body?.operation,
-        20
-      ).toLowerCase();
-
-    const quantity =
-      cleanInteger(req.body?.quantity);
-
-    if (
-      !["add", "remove", "set"].includes(
-        operation
-      )
-    ) {
-      throw new ApiError(
-        400,
-        "operation must be add, remove or set"
-      );
-    }
-
-    if (quantity < 0) {
-      throw new ApiError(
-        400,
-        "Quantity cannot be negative"
-      );
-    }
-
-    const ref = db
-      .collection(PRODUCTS_COLLECTION)
-      .doc(productId);
-
-    const result =
-      await db.runTransaction(
-        async (transaction) => {
-          const snapshot =
-            await transaction.get(ref);
-
-          if (!snapshot.exists) {
-            throw new ApiError(
-              404,
-              "Product not found"
-            );
-          }
-
-          const product =
-            snapshot.data();
-
-          const oldStock =
-            cleanInteger(
-              product.stock,
-              0
-            );
-
-          let newStock;
-
-          if (operation === "add") {
-            newStock =
-              oldStock + quantity;
-          } else if (
-            operation === "remove"
-          ) {
-            newStock =
-              oldStock - quantity;
-          } else {
-            newStock = quantity;
-          }
-
-          if (newStock < 0) {
-            throw new ApiError(
-              400,
-              `Insufficient stock. Current stock: ${oldStock}`
-            );
-          }
-
-          transaction.update(ref, {
-            stock: newStock,
-            updatedAt: nowIso(),
-          });
-
-          return {
-            oldStock,
-            newStock,
-          };
-        }
-      );
-
-    return res.status(200).json({
-      success: true,
-      productId,
-      operation,
-      quantity,
-      ...result,
-    });
-  }
-);
 
 
 /* =========================================================

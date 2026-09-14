@@ -844,8 +844,13 @@ document.getElementById("adminDrawerOverlay")?.addEventListener("click", closeDr
    ========================================================= */
 
 async function loadProducts() {
-  const data = await adminApi("/products");
-  currentProducts = data.products || [];
+  const [productData, qrData] = await Promise.all([
+    adminApi("/products"),
+    adminApi("/qr-codes").catch(() => ({ qrCodes: [] })),
+  ]);
+
+  currentProducts = productData.products || [];
+  currentQrCodes = qrData.qrCodes || [];
   renderProducts();
 }
 
@@ -861,8 +866,23 @@ function renderProducts() {
   grid.innerHTML = currentProducts
     .map((product: any) => {
       const variants = Array.isArray(product.variants) ? product.variants : [];
-      const fallbackStock = Number(product.stock || 0);
       const active = product.active !== false;
+
+      const madeToOrderTotal = variants.reduce(
+        (sum: number, variant: any) => sum + Math.max(0, Number(variant.stock || 0)),
+        0
+      );
+
+      const readyQrCodes = currentQrCodes.filter(
+        (qr: any) => qr.productId === product.id && qr.status === "available"
+      );
+
+      const readyBySku = new Map<string, number>();
+      readyQrCodes.forEach((qr: any) => {
+        const sku = String(qr.sku || qr.variant?.sku || "");
+        if (!sku) return;
+        readyBySku.set(sku, (readyBySku.get(sku) || 0) + 1);
+      });
 
       return `
         <article class="admin-product ${active ? "" : "is-inactive"}">
@@ -880,24 +900,30 @@ function renderProducts() {
 
             <div class="admin-product__stock-box">
               <div class="admin-product__stock-row">
-                <span>Fallback stock</span>
-                <div class="admin-actions">
-                  <button type="button" class="admin-icon-button" data-stock-operation="remove" data-product-id="${escapeHtml(product.id)}" ${active ? "" : "disabled"}>−</button>
-                  <strong>${fallbackStock}</strong>
-                  <button type="button" class="admin-icon-button" data-stock-operation="add" data-product-id="${escapeHtml(product.id)}" ${active ? "" : "disabled"}>+</button>
-                </div>
+                <span>Made-to-order stock</span>
+                <strong>${madeToOrderTotal}</strong>
               </div>
 
               ${variants.length ? `
                 <div class="admin-product__variant-list">
-                  ${variants.map((variant: any) => `
-                    <div class="admin-product__variant">
-                      <span>${escapeHtml([variant.size || "No size", variant.color || "No color"].join(" · "))}</span>
-                      <span>fallback ${Number(variant.stock || 0)}</span>
-                    </div>
-                  `).join("")}
+                  ${variants.map((variant: any) => {
+                    const ready = readyBySku.get(String(variant.sku || "")) || 0;
+                    const label = [variant.size || "One size", variant.color || ""].filter(Boolean).join(" · ");
+
+                    return `
+                      <div class="admin-product__variant">
+                        <span>${escapeHtml(label)}</span>
+                        <span>made-to-order ${Number(variant.stock || 0)} · ready QR ${ready}</span>
+                      </div>
+                    `;
+                  }).join("")}
                 </div>
-              ` : ""}
+              ` : `<div class="admin-muted" style="margin-top:8px">No sellable size / option configured.</div>`}
+
+              <div class="admin-product__stock-row" style="margin-top:12px;padding-top:10px;border-top:1px solid #eeeeea">
+                <span>Ready QR stock</span>
+                <strong>${readyQrCodes.length}</strong>
+              </div>
             </div>
 
             <div class="admin-product__actions">
@@ -916,32 +942,6 @@ function renderProducts() {
     .join("");
 }
 
-/* ----- fallback +/- stock ----- */
-
-document.addEventListener("click", async (event) => {
-  const target = event.target as HTMLElement;
-  const button = target.closest<HTMLButtonElement>("[data-stock-operation]");
-  if (!button) return;
-
-  const productId = button.dataset.productId;
-  const operation = button.dataset.stockOperation;
-  if (!productId || !operation) return;
-
-  button.disabled = true;
-
-  try {
-    await adminApi(`/products/${encodeURIComponent(productId)}/stock`, {
-      method: "PATCH",
-      body: JSON.stringify({ operation, quantity: 1 }),
-    });
-    await loadProducts();
-  } catch (error) {
-    alert(errorMessage(error));
-  } finally {
-    button.disabled = false;
-  }
-});
-
 /* =========================================================
    PRODUCT ADD / EDIT
    ========================================================= */
@@ -958,18 +958,9 @@ document.getElementById("addVariantRowButton")?.addEventListener("click", () => 
   addVariantRow();
 });
 
-document.getElementById("addReviewRowButton")?.addEventListener("click", () => {
-  addReviewRow();
-});
-
 document.getElementById("variantRows")?.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
   target.closest<HTMLElement>("[data-remove-variant]")?.closest(".dynamic-row")?.remove();
-});
-
-document.getElementById("reviewRows")?.addEventListener("click", (event) => {
-  const target = event.target as HTMLElement;
-  target.closest<HTMLElement>("[data-remove-review]")?.closest(".dynamic-row")?.remove();
 });
 
 function openProductModal(product: any = null) {
@@ -988,8 +979,6 @@ function openProductModal(product: any = null) {
 
   setInputValue("productPrice", product?.price ?? "");
   setInputValue("productCurrency", product?.currency || "EUR");
-  setInputValue("productStock", product?.stock ?? 0);
-  setInputValue("productLowStockThreshold", product?.lowStockThreshold ?? 3);
   setChecked("productFeatured", Boolean(product?.featured));
   setChecked("productActive", product?.active !== false);
   setChecked("productCustomQr", product?.customQr !== false);
@@ -1011,16 +1000,8 @@ function openProductModal(product: any = null) {
   if (variants.length) {
     variants.forEach((variant: any) => addVariantRow(variant));
   } else {
-    addVariantRow();
+    addDefaultVariantRowsForCategory(inputValue("productCategory"));
   }
-
-  const reviewRows = document.getElementById("reviewRows");
-  if (reviewRows) reviewRows.innerHTML = "";
-
-  // IMPORTANT: new products start with zero reviews.
-  // Existing reviews are shown only when they already exist on that product.
-  const reviews = Array.isArray(product?.reviews) ? product.reviews : [];
-  reviews.forEach((review: any) => addReviewRow(review));
 
   const idInput = document.getElementById("productId") as HTMLInputElement | null;
   if (idInput) idInput.disabled = editing;
@@ -1047,8 +1028,6 @@ function resetProductForm() {
   setChecked("productCustomQr", true);
 
   setInputValue("productCurrency", "EUR");
-  setInputValue("productStock", 0);
-  setInputValue("productLowStockThreshold", 3);
 
   setInputValue("qrTextPrint", "SCAN ME");
   setInputValue("qrTextPosition", "bottom");
@@ -1057,7 +1036,6 @@ function resetProductForm() {
   setInputValue("qrPrintSize", 3540);
 
   document.getElementById("variantRows")?.replaceChildren();
-  document.getElementById("reviewRows")?.replaceChildren();
 
   existingProductImages = [];
   pendingProductImageFiles = [];
@@ -1088,9 +1066,13 @@ function populateProductCategories(selectedCategory = "") {
     .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(formatCategoryLabel(category))}</option>`)
     .join("");
 
+  const preferredDefault = categories.find((category) =>
+    ["tshirt", "t-shirt", "t_shirt"].includes(category.toLowerCase())
+  );
+
   select.value = selectedCategory && categories.includes(selectedCategory)
     ? selectedCategory
-    : categories[0];
+    : preferredDefault || categories[0];
 }
 
 function formatCategoryLabel(category: string) {
@@ -1098,6 +1080,27 @@ function formatCategoryLabel(category: string) {
     .replaceAll("-", " ")
     .replaceAll("_", " ")
     .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function isTshirtCategory(category: string) {
+  const value = String(category || "").trim().toLowerCase();
+  return ["tshirt", "t-shirt", "t_shirt", "shirt"].includes(value);
+}
+
+function addDefaultVariantRowsForCategory(category: string) {
+  const container = document.getElementById("variantRows");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (isTshirtCategory(category)) {
+    ["S", "M", "L", "XL", "2XL"].forEach((size) =>
+      addVariantRow({ size, color: "", stock: 0 })
+    );
+    return;
+  }
+
+  addVariantRow({ size: "", color: "", stock: 0 });
 }
 
 function normalizeSkuPart(value: string) {
@@ -1128,7 +1131,7 @@ function updateAutoSkuForRow(row: HTMLElement) {
 
   const skuInput = row.querySelector<HTMLInputElement>("[data-variant-sku]");
   const preview = row.querySelector<HTMLElement>("[data-variant-sku-preview]");
-  if (!skuInput || !preview) return;
+  if (!skuInput) return;
 
   const sku = generateVariantSku(
     inputValue("productId"),
@@ -1137,7 +1140,7 @@ function updateAutoSkuForRow(row: HTMLElement) {
   );
 
   skuInput.value = sku;
-  preview.textContent = sku || "Generated after size / color is selected";
+  if (preview) preview.textContent = sku || "Generated after size / color is selected";
 }
 
 function updateAllAutoSkus() {
@@ -1150,6 +1153,8 @@ function addVariantRow(variant: any = {}) {
   const container = document.getElementById("variantRows");
   if (!container) return;
 
+  const category = inputValue("productCategory");
+  const tshirt = isTshirtCategory(category);
   const hasExistingSku = Boolean(String(variant.sku || "").trim());
   const size = String(variant.size || "");
 
@@ -1157,38 +1162,35 @@ function addVariantRow(variant: any = {}) {
   if (size && !knownSizes.includes(size)) knownSizes.push(size);
 
   const row = document.createElement("div");
-  row.className = "dynamic-row";
+  row.className = `dynamic-row ${tshirt ? "dynamic-row--tshirt" : ""}`.trim();
   row.dataset.autoSku = hasExistingSku ? "false" : "true";
 
   row.innerHTML = `
     <label class="admin-field">
-      <span>Size</span>
+      <span>${tshirt ? "Size" : "Size (optional)"}</span>
       <select data-variant-size>
         ${knownSizes.map((value) => `
           <option value="${escapeHtml(value)}" ${value === size ? "selected" : ""}>
-            ${value || "No size / one size"}
+            ${value || "One size / no size"}
           </option>
         `).join("")}
       </select>
     </label>
 
-    <label class="admin-field">
-      <span>Color</span>
-      <input data-variant-color type="text" value="${escapeHtml(variant.color || "")}" placeholder="Black" />
-    </label>
+    ${tshirt ? "" : `
+      <label class="admin-field">
+        <span>Color / option</span>
+        <input data-variant-color type="text" value="${escapeHtml(variant.color || "")}" placeholder="Black" />
+      </label>
+    `}
 
     <label class="admin-field">
-      <span>Fallback stock</span>
+      <span>Made-to-order stock</span>
       <input data-variant-stock type="number" min="0" step="1" value="${Number(variant.stock || 0)}" />
     </label>
 
-    <label class="admin-field">
-      <span>Internal match code</span>
-      <input data-variant-sku type="hidden" value="${escapeHtml(variant.sku || "")}" />
-      <div class="variant-sku-preview" data-variant-sku-preview>
-        ${escapeHtml(variant.sku || "Generated automatically")}
-      </div>
-    </label>
+    ${tshirt ? `<input data-variant-color type="hidden" value="${escapeHtml(variant.color || inferColorFromProductTitle())}" />` : ""}
+    <input data-variant-sku type="hidden" value="${escapeHtml(variant.sku || "")}" />
 
     <button class="admin-danger-button" data-remove-variant type="button">Remove</button>
   `;
@@ -1199,6 +1201,23 @@ function addVariantRow(variant: any = {}) {
   row.querySelector("[data-variant-color]")?.addEventListener("input", () => updateAutoSkuForRow(row));
 
   updateAutoSkuForRow(row);
+}
+
+function inferColorFromProductTitle() {
+  const title = inputValue("productTitle");
+  const commonColors = ["Black", "White", "Natural", "Nightfall", "Blue", "Red", "Green", "Grey", "Gray"];
+  return commonColors.find((color) => new RegExp(`${color}`, "i").test(title)) || "";
+}
+
+function refreshTshirtVariantColors() {
+  if (!isTshirtCategory(inputValue("productCategory"))) return;
+
+  const inferredColor = inferColorFromProductTitle();
+  document.querySelectorAll<HTMLElement>("#variantRows .dynamic-row").forEach((row) => {
+    const colorInput = row.querySelector<HTMLInputElement>("[data-variant-color]");
+    if (colorInput && !colorInput.value.trim()) colorInput.value = inferredColor;
+    updateAutoSkuForRow(row);
+  });
 }
 
 function isAllowedProductImage(file: File) {
@@ -1321,21 +1340,11 @@ document.getElementById("productImagePreview")?.addEventListener("click", (event
 });
 
 document.getElementById("productId")?.addEventListener("input", updateAllAutoSkus);
-
-function addReviewRow(review: any = {}) {
-  const container = document.getElementById("reviewRows");
-  if (!container) return;
-
-  const row = document.createElement("div");
-  row.className = "dynamic-row dynamic-row--review";
-  row.innerHTML = `
-    <label class="admin-field"><span>Name</span><input data-review-name type="text" value="${escapeHtml(review.name || "")}" /></label>
-    <label class="admin-field"><span>Rating</span><input data-review-rating type="number" min="1" max="5" step="1" value="${Number(review.rating || 5)}" /></label>
-    <label class="admin-field"><span>Comment</span><input data-review-comment type="text" value="${escapeHtml(review.comment || "")}" /></label>
-    <button class="admin-danger-button" data-remove-review type="button">Remove</button>
-  `;
-  container.appendChild(row);
-}
+document.getElementById("productTitle")?.addEventListener("input", refreshTshirtVariantColors);
+document.getElementById("productCategory")?.addEventListener("change", () => {
+  const editing = Boolean(inputValue("productEditingId"));
+  if (!editing) addDefaultVariantRowsForCategory(inputValue("productCategory"));
+});
 
 productForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -1369,12 +1378,6 @@ productForm?.addEventListener("submit", async (event) => {
       ...uploadedImages,
     ];
 
-    // New products never receive synthetic/default reviews.
-    // Reviews are included only if the admin explicitly added them.
-    if (!editingId && !payload.reviews.length) {
-      payload.reviews = [];
-    }
-
     if (editingId) {
       await adminApi(`/products/${encodeURIComponent(editingId)}`, {
         method: "PATCH",
@@ -1405,23 +1408,17 @@ function collectProductPayload() {
   const variants = Array.from(
     document.querySelectorAll<HTMLElement>("#variantRows .dynamic-row")
   )
-    .map((row) => ({
-      sku: childInputValue(row, "[data-variant-sku]"),
-      size: childInputValue(row, "[data-variant-size]"),
-      color: childInputValue(row, "[data-variant-color]"),
-      stock: Number(childInputValue(row, "[data-variant-stock]") || 0),
-    }))
-    .filter((variant) => variant.sku);
+    .map((row) => {
+      updateAutoSkuForRow(row);
 
-  const reviews = Array.from(
-    document.querySelectorAll<HTMLElement>("#reviewRows .dynamic-row")
-  )
-    .map((row) => ({
-      name: childInputValue(row, "[data-review-name]"),
-      rating: Number(childInputValue(row, "[data-review-rating]") || 5),
-      comment: childInputValue(row, "[data-review-comment]"),
-    }))
-    .filter((review) => review.name || review.comment);
+      return {
+        sku: childInputValue(row, "[data-variant-sku]"),
+        size: childInputValue(row, "[data-variant-size]"),
+        color: childInputValue(row, "[data-variant-color]"),
+        stock: Math.max(0, Number(childInputValue(row, "[data-variant-stock]") || 0)),
+      };
+    })
+    .filter((variant) => variant.sku);
 
   return {
     id: inputValue("productId"),
@@ -1432,8 +1429,6 @@ function collectProductPayload() {
     category: inputValue("productCategory") || "General",
     price: Number(inputValue("productPrice") || 0),
     currency: inputValue("productCurrency") || "EUR",
-    stock: Number(inputValue("productStock") || 0),
-    lowStockThreshold: Number(inputValue("productLowStockThreshold") || 0),
     featured: checked("productFeatured"),
     active: checked("productActive"),
     customQr: checked("productCustomQr"),
@@ -1446,7 +1441,7 @@ function collectProductPayload() {
     },
     images: [...existingProductImages],
     variants,
-    reviews,
+    reviews: [],
   };
 }
 
@@ -1545,7 +1540,7 @@ function populateStockVariants() {
   if (!select) return;
 
   if (!variants.length) {
-    select.innerHTML = `<option value="">Manual SKU / no predefined variant</option>`;
+    select.innerHTML = `<option value="">No sellable size / option configured</option>`;
     setInputValue("stockSku", "");
     setInputValue("stockSize", "");
     setInputValue("stockColor", "");
@@ -1554,7 +1549,7 @@ function populateStockVariants() {
 
   select.innerHTML = variants
     .map((variant: any, index: number) => {
-      const label = [variant.size || "No size", variant.color || "No color", variant.sku || "No SKU"].join(" · ");
+      const label = [variant.size || "One size", variant.color || ""].filter(Boolean).join(" · ");
       return `<option value="${index}">${escapeHtml(label)}</option>`;
     })
     .join("");
@@ -1587,7 +1582,7 @@ stockForm?.addEventListener("submit", async (event) => {
   const quantity = Number(inputValue("stockQuantity"));
 
   if (!productId || !sku) {
-    setInlineStatus(statusEl, "Product and SKU are required.", "error");
+    setInlineStatus(statusEl, "Product and sellable size / option are required.", "error");
     return;
   }
 

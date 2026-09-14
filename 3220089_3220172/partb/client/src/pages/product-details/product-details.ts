@@ -74,28 +74,8 @@ function productUrl(product: Product): string {
   return `/product/${encodeURIComponent(identifier)}`;
 }
 
-function getFallbackReviews(product: Product): ProductReview[] {
-  if (Array.isArray(product.reviews) && product.reviews.length > 0) {
-    return product.reviews;
-  }
-
-  return [
-    {
-      name: "Maria",
-      rating: 5,
-      comment: "Great quality and the QR code works perfectly.",
-    },
-    {
-      name: "Alex",
-      rating: 5,
-      comment: "The print feels durable and the product arrived fast.",
-    },
-    {
-      name: "Nikos",
-      rating: 4,
-      comment: "Very nice product. I would like more color options.",
-    },
-  ];
+function getFallbackReviews(_product: Product): ProductReview[] {
+  return [];
 }
 
 function renderReviews(reviews: ProductReview[]): void {
