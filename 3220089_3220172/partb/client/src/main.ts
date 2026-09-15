@@ -654,75 +654,48 @@ function renderCustomerOrders(
 
 
         const products =
-          items
-            .map(
-              (item: any) => {
+  items
+    .map(
+      (item: any) => {
 
-                const title =
-                  item?.title ||
-                  item?.productTitle ||
-                  "Skanare product";
+        const title =
+          item?.title ||
+          item?.productTitle ||
+          "Skanare product";
 
-                const size =
-                  item?.variant?.size ||
-                  item?.size ||
-                  "";
+        const size =
+          item?.variant?.size ||
+          item?.size ||
+          "";
 
-                const color =
-                  item?.variant?.color ||
-                  item?.color ||
-                  "";
+        return `
+          <div class="account-order__product">
 
-                const quantity =
-                  Number(
-                    item?.quantity || 1
-                  );
+            <strong>
+              ${accountEscapeHtml(
+                title
+              )}
+            </strong>
 
-
-                return `
+            ${
+              size
+                ? `
                   <span
-                    class="account-order__product"
+                    class="account-order__product-size"
                   >
-
-                    <strong>
-                      ${accountEscapeHtml(
-                        title
-                      )}
-                    </strong>
-
-                    ${
+                    · Size ${accountEscapeHtml(
                       size
-                        ? `
-                          <span>
-                            · ${accountEscapeHtml(
-                              size
-                            )}
-                          </span>
-                        `
-                        : ""
-                    }
-
-                    ${
-                      color
-                        ? `
-                          <span>
-                            · ${accountEscapeHtml(
-                              color
-                            )}
-                          </span>
-                        `
-                        : ""
-                    }
-
-                    <span>
-                      × ${quantity}
-                    </span>
-
+                    )}
                   </span>
-                `;
-              }
-            )
-            .join("");
+                `
+                : ""
+            }
+
+          </div>
+        `;
+      }
+    )
+    .join("");
 
 
         /*

@@ -13181,3 +13181,982 @@ a.contact-detail__value:hover {
   }
 
 }
+
+
+
+/* =========================================================
+   CUSTOMER ACCOUNT / HOMEPAGE
+   ========================================================= */
+
+.customer-dashboard {
+  padding: 64px 0 90px;
+  background: #f7f7f4;
+}
+
+.customer-dashboard__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 72px;
+}
+
+
+/* ---------------------------------------------------------
+   SECTION
+   --------------------------------------------------------- */
+
+.customer-dashboard__section {
+  width: 100%;
+}
+
+.customer-dashboard__section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+
+  margin-bottom: 28px;
+}
+
+.customer-dashboard__section-head h1,
+.customer-dashboard__section-head h2 {
+  margin: 5px 0 0;
+
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.customer-dashboard__section-head p {
+  margin: 10px 0 0;
+
+  color: #6b6b65;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.customer-dashboard__eyebrow {
+  display: block;
+
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+
+  color: #8b877f;
+}
+
+
+/* ---------------------------------------------------------
+   TEXT LINK
+   --------------------------------------------------------- */
+
+.customer-dashboard__text-link {
+  display: inline-flex;
+  align-items: center;
+
+  padding-bottom: 3px;
+
+  color: #111;
+  font-size: 12px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  border-bottom: 1px solid #111;
+}
+
+.customer-dashboard__text-link:hover {
+  opacity: 0.6;
+}
+
+
+/* ---------------------------------------------------------
+   ORDERS
+   --------------------------------------------------------- */
+
+.account-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-order {
+  padding: 26px;
+
+  background: #fff;
+
+  border: 1px solid #deded8;
+}
+
+.account-order__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+.account-order__label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #8b877f;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.17em;
+}
+
+.account-order__number {
+  margin: 0;
+
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.account-order__date {
+  display: block;
+
+  margin-top: 7px;
+
+  color: #77736c;
+  font-size: 12px;
+}
+
+
+/* ---------------------------------------------------------
+   ORDER STATUS
+   --------------------------------------------------------- */
+
+.account-order__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 7px 12px;
+
+  border-radius: 999px;
+
+  background: #ededeb;
+
+  color: #55524c;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+}
+
+.account-order__status::before {
+  content: "";
+
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: currentColor;
+}
+
+.account-order__status--preparing {
+  background: #fff4d7;
+  color: #9a6b00;
+}
+
+.account-order__status--ready {
+  background: #e5f1ff;
+  color: #1761a5;
+}
+
+.account-order__status--shipped {
+  background: #e4f6e9;
+  color: #16743c;
+}
+
+.account-order__status--completed {
+  background: #def3e4;
+  color: #126a36;
+}
+
+.account-order__status--cancelled {
+  background: #fde7e7;
+  color: #b42318;
+}
+
+
+/* ---------------------------------------------------------
+   ORDER PRODUCTS
+   --------------------------------------------------------- */
+
+.account-order__products {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  margin-top: 24px;
+  padding-top: 20px;
+
+  border-top: 1px solid #ecece8;
+}
+
+.account-order__product {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+
+  font-size: 14px;
+}
+
+.account-order__product strong {
+  font-weight: 700;
+}
+
+.account-order__product-size {
+  color: #77736c;
+  font-size: 13px;
+}
+
+
+/* ---------------------------------------------------------
+   ORDER PROGRESS
+   --------------------------------------------------------- */
+
+.account-order__progress {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+
+  margin-top: 25px;
+
+  border-top: 1px solid #deded8;
+}
+
+.account-order__step {
+  position: relative;
+
+  padding-top: 16px;
+
+  color: #aaa7a0;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.account-order__step::before {
+  content: "";
+
+  position: absolute;
+
+  top: -2px;
+  left: 0;
+
+  width: 100%;
+  height: 3px;
+
+  background: transparent;
+}
+
+.account-order__step.is-complete,
+.account-order__step.is-current {
+  color: #111;
+}
+
+.account-order__step.is-complete::before,
+.account-order__step.is-current::before {
+  background: #111;
+}
+
+
+/* ---------------------------------------------------------
+   TRACKING
+   --------------------------------------------------------- */
+
+.account-order__tracking {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-top: 24px;
+  padding: 18px 20px;
+
+  background: #f4f4f0;
+}
+
+.account-order__tracking-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.account-order__tracking-info span {
+  color: #79766f;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.account-order__tracking-info strong {
+  font-size: 13px;
+}
+
+.account-order__tracking-link {
+  color: #111;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  border-bottom: 1px solid #111;
+}
+
+
+/* ---------------------------------------------------------
+   QR GRID
+   --------------------------------------------------------- */
+
+.customer-qr-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+
+/* ---------------------------------------------------------
+   SHOP MORE
+   --------------------------------------------------------- */
+
+.customer-shop-more {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 30px;
+
+  padding: 28px 0;
+
+  border-top: 1px solid #d8d8d2;
+}
+
+.customer-shop-more h2 {
+  margin: 7px 0 5px;
+
+  font-size: 23px;
+  letter-spacing: -0.025em;
+}
+
+.customer-shop-more p {
+  margin: 0;
+
+  color: #77736f;
+
+  font-size: 13px;
+}
+
+.customer-shop-more__link {
+  flex: none;
+
+  padding-bottom: 3px;
+
+  color: #111;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  border-bottom: 1px solid #111;
+}
+
+
+/* ---------------------------------------------------------
+   MOBILE
+   --------------------------------------------------------- */
+
+@media (max-width: 760px) {
+
+  .customer-dashboard {
+    padding: 38px 0 60px;
+  }
+
+  .customer-dashboard__inner {
+    gap: 54px;
+  }
+
+  .customer-dashboard__section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer-qr-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-order {
+    padding: 20px;
+  }
+
+  .account-order__progress {
+    grid-template-columns: 1fr;
+    gap: 0;
+
+    border-top: 0;
+  }
+
+  .account-order__step {
+    padding: 7px 0 7px 15px;
+  }
+
+  .account-order__step::before {
+    top: 50%;
+    left: 0;
+
+    width: 5px;
+    height: 5px;
+
+    border-radius: 50%;
+  }
+
+  .account-order__tracking {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer-shop-more {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* =========================================================
+   MY QR PAGE
+   ========================================================= */
+
+.my-qr-page {
+  background: #f7f7f4;
+  color: #111;
+}
+
+
+/* ---------------------------------------------------------
+   HERO
+   --------------------------------------------------------- */
+
+.my-qr-hero {
+  padding: 82px 0 72px;
+
+  border-bottom: 1px solid #deded8;
+}
+
+.my-qr-hero__inner {
+  max-width: 800px;
+}
+
+.my-qr-eyebrow {
+  display: block;
+
+  margin-bottom: 9px;
+
+  color: #8b877f;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  line-height: 1;
+
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+
+.my-qr-hero h1 {
+  margin: 0;
+
+  font-size: clamp(48px, 7vw, 82px);
+  line-height: 0.95;
+
+  letter-spacing: -0.055em;
+}
+
+.my-qr-hero p {
+  max-width: 580px;
+
+  margin: 24px 0 0;
+
+  color: #68655f;
+
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+
+/* ---------------------------------------------------------
+   HOW IT WORKS
+   --------------------------------------------------------- */
+
+.my-qr-how {
+  padding: 80px 0;
+
+  background: #111;
+  color: #fff;
+}
+
+.my-qr-how .my-qr-eyebrow {
+  color: #918e87;
+}
+
+.my-qr-section-heading h2 {
+  max-width: 760px;
+
+  margin: 0;
+
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.06;
+
+  letter-spacing: -0.045em;
+}
+
+.my-qr-steps {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  margin-top: 60px;
+
+  border-top: 1px solid #383838;
+}
+
+.my-qr-step {
+  min-height: 225px;
+
+  padding: 28px;
+
+  border-right: 1px solid #383838;
+}
+
+.my-qr-step:first-child {
+  border-left: 1px solid #383838;
+}
+
+.my-qr-step > span {
+  display: block;
+
+  margin-bottom: 50px;
+
+  color: #777;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.my-qr-step h3 {
+  margin: 0 0 12px;
+
+  font-size: 20px;
+}
+
+.my-qr-step p {
+  margin: 0;
+
+  color: #a8a8a3;
+
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+
+/* ---------------------------------------------------------
+   STATE
+   --------------------------------------------------------- */
+
+.my-qr-account-state {
+  padding: 90px 0;
+}
+
+.my-qr-state-card {
+  max-width: 680px;
+}
+
+.my-qr-state-card h2 {
+  margin: 0 0 20px;
+
+  font-size: clamp(34px, 4vw, 52px);
+  line-height: 1;
+
+  letter-spacing: -0.045em;
+}
+
+.my-qr-state-card p {
+  max-width: 590px;
+
+  color: #6b6862;
+
+  line-height: 1.7;
+}
+
+.my-qr-state-actions {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+
+  margin-top: 30px;
+}
+
+.my-qr-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 48px;
+
+  padding: 0 24px;
+
+  background: #111;
+  color: #fff;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.my-qr-secondary-action {
+  color: #111;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  border-bottom: 1px solid #111;
+}
+
+
+/* ---------------------------------------------------------
+   ACCOUNT
+   --------------------------------------------------------- */
+
+.my-qr-account {
+  padding: 85px 0;
+}
+
+.my-qr-account__header {
+  display: flex;
+
+  margin-bottom: 42px;
+}
+
+.my-qr-account__header h2 {
+  margin: 0;
+
+  font-size: clamp(32px, 4vw, 46px);
+
+  letter-spacing: -0.04em;
+}
+
+.my-qr-account__header p {
+  max-width: 650px;
+
+  margin: 14px 0 0;
+
+  color: #6c6963;
+
+  line-height: 1.6;
+}
+
+
+/* ---------------------------------------------------------
+   QR GRID
+   --------------------------------------------------------- */
+
+.my-qr-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+.my-qr-card {
+  display: grid;
+
+  grid-template-columns: 180px 1fr;
+
+  min-height: 300px;
+
+  background: #fff;
+
+  border: 1px solid #deded8;
+}
+
+.my-qr-card__visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: #f0f0ec;
+
+  border-right: 1px solid #deded8;
+}
+
+.my-qr-card__qr {
+  width: 135px;
+  height: 135px;
+
+  object-fit: contain;
+}
+
+.my-qr-card__content {
+  min-width: 0;
+
+  padding: 25px;
+}
+
+.my-qr-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 18px;
+}
+
+.my-qr-card__heading h3 {
+  margin: 0;
+
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+.my-qr-card__scans {
+  flex: none;
+
+  color: #807d77;
+
+  font-size: 10px;
+}
+
+.my-qr-card__public {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  margin-top: 28px;
+}
+
+.my-qr-card__public span,
+.my-qr-card__label {
+  color: #85817a;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.my-qr-card__public a {
+  overflow: hidden;
+
+  color: #111;
+
+  font-size: 12px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-qr-card__label {
+  display: block;
+
+  margin-top: 23px;
+  margin-bottom: 7px;
+}
+
+.my-qr-card__edit {
+  display: grid;
+
+  grid-template-columns: 1fr auto;
+}
+
+.my-qr-card__edit input {
+  min-width: 0;
+
+  height: 45px;
+
+  padding: 0 13px;
+
+  background: #fff;
+
+  border: 1px solid #d9d8d3;
+  border-right: 0;
+
+  outline: none;
+
+  font-size: 12px;
+}
+
+.my-qr-card__edit input:focus {
+  border-color: #111;
+}
+
+.my-qr-card__edit button {
+  min-width: 80px;
+
+  padding: 0 17px;
+
+  background: #111;
+  color: #fff;
+
+  border: 1px solid #111;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  cursor: pointer;
+}
+
+.my-qr-card__edit button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.my-qr-card__status {
+  min-height: 16px;
+
+  margin: 8px 0 0;
+
+  color: #b42318;
+
+  font-size: 10px;
+}
+
+.my-qr-card__status.is-success {
+  color: #16743c;
+}
+
+
+/* ---------------------------------------------------------
+   INFO
+   --------------------------------------------------------- */
+
+.my-qr-info {
+  padding: 80px 0 100px;
+
+  border-top: 1px solid #deded8;
+}
+
+.my-qr-info__grid {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 90px;
+}
+
+.my-qr-info h2 {
+  max-width: 450px;
+
+  margin: 0;
+
+  font-size: clamp(32px, 4vw, 46px);
+  line-height: 1.05;
+
+  letter-spacing: -0.045em;
+}
+
+.my-qr-info__copy p {
+  margin: 0 0 20px;
+
+  color: #67645e;
+
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+
+/* ---------------------------------------------------------
+   RESPONSIVE
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+
+  .my-qr-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-qr-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .my-qr-step,
+  .my-qr-step:first-child {
+    border-left: 1px solid #383838;
+    border-bottom: 1px solid #383838;
+  }
+
+}
+
+
+@media (max-width: 640px) {
+
+  .my-qr-hero {
+    padding: 54px 0;
+  }
+
+  .my-qr-how,
+  .my-qr-account,
+  .my-qr-account-state,
+  .my-qr-info {
+    padding: 58px 0;
+  }
+
+  .my-qr-card {
+    grid-template-columns: 1fr;
+  }
+
+  .my-qr-card__visual {
+    border-right: 0;
+    border-bottom: 1px solid #deded8;
+  }
+
+  .my-qr-card__qr {
+    width: 150px;
+    height: 150px;
+  }
+
+  .my-qr-info__grid {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .my-qr-state-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+}

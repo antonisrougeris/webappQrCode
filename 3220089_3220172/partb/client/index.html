@@ -147,92 +147,58 @@
      LOGGED-IN CUSTOMER DASHBOARD
      ========================================= -->
 
+<!-- =========================================
+     LOGGED-IN CUSTOMER DASHBOARD
+     ========================================= -->
+
 <section
   id="userDashboardHero"
-  class="account-dashboard hidden"
+  class="customer-dashboard hidden"
 >
-  <div class="container account-dashboard__container">
+  <div class="container customer-dashboard__inner">
 
+    <!-- ==============================
+         ORDERS
+         ============================== -->
 
-    <!-- ================================
-         ACCOUNT HEADER
-         ================================ -->
+    <section class="customer-dashboard__section">
 
-    <header class="account-dashboard__header">
-
-      <div>
-        <span class="account-dashboard__eyebrow">
-          MY SKANARE
-        </span>
-
-        <h1>
-          Your account
-        </h1>
-
-        <p>
-          Track your orders and manage your QR destinations.
-        </p>
-      </div>
-
-      <a
-        href="#tshirts"
-        class="account-dashboard__shop-link"
-      >
-        Shop more
-        <span aria-hidden="true">↗</span>
-      </a>
-
-    </header>
-
-
-    <!-- ================================
-         ORDERS / FULFILLMENT
-         ================================ -->
-
-    <section
-      id="userOrdersSection"
-      class="account-dashboard__section"
-    >
-
-      <div class="account-dashboard__section-head">
-
+      <div class="customer-dashboard__section-head">
         <div>
-          <span class="account-dashboard__section-eyebrow">
-            ORDERS
+          <span class="customer-dashboard__eyebrow">
+            Orders
           </span>
 
-          <h2>
+          <h1>
             Your orders
-          </h2>
+          </h1>
         </div>
-
       </div>
-
 
       <div
         id="userOrdersList"
         class="account-orders"
-      >
-        <!-- main.ts renders orders here -->
-      </div>
+      ></div>
 
     </section>
 
 
-    <!-- ================================
+    <!-- ==============================
          QR CODES
-         ================================ -->
+         Hidden automatically when
+         the user has no QR codes
+         ============================== -->
 
     <section
       id="userQrSection"
-      class="account-dashboard__section"
+      class="customer-dashboard__section hidden"
     >
 
-      <div class="account-dashboard__section-head">
+      <div class="customer-dashboard__section-head">
 
         <div>
-          <span class="account-dashboard__section-eyebrow">
-            DYNAMIC QR
+          <span class="customer-dashboard__eyebrow">
+            Dynamic QR
           </span>
 
           <h2>
@@ -240,15 +206,15 @@
           </h2>
 
           <p>
-            Change where your QR products redirect anytime.
+            Change where your purchased QR products redirect.
           </p>
         </div>
 
         <a
           href="/src/pages/my-qr/my-qr.html"
-          class="account-dashboard__text-link"
+          class="customer-dashboard__text-link"
         >
-          View all QR codes →
+          Manage all →
         </a>
 
       </div>
@@ -256,22 +222,21 @@
 
       <div
         id="userQrGrid"
-        class="account-qr-grid"
+        class="customer-qr-grid"
       ></div>
 
     </section>
 
 
-    <!-- ================================
+    <!-- ==============================
          SHOP MORE
-         ================================ -->
+         ============================== -->
 
-    <section class="account-dashboard__shop-more">
+    <section class="customer-shop-more">
 
       <div>
-
-        <span class="account-dashboard__section-eyebrow">
-          KEEP SCANNING
+        <span class="customer-dashboard__eyebrow">
+          Keep scanning
         </span>
 
         <h2>
@@ -282,30 +247,16 @@
           Discover more QR clothing and accessories
           for your next idea.
         </p>
-
       </div>
 
-
-      <div class="account-dashboard__shop-actions">
-
-        <a
-          href="#tshirts"
-          class="btn-primary"
-        >
-          Shop clothing
-        </a>
-
-        <a
-          href="#accessories"
-          class="btn-outline"
-        >
-          Shop accessories
-        </a>
-
-      </div>
+      <a
+        href="/src/pages/products/products.html"
+        class="customer-shop-more__link"
+      >
+        Shop more →
+      </a>
 
     </section>
-
 
   </div>
 </section>

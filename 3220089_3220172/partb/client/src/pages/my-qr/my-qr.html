@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
+
+  <title>
+    My QR Codes | Skanare
+  </title>
+
+  <meta
+    name="description"
+    content="Manage the destination of your Skanare dynamic QR products."
+  />
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/reset.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/theme.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/layout.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/components.css?v=2.1"
+  />
+
+</head>
+
+
+<body>
+
+
+<!-- ======================================================
+     HEADER
+     ====================================================== -->
+
+<header class="site-header">
+
+  <div class="container header-content">
+
+    <button
+      id="menuToggle"
+      class="menu-toggle"
+      type="button"
+      aria-label="Toggle menu"
+      aria-expanded="false"
+      aria-controls="mainNav"
+    >
+      ☰
+    </button>
+
+
+    <nav
+      id="mainNav"
+      class="main-nav"
+      aria-label="Main navigation"
+    >
+
+      <div class="nav-left">
+
+        <a
+          href="/src/pages/products/products.html?category=tshirt"
+        >
+          QR Clothing
+        </a>
+
+        <a
+          href="/src/pages/products/products.html?category=accessory"
+        >
+          QR Accessories
+        </a>
+
+      </div>
+
+
+      <div class="nav-right">
+
+        <a href="/src/pages/contact/contact.html">
+          Contact
+        </a>
+
+        <a href="/index.html#how">
+          How it works
+        </a>
+
+      </div>
+
+    </nav>
+
+
+    <a
+      href="/index.html"
+      class="logo"
+      aria-label="Skanare home"
+    >
+
+      <img
+        class="logo-img"
+        src="/assets/img/logo_Image.png"
+        alt="Skanare logo"
+      />
+
+      <span class="logo-text">
+        Skanare
+      </span>
+
+    </a>
+
+
+    <div class="header-actions">
+
+      <div class="account-menu">
+
+        <button
+          class="header-icon-link account-btn"
+          type="button"
+          aria-label="Account menu"
+          aria-expanded="false"
+        >
+
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle
+              cx="12"
+              cy="8"
+              r="4"
+            ></circle>
+
+            <path
+              d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
+            ></path>
+          </svg>
+
+        </button>
+
+        <div
+          class="account-dropdown hidden"
+        ></div>
+
+      </div>
+
+
+      <a
+        href="/src/pages/cart/cart.html"
+        class="header-icon-link cart-link"
+        aria-label="Cart"
+      >
+
+        <svg
+          viewBox="0 0 22 22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+        >
+          <path
+            d="M14.666 7.333a3.666 3.666 0 1 1-7.333 0M3.33 6.785l-.642 7.7c-.137 1.654-.206 2.48.073 3.119a2.75 2.75 0 0 0 1.21 1.314c.612.332 1.442.332 3.102.332h7.853c1.66 0 2.49 0 3.103-.332a2.75 2.75 0 0 0 1.21-1.314c.279-.638.21-1.465.072-3.12l-.642-7.7c-.118-1.423-.178-2.134-.493-2.673A2.75 2.75 0 0 0 16.99 3.02c-.563-.269-1.277-.269-2.705-.269h-6.57c-1.428 0-2.142 0-2.705.27A2.75 2.75 0 0 0 3.823 4.11c-.315.539-.374 1.25-.493 2.674Z"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+
+      </a>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+
+<main class="my-qr-page">
+
+
+  <!-- ====================================================
+       PAGE INTRO
+       ==================================================== -->
+
+  <section class="my-qr-hero">
+
+    <div class="container my-qr-hero__inner">
+
+      <span class="my-qr-eyebrow">
+        Dynamic QR
+      </span>
+
+      <h1>
+        My QR Codes
+      </h1>
+
+      <p>
+        One printed QR. A destination you can change
+        whenever you want.
+      </p>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- ====================================================
+       HOW IT WORKS
+       Always visible
+       ==================================================== -->
+
+  <section class="my-qr-how">
+
+    <div class="container">
+
+      <div class="my-qr-section-heading">
+
+        <span class="my-qr-eyebrow">
+          How it works
+        </span>
+
+        <h2>
+          Your QR stays the same.
+          <br />
+          Your link doesn't have to.
+        </h2>
+
+      </div>
+
+
+      <div class="my-qr-steps">
+
+        <article class="my-qr-step">
+
+          <span>01</span>
+
+          <h3>
+            Buy a QR product
+          </h3>
+
+          <p>
+            Choose a supported Skanare clothing item
+            or accessory with a dynamic QR code.
+          </p>
+
+        </article>
+
+
+        <article class="my-qr-step">
+
+          <span>02</span>
+
+          <h3>
+            Scan your QR
+          </h3>
+
+          <p>
+            Every supported product has its own
+            unique QR. The printed code stays
+            physically the same.
+          </p>
+
+        </article>
+
+
+        <article class="my-qr-step">
+
+          <span>03</span>
+
+          <h3>
+            Change the destination
+          </h3>
+
+          <p>
+            Update your website, social profile,
+            portfolio, video or any other supported
+            URL without printing a new QR.
+          </p>
+
+        </article>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- ====================================================
+       LOADING
+       ==================================================== -->
+
+  <section
+    id="myQrLoading"
+    class="my-qr-account-state"
+  >
+
+    <div class="container">
+
+      <div class="my-qr-state-card">
+
+        <span class="my-qr-eyebrow">
+          Your QR
+        </span>
+
+        <h2>
+          Loading your QR codes…
+        </h2>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- ====================================================
+       SIGNED OUT
+       ==================================================== -->
+
+  <section
+    id="myQrSignedOut"
+    class="my-qr-account-state hidden"
+  >
+
+    <div class="container">
+
+      <div class="my-qr-state-card">
+
+        <span class="my-qr-eyebrow">
+          Your QR collection
+        </span>
+
+        <h2>
+          Your QR codes live here.
+        </h2>
+
+        <p>
+          Sign in to see and manage QR products
+          connected to your Skanare account.
+        </p>
+
+        <p>
+          Don't have a QR yet? Purchase a supported
+          QR product and, once it is associated with
+          your account, it will appear here automatically.
+        </p>
+
+
+        <div class="my-qr-state-actions">
+
+          <a
+            href="/src/pages/login/login.html"
+            class="my-qr-primary-action"
+          >
+            Sign in
+          </a>
+
+          <a
+            href="/src/pages/products/products.html"
+            class="my-qr-secondary-action"
+          >
+            Shop QR products →
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- ====================================================
+       SIGNED IN, BUT NO QR
+       ==================================================== -->
+
+  <section
+    id="myQrEmpty"
+    class="my-qr-account-state hidden"
+  >
+
+    <div class="container">
+
+      <div class="my-qr-state-card">
+
+        <span class="my-qr-eyebrow">
+          My QR Codes
+        </span>
+
+        <h2>
+          No QR codes yet.
+        </h2>
+
+        <p>
+          When you purchase an eligible Skanare
+          QR product, your QR will appear here
+          automatically.
+        </p>
+
+        <a
+          href="/src/pages/products/products.html"
+          class="my-qr-primary-action"
+        >
+          Find your first QR product
+        </a>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- ====================================================
+       SIGNED IN + HAS QRs
+       ==================================================== -->
+
+  <section
+    id="myQrAccount"
+    class="my-qr-account hidden"
+  >
+
+    <div class="container">
+
+      <div class="my-qr-account__header">
+
+        <div>
+
+          <span class="my-qr-eyebrow">
+            Your collection
+          </span>
+
+          <h2>
+            Manage your QR codes
+          </h2>
+
+          <p>
+            Paste a new destination and press Save.
+            The physical QR printed on your product
+            does not change.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="myQrGrid"
+        class="my-qr-grid"
+      ></div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- ====================================================
+       EXTRA EXPLANATION
+       ==================================================== -->
+
+  <section class="my-qr-info">
+
+    <div class="container my-qr-info__grid">
+
+      <div>
+
+        <span class="my-qr-eyebrow">
+          What can I link?
+        </span>
+
+        <h2>
+          Almost anything with a URL.
+        </h2>
+
+      </div>
+
+
+      <div class="my-qr-info__copy">
+
+        <p>
+          Your website, Instagram, TikTok,
+          YouTube, portfolio, event page,
+          menu, music, campaign or another
+          supported destination.
+        </p>
+
+        <p>
+          Changing the destination does not
+          require a new printed QR code.
+          Save the new URL here and future scans
+          will use the updated destination.
+        </p>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+</main>
+
+
+
+<footer class="site-footer">
+
+  <div class="container footer-main">
+
+    <div class="footer-brand">
+
+      <a
+        href="/index.html"
+        class="footer-logo"
+      >
+        Skanare
+      </a>
+
+      <p class="footer-description">
+        QR clothing and accessories that connect
+        what you wear with your digital world.
+      </p>
+
+      <p class="footer-tagline">
+        Dynamic QR. Your link. Your story.
+      </p>
+
+      <a
+        href="mailto:hello@skanare.com"
+        class="footer-email"
+      >
+        hello@skanare.com
+      </a>
+
+    </div>
+
+
+    <div class="footer-desktop-nav">
+
+      <div class="footer-column">
+
+        <h4>
+          My Account
+        </h4>
+
+        <ul>
+
+          <li>
+            <a href="/src/pages/my-qr/my-qr.html">
+              My QR Codes
+            </a>
+          </li>
+
+          <li>
+            <a href="/index.html">
+              My Orders
+            </a>
+          </li>
+
+        </ul>
+
+      </div>
+
+
+      <div class="footer-column">
+
+        <h4>
+          Shop
+        </h4>
+
+        <ul>
+
+          <li>
+            <a
+              href="/src/pages/products/products.html?category=tshirt"
+            >
+              QR Clothing
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="/src/pages/products/products.html?category=accessory"
+            >
+              QR Accessories
+            </a>
+          </li>
+
+        </ul>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</footer>
+
+
+<script
+  type="module"
+  src="/src/pages/my-qr/my-qr.ts"
+></script>
+
+</body>
+
+</html>
