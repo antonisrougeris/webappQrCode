@@ -267,6 +267,624 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
   });
 }
 
+
+/* =========================================================
+   CUSTOMER ORDERS
+   ========================================================= */
+
+async function getOrders(): Promise<any[]> {
+  const user = firebaseAuth.currentUser;
+
+  if (!user) {
+    return [];
+  }
+
+  const token = await user.getIdToken();
+
+  const API_BASE_URL =
+    (
+      import.meta.env.VITE_API_BASE_URL ||
+      "/api"
+    ).replace(/\/$/, "");
+
+  const response = await fetch(
+    `${API_BASE_URL}/orders`,
+    {
+      method: "GET",
+
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+
+      credentials: "include",
+    }
+  );
+
+  const payload =
+    await response
+      .json()
+      .catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      payload?.message ||
+      payload?.error ||
+      `Failed to load orders (${response.status})`
+    );
+  }
+
+  /*
+   * Support the common response formats:
+   *
+   * { orders: [...] }
+   * { data: { orders: [...] } }
+   * { data: [...] }
+   * [...]
+   */
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload?.orders)) {
+    return payload.orders;
+  }
+
+  if (Array.isArray(payload?.data?.orders)) {
+    return payload.data.orders;
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  return [];
+}
+
+
+/* =========================================================
+   CUSTOMER ORDER UI
+   ========================================================= */
+
+function accountEscapeHtml(
+  value: unknown
+): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
+const CUSTOMER_ORDER_STEPS = [
+  "to_prepare",
+  "preparing",
+  "ready",
+  "shipped",
+  "completed",
+];
+
+
+const CUSTOMER_ORDER_LABELS:
+  Record<string, string> = {
+
+    to_prepare:
+      "To prepare",
+
+    preparing:
+      "Preparing",
+
+    ready:
+      "Ready",
+
+    shipped:
+      "Shipped",
+
+    completed:
+      "Completed",
+
+    cancelled:
+      "Cancelled",
+
+    pending:
+      "Pending",
+  };
+
+
+function getCustomerOrderStatus(
+  order: any
+): string {
+
+  const fulfillment =
+    String(
+      order?.fulfillmentStatus || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (fulfillment) {
+    return fulfillment;
+  }
+
+
+  const payment =
+    String(
+      order?.paymentStatus ||
+      order?.status ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  /*
+   * Paid but fulfillment has not
+   * been initialized yet.
+   */
+  if (payment === "paid") {
+    return "to_prepare";
+  }
+
+
+  if (
+    payment === "cancelled" ||
+    payment === "canceled"
+  ) {
+    return "cancelled";
+  }
+
+
+  return payment || "pending";
+}
+
+
+function customerOrderDate(
+  value: any
+): string {
+
+  if (!value) {
+    return "";
+  }
+
+  let date: Date;
+
+
+  /*
+   * Firestore Timestamp
+   */
+  if (
+    typeof value === "object" &&
+    typeof value?.toDate === "function"
+  ) {
+    date = value.toDate();
+  }
+
+  /*
+   * Firestore serialized timestamp
+   */
+  else if (
+    typeof value === "object" &&
+    value?.seconds
+  ) {
+    date =
+      new Date(
+        Number(value.seconds) * 1000
+      );
+  }
+
+  /*
+   * ISO string / normal date
+   */
+  else {
+    date =
+      new Date(value);
+  }
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+
+  return new Intl.DateTimeFormat(
+    "en-GB",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  ).format(date);
+}
+
+
+function renderCustomerOrders(
+  orders: any[]
+): void {
+
+  const container =
+    document.getElementById(
+      "userOrdersList"
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!orders.length) {
+
+    container.innerHTML = `
+      <div class="account-orders__empty">
+        You don't have any orders yet.
+      </div>
+    `;
+
+    return;
+  }
+
+
+  const sortedOrders =
+    [...orders].sort(
+      (a, b) => {
+
+        const aTime =
+          new Date(
+            a?.createdAt || 0
+          ).getTime() || 0;
+
+        const bTime =
+          new Date(
+            b?.createdAt || 0
+          ).getTime() || 0;
+
+        return bTime - aTime;
+      }
+    );
+
+
+  container.innerHTML =
+    sortedOrders
+      .map((order) => {
+
+        const status =
+          getCustomerOrderStatus(
+            order
+          );
+
+
+        const statusLabel =
+          CUSTOMER_ORDER_LABELS[
+            status
+          ] ||
+          status
+            .replaceAll("_", " ")
+            .replace(
+              /\b\w/g,
+              (letter) =>
+                letter.toUpperCase()
+            );
+
+
+        const currentStep =
+          CUSTOMER_ORDER_STEPS
+            .indexOf(status);
+
+
+        /*
+         * ORDER PROGRESS
+         */
+
+        const progress =
+          status === "cancelled" ||
+          status === "pending"
+            ? ""
+            : `
+              <div
+                class="account-order__progress"
+                aria-label="Order progress"
+              >
+
+                ${
+                  CUSTOMER_ORDER_STEPS
+                    .map(
+                      (
+                        step,
+                        index
+                      ) => {
+
+                        let stateClass = "";
+
+                        if (
+                          currentStep >= 0 &&
+                          index < currentStep
+                        ) {
+                          stateClass =
+                            "is-complete";
+                        }
+
+                        if (
+                          index === currentStep
+                        ) {
+                          stateClass =
+                            "is-current";
+                        }
+
+
+                        return `
+                          <div
+                            class="
+                              account-order__step
+                              ${stateClass}
+                            "
+                          >
+                            ${
+                              CUSTOMER_ORDER_LABELS[
+                                step
+                              ]
+                            }
+                          </div>
+                        `;
+                      }
+                    )
+                    .join("")
+                }
+
+              </div>
+            `;
+
+
+        /*
+         * PRODUCTS
+         */
+
+        const items =
+          Array.isArray(
+            order?.items
+          )
+            ? order.items
+            : [];
+
+
+        const products =
+          items
+            .map(
+              (item: any) => {
+
+                const title =
+                  item?.title ||
+                  item?.productTitle ||
+                  "Skanare product";
+
+                const size =
+                  item?.variant?.size ||
+                  item?.size ||
+                  "";
+
+                const color =
+                  item?.variant?.color ||
+                  item?.color ||
+                  "";
+
+                const quantity =
+                  Number(
+                    item?.quantity || 1
+                  );
+
+
+                return `
+                  <span
+                    class="account-order__product"
+                  >
+
+                    <strong>
+                      ${accountEscapeHtml(
+                        title
+                      )}
+                    </strong>
+
+                    ${
+                      size
+                        ? `
+                          <span>
+                            · ${accountEscapeHtml(
+                              size
+                            )}
+                          </span>
+                        `
+                        : ""
+                    }
+
+                    ${
+                      color
+                        ? `
+                          <span>
+                            · ${accountEscapeHtml(
+                              color
+                            )}
+                          </span>
+                        `
+                        : ""
+                    }
+
+                    <span>
+                      × ${quantity}
+                    </span>
+
+                  </span>
+                `;
+              }
+            )
+            .join("");
+
+
+        /*
+         * BOX NOW / TRACKING
+         */
+
+        const trackingNumber =
+          order?.shipping
+            ?.trackingNumber ||
+          order?.shipping
+            ?.parcelId ||
+          "";
+
+
+        const trackingUrl =
+          order?.shipping
+            ?.trackingUrl ||
+          "";
+
+
+        const carrier =
+          order?.shipping?.carrier ||
+          "BOX NOW";
+
+
+        const canShowTracking =
+          (
+            status === "shipped" ||
+            status === "completed"
+          ) &&
+          Boolean(
+            trackingNumber ||
+            trackingUrl
+          );
+
+
+        const tracking =
+          canShowTracking
+            ? `
+              <div
+                class="account-order__tracking"
+              >
+
+                <div
+                  class="account-order__tracking-info"
+                >
+
+                  <span>
+                    ${accountEscapeHtml(
+                      carrier
+                    )}
+                    tracking
+                  </span>
+
+                  <strong>
+                    ${accountEscapeHtml(
+                      trackingNumber ||
+                      "Shipment available"
+                    )}
+                  </strong>
+
+                </div>
+
+
+                ${
+                  trackingUrl
+                    ? `
+                      <a
+                        href="${accountEscapeHtml(
+                          trackingUrl
+                        )}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="account-order__tracking-link"
+                      >
+                        Track order ↗
+                      </a>
+                    `
+                    : ""
+                }
+
+              </div>
+            `
+            : "";
+
+
+        return `
+          <article class="account-order">
+
+            <div class="account-order__top">
+
+              <div
+                class="account-order__meta"
+              >
+
+                <span
+                  class="account-order__label"
+                >
+                  Order
+                </span>
+
+                <h3
+                  class="account-order__number"
+                >
+                  ${accountEscapeHtml(
+                    order?.orderNumber ||
+                    order?.id ||
+                    ""
+                  )}
+                </h3>
+
+                <span
+                  class="account-order__date"
+                >
+                  ${accountEscapeHtml(
+                    customerOrderDate(
+                      order?.createdAt
+                    )
+                  )}
+                </span>
+
+              </div>
+
+
+              <span
+                class="
+                  account-order__status
+                  account-order__status--${accountEscapeHtml(
+                    status
+                  )}
+                "
+              >
+                ${accountEscapeHtml(
+                  statusLabel
+                )}
+              </span>
+
+            </div>
+
+
+            ${
+              products
+                ? `
+                  <div
+                    class="account-order__products"
+                  >
+                    ${products}
+                  </div>
+                `
+                : ""
+            }
+
+
+            ${progress}
+
+            ${tracking}
+
+          </article>
+        `;
+      })
+      .join("");
+}
 async function loadUserAccountDashboard(): Promise<void> {
 
   const dashboard =
