@@ -267,33 +267,165 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
   });
 }
 
-async function loadUserQrCodes(): Promise<void> {
-  const dashboardHero = document.getElementById("userDashboardHero");
-  const defaultHero = document.getElementById("defaultHero");
-  const grid = document.getElementById("userQrGrid") as HTMLElement | null;
+async function loadUserAccountDashboard(): Promise<void> {
 
-  if (!grid) return;
+  const dashboard =
+    document.getElementById(
+      "userDashboardHero"
+    );
+
+  const defaultHero =
+    document.getElementById(
+      "defaultHero"
+    );
+
+  const qrGrid =
+    document.getElementById(
+      "userQrGrid"
+    ) as HTMLElement | null;
+
+  const qrSection =
+    document.getElementById(
+      "userQrSection"
+    );
+
 
   try {
-    const qrCodes = await getMyQrCodes();
 
-    if (!qrCodes.length) {
-      dashboardHero?.classList.add("hidden");
-      defaultHero?.classList.remove("hidden");
-      grid.innerHTML = "";
+    /*
+     * Orders and QR are loaded independently.
+     * If one endpoint fails, the other part
+     * of the account dashboard can still work.
+     */
+
+    const [
+      ordersResult,
+      qrResult,
+    ] =
+      await Promise.allSettled([
+        getOrders(),
+        getMyQrCodes(),
+      ]);
+
+
+    const rawOrders: any =
+      ordersResult.status ===
+      "fulfilled"
+        ? ordersResult.value
+        : [];
+
+
+    const orders: any[] =
+      Array.isArray(rawOrders)
+        ? rawOrders
+        : Array.isArray(
+            rawOrders?.orders
+          )
+          ? rawOrders.orders
+          : [];
+
+
+    const qrCodes: QrCode[] =
+      qrResult.status ===
+      "fulfilled" &&
+      Array.isArray(
+        qrResult.value
+      )
+        ? qrResult.value
+        : [];
+
+
+    const hasAccountData =
+      orders.length > 0 ||
+      qrCodes.length > 0;
+
+
+    /*
+     * No orders and no QR:
+     * show normal marketing homepage.
+     */
+
+    if (!hasAccountData) {
+
+      dashboard?.classList.add(
+        "hidden"
+      );
+
+      defaultHero?.classList.remove(
+        "hidden"
+      );
+
       return;
     }
 
-    dashboardHero?.classList.remove("hidden");
-    defaultHero?.classList.add("hidden");
 
-    renderQrDashboard(grid, qrCodes);
+    /*
+     * Customer has activity:
+     * show customer dashboard.
+     */
+
+    dashboard?.classList.remove(
+      "hidden"
+    );
+
+    defaultHero?.classList.add(
+      "hidden"
+    );
+
+
+    /*
+     * Orders
+     */
+
+    renderCustomerOrders(
+      orders
+    );
+
+
+    /*
+     * QR codes
+     */
+
+    if (
+      qrGrid &&
+      qrCodes.length
+    ) {
+
+      qrSection?.classList.remove(
+        "hidden"
+      );
+
+      await renderQrDashboard(
+        qrGrid,
+        qrCodes
+      );
+
+    } else {
+
+      qrSection?.classList.add(
+        "hidden"
+      );
+
+      if (qrGrid) {
+        qrGrid.innerHTML = "";
+      }
+    }
+
+
   } catch (error) {
-    console.error("Failed to load user QR codes:", error);
 
-    dashboardHero?.classList.add("hidden");
-    defaultHero?.classList.remove("hidden");
-    grid.innerHTML = "";
+    console.error(
+      "Failed to load customer dashboard:",
+      error
+    );
+
+    dashboard?.classList.add(
+      "hidden"
+    );
+
+    defaultHero?.classList.remove(
+      "hidden"
+    );
   }
 }
 
@@ -308,6 +440,15 @@ function resetLoggedOutHomepageState(): void {
   if (grid) {
     grid.innerHTML = "";
   }
+
+  const orders =
+  document.getElementById(
+    "userOrdersList"
+  );
+
+if (orders) {
+  orders.innerHTML = "";
+}
 }
 
 /* =========================
@@ -378,12 +519,17 @@ document.addEventListener("DOMContentLoaded", () => {
     "accessory"
   );
 
-  firebaseAuth.onAuthStateChanged((user) => {
+ firebaseAuth.onAuthStateChanged(
+  (user) => {
+
     if (user) {
-      void loadUserQrCodes();
+
+      void loadUserAccountDashboard();
+
       return;
     }
 
     resetLoggedOutHomepageState();
-  });
+  }
+);
 });

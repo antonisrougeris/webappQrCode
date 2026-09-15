@@ -143,23 +143,172 @@
   </div>
 
   <main>
-    <section id="userDashboardHero" class="hero hidden">
+<!-- =========================================
+     LOGGED-IN CUSTOMER DASHBOARD
+     ========================================= -->
 
-      <div class="container">
-    
-        <h1>Your QR Codes</h1>
-        <p>Manage where your products redirect</p>
-    
-        <div id="userQrGrid" class="grid grid-3"></div>
+<section
+  id="userDashboardHero"
+  class="account-dashboard hidden"
+>
+  <div class="container account-dashboard__container">
 
-        <div class="dashboard-shop-more">
-          <h2>Want to buy more?</h2>
-          <p>Discover more QR clothing and accessories for your next idea.</p>
-        </div>
-    
+
+    <!-- ================================
+         ACCOUNT HEADER
+         ================================ -->
+
+    <header class="account-dashboard__header">
+
+      <div>
+        <span class="account-dashboard__eyebrow">
+          MY SKANARE
+        </span>
+
+        <h1>
+          Your account
+        </h1>
+
+        <p>
+          Track your orders and manage your QR destinations.
+        </p>
       </div>
-    
+
+      <a
+        href="#tshirts"
+        class="account-dashboard__shop-link"
+      >
+        Shop more
+        <span aria-hidden="true">↗</span>
+      </a>
+
+    </header>
+
+
+    <!-- ================================
+         ORDERS / FULFILLMENT
+         ================================ -->
+
+    <section
+      id="userOrdersSection"
+      class="account-dashboard__section"
+    >
+
+      <div class="account-dashboard__section-head">
+
+        <div>
+          <span class="account-dashboard__section-eyebrow">
+            ORDERS
+          </span>
+
+          <h2>
+            Your orders
+          </h2>
+        </div>
+
+      </div>
+
+
+      <div
+        id="userOrdersList"
+        class="account-orders"
+      >
+        <!-- main.ts renders orders here -->
+      </div>
+
     </section>
+
+
+    <!-- ================================
+         QR CODES
+         ================================ -->
+
+    <section
+      id="userQrSection"
+      class="account-dashboard__section"
+    >
+
+      <div class="account-dashboard__section-head">
+
+        <div>
+          <span class="account-dashboard__section-eyebrow">
+            DYNAMIC QR
+          </span>
+
+          <h2>
+            My QR Codes
+          </h2>
+
+          <p>
+            Change where your QR products redirect anytime.
+          </p>
+        </div>
+
+        <a
+          href="/src/pages/my-qr/my-qr.html"
+          class="account-dashboard__text-link"
+        >
+          View all QR codes →
+        </a>
+
+      </div>
+
+
+      <div
+        id="userQrGrid"
+        class="account-qr-grid"
+      ></div>
+
+    </section>
+
+
+    <!-- ================================
+         SHOP MORE
+         ================================ -->
+
+    <section class="account-dashboard__shop-more">
+
+      <div>
+
+        <span class="account-dashboard__section-eyebrow">
+          KEEP SCANNING
+        </span>
+
+        <h2>
+          Want to buy more?
+        </h2>
+
+        <p>
+          Discover more QR clothing and accessories
+          for your next idea.
+        </p>
+
+      </div>
+
+
+      <div class="account-dashboard__shop-actions">
+
+        <a
+          href="#tshirts"
+          class="btn-primary"
+        >
+          Shop clothing
+        </a>
+
+        <a
+          href="#accessories"
+          class="btn-outline"
+        >
+          Shop accessories
+        </a>
+
+      </div>
+
+    </section>
+
+
+  </div>
+</section>
 
 <section id="defaultHero" class="home-hero">
   <div class="container home-hero__inner">
