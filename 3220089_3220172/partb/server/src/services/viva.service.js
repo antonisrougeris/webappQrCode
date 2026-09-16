@@ -96,12 +96,13 @@ export async function createVivaPaymentOrder(order) {
   if (!Number.isInteger(amountInCents) || amountInCents < 1) {
     throw new ApiError(400, "Invalid payment amount");
   }
-
-  const successUrl = `${publicBaseUrl}/pages/payment/payment_success.html?orderId=${encodeURIComponent(
+const successUrl =
+  `${publicBaseUrl}/payment/success?orderId=${encodeURIComponent(
     order.id
   )}`;
 
-  const failureUrl = `${publicBaseUrl}/pages/payment/payment_failure.html?orderId=${encodeURIComponent(
+const failureUrl =
+  `${publicBaseUrl}/payment/failure?orderId=${encodeURIComponent(
     order.id
   )}`;
 

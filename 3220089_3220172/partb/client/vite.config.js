@@ -81,6 +81,11 @@ export default defineConfig({
           __dirname,
           "src/pages/admin/admin.html"
         ),
+
+        myQr: resolve(
+  __dirname,
+  "src/pages/my-qr/my-qr.html"
+),
       },
     },
   },
