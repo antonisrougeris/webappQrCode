@@ -2345,14 +2345,11 @@ export const generateAdminQrStock =
             size: printConfig.size || 3540,
           });
 
-          const a3Buffer =
-            await generatePrintSheet({
-              qrBuffer,
-
-              shirtColor:
-                color ||
-                "Black",
-            });
+          const a3Buffer = await generatePrintSheet({
+  qrBuffer,
+  shirtColor: color || "Black",
+  shirtSize: size,
+});
 
 
           const uploaded =
