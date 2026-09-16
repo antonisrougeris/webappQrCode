@@ -2,6 +2,38 @@ import fs from "fs";
 import path from "path";
 import { createCanvas, loadImage } from "canvas";
 
+// ============================================================
+// PRINT SETTINGS
+// ============================================================
+
+const DPI = 300;
+
+// A3 portrait @ 300 DPI
+const A3_WIDTH = 3508;
+const A3_HEIGHT = 4961;
+
+// Εδώ αλλάζεις τις πραγματικές διαστάσεις εκτύπωσης
+const QR_WIDTH_CM = 23;
+const LOGO_WIDTH_CM = 6;
+const NECK_LABEL_WIDTH_CM = 6;
+
+// Κενά ανάμεσα στα στοιχεία (pixels)
+const TOP_MARGIN = 120;
+
+const QR_TO_LOGO_GAP = 250;
+
+const LOGO_TO_NECK_GAP = 250;
+
+// Convert centimeters to pixels
+const cmToPx = (cm) => (cm / 2.54) * DPI;
+
+const pxToCm = (px) => (px / DPI) * 2.54;
+
+
+// ============================================================
+// NORMALIZE SHIRT COLOR
+// ============================================================
+
 function normalizeShirtColor(shirtColor) {
   const normalized = String(shirtColor || "")
     .trim()
@@ -25,74 +57,201 @@ function normalizeShirtColor(shirtColor) {
     return "white";
   }
 
-  return "white";
+  throw new Error(
+    `Unsupported shirt color: "${shirtColor}"`
+  );
 }
+
+
+// ============================================================
+// NORMALIZE SHIRT SIZE
+// ============================================================
 
 function normalizeShirtSize(shirtSize) {
   const normalized = String(shirtSize || "")
     .trim()
     .toUpperCase();
 
-  const allowedSizes = ["S", "M", "L", "XL", "2XL"];
+  // Accept XXL as an alias for 2XL
+  const normalizedSize =
+    normalized === "XXL" ? "2XL" : normalized;
 
-  if (!allowedSizes.includes(normalized)) {
+  const allowedSizes = [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "2XL",
+  ];
+
+  if (!allowedSizes.includes(normalizedSize)) {
     throw new Error(
       `Unsupported shirt size "${shirtSize}". Allowed sizes: ${allowedSizes.join(", ")}`
     );
   }
 
-  return normalized;
+  return normalizedSize;
 }
 
-/**
- * Για μαύρη μπλούζα θέλουμε άσπρη εκτύπωση.
- * Για άσπρη μπλούζα θέλουμε μαύρη εκτύπωση.
+
+// ============================================================
+// PRINT COLOR
+// ============================================================
+
+/*
+ * Black shirt -> White print
+ * White shirt -> Black print
  */
-function getContrastPrintColor(normalizedShirtColor) {
-  return normalizedShirtColor === "black" ? "white" : "black";
+
+function getContrastPrintColor(shirtColor) {
+  return shirtColor === "black"
+    ? "white"
+    : "black";
 }
 
-function getLogoFileByPrintColor(printColor) {
+
+// ============================================================
+// SELECT PRINT ASSETS
+// ============================================================
+
+function getLogoFile(printColor) {
   return `logo-${printColor}.png`;
 }
 
-function getNeckLabelFileByPrintColorAndSize(printColor, normalizedSize) {
-  const sizePart = normalizedSize.toLowerCase(); // s, m, l, xl, 2xl
+function getNeckLabelFile(printColor, shirtSize) {
+  const sizePart = shirtSize.toLowerCase();
+
   return `neck-label-${printColor}-${sizePart}.png`;
 }
 
+
+// ============================================================
+// FILE VALIDATION
+// ============================================================
+
 function assertFileExists(filePath, label) {
   if (!fs.existsSync(filePath)) {
-    throw new Error(`${label} file not found: ${filePath}`);
+    throw new Error(
+      `${label} file not found: ${filePath}`
+    );
   }
 }
+
+
+// ============================================================
+// DRAW IMAGE AT EXACT PRINT WIDTH
+// ============================================================
+
+function drawImageAtWidth({
+  ctx,
+  image,
+  centerX,
+  y,
+  widthCm,
+  label,
+}) {
+  const widthPx = cmToPx(widthCm);
+
+  // Preserve the original aspect ratio
+  const scale = widthPx / image.width;
+
+  const heightPx = image.height * scale;
+
+  ctx.drawImage(
+    image,
+    centerX - widthPx / 2,
+    y,
+    widthPx,
+    heightPx
+  );
+
+  console.log(`${label} PRINT SIZE:`, {
+    widthCm,
+    heightCm: pxToCm(heightPx),
+    widthPx,
+    heightPx,
+  });
+
+  return {
+    width: widthPx,
+    height: heightPx,
+  };
+}
+
+
+// ============================================================
+// GENERATE A3 PRINT SHEET
+// ============================================================
 
 export async function generatePrintSheet({
   qrBuffer,
   shirtColor,
   shirtSize,
 }) {
+
+  // ----------------------------------------------------------
+  // 1. LOAD QR
+  // ----------------------------------------------------------
+
   const qrImage = await loadImage(qrBuffer);
 
-  const normalizedColor = normalizeShirtColor(shirtColor);
-  const normalizedSize = normalizeShirtSize(shirtSize);
 
-  // Το χρώμα της εκτύπωσης πρέπει να είναι αντίθετο από της μπλούζας
-  const printColor = getContrastPrintColor(normalizedColor);
+  // ----------------------------------------------------------
+  // 2. NORMALIZE PRODUCT VARIANT
+  // ----------------------------------------------------------
 
-  const logoFile = getLogoFileByPrintColor(printColor);
-  const neckLabelFile = getNeckLabelFileByPrintColorAndSize(
-    printColor,
-    normalizedSize
-  );
+  const normalizedColor =
+    normalizeShirtColor(shirtColor);
+
+  const normalizedSize =
+    normalizeShirtSize(shirtSize);
+
+
+  // ----------------------------------------------------------
+  // 3. SELECT CONTRAST PRINT COLOR
+  // ----------------------------------------------------------
+
+  const printColor =
+    getContrastPrintColor(normalizedColor);
+
+
+  // ----------------------------------------------------------
+  // 4. SELECT LOGO AND NECK LABEL
+  // ----------------------------------------------------------
+
+  const logoFile =
+    getLogoFile(printColor);
+
+  const neckLabelFile =
+    getNeckLabelFile(
+      printColor,
+      normalizedSize
+    );
+
+
+  // ----------------------------------------------------------
+  // 5. ASSET PATHS
+  // ----------------------------------------------------------
 
   const assetsBasePath = path.resolve(
     process.cwd(),
     "../client/public/assets/print"
   );
 
-  const logoPath = path.join(assetsBasePath, logoFile);
-  const neckLabelPath = path.join(assetsBasePath, neckLabelFile);
+  const logoPath = path.join(
+    assetsBasePath,
+    logoFile
+  );
+
+  const neckLabelPath = path.join(
+    assetsBasePath,
+    neckLabelFile
+  );
+
+
+  // ----------------------------------------------------------
+  // 6. VALIDATE FILES
+  // ----------------------------------------------------------
 
   console.log("PRINT ASSETS:", {
     shirtColor,
@@ -108,80 +267,135 @@ export async function generatePrintSheet({
     neckLabelExists: fs.existsSync(neckLabelPath),
   });
 
-  assertFileExists(logoPath, "Logo");
-  assertFileExists(neckLabelPath, "Neck label");
+  assertFileExists(
+    logoPath,
+    "Logo"
+  );
 
-  const logoBuffer = fs.readFileSync(logoPath);
-  const neckLabelBuffer = fs.readFileSync(neckLabelPath);
+  assertFileExists(
+    neckLabelPath,
+    "Neck label"
+  );
 
-  const logoImage = await loadImage(logoBuffer);
-  const neckLabelImage = await loadImage(neckLabelBuffer);
 
-  // A3 portrait @ 300 DPI
-  const A3_WIDTH = 3508;
-  const A3_HEIGHT = 4961;
+  // ----------------------------------------------------------
+  // 7. LOAD PRINT IMAGES
+  // ----------------------------------------------------------
 
-  const canvas = createCanvas(A3_WIDTH, A3_HEIGHT);
+  const logoImage = await loadImage(
+    fs.readFileSync(logoPath)
+  );
+
+  const neckLabelImage = await loadImage(
+    fs.readFileSync(neckLabelPath)
+  );
+
+
+  // ----------------------------------------------------------
+  // 8. CREATE A3 CANVAS
+  // ----------------------------------------------------------
+
+  const canvas = createCanvas(
+    A3_WIDTH,
+    A3_HEIGHT
+  );
+
   const ctx = canvas.getContext("2d");
 
-  // transparent DTF background
-  ctx.clearRect(0, 0, A3_WIDTH, A3_HEIGHT);
+  // Transparent background for DTF printing
+  ctx.clearRect(
+    0,
+    0,
+    A3_WIDTH,
+    A3_HEIGHT
+  );
 
   const centerX = A3_WIDTH / 2;
 
-  // =========================
-  // MAIN QR
-  // =========================
-  const qrMaxWidth = 2300;
-  const qrScale = Math.min(1, qrMaxWidth / qrImage.width);
-  const qrWidth = qrImage.width * qrScale;
-  const qrHeight = qrImage.height * qrScale;
+  let currentY = TOP_MARGIN;
 
-  let currentY = 150;
 
-  ctx.drawImage(
-    qrImage,
-    centerX - qrWidth / 2,
-    currentY,
-    qrWidth,
-    qrHeight
-  );
+  // ==========================================================
+  // MAIN QR + SCAN ME
+  // ==========================================================
 
-  currentY += qrHeight + 180;
+  const qrDimensions = drawImageAtWidth({
+    ctx,
+    image: qrImage,
+    centerX,
+    y: currentY,
+    widthCm: QR_WIDTH_CM,
+    label: "QR",
+  });
 
-  // =========================
-  // LOGO
-  // =========================
-  const logoMaxWidth = 900;
-  const logoScale = logoMaxWidth / logoImage.width;
-  const logoWidth = logoImage.width * logoScale;
-  const logoHeight = logoImage.height * logoScale;
+  currentY +=
+    qrDimensions.height +
+    QR_TO_LOGO_GAP;
 
-  ctx.drawImage(
-    logoImage,
-    centerX - logoWidth / 2,
-    currentY,
-    logoWidth,
-    logoHeight
-  );
 
-  currentY += logoHeight + 160;
+  // ==========================================================
+  // SKANARE LOGO
+  // ==========================================================
 
-  // =========================
-  // NECK LABEL
-  // =========================
-  const neckMaxWidth = 1100;
-  const neckScale = neckMaxWidth / neckLabelImage.width;
-  const neckWidth = neckLabelImage.width * neckScale;
-  const neckHeight = neckLabelImage.height * neckScale;
+  const logoDimensions = drawImageAtWidth({
+    ctx,
+    image: logoImage,
+    centerX,
+    y: currentY,
+    widthCm: LOGO_WIDTH_CM,
+    label: "LOGO",
+  });
 
-  ctx.drawImage(
-    neckLabelImage,
-    centerX - neckWidth / 2,
-    currentY,
-    neckWidth,
-    neckHeight
-  );
+  currentY +=
+    logoDimensions.height +
+    LOGO_TO_NECK_GAP;
+
+
+  // ==========================================================
+  // NECK LABEL — COLOR + SIZE
+  // ==========================================================
+
+  const neckDimensions = drawImageAtWidth({
+    ctx,
+    image: neckLabelImage,
+    centerX,
+    y: currentY,
+    widthCm: NECK_LABEL_WIDTH_CM,
+    label: "NECK LABEL",
+  });
+
+  currentY += neckDimensions.height;
+
+
+  // ==========================================================
+  // FINAL A3 VALIDATION
+  // ==========================================================
+
+  if (currentY > A3_HEIGHT) {
+    throw new Error(
+      `Print artwork exceeds A3 height: ${pxToCm(currentY).toFixed(2)} cm. ` +
+      `Available: ${pxToCm(A3_HEIGHT).toFixed(2)} cm. ` +
+      `Reduce print dimensions or spacing.`
+    );
+  }
+
+  console.log("A3 PRINT SHEET GENERATED:", {
+    shirtColor: normalizedColor,
+    shirtSize: normalizedSize,
+    printColor,
+    qrWidthCm: QR_WIDTH_CM,
+    logoWidthCm: LOGO_WIDTH_CM,
+    neckLabelWidthCm: NECK_LABEL_WIDTH_CM,
+    totalArtworkHeightCm: pxToCm(currentY),
+    a3WidthCm: pxToCm(A3_WIDTH),
+    a3HeightCm: pxToCm(A3_HEIGHT),
+  });
+
+
+  // ==========================================================
+  // RETURN PNG
+  // ==========================================================
 
   return canvas.toBuffer("image/png");
+
 }
