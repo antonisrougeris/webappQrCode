@@ -44,17 +44,21 @@ function normalizeShirtSize(shirtSize) {
   return normalized;
 }
 
-function getLogoFileByColor(normalizedColor) {
-  return normalizedColor === "black"
-    ? "logo-white.png"
-    : "logo-black.png";
+/**
+ * Για μαύρη μπλούζα θέλουμε άσπρη εκτύπωση.
+ * Για άσπρη μπλούζα θέλουμε μαύρη εκτύπωση.
+ */
+function getContrastPrintColor(normalizedShirtColor) {
+  return normalizedShirtColor === "black" ? "white" : "black";
 }
 
-function getNeckLabelFileByColorAndSize(normalizedColor, normalizedSize) {
-  const sizePart = normalizedSize.toLowerCase(); // s, m, l, xl, 2xl
+function getLogoFileByPrintColor(printColor) {
+  return `logo-${printColor}.png`;
+}
 
-  // π.χ. neck-label-white-s.png ή neck-label-black-xl.png
-  return `neck-label-${normalizedColor}-${sizePart}.png`;
+function getNeckLabelFileByPrintColorAndSize(printColor, normalizedSize) {
+  const sizePart = normalizedSize.toLowerCase(); // s, m, l, xl, 2xl
+  return `neck-label-${printColor}-${sizePart}.png`;
 }
 
 function assertFileExists(filePath, label) {
@@ -73,16 +77,20 @@ export async function generatePrintSheet({
   const normalizedColor = normalizeShirtColor(shirtColor);
   const normalizedSize = normalizeShirtSize(shirtSize);
 
-  const logoFile = getLogoFileByColor(normalizedColor);
-  const neckLabelFile = getNeckLabelFileByColorAndSize(
-    normalizedColor,
+  // Το χρώμα της εκτύπωσης πρέπει να είναι αντίθετο από της μπλούζας
+  const printColor = getContrastPrintColor(normalizedColor);
+
+  const logoFile = getLogoFileByPrintColor(printColor);
+  const neckLabelFile = getNeckLabelFileByPrintColorAndSize(
+    printColor,
     normalizedSize
   );
 
-const assetsBasePath = path.resolve(
-  process.cwd(),
-  "../client/public/assets/print"
-);
+  const assetsBasePath = path.resolve(
+    process.cwd(),
+    "../client/public/assets/print"
+  );
+
   const logoPath = path.join(assetsBasePath, logoFile);
   const neckLabelPath = path.join(assetsBasePath, neckLabelFile);
 
@@ -91,6 +99,9 @@ const assetsBasePath = path.resolve(
     normalizedColor,
     shirtSize,
     normalizedSize,
+    printColor,
+    logoFile,
+    neckLabelFile,
     logoPath,
     logoExists: fs.existsSync(logoPath),
     neckLabelPath,
