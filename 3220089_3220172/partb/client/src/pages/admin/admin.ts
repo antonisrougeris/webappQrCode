@@ -39,7 +39,7 @@ let colorDrafts: ColorDraft[] = [];
 let nextColorUid = 0;
 let defaultProductColor = "";
 // Switch on only AFTER backend supports colorOptions/defaultColor and the SKU migration is complete.
-const ENABLE_MULTI_COLOR_SAVE = false;
+const ENABLE_MULTI_COLOR_SAVE = true;
 const colorPreviewUrls: string[] = [];
 const KNOWN_COLOR_HEX: Record<string, string> = {
   white: "#FFFFFF", black: "#111111", natural: "#E7DECB", blue: "#264C87",
