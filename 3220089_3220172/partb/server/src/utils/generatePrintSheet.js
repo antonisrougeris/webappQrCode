@@ -79,8 +79,10 @@ export async function generatePrintSheet({
     normalizedSize
   );
 
-  const assetsBasePath = path.join(process.cwd(), "assets", "print");
-
+const assetsBasePath = path.resolve(
+  process.cwd(),
+  "../client/public/assets/print"
+);
   const logoPath = path.join(assetsBasePath, logoFile);
   const neckLabelPath = path.join(assetsBasePath, neckLabelFile);
 
