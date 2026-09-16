@@ -341,10 +341,8 @@ const qrBuffer = await generatePrintQrImage(
 
 const buffer = await generatePrintSheet({
   qrBuffer,
-
-  shirtColor:
-    qr.variant?.color ||
-    "Black",
+  shirtColor: qr.variant?.color || "Black",
+  shirtSize: qr.variant?.size,
 });
       // =========================
       // UPLOAD PNG TO STORAGE
