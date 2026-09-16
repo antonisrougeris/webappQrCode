@@ -9,6 +9,10 @@ import {
   assertStockForVariant,
 } from "./product.service.js";
 
+import {
+  chooseProductImages,
+} from "./product-colors.service.js";
+
 /* =========================
    GET CART
 ========================= */
@@ -98,12 +102,17 @@ export async function addCartItem({
       productId: product.id,
       slug: product.slug || product.id,
       title: product.title,
-      image: Array.isArray(product.images) ? product.images[0] || null : null,
-
+image:
+  chooseProductImages(
+    product,
+    variant?.color
+  )[0] || null,
       // Δεν εμπιστευόμαστε ποτέ τιμές από client.
       // Αυτό είναι server snapshot για εμφάνιση cart.
       // Στο checkout πρέπει πάλι να ξαναϋπολογίζονται από product DB.
-      price: Number(product.price || 0),
+price: Number(
+  variant?.price ?? product.price
+),
       currency: product.currency || "EUR",
 
       quantity,
@@ -186,8 +195,15 @@ export async function updateCartItem({
     // refresh από server product, όχι παλιό/πειραγμένο cart data
     title: product.title,
     slug: product.slug || product.id,
-    image: Array.isArray(product.images) ? product.images[0] || null : null,
-    price: Number(product.price || 0),
+image:
+  chooseProductImages(
+    product,
+    resolvedVariant?.color
+  )[0] || null,
+
+price: Number(
+  resolvedVariant?.price ?? product.price
+),
     currency: product.currency || "EUR",
 
     quantity,

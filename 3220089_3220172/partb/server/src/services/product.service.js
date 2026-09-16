@@ -1,106 +1,100 @@
-import { getDB, toPlainDoc, toPlainDocs } from "../config/db.js";
-import { COLLECTIONS } from "../constants/collections.js";
-import { ApiError } from "../utils/apiError.js";
-import { normalizeText, variantMatches } from "../utils/product.js";
+import { getDB, toPlainDoc, toPlainDocs } from '../config/db.js';
+import { COLLECTIONS } from '../constants/collections.js';
+import { ApiError } from '../utils/apiError.js';
+import { normalizeText } from '../utils/product.js';
+import { chooseProductImages } from './product-colors.service.js';
+import { availabilityForProduct, inventoryKey, isReadyQr } from './stock-availability.service.js';
 
-export async function listProductsService({ category, q, featured, limit }) {
-  const db = getDB();
-  const snapshot = await db.collection(COLLECTIONS.PRODUCTS).get();
+function withDefaultGallery(product) {
+  const images = chooseProductImages(product, product.defaultColor);
+  return {...product, images: images.length ? images : product.images || [],
+    image: images[0] || product.image || ''};
+}
 
-  let products = toPlainDocs(snapshot).filter((p) => p.active !== false);
-
-  if (category && category !== "All") {
-    products = products.filter((p) => p.category === category);
+function matchVariant(product, selected) {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  if (!variants.length) {
+    if (selected && Object.values(selected).some(Boolean)) {
+      throw new ApiError(400, 'Product has no selectable variant');
+    }
+    return null;
   }
-
-  if (featured !== undefined) {
-    const boolFeatured = featured === true || featured === "true";
-    products = products.filter((p) => Boolean(p.featured) === boolFeatured);
-  }
-
-  if (q) {
-    const query = normalizeText(q);
-    products = products.filter((p) => {
-      return [
-        p.title,
-        p.shortDescription,
-        p.description,
-        p.category,
-        p.slug,
-      ].some((field) => normalizeText(field).includes(query));
-    });
-  }
-
-  products.sort((a, b) =>
-    String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+  if (!selected?.sku) throw new ApiError(400, 'Choose a valid size and color');
+  const found = variants.find(v =>
+    String(v.sku) === String(selected.sku) &&
+    String(v.size || '').toLowerCase() === String(selected.size || '').toLowerCase() &&
+    String(v.color || '').toLowerCase() === String(selected.color || '').toLowerCase()
   );
+  if (!found) throw new ApiError(400, 'Selected SKU, size and color do not match');
+  return found;
+}
 
-  const parsedLimit = Number(limit);
-  if (Number.isInteger(parsedLimit) && parsedLimit > 0) {
-    products = products.slice(0, parsedLimit);
+export function resolveVariantOrThrow(product, selectedVariant) {
+  return matchVariant(product, selectedVariant);
+}
+
+export function assertStockForVariant(product, variant, quantity) {
+  const qty = Number(quantity);
+  if (!Number.isSafeInteger(qty) || qty < 1 || qty > 99) {
+    throw new ApiError(400, 'Quantity must be between 1 and 99');
   }
+  const available = Number(variant ? variant.stock : product.stock);
+  if (!Number.isSafeInteger(available) || available < qty) {
+    throw new ApiError(400, 'Not enough stock for selected variant');
+  }
+}
 
-  return products;
+// IMPORTANT: This reads available QR records to derive a storefront quantity, not to
+// reserve them. Checkout performs the authoritative query inside its transaction.
+async function readReadyCounts(db) {
+  const snap = await db.collection(COLLECTIONS.QR_CODES)
+    .where('status', '==', 'available').get();
+  const counts = new Map();
+  for (const doc of snap.docs) {
+    const qr = doc.data();
+    if (!isReadyQr(qr)) continue;
+    const key = qr.inventoryKey || inventoryKey(qr.productId, qr.sku);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return counts;
+}
+
+export async function listProductsService({category, q, featured, limit} = {}) {
+  const db = getDB();
+  const snap = await db.collection(COLLECTIONS.PRODUCTS).get();
+  let products = toPlainDocs(snap).filter(p => p.active !== false);
+  if (category && category !== 'All') products = products.filter(p => p.category === category);
+  if (featured !== undefined) {
+    const desired = featured === true || featured === 'true';
+    products = products.filter(p => Boolean(p.featured) === desired);
+  }
+  if (q) {
+    const needle = normalizeText(q);
+    products = products.filter(p => [p.title, p.shortDescription, p.description, p.category, p.slug]
+      .some(field => normalizeText(field).includes(needle)));
+  }
+  products.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const n = Number(limit);
+  if (Number.isSafeInteger(n) && n > 0) products = products.slice(0, n);
+  if (!products.some(p => p.customQr && p.variants?.length)) return products.map(withDefaultGallery);
+  const ready = await readReadyCounts(db);
+  return products.map(p => withDefaultGallery(availabilityForProduct(p, ready)));
 }
 
 export async function getProductByIdOrSlug(idOrSlug) {
   const db = getDB();
-
-  const byId = await db
-    .collection(COLLECTIONS.PRODUCTS)
-    .doc(String(idOrSlug))
-    .get();
-  if (byId.exists) {
-    const product = toPlainDoc(byId);
-    if (product.active === false) throw new ApiError(404, "Product not found");
-    return product;
+  const identifier = String(idOrSlug || '');
+  let product;
+  const doc = await db.collection(COLLECTIONS.PRODUCTS).doc(identifier).get();
+  if (doc.exists) product = toPlainDoc(doc);
+  else {
+    const query = await db.collection(COLLECTIONS.PRODUCTS)
+      .where('slug', '==', identifier).limit(1).get();
+    if (query.empty) throw new ApiError(404, 'Product not found');
+    product = { id: query.docs[0].id, ...query.docs[0].data() };
   }
-
-  const bySlug = await db
-    .collection(COLLECTIONS.PRODUCTS)
-    .where("slug", "==", String(idOrSlug))
-    .limit(1)
-    .get();
-
-  if (bySlug.empty) {
-    throw new ApiError(404, "Product not found");
-  }
-
-  const product = { id: bySlug.docs[0].id, ...bySlug.docs[0].data() };
-  if (product.active === false) throw new ApiError(404, "Product not found");
-
-  return product;
-}
-
-export function resolveVariantOrThrow(product, selectedVariant) {
-  const variants = Array.isArray(product.variants) ? product.variants : [];
-
-  if (!variants.length) {
-    return null;
-  }
-
-  const found = variants.find((variant) =>
-    variantMatches(variant, selectedVariant)
-  );
-
-  if (!found) {
-    throw new ApiError(400, "Selected variant does not exist for this product");
-  }
-
-  return found;
-}
-
-export function assertStockForVariant(product, resolvedVariant, quantity) {
-  if (resolvedVariant) {
-    const stock = Number(resolvedVariant.stock || 0);
-    if (stock < quantity) {
-      throw new ApiError(400, "Not enough stock for selected variant");
-    }
-    return;
-  }
-
-  const stock = Number(product.stock || 0);
-  if (stock < quantity) {
-    throw new ApiError(400, "Not enough stock");
-  }
+  if (product.active === false) throw new ApiError(404, 'Product not found');
+  if (!product.customQr || !product.variants?.length) return withDefaultGallery(product);
+  const ready = await readReadyCounts(db);
+  return withDefaultGallery(availabilityForProduct(product, ready));
 }

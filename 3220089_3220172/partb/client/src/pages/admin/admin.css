@@ -1135,3 +1135,34 @@ button {
   }
 
 }
+/* ============================================================
+   COLOR EDITOR + STOCK MODAL (2026-09)
+   ============================================================ */
+.admin-color-editor { display:grid; gap:16px; }
+.admin-color-card { padding:18px; border:1px solid #d9d9d3; background:#fafaf8; }
+.admin-color-card__header { display:flex; justify-content:space-between; align-items:center; gap:18px; margin-bottom:14px; }
+.admin-color-card__title { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.admin-color-card__dot { width:26px; height:26px; border:1px solid #999; border-radius:50%; }
+.admin-color-card__hex { display:flex; align-items:center; gap:6px; color:#777; font-size:11px; }
+.admin-color-card__hex input { width:36px; height:30px; padding:0; border:0; cursor:pointer; }
+.admin-color-card__dropzone { display:grid; place-content:center; gap:4px; min-height:100px; padding:18px; border:1px dashed #bcbcb4; background:#fff; text-align:center; cursor:pointer; }
+.admin-color-card__dropzone small { color:#777; }
+.admin-color-card__dropzone.is-dragging { border-color:#111; background:#f1f1eb; }
+.admin-color-card__dropzone:focus-visible { outline:2px solid #111; outline-offset:2px; }
+.admin-color-card__preview { margin-top:14px; }
+#addColorSelect { min-height:40px; border:1px solid #d8d8d1; background:#fff; padding:0 10px; }
+.dynamic-row.dynamic-row--color { grid-template-columns:minmax(130px,1fr) minmax(105px,.8fr) minmax(125px,.9fr) minmax(130px,1.15fr) auto; gap:9px; align-items:end; }
+.admin-variant-sku { display:grid; gap:7px; min-width:0; }
+.admin-variant-sku > span:first-child { font-size:11px; color:#66665f; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.admin-variant-sku .variant-sku-preview { overflow-wrap:anywhere; min-height:42px; }
+@media(max-width:930px) {
+  .dynamic-row.dynamic-row--color { grid-template-columns:repeat(2,minmax(0,1fr)); padding:14px 0; border-bottom:1px solid #e6e6e0; }
+  .admin-color-card__header { align-items:flex-start; flex-direction:column; }
+}
+@media(max-width:540px) {
+  .dynamic-row.dynamic-row--color { grid-template-columns:1fr; }
+  .admin-color-card { padding:12px; }
+}
+
+.admin-default-color { max-width:320px; }
+.admin-default-color select { min-width:200px; }

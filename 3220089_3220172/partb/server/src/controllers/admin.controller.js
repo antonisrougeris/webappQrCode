@@ -12,6 +12,14 @@ import { ok } from "../utils/response.js";
 import { ApiError } from "../utils/apiError.js";
 
 import { getDB } from "../config/db.js";
+import {
+  parseProductColors,
+  parseProductVariants,
+  ensureLegacySkusUnchanged,
+  chooseProductImages,
+  findExactVariant,
+  resolveQrConfigForColor,
+} from "../services/product-colors.service.js";
 import { COLLECTIONS } from "../constants/collections.js";
 
 import {
@@ -688,8 +696,7 @@ export const getAdminProducts =
                * while your Firestore product schema uses
                * product.images[].
                */
-              image:
-                images[0] || "",
+              image: chooseProductImages(product)[0] || images[0] || "",
 
               active:
                 product.active !==
@@ -1595,10 +1602,17 @@ export const createAdminProduct =
         );
 
 
-      const variants =
-        cleanVariants(
-          req.body?.variants
-        );
+      let colorData;
+      let variants;
+      try {
+        colorData = parseProductColors(req.body?.colorOptions, req.body?.defaultColor);
+        variants = parseProductVariants(req.body?.variants || [], colorData.colorOptions);
+      } catch (error) {
+        throw new ApiError(400, error.message);
+      }
+      if (colorData.colorOptions.length > 1 && variants.length === 0) {
+        throw new ApiError(400, "Multi-color products need at least one color/size variant");
+      }
 
       // The only sellable fallback stock is the stock configured per size / option.
       // Keep top-level stock only as a derived compatibility total for older storefront code.
@@ -1685,7 +1699,14 @@ export const createAdminProduct =
 
         qrConfig,
 
-        images,
+        // Color-specific galleries and their default must remain server-persisted.
+        colorOptions: colorData.colorOptions,
+        defaultColor: colorData.defaultColor,
+        images: images.length ? images : (chooseProductImages({
+          colorOptions: colorData.colorOptions,
+          defaultColor: colorData.defaultColor,
+          images: [],
+        })),
 
         variants,
 
@@ -1712,9 +1733,7 @@ export const createAdminProduct =
           product: {
             ...product,
 
-            image:
-              images[0] ||
-              "",
+            image: chooseProductImages(product)[0] || "",
           },
         });
     }
@@ -1759,8 +1778,37 @@ export const updateAdminProduct =
       }
 
 
+      const previous = snapshot.data() || {};
       const update = {};
 
+      // Validate submitted colors and variants together, never independently:
+      // a variant may not refer to a color that was removed in the same edit.
+      const colorsProvided = req.body?.colorOptions !== undefined;
+      const variantsProvided = req.body?.variants !== undefined;
+      if (colorsProvided || variantsProvided || req.body?.defaultColor !== undefined) {
+        try {
+          const parsed = parseProductColors(
+            colorsProvided ? req.body.colorOptions : previous.colorOptions,
+            req.body?.defaultColor !== undefined ? req.body.defaultColor : previous.defaultColor
+          );
+          const variants = parseProductVariants(
+            variantsProvided ? req.body.variants : (previous.variants || []),
+            parsed.colorOptions
+          );
+          ensureLegacySkusUnchanged(previous.variants || [], variants);
+          if (parsed.colorOptions.length > 1 && variants.length === 0) {
+            throw new Error("Multi-color products require variants");
+          }
+          update.colorOptions = parsed.colorOptions;
+          update.defaultColor = parsed.defaultColor;
+          if (variantsProvided) {
+            update.variants = variants;
+            update.stock = variants.reduce((sum, v) => sum + v.stock, 0);
+          }
+        } catch (error) {
+          throw new ApiError(400, error.message);
+        }
+      }
 
       if (
         req.body?.slug !==
@@ -1883,19 +1931,6 @@ export const updateAdminProduct =
 
 
       if (
-        req.body?.variants !==
-        undefined
-      ) {
-        const variants = cleanVariants(req.body.variants);
-        update.variants = variants;
-        update.stock = variants.reduce(
-          (total, variant) => total + Math.max(0, Number(variant.stock || 0)),
-          0
-        );
-      }
-
-
-      if (
         req.body?.qrConfig !==
         undefined
       ) {
@@ -1905,6 +1940,14 @@ export const updateAdminProduct =
           );
       }
 
+
+      if (colorsProvided || req.body?.images !== undefined || req.body?.defaultColor !== undefined) {
+        const merged = { ...previous, ...update };
+        if (!Array.isArray(merged.images) || merged.images.length === 0) {
+          const cover = chooseProductImages(merged)[0];
+          if (cover) update.images = [cover];
+        }
+      }
 
       update.updatedAt =
         nowIso();
@@ -1936,14 +1979,7 @@ export const updateAdminProduct =
           product: {
             ...product,
 
-            image:
-              Array.isArray(
-                product.images
-              )
-                ? product
-                    .images[0] ||
-                  ""
-                : "",
+            image: chooseProductImages(product)[0] || "",
           },
         });
     }
@@ -2146,8 +2182,20 @@ export const generateAdminQrStock =
       };
 
 
-      const inventoryKey =
-        `${productId}::${sku}`;
+      if (product.active === false) {
+        throw new ApiError(400, "Cannot generate stock for archived product");
+      }
+      if (!product.customQr) {
+        throw new ApiError(400, "Product does not support QR stock");
+      }
+      let exactVariant;
+      try {
+        exactVariant = findExactVariant(product, { sku, size, color });
+      } catch (error) {
+        throw new ApiError(400, error.message);
+      }
+      const printConfig = resolveQrConfigForColor(product, exactVariant.color);
+      const inventoryKey = `${productId}::${exactVariant.sku}`;
 
 
       const publicQrBaseUrl =
@@ -2217,7 +2265,7 @@ export const generateAdminQrStock =
                   shortId,
 
                   status:
-                    "available",
+                    "generating",
 
                   productId,
 
@@ -2235,9 +2283,7 @@ export const generateAdminQrStock =
                     color,
                   },
 
-                  qrConfig:
-                    product.qrConfig ||
-                    null,
+                  qrConfig: printConfig,
 
                   userId:
                     null,
@@ -2291,48 +2337,13 @@ export const generateAdminQrStock =
            * as generate-qr-stock.js
            */
 
-          const qrBuffer =
-            await generatePrintQrImage(
-              result.url,
-              {
-                qrColor:
-                  product
-                    .qrConfig
-                    ?.qrColor ||
-                  product
-                    .qrConfig
-                    ?.color ||
-                  "#000000",
-
-                textColor:
-                  product
-                    .qrConfig
-                    ?.textColor ||
-                  product
-                    .qrConfig
-                    ?.qrColor ||
-                  "#000000",
-
-                textPrint:
-                  product
-                    .qrConfig
-                    ?.textPrint ||
-                  "SCAN ME",
-
-                textPosition:
-                  product
-                    .qrConfig
-                    ?.textPosition ||
-                  "bottom",
-
-                size:
-                  product
-                    .qrConfig
-                    ?.size ||
-                  3540,
-              }
-            );
-
+          const qrBuffer = await generatePrintQrImage(result.url, {
+            qrColor: printConfig.qrColor || printConfig.color || "#000000",
+            textColor: printConfig.textColor || printConfig.qrColor || "#000000",
+            textPrint: printConfig.textPrint || "SCAN ME",
+            textPosition: printConfig.textPosition || "bottom",
+            size: printConfig.size || 3540,
+          });
 
           const a3Buffer =
             await generatePrintSheet({
@@ -2373,6 +2384,7 @@ export const generateAdminQrStock =
             )
             .set(
               {
+                status: "available",
                 printStatus:
                   "uploaded",
 
@@ -2421,6 +2433,7 @@ export const generateAdminQrStock =
             )
             .set(
               {
+                status: "generation_failed",
                 printStatus:
                   "failed",
 

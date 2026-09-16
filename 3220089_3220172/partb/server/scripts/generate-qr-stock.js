@@ -2,6 +2,10 @@ import fs from "fs";
 import path from "path";
 
 import { connectDB, getDB } from "../src/config/db.js";
+import {
+  findExactVariant,
+  resolveQrConfigForColor,
+} from "../src/services/product-colors.service.js";
 
 import { COLLECTIONS } from "../src/constants/collections.js";
 import { createId, nowIso } from "../src/utils/ids.js";
@@ -95,11 +99,13 @@ async function main() {
   // SKU / INVENTORY
   // =========================
 
-  const sku =
-    String(skuArg).trim();
-
-  const inventoryKey =
-    `${productId}::${sku}`;
+  if (product.active === false || !product.customQr) {
+    throw new Error("Product is inactive or does not support custom QR stock");
+  }
+  const sku = String(skuArg).trim();
+  const variant = findExactVariant(product, { sku, size: sizeArg, color: colorArg });
+  const printConfig = resolveQrConfigForColor(product, variant.color);
+  const inventoryKey = `${productId}::${variant.sku}`;
 
   const created = [];
 
@@ -157,8 +163,8 @@ async function main() {
 
             shortId,
 
-            status:
-              "available",
+            // Do not let checkout consume a QR whose print generation has failed.
+            status: "generating",
 
             productId,
 
@@ -179,9 +185,7 @@ async function main() {
                 colorArg || "",
             },
 
-            qrConfig:
-              product.qrConfig ||
-              null,
+            qrConfig: printConfig,
 
             userId: null,
 
@@ -228,42 +232,13 @@ async function main() {
       // GENERATE MAIN QR ARTWORK
       // =========================
 
-      const qrBuffer =
-        await generatePrintQrImage(
-          result.url,
-          {
-            qrColor:
-              product.qrConfig
-                ?.qrColor ||
-              product.qrConfig
-                ?.color ||
-              "#000000",
-
-            textColor:
-              product.qrConfig
-                ?.textColor ||
-              product.qrConfig
-                ?.qrColor ||
-              product.qrConfig
-                ?.color ||
-              "#000000",
-
-            textPrint:
-              product.qrConfig
-                ?.textPrint ||
-              "SCAN ME",
-
-            textPosition:
-              product.qrConfig
-                ?.textPosition ||
-              "bottom",
-
-            size:
-              product.qrConfig
-                ?.size ||
-              3540,
-          }
-        );
+      const qrBuffer = await generatePrintQrImage(result.url, {
+        qrColor: printConfig.qrColor || printConfig.color || "#000000",
+        textColor: printConfig.textColor || printConfig.qrColor || "#000000",
+        textPrint: printConfig.textPrint || "SCAN ME",
+        textPosition: printConfig.textPosition || "bottom",
+        size: printConfig.size || 3540,
+      });
 
       // =========================
       // GENERATE A3 DTF SHEET
@@ -331,6 +306,7 @@ async function main() {
         .doc(result.qrId)
         .set(
           {
+            status: "available",
             printStatus:
               "uploaded",
 
@@ -351,7 +327,7 @@ async function main() {
       // =========================
       // MARK PRINT FAILED
       // IMPORTANT:
-      // QR REMAINS AVAILABLE
+      // QR IS NOT AVAILABLE UNTIL PRINT GENERATION SUCCEEDS
       // =========================
 
       const failedAt =
@@ -364,6 +340,7 @@ async function main() {
         .doc(result.qrId)
         .set(
           {
+            status: "generation_failed",
             printStatus:
               "failed",
 

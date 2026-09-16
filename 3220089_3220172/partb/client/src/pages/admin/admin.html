@@ -408,9 +408,29 @@
           </div>
         </div>
 
+        <!-- Color variants own their pictures; legacy shared images remain an optional fallback. -->
+        <div class="admin-subsection" id="adminColorSection">
+          <div class="admin-subsection__header">
+            <h3>Available colors &amp; photos</h3>
+            <div class="admin-actions">
+              <select id="addColorSelect" aria-label="Select a color to add">
+                <option value="White">White</option><option value="Black">Black</option>
+                <option value="Natural">Natural</option><option value="Blue">Blue</option>
+                <option value="Red">Red</option><option value="Green">Green</option>
+                <option value="Grey">Grey</option><option value="Custom">Other color…</option>
+              </select>
+              <button id="addColorOptionButton" class="admin-secondary-button" type="button">+ Add color</button>
+            </div>
+          </div>
+          <p class="variant-helper">Select the available colors and upload each color's own photos. Add sizes and made-to-order stock below. This does not generate QR inventory.</p>
+          <label class="admin-field admin-default-color"><span>Default color (cover photo)</span><select id="productDefaultColor" aria-label="Default product color"></select></label>
+          <div id="productColorEditor" class="admin-color-editor"></div>
+          <p id="colorEditorStatus" class="admin-inline-status" aria-live="polite"></p>
+        </div>
+
         <div class="admin-subsection">
           <div class="admin-subsection__header">
-            <h3>Images</h3>
+            <h3>Shared / legacy photos (optional)</h3>
             <span class="admin-muted">Drag images from your computer</span>
           </div>
 
@@ -433,7 +453,7 @@
           <p class="variant-helper">
             This is the small made-to-order stock you are willing to sell even when that exact QR is not already prepared.
             It does <strong>not</strong> generate QR codes. Ready physical QR inventory is created later with <strong>Add QR stock</strong>.
-            For a T-shirt, enter one row per size.
+            For T-shirts, add each color above; its size rows will be created automatically. Existing SKUs remain locked for inventory compatibility.
           </p>
           <div id="variantRows"></div>
         </div>
@@ -462,7 +482,11 @@
       </header>
       <form id="stockForm" class="admin-modal__body">
         <label class="admin-field"><span>Product</span><select id="stockProductId" required></select></label>
-        <label class="admin-field"><span>Size / option</span><select id="stockVariantSelect" required></select></label>
+        <div class="admin-form-grid">
+          <label class="admin-field"><span>Color</span><select id="stockColorSelect"></select></label>
+          <label class="admin-field"><span>Size</span><select id="stockSizeSelect"></select></label>
+        </div>
+        <select id="stockVariantSelect" hidden aria-hidden="true"></select>
 
         <input id="stockSku" type="hidden" />
         <input id="stockSize" type="hidden" />

@@ -11,7 +11,7 @@ import {
   type Cart,
   type CartItem,
 } from "../../services/cart";
-import { getProducts, type Product } from "../../services/products";
+import { getProducts, getColorImages, type Product } from "../../services/products";
 
 initNav();
 initMobileMenu();
@@ -103,10 +103,13 @@ function getCartItemTitle(item: CartItem): string {
   return "Product";
 }
 
-function getCartItemImage(item: CartItem): string {
+function getCartItemImage(item: CartItem, catalog: Product[] = []): string {
+  const product = catalog.find(p => p.id === item.productId || p._id === item.productId);
+  const color = getCartItemVariant(item)?.color || "";
+  const exactOption = product?.colorOptions?.find(c => c.name.toLowerCase() === color.toLowerCase());
+  if (exactOption?.images?.[0]) return exactOption.images[0];
   if (item.image) return item.image;
-  if (item.image) return item.image;
-  return "/assets/img/logo_Image.png";
+  return product ? getColorImages(product, color)[0] || "/assets/img/logo_Image.png" : "/assets/img/logo_Image.png";
 }
 
 function getCartItemUnitPrice(item: CartItem): number {
@@ -210,10 +213,10 @@ function updateProgress(total: number): string {
   `;
 }
 
-function renderCartItem(item: CartItem, index: number): string {
+function renderCartItem(item: CartItem, index: number, catalog: Product[] = []): string {
   const variant = getCartItemVariant(item);
   const title = getCartItemTitle(item);
-  const image = getCartItemImage(item);
+  const image = getCartItemImage(item, catalog);
   const unitPrice = getCartItemUnitPrice(item);
   const qr = getCartItemQr(item);
   const itemKey = getCartItemKey(item, index);
@@ -254,9 +257,8 @@ function renderCartItem(item: CartItem, index: number): string {
   `;
 }
 
-async function renderCrossSell(cartItems: CartItem[]): Promise<string> {
+async function renderCrossSell(cartItems: CartItem[], products: Product[]): Promise<string> {
   try {
-    const products = await getProducts();
 
     const currentIds = new Set(
       cartItems.map((item) => getCartItemProductId(item)).filter(Boolean)
@@ -341,13 +343,15 @@ async function renderCart(targetId: string): Promise<void> {
     return;
   }
 
-  const crossSell = await renderCrossSell(items);
+  // Fetch once: color-specific cart photos and cross-sell share the same catalog.
+  const catalog = await getProducts().catch(() => [] as Product[]);
+  const crossSell = await renderCrossSell(items, catalog);
 
   container.innerHTML = `
     ${updateProgress(total)}
 
     <section class="drawer-cart-list">
-      ${items.map(renderCartItem).join("")}
+      ${items.map((item, index) => renderCartItem(item, index, catalog)).join("")}
     </section>
 
     <section class="cart-summary">
@@ -463,6 +467,10 @@ return;
           return;
         }
 
+        if (new Set((product.variants || []).map(v => String(v.color || "").toLowerCase())).size > 1) {
+          window.location.href = `/product/${encodeURIComponent(product.slug || product.id)}`;
+          return;
+        }
         const selectedVariant =
           product.variants?.find((variant) => Number(variant.stock || 0) > 0) ||
           null;

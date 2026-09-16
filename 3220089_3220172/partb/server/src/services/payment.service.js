@@ -301,88 +301,94 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       return;
     }
 
-    const existingQrSnap = await tx.get(
-      db.collection(COLLECTIONS.QR_CODES).where("orderId", "==", order.id)
-    );
-
-
+    // Pending checkout may have atomically reserved ready QR codes.
+    // For older orders (without inventoryReservations), retain the legacy path.
     const qrAssignments = [];
+    const holds = Array.isArray(order.inventoryReservations)
+      ? order.inventoryReservations : null;
 
-if (existingQrSnap.empty) {
-  const alreadySelectedQrRefs = new Set();
-
-  for (const item of order.items || []) {
-    if (!item.customQr) continue;
-
-    const quantity = Math.max(
-  1,
-  Math.trunc(Number(item.quantity || 1))
-);
-
-    const sku = getItemSku(item);
-    const inventoryKey = buildQrInventoryKey(item);
-    const qrConfig = buildQrConfig(item);
-
-    const availableQrQuery = db
-  .collection(COLLECTIONS.QR_CODES)
-  .where("status", "==", "available")
-  .where("inventoryKey", "==", inventoryKey)
-  .limit(quantity + alreadySelectedQrRefs.size);
-
-const availableQrSnap = await tx.get(availableQrQuery);
-
-const availableDocs = availableQrSnap.docs.filter(
-  (doc) => !alreadySelectedQrRefs.has(doc.ref.path)
-);
-
-    for (
-      let unitIndex = 0;
-      unitIndex < quantity;
-      unitIndex += 1
-    ) {
-      const availableDoc = availableDocs[unitIndex];
-
-      if (availableDoc) {
-        alreadySelectedQrRefs.add(
-          availableDoc.ref.path
-        );
-
-        qrAssignments.push({
-          type: "existing",
-          ref: availableDoc.ref,
-          item,
-          sku,
-          inventoryKey,
-          qrConfig,
-        });
-
-        continue;
+    if (holds) {
+      if (order.inventoryReservationState !== "held") {
+        throw new ApiError(409, "Checkout inventory reservation is not held");
       }
+      const heldByItem = new Map(holds.map(h => [String(h.orderItemId), h]));
+      const allIds = holds.flatMap(h => h.qrIds || []);
+      if (new Set(allIds).size !== allIds.length) {
+        throw new ApiError(409, "Duplicate reserved QR detected");
+      }
+      const heldSnaps = await Promise.all(allIds.map(id => tx.get(
+        db.collection(COLLECTIONS.QR_CODES).doc(String(id))
+      )));
+      const heldDocs = new Map(heldSnaps.map(doc => [doc.id, doc]));
 
-      const qrId = createId("qr");
-
-      const {
-        shortId,
-        reservationRef,
-      } = await reserveUniqueQrShortId(tx, db);
-
-      qrAssignments.push({
-        type: "new",
-        qrId,
-        shortId,
-        reservationRef,
-        item,
-        sku,
-        inventoryKey,
-        qrConfig,
-      });
+      for (const item of order.items || []) {
+        if (!item.customQr) continue;
+        const hold = heldByItem.get(String(item.id));
+        const sku = getItemSku(item);
+        const key = buildQrInventoryKey(item);
+        const quantity = Number(item.quantity);
+        if (!hold || hold.productId !== item.productId || hold.sku !== sku ||
+            hold.inventoryKey !== key || !Number.isSafeInteger(quantity) || quantity < 1 ||
+            (hold.qrIds || []).length + hold.fallbackQuantity !== quantity) {
+          throw new ApiError(409, "Invalid checkout QR reservation");
+        }
+        for (const id of hold.qrIds || []) {
+          const snap = heldDocs.get(String(id));
+          const qr = snap?.data();
+          if (!snap?.exists || qr.status !== "reserved" ||
+              qr.reservationOrderId !== order.id ||
+              qr.reservationItemId !== item.id || qr.inventoryKey !== key) {
+            throw new ApiError(409, "Reserved QR changed before payment confirmation");
+          }
+          qrAssignments.push({type: "existing", ref: snap.ref, item, sku,
+            inventoryKey: key, qrConfig: buildQrConfig(item)});
+        }
+        for (let i = 0; i < hold.fallbackQuantity; i += 1) {
+          const qrId = createId("qr");
+          const {shortId, reservationRef} = await reserveUniqueQrShortId(tx, db);
+          qrAssignments.push({type: "new", qrId, shortId, reservationRef,
+            item, sku, inventoryKey: key, qrConfig: buildQrConfig(item)});
+        }
+      }
+    } else {
+      const existingQrSnap = await tx.get(
+        db.collection(COLLECTIONS.QR_CODES).where("orderId", "==", order.id)
+      );
+      if (existingQrSnap.empty) {
+        const selected = new Set();
+        for (const item of order.items || []) {
+          if (!item.customQr) continue;
+          const quantity = Number(item.quantity);
+          if (!Number.isSafeInteger(quantity) || quantity < 1) {
+            throw new ApiError(409, "Invalid legacy order quantity");
+          }
+          const sku = getItemSku(item);
+          const key = buildQrInventoryKey(item);
+          const readySnap = await tx.get(db.collection(COLLECTIONS.QR_CODES)
+            .where("status", "==", "available").where("inventoryKey", "==", key));
+          const ready = readySnap.docs.filter(doc => !selected.has(doc.ref.path) &&
+            ["uploaded", "email_sent"].includes(doc.data().printStatus) &&
+            Boolean(doc.data().printFileUrl));
+          for (let i = 0; i < quantity; i += 1) {
+            const doc = ready[i];
+            if (doc) {
+              selected.add(doc.ref.path);
+              qrAssignments.push({type: "existing", ref: doc.ref, item, sku,
+                inventoryKey: key, qrConfig: buildQrConfig(item)});
+            } else {
+              const qrId = createId("qr");
+              const {shortId, reservationRef} = await reserveUniqueQrShortId(tx, db);
+              qrAssignments.push({type: "new", qrId, shortId, reservationRef,
+                item, sku, inventoryKey: key, qrConfig: buildQrConfig(item)});
+            }
+          }
+        }
+      }
     }
-  }
-}
 
     const expectedAmount = Math.round(Number(order.total || 0) * 100);
 
-    if (amount && expectedAmount && amount !== expectedAmount) {
+    if (!amount || !expectedAmount || amount !== expectedAmount) {
       throw new ApiError(400, "Viva amount does not match order total", {
         orderId: order.id,
         vivaOrderCode,
@@ -400,6 +406,7 @@ const availableDocs = availableQrSnap.docs.filter(
   // ============================
 
   fulfillmentStatus: "to_prepare",
+  ...(holds ? { inventoryReservationState: "consumed" } : {}),
 
   "warehouse.checklist.productPicked": false,
   "warehouse.checklist.sizeVerified": false,
@@ -442,6 +449,9 @@ const availableDocs = availableQrSnap.docs.filter(
   if (assignment.type === "existing") {
   tx.update(assignment.ref, {
     status: "assigned",
+    reservationOrderId: null,
+    reservationItemId: null,
+    reservationExpiresAt: null,
 
     userId,
     guestId,
@@ -536,15 +546,10 @@ const availableDocs = availableQrSnap.docs.filter(
       updatedAt: paidAt,
     };
 
-    tx.set(
-      db.collection(COLLECTIONS.CARTS).doc(order.ownerId),
-      {
-        userId: order.ownerId,
-        items: [],
-        updatedAt: paidAt,
-      },
-      { merge: true }
-    );
+    // Remove checkoutOrderId or the customer's next checkout will be blocked.
+    tx.set(db.collection(COLLECTIONS.CARTS).doc(order.ownerId), {
+      userId: order.ownerId, items: [], updatedAt: paidAt,
+    });
   });
 
   console.log("After transaction paidOrderForEmail:", {
@@ -553,7 +558,8 @@ const availableDocs = availableQrSnap.docs.filter(
     emailAlreadySent: Boolean(paidOrderForEmail?.emails?.paidOrderSentAt),
   });
 
-  if (paidOrderForEmail) {
+  if (paidOrderForEmail && process.env.PAYMENT_RECEIPT_MODE !== "manual" &&
+      !["issued", "completed"].includes(paidOrderForEmail.invoice?.status)) {
   try {
     const receipt =
       await issueOrderReceipt(
@@ -677,4 +683,17 @@ const availableDocs = availableQrSnap.docs.filter(
       );
   }
 }
+
+// Order confirmation is independent of manual or automated invoicing.
+// order-email.service.js checks emails.paidOrderSentAt before sending.
+if (paidOrderForEmail) {
+  try {
+    await sendPaidOrderEmails(paidOrderForEmail);
+  } catch (error) {
+    console.error("Paid order email failed", {
+      orderId: paidOrderForEmail.id, message: error?.message,
+    });
+  }
+}
+
 }

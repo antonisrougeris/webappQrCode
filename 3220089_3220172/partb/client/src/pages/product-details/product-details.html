@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/assets/css/reset.css" />
   <link rel="stylesheet" href="/assets/css/theme.css" />
   <link rel="stylesheet" href="/assets/css/layout.css" />
-  <link rel="stylesheet" href="/assets/css/components.css?v=2.0" />
+  <link rel="stylesheet" href="/assets/css/components.css?v=2.2-colors" />
   <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="5001afeb-b9df-4288-92c2-6febe12a2a03";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
 <meta
   name="description"
@@ -282,6 +282,15 @@
           class="stock-inline"
         ></div>
 
+      </div>
+
+      <!-- Color is selected together with size; only real variants are offered. -->
+      <div id="productColorRow" class="product-color-row" hidden>
+        <div class="product-color-row__heading">
+          <span>Color: <strong id="selectedColorText"></strong></span>
+          <small>Product images change with the selected color</small>
+        </div>
+        <div id="productColorOptions" class="product-color-swatches" role="group" aria-label="Choose product color"></div>
       </div>
 
     </div>

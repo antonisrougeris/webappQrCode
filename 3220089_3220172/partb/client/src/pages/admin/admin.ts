@@ -34,6 +34,17 @@ let currentQrCodes: any[] = [];
 
 let existingProductImages: string[] = [];
 let pendingProductImageFiles: File[] = [];
+interface ColorDraft { uid: number; name: string; hex: string; images: string[]; pending: File[]; existing: boolean; }
+let colorDrafts: ColorDraft[] = [];
+let nextColorUid = 0;
+let defaultProductColor = "";
+// Switch on only AFTER backend supports colorOptions/defaultColor and the SKU migration is complete.
+const ENABLE_MULTI_COLOR_SAVE = false;
+const colorPreviewUrls: string[] = [];
+const KNOWN_COLOR_HEX: Record<string, string> = {
+  white: "#FFFFFF", black: "#111111", natural: "#E7DECB", blue: "#264C87",
+  red: "#B52732", green: "#32704B", grey: "#888888", gray: "#888888"
+};
 
 /* =========================================================
    API
@@ -886,7 +897,9 @@ function renderProducts() {
 
       return `
         <article class="admin-product ${active ? "" : "is-inactive"}">
-          ${product.image ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.title || "")}">` : ""}
+          ${(product.colorOptions?.find((c: any) => c.name === product.defaultColor)?.images?.[0] || product.colorOptions?.[0]?.images?.[0] || product.image || product.images?.[0])
+            ? `<img src="${escapeHtml(product.colorOptions?.find((c: any) => c.name === product.defaultColor)?.images?.[0] || product.colorOptions?.[0]?.images?.[0] || product.image || product.images?.[0])}" alt="${escapeHtml(product.title || "")}">`
+            : ""}
           <div class="admin-product__body">
             <h3>
               ${escapeHtml(product.title || "")}
@@ -991,6 +1004,21 @@ function openProductModal(product: any = null) {
 
   existingProductImages = Array.isArray(product?.images) ? [...product.images] : [];
   pendingProductImageFiles = [];
+  colorDrafts = [];
+  nextColorUid = 0;
+  defaultProductColor = String(product?.defaultColor || "");
+  const declared = Array.isArray(product?.colorOptions) ? product.colorOptions : [];
+  if (declared.length) {
+    declared.forEach((color: any) => addColorDraft(String(color.name || ""), String(color.hex || ""), color.images || [], true, false));
+  } else {
+    // Existing single-color products: preserve their image set and existing SKUs.
+    const existingVariants = Array.isArray(product?.variants) ? product.variants : [];
+    const names = Array.from(new Set(existingVariants.map((v: any) => String(v.color || "").trim()).filter(Boolean))) as string[];
+    const fallback = names.length ? names : product ? [inferLegacyColor(product.title || "")].filter(Boolean) : [];
+    fallback.forEach((name, index) => addColorDraft(name, "", index === 0 ? existingProductImages : [], Boolean(product), false));
+  }
+  if (!product && !colorDrafts.length) addColorDraft(isTshirtCategory(inputValue("productCategory")) ? "White" : "Black", "", [], false, false);
+  renderColorEditor();
   renderProductImagePreview();
 
   const variantRows = document.getElementById("variantRows");
@@ -1018,6 +1046,7 @@ function closeProductModal() {
   productModal?.classList.add("hidden");
   productModal?.setAttribute("aria-hidden", "true");
   pendingProductImageFiles = [];
+  clearColorPreviewUrls();
 }
 
 function resetProductForm() {
@@ -1039,6 +1068,11 @@ function resetProductForm() {
 
   existingProductImages = [];
   pendingProductImageFiles = [];
+  colorDrafts = [];
+  nextColorUid = 0;
+  defaultProductColor = "";
+  clearColorPreviewUrls();
+  renderColorEditor();
   renderProductImagePreview();
 }
 
@@ -1090,17 +1124,23 @@ function isTshirtCategory(category: string) {
 function addDefaultVariantRowsForCategory(category: string) {
   const container = document.getElementById("variantRows");
   if (!container) return;
-
   container.innerHTML = "";
-
   if (isTshirtCategory(category)) {
-    ["S", "M", "L", "XL", "2XL"].forEach((size) =>
-      addVariantRow({ size, color: "", stock: 0 })
-    );
-    return;
+    if (!colorDrafts.length) addColorDraft("White", "", [], false, false);
+    colorDrafts.forEach(c => addDefaultSizesForColor(c.name));
+  } else {
+    const name = colorDrafts[0]?.name || "";
+    addVariantRow({ size:"", color:name, stock:0 });
   }
-
-  addVariantRow({ size: "", color: "", stock: 0 });
+}
+function addDefaultSizesForColor(color: string) {
+  const rows = Array.from(document.querySelectorAll<HTMLElement>("#variantRows .dynamic-row"));
+  const tshirt = isTshirtCategory(inputValue("productCategory"));
+  const sizes = tshirt ? ["S", "M", "L", "XL", "2XL"] : [""];
+  sizes.forEach(size => {
+    if (!rows.some(row => childInputValue(row, "[data-variant-color]").toLowerCase() === color.toLowerCase()
+      && childInputValue(row, "[data-variant-size]") === size)) addVariantRow({color, size, stock:0});
+  });
 }
 
 function normalizeSkuPart(value: string) {
@@ -1152,73 +1192,181 @@ function updateAllAutoSkus() {
 function addVariantRow(variant: any = {}) {
   const container = document.getElementById("variantRows");
   if (!container) return;
-
-  const category = inputValue("productCategory");
-  const tshirt = isTshirtCategory(category);
+  const tshirt = isTshirtCategory(inputValue("productCategory"));
   const hasExistingSku = Boolean(String(variant.sku || "").trim());
   const size = String(variant.size || "");
-
+  const color = String(variant.color || colorDrafts[0]?.name || "");
   const knownSizes = ["", "XS", "S", "M", "L", "XL", "2XL"];
   if (size && !knownSizes.includes(size)) knownSizes.push(size);
-
   const row = document.createElement("div");
-  row.className = `dynamic-row ${tshirt ? "dynamic-row--tshirt" : ""}`.trim();
+  row.className = `dynamic-row dynamic-row--color ${tshirt ? "dynamic-row--tshirt" : ""}`.trim();
   row.dataset.autoSku = hasExistingSku ? "false" : "true";
-
+  row.dataset.legacySku = hasExistingSku ? "true" : "false";
+  const colors = [...colorDrafts.map(c => c.name)];
+  if (color && !colors.some(c => c.toLowerCase() === color.toLowerCase())) colors.push(color);
   row.innerHTML = `
-    <label class="admin-field">
-      <span>${tshirt ? "Size" : "Size (optional)"}</span>
-      <select data-variant-size>
-        ${knownSizes.map((value) => `
-          <option value="${escapeHtml(value)}" ${value === size ? "selected" : ""}>
-            ${value || "One size / no size"}
-          </option>
-        `).join("")}
+    <label class="admin-field"><span>Color</span>
+      <select data-variant-color ${hasExistingSku ? "disabled" : ""}>
+        ${colors.map(c => `<option value="${escapeHtml(c)}" ${c.toLowerCase() === color.toLowerCase() ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
       </select>
     </label>
-
-    ${tshirt ? "" : `
-      <label class="admin-field">
-        <span>Color / option</span>
-        <input data-variant-color type="text" value="${escapeHtml(variant.color || "")}" placeholder="Black" />
-      </label>
-    `}
-
-    <label class="admin-field">
-      <span>Made-to-order stock</span>
-      <input data-variant-stock type="number" min="0" step="1" value="${Number(variant.stock || 0)}" />
+    <label class="admin-field"><span>Size</span>
+      <select data-variant-size ${hasExistingSku ? "disabled" : ""}>
+        ${knownSizes.map(value => `<option value="${escapeHtml(value)}" ${value === size ? "selected" : ""}>${escapeHtml(value || "One size")}</option>`).join("")}
+      </select>
     </label>
-
-    ${tshirt ? `<input data-variant-color type="hidden" value="${escapeHtml(variant.color || inferColorFromProductTitle())}" />` : ""}
+    <label class="admin-field"><span>Made-to-order</span>
+      <input data-variant-stock type="number" min="0" step="1" value="${Math.max(0, Number(variant.stock || 0))}" />
+    </label>
+    <div class="admin-variant-sku"><span>Internal SKU</span><span data-variant-sku-preview class="variant-sku-preview"></span></div>
     <input data-variant-sku type="hidden" value="${escapeHtml(variant.sku || "")}" />
-
-    <button class="admin-danger-button" data-remove-variant type="button">Remove</button>
+    <button class="admin-danger-button" data-remove-variant type="button" ${hasExistingSku ? "disabled" : ""}>Remove</button>
   `;
-
   container.appendChild(row);
-
   row.querySelector("[data-variant-size]")?.addEventListener("change", () => updateAutoSkuForRow(row));
-  row.querySelector("[data-variant-color]")?.addEventListener("input", () => updateAutoSkuForRow(row));
-
+  row.querySelector("[data-variant-color]")?.addEventListener("change", () => updateAutoSkuForRow(row));
   updateAutoSkuForRow(row);
+  const preview = row.querySelector<HTMLElement>("[data-variant-sku-preview]");
+  if (preview && hasExistingSku) preview.textContent = `${variant.sku} · locked`;
+}
+function inferLegacyColor(title: string): string {
+  return ["Black", "White", "Natural", "Blue", "Red", "Green", "Grey", "Gray"].find(c =>
+    new RegExp(`\\b${c}\\b`, "i").test(title)) || "";
 }
 
-function inferColorFromProductTitle() {
-  const title = inputValue("productTitle");
-  const commonColors = ["Black", "White", "Natural", "Nightfall", "Blue", "Red", "Green", "Grey", "Gray"];
-  return commonColors.find((color) => new RegExp(`${color}`, "i").test(title)) || "";
+/* =========================================================
+   COLOR GALLERIES — local UI state; uploads reuse /product-images.
+   Existing variant SKUs are never regenerated.
+   ========================================================= */
+function clearColorPreviewUrls() {
+  colorPreviewUrls.forEach(url => URL.revokeObjectURL(url));
+  colorPreviewUrls.length = 0;
 }
-
-function refreshTshirtVariantColors() {
-  if (!isTshirtCategory(inputValue("productCategory"))) return;
-
-  const inferredColor = inferColorFromProductTitle();
-  document.querySelectorAll<HTMLElement>("#variantRows .dynamic-row").forEach((row) => {
-    const colorInput = row.querySelector<HTMLInputElement>("[data-variant-color]");
-    if (colorInput && !colorInput.value.trim()) colorInput.value = inferredColor;
-    updateAutoSkuForRow(row);
-  });
+function addColorDraft(name: string, hex = "", images: string[] = [], existing = false, render = true): void {
+  const clean = name.trim();
+  if (!clean || colorDrafts.some(c => c.name.toLowerCase() === clean.toLowerCase())) return;
+  if (!defaultProductColor) defaultProductColor = clean;
+  colorDrafts.push({ uid: ++nextColorUid, name: clean,
+    hex: /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : (KNOWN_COLOR_HEX[clean.toLowerCase()] || "#CCCCCC"),
+    images: Array.isArray(images) ? [...images] : [], pending: [], existing });
+  if (render) renderColorEditor();
 }
+function renderColorEditor() {
+  const editor = document.getElementById("productColorEditor");
+  if (!editor) return;
+  clearColorPreviewUrls();
+  const defaultSelect = document.getElementById("productDefaultColor") as HTMLSelectElement | null;
+  if (defaultSelect) {
+    if (!colorDrafts.some(c => c.name === defaultProductColor)) defaultProductColor = colorDrafts[0]?.name || "";
+    defaultSelect.innerHTML = colorDrafts.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join("");
+    defaultSelect.value = defaultProductColor;
+  }
+  editor.innerHTML = colorDrafts.map(c => `
+    <section class="admin-color-card" data-color-uid="${c.uid}">
+      <header class="admin-color-card__header">
+        <div class="admin-color-card__title"><span class="admin-color-card__dot" style="background:${c.hex}"></span>
+          <strong>${escapeHtml(c.name)}</strong>
+          <label class="admin-color-card__hex">Swatch <input type="color" data-color-hex="${c.uid}" value="${c.hex}" /></label>
+        </div>
+        <button type="button" class="admin-danger-button" data-remove-color="${c.uid}" ${c.existing ? "disabled" : ""}>Remove color</button>
+      </header>
+      <div class="admin-color-card__dropzone" data-color-drop="${c.uid}" role="button" tabindex="0" aria-label="Upload ${escapeHtml(c.name)} photos">
+        <input type="file" data-color-files="${c.uid}" accept="image/jpeg,image/png,image/webp" multiple hidden />
+        <strong>Drop ${escapeHtml(c.name)} photos here</strong><small>or click to choose images</small>
+      </div>
+      <div class="product-image-preview admin-color-card__preview">${[
+        ...c.images.map((url, i) => `<div class="product-image-preview__item"><img src="${escapeHtml(url)}" alt="${escapeHtml(c.name)} photo"/><button type="button" data-remove-color-image="${c.uid}:${i}" aria-label="Remove photo">×</button></div>`),
+        ...c.pending.map((file, i) => {
+          const url = URL.createObjectURL(file);
+          colorPreviewUrls.push(url);
+          return `<div class="product-image-preview__item"><img src="${escapeHtml(url)}" alt="${escapeHtml(file.name)}"/><button type="button" data-remove-color-pending="${c.uid}:${i}" aria-label="Remove pending photo">×</button></div>`;
+        })
+      ].join("")}</div>
+    </section>`).join("") || `<p class="admin-muted">No colors yet. Add at least one color above.</p>`;
+}
+document.getElementById("productDefaultColor")?.addEventListener("change", () => {
+  defaultProductColor = inputValue("productDefaultColor");
+});
+const colorEditor = document.getElementById("productColorEditor");
+function colorByUid(uid: number) {return colorDrafts.find(c => c.uid === uid);}
+colorEditor?.addEventListener("click", event => {
+  const el = event.target as HTMLElement;
+  const remove = el.closest<HTMLButtonElement>("[data-remove-color]");
+  if (remove) {
+    const draft = colorByUid(Number(remove.dataset.removeColor));
+    if (!draft || draft.existing) return;
+    colorDrafts = colorDrafts.filter(c => c.uid !== draft.uid);
+    if (defaultProductColor === draft.name) defaultProductColor = colorDrafts[0]?.name || "";
+    document.querySelectorAll<HTMLElement>("#variantRows .dynamic-row").forEach(row => {
+      if (childInputValue(row, "[data-variant-color]").toLowerCase() === draft.name.toLowerCase()
+          && row.dataset.legacySku !== "true") row.remove();
+    });
+    renderColorEditor(); return;
+  }
+  for (const selector of ["[data-remove-color-image]", "[data-remove-color-pending]"]) {
+    const btn = el.closest<HTMLButtonElement>(selector);
+    if (!btn) continue;
+    const val = selector.includes("pending") ? btn.dataset.removeColorPending : btn.dataset.removeColorImage;
+    const [uid,index] = String(val || "").split(":").map(Number);
+    const draft = colorByUid(uid);
+    if (draft && Number.isInteger(index)) {
+      if (selector.includes("pending")) draft.pending.splice(index,1); else draft.images.splice(index,1);
+      renderColorEditor();
+    }
+    return;
+  }
+  const zone = el.closest<HTMLElement>("[data-color-drop]");
+  if (zone && !el.closest("input")) zone.querySelector<HTMLInputElement>("input[type=file]")?.click();
+});
+colorEditor?.addEventListener("change", event => {
+  const input = event.target as HTMLInputElement;
+  if (input.matches("[data-color-hex]")) {
+    const draft = colorByUid(Number(input.dataset.colorHex));
+    if (draft) {draft.hex = input.value;renderColorEditor();}
+  }
+  if (input.matches("[data-color-files]")) {
+    const draft = colorByUid(Number(input.dataset.colorFiles));
+    if (draft) addFilesToColor(draft, Array.from(input.files || []));
+  }
+});
+colorEditor?.addEventListener("keydown", event => {
+  const el = event.target as HTMLElement;
+  if ((event.key === "Enter" || event.key === " ") && el.matches("[data-color-drop]")) {
+    event.preventDefault();el.querySelector<HTMLInputElement>("input[type=file]")?.click();
+  }
+});
+colorEditor?.addEventListener("dragover", event => {
+  const zone = (event.target as HTMLElement).closest<HTMLElement>("[data-color-drop]");
+  if (zone) {event.preventDefault();zone.classList.add("is-dragging");}
+});
+colorEditor?.addEventListener("dragleave", event => {
+  const zone = (event.target as HTMLElement).closest<HTMLElement>("[data-color-drop]");
+  zone?.classList.remove("is-dragging");
+});
+colorEditor?.addEventListener("drop", event => {
+  const zone = (event.target as HTMLElement).closest<HTMLElement>("[data-color-drop]");
+  if (!zone) return;
+  event.preventDefault(); zone.classList.remove("is-dragging");
+  const draft = colorByUid(Number(zone.dataset.colorDrop));
+  if (draft) addFilesToColor(draft, Array.from(event.dataTransfer?.files || []));
+});
+function addFilesToColor(draft: ColorDraft, files: File[]) {
+  const allowed = files.filter(isAllowedProductImage);
+  if (allowed.length !== files.length) setInlineStatus(document.getElementById("colorEditorStatus"),"Only PNG/JPG/WEBP photos are supported.","error");
+  draft.pending.push(...allowed);
+  renderColorEditor();
+}
+document.getElementById("addColorOptionButton")?.addEventListener("click", () => {
+  let name = inputValue("addColorSelect");
+  if (name === "Custom") name = window.prompt("Color name (e.g. Navy)")?.trim() || "";
+  if (!name) return;
+  if (colorDrafts.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+    setInlineStatus(document.getElementById("colorEditorStatus"),"This color already exists.","error"); return;
+  }
+  addColorDraft(name);
+  addDefaultSizesForColor(name);
+  setInlineStatus(document.getElementById("colorEditorStatus"),`${name} added. Set stock and upload its photos.`,"success");
+});
 
 function isAllowedProductImage(file: File) {
   return ["image/png", "image/jpeg", "image/webp"].includes(file.type);
@@ -1264,12 +1412,12 @@ function renderProductImagePreview() {
   preview.innerHTML = [...existingHtml, ...pendingHtml].join("");
 }
 
-async function uploadPendingProductImages(): Promise<string[]> {
-  if (!pendingProductImageFiles.length) return [];
+async function uploadPendingProductImages(files: File[] = pendingProductImageFiles): Promise<string[]> {
+  if (!files.length) return [];
 
   const formData = new FormData();
 
-  pendingProductImageFiles.forEach((file) => {
+  files.forEach((file) => {
     formData.append("images", file);
   });
 
@@ -1340,10 +1488,14 @@ document.getElementById("productImagePreview")?.addEventListener("click", (event
 });
 
 document.getElementById("productId")?.addEventListener("input", updateAllAutoSkus);
-document.getElementById("productTitle")?.addEventListener("input", refreshTshirtVariantColors);
+
 document.getElementById("productCategory")?.addEventListener("change", () => {
   const editing = Boolean(inputValue("productEditingId"));
-  if (!editing) addDefaultVariantRowsForCategory(inputValue("productCategory"));
+  if (!editing) {
+    if (isTshirtCategory(inputValue("productCategory")) && !colorDrafts.length) addColorDraft("White", "", [], false, false);
+    renderColorEditor();
+    addDefaultVariantRowsForCategory(inputValue("productCategory"));
+  }
 });
 
 productForm?.addEventListener("submit", async (event) => {
@@ -1357,6 +1509,20 @@ productForm?.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (!ENABLE_MULTI_COLOR_SAVE && (colorDrafts.length > 1 || colorDrafts.some(c => c.pending.length))) {
+    setInlineStatus(statusEl,
+      "Color selection / galleries are ready in the UI, but saving them requires the next backend + inventory migration step. No product changes were sent.",
+      "error");
+    return;
+  }
+  const draftPayload = collectProductPayload();
+  const keys = draftPayload.variants.map((v: any) => `${v.color.toLowerCase()}::${v.size.toLowerCase()}`);
+  if (new Set(keys).size !== keys.length) {
+    setInlineStatus(statusEl,"Duplicate color + size combination. Each option must be unique.","error");return;
+  }
+  if (draftPayload.variants.some((v: any) => v.color && !colorDrafts.some(c => c.name.toLowerCase() === v.color.toLowerCase()))) {
+    setInlineStatus(statusEl,"Each variant must belong to an available color.","error");return;
+  }
   setInlineStatus(
     statusEl,
     pendingProductImageFiles.length
@@ -1371,7 +1537,18 @@ productForm?.addEventListener("submit", async (event) => {
 
   try {
     const uploadedImages = await uploadPendingProductImages();
+    const uploadedByColor = await Promise.all(colorDrafts.map(async c => ({
+      uid:c.uid, urls:await uploadPendingProductImages(c.pending)
+    })));
     const payload = collectProductPayload();
+    payload.colorOptions = colorDrafts.map(c => ({
+      name:c.name, hex:c.hex,
+      images:[...c.images,...(uploadedByColor.find(item => item.uid === c.uid)?.urls || [])]
+    }));
+    payload.defaultColor = defaultProductColor || payload.colorOptions[0]?.name || "";
+    if (payload.colorOptions.some((c: any) => !c.images.length) && !existingProductImages.length && !uploadedImages.length) {
+      throw new Error("Upload product photos for each color or add shared fallback photos.");
+    }
 
     payload.images = [
       ...existingProductImages,
@@ -1394,6 +1571,10 @@ productForm?.addEventListener("submit", async (event) => {
 
     pendingProductImageFiles = [];
     existingProductImages = payload.images;
+    colorDrafts.forEach(c => {
+      c.images = payload.colorOptions.find((x: any) => x.name === c.name)?.images || [];
+      c.pending = [];
+    });
 
     await loadProducts();
     setTimeout(closeProductModal, 350);
@@ -1440,6 +1621,8 @@ function collectProductPayload() {
       size: Number(inputValue("qrPrintSize") || 3540),
     },
     images: [...existingProductImages],
+    colorOptions: colorDrafts.map(c => ({name:c.name, hex:c.hex, images:[...c.images]})),
+    defaultColor: defaultProductColor || colorDrafts[0]?.name || "",
     variants,
     reviews: [],
   };
@@ -1498,9 +1681,8 @@ document.getElementById("stockProductId")?.addEventListener("change", () => {
   populateStockVariants();
 });
 
-document.getElementById("stockVariantSelect")?.addEventListener("change", () => {
-  applySelectedStockVariant();
-});
+document.getElementById("stockColorSelect")?.addEventListener("change", () => populateStockSizes());
+document.getElementById("stockSizeSelect")?.addEventListener("change", () => applySelectedStockVariant());
 
 function openStockModal(preselectedProductId = "") {
   populateStockProducts(preselectedProductId);
@@ -1532,43 +1714,38 @@ function populateStockProducts(preselectedProductId = "") {
 }
 
 function populateStockVariants() {
-  const productId = inputValue("stockProductId");
-  const product = currentProducts.find((item) => item.id === productId);
+  const product = currentProducts.find(item => item.id === inputValue("stockProductId"));
   const variants = Array.isArray(product?.variants) ? product.variants : [];
-  const select = document.getElementById("stockVariantSelect") as HTMLSelectElement | null;
-
-  if (!select) return;
-
-  if (!variants.length) {
-    select.innerHTML = `<option value="">No sellable size / option configured</option>`;
-    setInputValue("stockSku", "");
-    setInputValue("stockSize", "");
-    setInputValue("stockColor", "");
-    return;
-  }
-
-  select.innerHTML = variants
-    .map((variant: any, index: number) => {
-      const label = [variant.size || "One size", variant.color || ""].filter(Boolean).join(" · ");
-      return `<option value="${index}">${escapeHtml(label)}</option>`;
-    })
-    .join("");
-
+  const colorSelect = document.getElementById("stockColorSelect") as HTMLSelectElement | null;
+  const oldSelect = document.getElementById("stockVariantSelect") as HTMLSelectElement | null;
+  if (oldSelect) oldSelect.innerHTML = variants.map((_: any,i: number) => `<option value="${i}">${i}</option>`).join("");
+  if (!colorSelect) return;
+  const colors = Array.from(new Set(variants.map((v: any) => String(v.color || "")))) as string[];
+  colorSelect.innerHTML = colors.map(color => `<option value="${escapeHtml(color)}">${escapeHtml(color || "Default")}</option>`).join("");
+  populateStockSizes();
+}
+function populateStockSizes() {
+  const product = currentProducts.find(item => item.id === inputValue("stockProductId"));
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const sizeSelect = document.getElementById("stockSizeSelect") as HTMLSelectElement | null;
+  if (!sizeSelect) return;
+  const color = inputValue("stockColorSelect");
+  const options = variants.filter((v: any) => String(v.color || "") === color);
+  sizeSelect.innerHTML = options.map((v: any) => `<option value="${escapeHtml(v.size || "")}">${escapeHtml(v.size || "One size")}</option>`).join("");
   applySelectedStockVariant();
 }
-
 function applySelectedStockVariant() {
-  const productId = inputValue("stockProductId");
-  const product = currentProducts.find((item) => item.id === productId);
+  const product = currentProducts.find(item => item.id === inputValue("stockProductId"));
   const variants = Array.isArray(product?.variants) ? product.variants : [];
-  const selectedIndex = Number(inputValue("stockVariantSelect"));
-  const variant = variants[selectedIndex];
-
-  if (!variant) return;
-
-  setInputValue("stockSku", variant.sku || "");
-  setInputValue("stockSize", variant.size || "");
-  setInputValue("stockColor", variant.color || "");
+  const index = variants.findIndex((v: any) => String(v.color || "") === inputValue("stockColorSelect")
+    && String(v.size || "") === inputValue("stockSizeSelect"));
+  const variant = variants[index];
+  setInputValue("stockVariantSelect", index >= 0 ? index : "");
+  setInputValue("stockSku", variant?.sku || "");
+  setInputValue("stockSize", variant?.size || "");
+  setInputValue("stockColor", variant?.color || "");
+  const submit = document.getElementById("generateStockButton") as HTMLButtonElement | null;
+  if (submit) submit.disabled = !variant?.sku;
 }
 
 stockForm?.addEventListener("submit", async (event) => {

@@ -9,6 +9,7 @@ import {
   type Product,
   type ProductVariant,
   type ProductReview,
+  getColorImages,
 } from "../../services/products";
 import { addCartItem } from "../../services/cart";
 import { firebaseAuth } from "../../services/firebase";
@@ -181,115 +182,101 @@ async function setupReviewForm(productId: string): Promise<void> {
   });
 }
 
+function safeProductText(value: unknown): string {
+  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+}
+
+/** Only exact color AND size may be selected. Never match by size alone. */
 function setupVariantControls(
-  product: Product
+  product: Product,
+  onColorChanged: (color: string) => void
 ): () => ProductVariant | undefined {
-  const wrapper = document.getElementById(
-    "variantControls"
-  ) as HTMLElement | null;
+  const wrapper = document.getElementById("variantControls") as HTMLElement | null;
   const sizeOptions = document.getElementById("sizeOptions");
-  const selectedSizeText = document.getElementById("selectedSizeText");
+  const sizeLabel = document.getElementById("selectedSizeText");
+  const colorRow = document.getElementById("productColorRow");
+  const colorOptions = document.getElementById("productColorOptions");
+  const colorLabel = document.getElementById("selectedColorText");
   const stockEl = document.getElementById("productStock");
-
+  const addButton = document.getElementById("productAddToCartBtn") as HTMLButtonElement | null;
   const variants = product.variants || [];
-
-  if (!wrapper || variants.length === 0) {
+  if (!wrapper || !variants.length) {
     if (wrapper) wrapper.hidden = true;
     return () => undefined;
   }
 
-  const sizes = Array.from(
-    new Set(variants.map((v) => v.size).filter(Boolean) as string[])
-  );
+  const colors = unique([
+    ...(product.colorOptions || []).map(x => x.name),
+    ...variants.map(x => x.color),
+  ]);
+  const selectableColors = colors.length ? colors : [""];
+  const firstAvailable = variants.find(v => Number(v.stock || 0) > 0);
+  let selectedColor = selectableColors.find(c => c.toLowerCase() === String(product.defaultColor || "").toLowerCase())
+    || firstAvailable?.color || selectableColors[0];
+  const variantsForColor = () => variants.filter(v => String(v.color || "").toLowerCase() === selectedColor.toLowerCase());
+  const sizesForColor = () => unique(variantsForColor().map(v => v.size));
+  const firstAvailableInColor = variantsForColor().find(v => Number(v.stock || 0) > 0);
+  let selectedSize = firstAvailableInColor?.size || sizesForColor()[0] || "";
+  const getSelectedVariant = () => variantsForColor().find(v => String(v.size || "") === selectedSize);
 
-  const firstAvailable = variants.find((v) => (v.stock ?? 0) > 0);
-  let selectedSize = firstAvailable?.size || sizes[0];
-
-  function getStock(size: string): number {
-    const v = variants.find((x) => x.size === size);
-    return v?.stock ?? 0;
-  }
-
-  function isSizeOut(size: string): boolean {
-    return getStock(size) <= 0;
-  }
-
-  function getSelectedVariant(): ProductVariant | undefined {
-    return variants.find((v) => v.size === selectedSize);
-  }
-
-  function updateStock(): void {
+  function redraw(): void {
+    const candidates = variantsForColor();
+    if (!candidates.some(v => String(v.size || "") === selectedSize)) selectedSize = candidates[0]?.size || "";
+    const sizes = sizesForColor();
+    if (sizeOptions) {
+      sizeOptions.innerHTML = sizes.map(size => {
+        const variant = candidates.find(v => v.size === size);
+        const available = Number(variant?.stock || 0) > 0;
+        return `<button type="button" data-size="${safeProductText(size)}" class="option-btn ${size === selectedSize ? "active" : ""} ${available ? "" : "out-of-stock"}" ${available ? "" : "disabled"} aria-pressed="${size === selectedSize}">${safeProductText(size)}</button>`;
+      }).join("");
+      sizeOptions.hidden = !sizes.length;
+    }
+const sizeRow =
+  wrapper?.querySelector<HTMLElement>(".size-row");
+      if (sizeRow) sizeRow.hidden = !sizes.length;
+    if (sizeLabel) sizeLabel.textContent = selectedSize || "One size";
+    if (colorRow) colorRow.hidden = colors.length === 0;
+    if (colorLabel) colorLabel.textContent = selectedColor || "Default";
+    if (colorOptions) {
+      colorOptions.innerHTML = selectableColors.map(color => {
+        const option = product.colorOptions?.find(c => c.name.toLowerCase() === color.toLowerCase());
+        const available = variants.some(v => String(v.color || "").toLowerCase() === color.toLowerCase() && Number(v.stock || 0) > 0);
+        const hex = /^#[0-9a-fA-F]{6}$/.test(option?.hex || "") ? option!.hex :
+          ({white:"#ffffff",black:"#111111",natural:"#e7decb"} as Record<string,string>)[color.toLowerCase()] || "#d5d5d5";
+        return `<button type="button" class="product-color-swatch ${selectedColor === color ? "is-selected" : ""}" data-product-color="${safeProductText(color)}" aria-label="Color ${safeProductText(color || "Default")}" aria-pressed="${selectedColor === color}" ${available ? "" : "disabled"}><span class="product-color-swatch__dot" style="--swatch-color:${hex}"></span><span>${safeProductText(color || "Default")}</span></button>`;
+      }).join("");
+    }
     const variant = getSelectedVariant();
-    selectedVariantStock = variant?.stock ?? product.stock ?? 0;
+    selectedVariantStock = Number(variant?.stock || 0);
+    if (quantity > Math.max(1, selectedVariantStock)) quantity = 1;
+    const quantityText = document.getElementById("quantityValue");
+    if (quantityText) quantityText.textContent = String(quantity);
+    if (stockEl) {
+      stockEl.textContent = selectedVariantStock > 0 ? "In stock" : "Out of stock";
+      stockEl.style.color = selectedVariantStock > 0 ? "#129447" : "#b42318";
+    }
+    if (addButton) addButton.disabled = !variant || selectedVariantStock <= 0;
   }
 
-  function updateUI(): void {
-    updateStock();
-
-    if (selectedSizeText) {
-      selectedSizeText.textContent = selectedSize || "-";
-    }
-
-    document
-      .querySelectorAll<HTMLButtonElement>("[data-size]")
-      .forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.size === selectedSize);
-      });
-
-    const variant = getSelectedVariant();
-
-    if ((variant?.stock ?? 0) <= 0) {
-      quantity = 1;
-    }
-
-    if (!stockEl) return;
-
-    const allOut = variants.every((v) => Number(v.stock || 0) <= 0);
-
-    if (allOut) {
-      stockEl.textContent = "Out of stock";
-      stockEl.style.color = "red";
-      return;
-    }
-
-    stockEl.textContent = isInStock(product, variant)
-      ? "In stock"
-      : "Out of stock";
-    stockEl.style.color = isInStock(product, variant) ? "#129447" : "red";
-  }
-
-  if (sizeOptions) {
-    sizeOptions.innerHTML = sizes
-      .map((size) => {
-        const out = isSizeOut(size);
-
-        return `
-          <button
-            type="button"
-            class="option-btn ${out ? "out-of-stock" : ""}"
-            data-size="${size}"
-            ${out ? "disabled" : ""}
-          >
-            ${size}
-          </button>
-        `;
-      })
-      .join("");
-  }
-
-  document.querySelectorAll<HTMLButtonElement>("[data-size]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const size = btn.dataset.size!;
-      if (isSizeOut(size)) return;
-
-      selectedSize = size;
-      updateUI();
-    });
+  sizeOptions?.addEventListener("click", event => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-size]");
+    if (!button || button.disabled) return;
+    selectedSize = button.dataset.size || "";
+    redraw();
   });
-
+  colorOptions?.addEventListener("click", event => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-product-color]");
+    if (!button || button.disabled) return;
+    selectedColor = button.dataset.productColor || "";
+    const available = variantsForColor().find(v => Number(v.stock || 0) > 0);
+    selectedSize = available?.size || variantsForColor()[0]?.size || "";
+    onColorChanged(selectedColor);
+    redraw();
+  });
   wrapper.hidden = false;
-  updateUI();
-
+  onColorChanged(selectedColor);
+  redraw();
   return getSelectedVariant;
 }
 
@@ -365,6 +352,11 @@ async function renderRelatedProducts(currentProduct: Product): Promise<void> {
             return;
           }
 
+          // Multi-color products require explicit selection on Product Details.
+          if (unique((product.variants || []).map(v => v.color)).length > 1) {
+            window.location.href = productUrl(product);
+            return;
+          }
           const selectedVariant = product.variants?.find(
             (variant) => Number(variant.stock || 0) > 0
           );
@@ -496,7 +488,7 @@ const id = getProductIdentifier();
       showToast(
         `Only ${selectedVariantStock} item${
           selectedVariantStock === 1 ? "" : "s"
-        } available in this size.`
+        } available in the selected color and size.`
       );
       return;
     }
@@ -520,6 +512,8 @@ const id = getProductIdentifier();
     if (!product) {
       throw new Error("Product not found");
     }
+
+    const confirmedProduct: Product = product;
 
     if (product.active === false) {
   throw new Error("This product is no longer available.");
@@ -593,7 +587,7 @@ injectProductSchema(product);
    PRODUCT IMAGE GALLERY
    ========================================================= */
 
-const productImages = unique([
+let productImages = unique([
   ...(product.images || []),
   product.image,
 ]);
@@ -744,58 +738,41 @@ nextImageBtn?.addEventListener(
 );
 
 
-/* -------------------------
-   THUMBNAILS
-------------------------- */
-
-if (
-  thumbnailsEl &&
-  productImages.length > 1
-) {
-  thumbnailsEl.hidden = false;
-
-  thumbnailsEl.innerHTML =
-    productImages
-      .map(
-        (src, index) => `
-          <button
-            type="button"
-            class="product-thumbnail ${
-              index === 0 ? "active" : ""
-            }"
-            data-src="${src}"
-            aria-label="Show product photo ${index + 1}"
-          >
-            <img
-              src="${src}"
-              alt="${product.title} photo ${index + 1}"
-            />
-          </button>
-        `
-      )
-      .join("");
-
-  thumbnailsEl
-    .querySelectorAll<HTMLButtonElement>(
-      ".product-thumbnail"
-    )
-    .forEach((btn) => {
-      btn.addEventListener(
-        "click",
-        () => {
-          setMainImage(
-            btn.dataset.src || ""
-          );
-        }
-      );
-    });
-
-} else if (thumbnailsEl) {
-
-  thumbnailsEl.hidden = true;
-  thumbnailsEl.innerHTML = "";
+/* Color-specific galleries rebuild thumbnails and keep existing zoom/arrows. */
+function renderProductThumbnails(): void {
+  const multiple = productImages.length > 1;
+  if (prevImageBtn) prevImageBtn.hidden = !multiple;
+  if (nextImageBtn) nextImageBtn.hidden = !multiple;
+  if (!thumbnailsEl) return;
+  thumbnailsEl.hidden = !multiple;
+  thumbnailsEl.innerHTML = multiple ? productImages.map((src, index) => `
+    <button type="button" class="product-thumbnail ${index === currentImageIndex ? "active" : ""}"
+      data-image-index="${index}" data-src="${safeProductText(src)}" aria-label="Show product photo ${index + 1}">
+<img src="${safeProductText(src)}" alt="${safeProductText(confirmedProduct.title)} photo ${index + 1}" />
+    </button>`).join("") : "";
 }
-
+function switchGalleryForColor(color: string): void {
+productImages = unique(
+  getColorImages(confirmedProduct, color)
+);
+  currentImageIndex = 0;
+  renderProductThumbnails();
+  if (productImages.length) setMainImage(productImages[0]);
+  else {
+    if (imageEl) imageEl.hidden = true;
+    if (imageFallback) imageFallback.hidden = false;
+  }
+  if (productImages[0]) {
+    setMetaProperty("og:image", new URL(productImages[0], window.location.origin).href);
+    setMetaName("twitter:image", new URL(productImages[0], window.location.origin).href);
+  }
+}
+renderProductThumbnails();
+thumbnailsEl?.addEventListener("click", event => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-image-index]");
+  if (!button) return;
+  showImageAtIndex(Number(button.dataset.imageIndex || 0));
+});
 
 /* =========================================================
    DESKTOP ZOOM
@@ -1006,14 +983,14 @@ if (imageStage) {
       renderReviews(getFallbackReviews(product));
     }
 
-    const getSelectedVariant = setupVariantControls(product);
+    const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
     selectedVariantStock = getSelectedVariant()?.stock ?? product.stock ?? 0;
     updateQuantity();
 
     await renderRelatedProducts(product);
 
     if (addBtn) {
-      addBtn.disabled = !isInStock(product);
+      addBtn.disabled = !isInStock(product, getSelectedVariant());
 
       addBtn.addEventListener("click", async () => {
         const rawQrDestination = qrDestinationInput?.value.trim() || "";
@@ -1050,7 +1027,7 @@ if (imageStage) {
           showToast(
             `Only ${availableStock} item${
               availableStock === 1 ? "" : "s"
-            } available in this size.`
+            } available in the selected color and size.`
           );
           return;
         }
@@ -1073,7 +1050,7 @@ if (imageStage) {
           addBtn.classList.add("btn-outline");
 
           setTimeout(() => {
-            addBtn.disabled = false;
+            addBtn.disabled = !isInStock(product, getSelectedVariant());
             addBtn.textContent = "Add to cart";
             addBtn.classList.add("btn-primary");
             addBtn.classList.remove("btn-outline");
