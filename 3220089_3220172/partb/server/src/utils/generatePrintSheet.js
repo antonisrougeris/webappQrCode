@@ -13,9 +13,9 @@ const A3_WIDTH = 3508;
 const A3_HEIGHT = 4961;
 
 // Εδώ αλλάζεις τις πραγματικές διαστάσεις εκτύπωσης
-const QR_WIDTH_CM = 23;
-const LOGO_WIDTH_CM = 6;
-const NECK_LABEL_WIDTH_CM = 6;
+const QR_WIDTH_CM = 26;
+const LOGO_WIDTH_CM = 7;
+const NECK_LABEL_WIDTH_CM = 4.5;
 
 // Κενά ανάμεσα στα στοιχεία (pixels)
 const TOP_MARGIN = 120;
