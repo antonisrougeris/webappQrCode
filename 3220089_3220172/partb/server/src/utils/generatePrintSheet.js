@@ -26,9 +26,9 @@ const LOGO_WIDTH_CM = 7;
 const NECK_LABEL_WIDTH_CM = 4.5;
 
 // Spacing (pixels)
-const TOP_MARGIN = 100;
-const QR_TO_LOGO_GAP = 100;
-const LOGO_TO_NECK_GAP = 100;
+const TOP_MARGIN = 20;
+const QR_TO_LOGO_GAP = 20;
+const LOGO_TO_NECK_GAP = 20;
 
 // Helpers
 const cmToPx = (cm) => (cm / 2.54) * DPI;
