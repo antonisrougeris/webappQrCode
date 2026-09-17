@@ -14,11 +14,11 @@ const A3_HEIGHT = 4961;
 
 // QR + TEXT width per shirt size (cm)
 const QR_WIDTH_BY_SIZE_CM = {
-  S: 24.5,
-  M: 25.5,
-  L: 26.5,
-  XL: 27.5,
-  "2XL": 28.5,
+  S: 25,
+  M: 26,
+  L: 27,
+  XL: 27,
+  "2XL": 27,
 };
 
 // Fixed print sizes (cm)

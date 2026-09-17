@@ -45,7 +45,7 @@ const gap = Number.isFinite(parsedGap) ? parsedGap : Math.round(width * 0.02);
     const qrH = qrCanvas.height;
 
     const fontSize = Math.round(width * 0.1);
-    const padding = Math.round(width * 0.05);
+    const padding = Math.round(width * 0.01);
     const lineHeight = Math.round(fontSize * 1.15);
     const maxTextWidth = qrW;
 
