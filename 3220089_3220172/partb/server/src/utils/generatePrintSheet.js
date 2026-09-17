@@ -12,23 +12,27 @@ const DPI = 300;
 const A3_WIDTH = 3508;
 const A3_HEIGHT = 4961;
 
-// Εδώ αλλάζεις τις πραγματικές διαστάσεις εκτύπωσης
-const QR_WIDTH_CM = 27;
-const LOGO_WIDTH_CM = 6;
+// QR + TEXT width per shirt size (cm)
+const QR_WIDTH_BY_SIZE_CM = {
+  S: 24.5,
+  M: 25.5,
+  L: 26.5,
+  XL: 27.5,
+  "2XL": 28.5,
+};
+
+// Fixed print sizes (cm)
+const LOGO_WIDTH_CM = 7;
 const NECK_LABEL_WIDTH_CM = 4.5;
 
-// Κενά ανάμεσα στα στοιχεία (pixels)
+// Spacing (pixels)
 const TOP_MARGIN = 120;
-
 const QR_TO_LOGO_GAP = 250;
-
 const LOGO_TO_NECK_GAP = 250;
 
-// Convert centimeters to pixels
+// Helpers
 const cmToPx = (cm) => (cm / 2.54) * DPI;
-
 const pxToCm = (px) => (px / DPI) * 2.54;
-
 
 // ============================================================
 // NORMALIZE SHIRT COLOR
@@ -62,7 +66,6 @@ function normalizeShirtColor(shirtColor) {
   );
 }
 
-
 // ============================================================
 // NORMALIZE SHIRT SIZE
 // ============================================================
@@ -72,36 +75,22 @@ function normalizeShirtSize(shirtSize) {
     .trim()
     .toUpperCase();
 
-  // Accept XXL as an alias for 2XL
+  // XXL and 2XL are equivalent
   const normalizedSize =
     normalized === "XXL" ? "2XL" : normalized;
 
-  const allowedSizes = [
-    "S",
-    "M",
-    "L",
-    "XL",
-    "2XL",
-  ];
-
-  if (!allowedSizes.includes(normalizedSize)) {
+  if (!(normalizedSize in QR_WIDTH_BY_SIZE_CM)) {
     throw new Error(
-      `Unsupported shirt size "${shirtSize}". Allowed sizes: ${allowedSizes.join(", ")}`
+      `Unsupported shirt size: "${shirtSize}"`
     );
   }
 
   return normalizedSize;
 }
 
-
 // ============================================================
-// PRINT COLOR
+// CONTRAST PRINT COLOR
 // ============================================================
-
-/*
- * Black shirt -> White print
- * White shirt -> Black print
- */
 
 function getContrastPrintColor(shirtColor) {
   return shirtColor === "black"
@@ -109,9 +98,8 @@ function getContrastPrintColor(shirtColor) {
     : "black";
 }
 
-
 // ============================================================
-// SELECT PRINT ASSETS
+// SELECT ASSETS
 // ============================================================
 
 function getLogoFile(printColor) {
@@ -119,11 +107,8 @@ function getLogoFile(printColor) {
 }
 
 function getNeckLabelFile(printColor, shirtSize) {
-  const sizePart = shirtSize.toLowerCase();
-
-  return `neck-label-${printColor}-${sizePart}.png`;
+  return `neck-label-${printColor}-${shirtSize.toLowerCase()}.png`;
 }
-
 
 // ============================================================
 // FILE VALIDATION
@@ -137,9 +122,8 @@ function assertFileExists(filePath, label) {
   }
 }
 
-
 // ============================================================
-// DRAW IMAGE AT EXACT PRINT WIDTH
+// DRAW IMAGE AT EXACT WIDTH
 // ============================================================
 
 function drawImageAtWidth({
@@ -152,10 +136,24 @@ function drawImageAtWidth({
 }) {
   const widthPx = cmToPx(widthCm);
 
-  // Preserve the original aspect ratio
   const scale = widthPx / image.width;
 
   const heightPx = image.height * scale;
+
+  // Prevent drawing outside A3 horizontally
+  if (widthPx > A3_WIDTH) {
+    throw new Error(
+      `${label} exceeds A3 width: ${widthCm} cm`
+    );
+  }
+
+  // Prevent drawing outside A3 vertically
+  if (y + heightPx > A3_HEIGHT) {
+    throw new Error(
+      `${label} exceeds A3 height. ` +
+      `Bottom position: ${pxToCm(y + heightPx).toFixed(2)} cm`
+    );
+  }
 
   ctx.drawImage(
     image,
@@ -178,7 +176,6 @@ function drawImageAtWidth({
   };
 }
 
-
 // ============================================================
 // GENERATE A3 PRINT SHEET
 // ============================================================
@@ -190,14 +187,7 @@ export async function generatePrintSheet({
 }) {
 
   // ----------------------------------------------------------
-  // 1. LOAD QR
-  // ----------------------------------------------------------
-
-  const qrImage = await loadImage(qrBuffer);
-
-
-  // ----------------------------------------------------------
-  // 2. NORMALIZE PRODUCT VARIANT
+  // 1. NORMALIZE PRODUCT VARIANT
   // ----------------------------------------------------------
 
   const normalizedColor =
@@ -206,17 +196,22 @@ export async function generatePrintSheet({
   const normalizedSize =
     normalizeShirtSize(shirtSize);
 
+  // ----------------------------------------------------------
+  // 2. SELECT QR WIDTH BY SIZE
+  // ----------------------------------------------------------
+
+  const QR_WIDTH_CM =
+    QR_WIDTH_BY_SIZE_CM[normalizedSize];
 
   // ----------------------------------------------------------
-  // 3. SELECT CONTRAST PRINT COLOR
+  // 3. SELECT PRINT COLOR
   // ----------------------------------------------------------
 
   const printColor =
     getContrastPrintColor(normalizedColor);
 
-
   // ----------------------------------------------------------
-  // 4. SELECT LOGO AND NECK LABEL
+  // 4. SELECT ASSETS
   // ----------------------------------------------------------
 
   const logoFile =
@@ -227,7 +222,6 @@ export async function generatePrintSheet({
       printColor,
       normalizedSize
     );
-
 
   // ----------------------------------------------------------
   // 5. ASSET PATHS
@@ -248,39 +242,29 @@ export async function generatePrintSheet({
     neckLabelFile
   );
 
-
   // ----------------------------------------------------------
   // 6. VALIDATE FILES
   // ----------------------------------------------------------
 
   console.log("PRINT ASSETS:", {
-    shirtColor,
-    normalizedColor,
-    shirtSize,
-    normalizedSize,
+    shirtColor: normalizedColor,
+    shirtSize: normalizedSize,
     printColor,
     logoFile,
     neckLabelFile,
+    qrWidthCm: QR_WIDTH_CM,
     logoPath,
-    logoExists: fs.existsSync(logoPath),
     neckLabelPath,
-    neckLabelExists: fs.existsSync(neckLabelPath),
   });
 
-  assertFileExists(
-    logoPath,
-    "Logo"
-  );
-
-  assertFileExists(
-    neckLabelPath,
-    "Neck label"
-  );
-
+  assertFileExists(logoPath, "Logo");
+  assertFileExists(neckLabelPath, "Neck label");
 
   // ----------------------------------------------------------
-  // 7. LOAD PRINT IMAGES
+  // 7. LOAD IMAGES
   // ----------------------------------------------------------
+
+  const qrImage = await loadImage(qrBuffer);
 
   const logoImage = await loadImage(
     fs.readFileSync(logoPath)
@@ -289,7 +273,6 @@ export async function generatePrintSheet({
   const neckLabelImage = await loadImage(
     fs.readFileSync(neckLabelPath)
   );
-
 
   // ----------------------------------------------------------
   // 8. CREATE A3 CANVAS
@@ -302,7 +285,7 @@ export async function generatePrintSheet({
 
   const ctx = canvas.getContext("2d");
 
-  // Transparent background for DTF printing
+  // Transparent background
   ctx.clearRect(
     0,
     0,
@@ -314,9 +297,8 @@ export async function generatePrintSheet({
 
   let currentY = TOP_MARGIN;
 
-
   // ==========================================================
-  // MAIN QR + SCAN ME
+  // MAIN QR + TEXT
   // ==========================================================
 
   const qrDimensions = drawImageAtWidth({
@@ -325,13 +307,12 @@ export async function generatePrintSheet({
     centerX,
     y: currentY,
     widthCm: QR_WIDTH_CM,
-    label: "QR",
+    label: "QR + TEXT",
   });
 
   currentY +=
     qrDimensions.height +
     QR_TO_LOGO_GAP;
-
 
   // ==========================================================
   // SKANARE LOGO
@@ -350,9 +331,8 @@ export async function generatePrintSheet({
     logoDimensions.height +
     LOGO_TO_NECK_GAP;
 
-
   // ==========================================================
-  // NECK LABEL — COLOR + SIZE
+  // NECK LABEL
   // ==========================================================
 
   const neckDimensions = drawImageAtWidth({
@@ -366,16 +346,15 @@ export async function generatePrintSheet({
 
   currentY += neckDimensions.height;
 
-
   // ==========================================================
-  // FINAL A3 VALIDATION
+  // FINAL VALIDATION
   // ==========================================================
 
   if (currentY > A3_HEIGHT) {
     throw new Error(
-      `Print artwork exceeds A3 height: ${pxToCm(currentY).toFixed(2)} cm. ` +
-      `Available: ${pxToCm(A3_HEIGHT).toFixed(2)} cm. ` +
-      `Reduce print dimensions or spacing.`
+      `Print artwork exceeds A3 height: ` +
+      `${pxToCm(currentY).toFixed(2)} cm. ` +
+      `Available: ${pxToCm(A3_HEIGHT).toFixed(2)} cm.`
     );
   }
 
@@ -386,16 +365,17 @@ export async function generatePrintSheet({
     qrWidthCm: QR_WIDTH_CM,
     logoWidthCm: LOGO_WIDTH_CM,
     neckLabelWidthCm: NECK_LABEL_WIDTH_CM,
-    totalArtworkHeightCm: pxToCm(currentY),
-    a3WidthCm: pxToCm(A3_WIDTH),
-    a3HeightCm: pxToCm(A3_HEIGHT),
+    totalArtworkHeightCm:
+      pxToCm(currentY).toFixed(2),
+    a3WidthCm:
+      pxToCm(A3_WIDTH).toFixed(2),
+    a3HeightCm:
+      pxToCm(A3_HEIGHT).toFixed(2),
   });
-
 
   // ==========================================================
   // RETURN PNG
   // ==========================================================
 
   return canvas.toBuffer("image/png");
-
 }
