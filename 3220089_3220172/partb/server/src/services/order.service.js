@@ -141,7 +141,7 @@ console.log("PRODUCT QR CONFIG DURING CHECKOUT:", {
 const orderItemQrConfig = product.customQr
   ? {
       textPrint:
-        String(product.qrConfig?.textPrint || "SCAN ME").trim(),
+        String(product.qrConfig?.textPrint ?? "").trim(),
 
       textPosition:
         product.qrConfig?.textPosition === "top"

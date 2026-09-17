@@ -235,7 +235,7 @@ async function main() {
       const qrBuffer = await generatePrintQrImage(result.url, {
         qrColor: printConfig.qrColor || printConfig.color || "#000000",
         textColor: printConfig.textColor || printConfig.qrColor || "#000000",
-        textPrint: printConfig.textPrint || "SCAN ME",
+        textPrint: printConfig.textPrint ?? "",
         textPosition: printConfig.textPosition || "bottom",
         size: printConfig.size || 3540,
       });

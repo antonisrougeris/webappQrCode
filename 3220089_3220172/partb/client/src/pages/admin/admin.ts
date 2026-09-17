@@ -996,7 +996,7 @@ function openProductModal(product: any = null) {
   setChecked("productActive", product?.active !== false);
   setChecked("productCustomQr", product?.customQr !== false);
 
-  setInputValue("qrTextPrint", product?.qrConfig?.textPrint || "SCAN ME");
+  setInputValue("qrTextPrint", product?.qrConfig?.textPrint ?? "");
   setInputValue("qrTextPosition", product?.qrConfig?.textPosition || "bottom");
   setInputValue("qrColor", product?.qrConfig?.qrColor || product?.qrConfig?.color || "#000000");
   setInputValue("qrTextColor", product?.qrConfig?.textColor || product?.qrConfig?.qrColor || "#000000");
@@ -1058,7 +1058,7 @@ function resetProductForm() {
 
   setInputValue("productCurrency", "EUR");
 
-  setInputValue("qrTextPrint", "SCAN ME");
+  setInputValue("qrTextPrint", "");
   setInputValue("qrTextPosition", "bottom");
   setInputValue("qrColor", "#000000");
   setInputValue("qrTextColor", "#000000");
@@ -1614,7 +1614,7 @@ function collectProductPayload() {
     active: checked("productActive"),
     customQr: checked("productCustomQr"),
     qrConfig: {
-      textPrint: inputValue("qrTextPrint") || "SCAN ME",
+      textPrint: inputValue("qrTextPrint") ?? "",
       textPosition: inputValue("qrTextPosition") === "top" ? "top" : "bottom",
       qrColor: inputValue("qrColor") || "#000000",
       textColor: inputValue("qrTextColor") || "#000000",

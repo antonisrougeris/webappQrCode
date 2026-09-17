@@ -165,7 +165,7 @@ function sanitizeQrColor(input, fallback = "#000000") {
 function buildQrConfig(item) {
   return {
     textPrint:
-      String(item.qrConfig?.textPrint || "SCAN ME").trim(),
+      String(item.qrConfig?.textPrint ?? "").trim(),
 
     textPosition:
       item.qrConfig?.textPosition === "top"

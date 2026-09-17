@@ -111,7 +111,7 @@ return {
 
   // ✅ NEW FIELD
 qrConfig: {
-  textPrint: product?.qrConfig?.textPrint || "SCAN ME",
+  textPrint: product?.qrConfig?.textPrint ?? "",
   textPosition: product?.qrConfig?.textPosition || "bottom",
   qrColor: product?.qrConfig?.qrColor || product?.qrConfig?.color || "#000000",
   textColor: product?.qrConfig?.textColor || product?.qrConfig?.qrColor || product?.qrConfig?.color || "#000000",
