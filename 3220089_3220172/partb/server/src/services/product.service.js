@@ -7,8 +7,15 @@ import { availabilityForProduct, inventoryKey, isReadyQr } from './stock-availab
 
 function withDefaultGallery(product) {
   const images = chooseProductImages(product, product.defaultColor);
-  return {...product, images: images.length ? images : product.images || [],
-    image: images[0] || product.image || ''};
+  const resolvedPrice = Number(product.price ?? product.priceEUR ?? 0);
+  return {
+    ...product,
+    price: Number.isFinite(resolvedPrice) ? resolvedPrice : 0,
+    priceEUR: Number.isFinite(resolvedPrice) ? resolvedPrice : 0,
+    currency: product.currency || 'EUR',
+    images: images.length ? images : product.images || [],
+    image: images[0] || product.image || '',
+  };
 }
 
 function matchVariant(product, selected) {

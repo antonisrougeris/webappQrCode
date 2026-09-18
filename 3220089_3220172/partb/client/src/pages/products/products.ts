@@ -22,7 +22,8 @@ interface Product {
   shortDescription?: string;
   description?: string;
   category: "tshirt" | "accessory" | string;
-  priceEUR: number;
+  price?: number;
+  priceEUR?: number;
   compareAtPriceEUR?: number;
   image?: string;
   images?: string[];
@@ -92,6 +93,7 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
   container.innerHTML = "";
 
   products.forEach((product) => {
+    const productPrice = Number(product.price ?? product.priceEUR ?? 0);
     const article = document.createElement("article");
     article.className = "card product-card";
 
@@ -138,7 +140,7 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
 
     const price = document.createElement("p");
     price.className = "price";
-    price.textContent = formatPrice(product.priceEUR);
+    price.textContent = formatPrice(productPrice);
 
     row.append(title, price);
 
