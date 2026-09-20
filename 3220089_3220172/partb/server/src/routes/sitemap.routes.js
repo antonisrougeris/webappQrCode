@@ -14,25 +14,34 @@ function escapeXml(value = "") {
 }
 
 function cleanBaseUrl() {
-  return String(process.env.PUBLIC_BASE_URL || "https://skanare.com").replace(
-    /\/+$/,
-    ""
-  );
+  return String(
+    process.env.PUBLIC_BASE_URL || "https://skanare.com"
+  ).replace(/\/+$/, "");
 }
 
-function productPath(product, docId) {
-  const identifier = product.slug || product.id || docId;
-  return `/product/${encodeURIComponent(identifier)}`;
-}
-
-function urlEntry({ loc, priority = "0.6", changefreq = "monthly", lastmod }) {
+function urlEntry({ loc, lastmod }) {
   return `
   <url>
     <loc>${escapeXml(loc)}</loc>
     ${lastmod ? `<lastmod>${escapeXml(lastmod)}</lastmod>` : ""}
-    <changefreq>${changefreq}</changefreq>
-    <priority>${priority}</priority>
   </url>`;
+}
+
+function formatLastmod(value) {
+  if (!value) return null;
+
+  try {
+    const date =
+      typeof value.toDate === "function"
+        ? value.toDate()
+        : new Date(value);
+
+    if (Number.isNaN(date.getTime())) return null;
+
+    return date.toISOString();
+  } catch {
+    return null;
+  }
 }
 
 router.get("/sitemap.xml", async (_req, res) => {
@@ -40,70 +49,59 @@ router.get("/sitemap.xml", async (_req, res) => {
     const db = getDB();
     const baseUrl = cleanBaseUrl();
 
+    // Public static pages
     const staticPages = [
-      {
-        path: "/",
-        priority: "1.0",
-        changefreq: "weekly",
-      },
-      {
-        path: "/src/pages/products/products.html",
-        priority: "0.9",
-        changefreq: "weekly",
-      },
-      {
-        path: "/src/pages/products/products.html?category=tshirt",
-        priority: "0.8",
-        changefreq: "weekly",
-      },
-      {
-        path: "/src/pages/products/products.html?category=accessory",
-        priority: "0.8",
-        changefreq: "weekly",
-      },
-      {
-        path: "/src/pages/contact/contact.html",
-        priority: "0.7",
-        changefreq: "monthly",
-      },
+      "/",
+      "/products",
+      "/contact",
+      "/about",
+      "/shipping-policy",
+      "/refund-policy",
+      "/privacy-policy",
+      "/terms",
+      "/cookie-policy",
+      "/payment-security"
     ];
 
     const staticUrls = staticPages
-      .map((page) =>
+      .map((path) =>
         urlEntry({
-          loc: `${baseUrl}${page.path}`,
-          priority: page.priority,
-          changefreq: page.changefreq,
+          loc: `${baseUrl}${path}`
         })
       )
       .join("");
 
-    const productsSnap = await db.collection(COLLECTIONS.PRODUCTS).get();
+    // Products from Firestore
+    const productsSnap = await db
+      .collection(COLLECTIONS.PRODUCTS)
+      .get();
 
-const productUrls = productsSnap.docs
-  .map((doc) => {
-    const product = doc.data() || {};
+    const productUrls = productsSnap.docs
+      .map((doc) => {
+        const product = doc.data() || {};
 
-    if (product.active === false) return null;
+        // Exclude inactive products
+        if (product.active === false) {
+          return null;
+        }
 
-    const identifier = product.slug || product.id || doc.id;
+        const identifier =
+          product.slug || product.id || doc.id;
 
-    const lastmod =
-      product.updatedAt ||
-      product.createdAt ||
-      new Date().toISOString();
+        if (!identifier) return null;
 
-    return urlEntry({
-      loc: `${baseUrl}/product/${encodeURIComponent(identifier)}`,
-      priority: product.featured ? "0.9" : "0.8",
-      changefreq: "weekly",
-      lastmod,
-    });
-  })
-  .filter(Boolean)
-  .join("");
+        const lastmod = formatLastmod(
+          product.updatedAt || product.createdAt
+        );
 
-  
+        return urlEntry({
+          loc: `${baseUrl}/product/${encodeURIComponent(identifier)}`,
+          lastmod
+        });
+      })
+      .filter(Boolean)
+      .join("");
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${staticUrls}
@@ -111,12 +109,25 @@ ${productUrls}
 </urlset>`;
 
     res.status(200);
-    res.setHeader("Content-Type", "application/xml; charset=utf-8");
-    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.setHeader(
+      "Content-Type",
+      "application/xml; charset=utf-8"
+    );
+
+    // Avoid serving an outdated sitemap
+    res.setHeader(
+      "Cache-Control",
+      "no-cache, must-revalidate"
+    );
+
     res.send(xml);
+
   } catch (error) {
     console.error("Sitemap error:", error);
-    res.status(500).type("text/plain").send("Sitemap error");
+
+    res.status(500)
+      .type("text/plain")
+      .send("Sitemap error");
   }
 });
 
