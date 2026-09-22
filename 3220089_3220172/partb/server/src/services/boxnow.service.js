@@ -16,6 +16,13 @@ function isMockMode() {
   return getBoxNowMode() === "mock";
 }
 
+function getEnvironmentLabel() {
+  const mode = getBoxNowMode();
+  if (mode === "stage") return "stage";
+  if (mode === "production") return "production";
+  return "mock";
+}
+
 function getConfig() {
   return {
     mode: getBoxNowMode(),
@@ -87,6 +94,11 @@ async function getAccessToken() {
     clientId,
     clientSecret,
   } = getConfig();
+
+  const envLabel = getEnvironmentLabel();
+  if (envLabel !== "mock") {
+    console.info(`BOX NOW using ${envLabel} environment`);
+  }
 
   if (
     !apiUrl ||

@@ -11,10 +11,6 @@ import {
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 import { setFlashToast } from "../../utils/toast.ts";
 
-
-const BYPASS_BOXNOW_LOCKER = true;
-const TEST_BOXNOW_LOCKER_ID = "TEST_LOCKER";
-
 function saveCheckoutDraft(formEl: HTMLFormElement): void {
   const form = new FormData(formEl)
   const draft: Record<string, string> = {};
@@ -442,25 +438,6 @@ function restoreAfterAuth(): void {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-
-    if (BYPASS_BOXNOW_LOCKER) {
-    const lockerInput =
-      document.getElementById("lockerInput") as HTMLInputElement | null;
-
-    if (lockerInput) {
-      lockerInput.value = TEST_BOXNOW_LOCKER_ID;
-    }
-
-    const lockerMessage =
-      document.getElementById("lockerValidationMessage");
-
-    if (lockerMessage) {
-      lockerMessage.textContent = "";
-      lockerMessage.hidden = true;
-    }
-
-    console.log("BOX NOW bypass enabled:", TEST_BOXNOW_LOCKER_ID);
-  }
   restoreAfterAuth();
   restoreCheckoutDraft();
 
@@ -620,10 +597,6 @@ let locker =
   String(
     form.get("locker") || ""
   ).trim();
-
-if (BYPASS_BOXNOW_LOCKER) {
-  locker = TEST_BOXNOW_LOCKER_ID;
-}
 
 const lockerValidationMessage =
   document.getElementById("lockerValidationMessage");

@@ -295,7 +295,7 @@
 
           <button
   id="selectLockerBtn"
-  class="boxnow-locker-btn"
+  class="boxnow-locker-btn boxnow-widget-button"
   type="button"
 >
   Choose a BOX NOW locker
@@ -910,12 +910,12 @@
 
 <script>
   var _bn_map_widget_config = {
+    partnerId: 12243,
     parentElement: "#boxnowmap",
-
     type: "popup",
-
     buttonSelector: ".boxnow-widget-button",
-
+    gps: false,
+    autoclose: true,
     afterSelect: function (selected) {
       console.log(
         "BOX NOW locker selected:",
@@ -950,6 +950,7 @@
       if (lockerText) {
         lockerText.textContent =
           selected.boxnowLockerAddressLine1 ||
+          selected.boxnowLockerAddressLine2 ||
           "BOX NOW locker selected";
       }
 
