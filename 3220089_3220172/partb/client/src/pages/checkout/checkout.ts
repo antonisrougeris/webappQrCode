@@ -346,6 +346,16 @@ function updateLockerValidity(): void {
 
   if (!lockerInput) return;
 
+  const user = firebaseAuth.currentUser;
+  if (!user) {
+    lockerInput.setCustomValidity("");
+    if (lockerMessage) {
+      lockerMessage.textContent = "";
+      lockerMessage.hidden = true;
+    }
+    return;
+  }
+
   const lockerValue = String(lockerInput.value || "").trim();
   const errorMessage = lockerValue ? "" : "Please select a BOX NOW locker.";
 
@@ -540,11 +550,12 @@ editCartButton?.addEventListener(
       e.preventDefault();
 
       const formEl = e.target as HTMLFormElement;
+      const user = firebaseAuth.currentUser;
 
       const lockerInput = document.getElementById("lockerInput") as HTMLInputElement | null;
       const lockerValue = String(lockerInput?.value || "").trim();
 
-      if (!lockerValue) {
+      if (user && !lockerValue) {
         if (lockerInput) {
           lockerInput.setCustomValidity("Please select a BOX NOW locker.");
         }
@@ -566,8 +577,6 @@ editCartButton?.addEventListener(
         setFlashToast(error instanceof Error ? error.message : "Invalid checkout details.");
         return;
       }
-
-      const user = firebaseAuth.currentUser;
 
       
 if (!user) {

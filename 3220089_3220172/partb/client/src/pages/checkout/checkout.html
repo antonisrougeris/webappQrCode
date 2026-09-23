@@ -290,7 +290,7 @@
           </p>
 
 
-          <div id="boxnowmap" style="display: none;"></div>
+          <div id="boxnowmap" style="position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;"></div>
 
 
           <button
@@ -338,7 +338,6 @@
             id="lockerInput"
             name="locker"
             type="hidden"
-            required
           />
 
         </div>
@@ -912,6 +911,7 @@
 <script>
   var _bn_map_widget_config = {
     partnerId: 12243,
+    parentElement: "#boxnowmap",
     type: "popup",
     buttonSelector: ".boxnow-widget-button",
     gps: false,
