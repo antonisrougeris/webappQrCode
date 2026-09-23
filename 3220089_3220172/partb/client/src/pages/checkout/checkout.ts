@@ -340,6 +340,23 @@ function updatePhoneValidity(): void {
   }
 }
 
+function updateLockerValidity(): void {
+  const lockerInput = document.getElementById("lockerInput") as HTMLInputElement | null;
+  const lockerMessage = document.getElementById("lockerValidationMessage");
+
+  if (!lockerInput) return;
+
+  const lockerValue = String(lockerInput.value || "").trim();
+  const errorMessage = lockerValue ? "" : "Please select a BOX NOW locker.";
+
+  lockerInput.setCustomValidity(errorMessage);
+
+  if (lockerMessage) {
+    lockerMessage.textContent = errorMessage;
+    lockerMessage.hidden = !errorMessage;
+  }
+}
+
 function readAndValidateCheckoutForm(
   form: FormData,
   fallbackEmail = ""
@@ -481,13 +498,16 @@ editCartButton?.addEventListener(
       keepDigitsOnly(target as HTMLInputElement);
     }
     updatePhoneValidity();
+    updateLockerValidity();
     saveCheckoutDraftFromPage();
   });
   checkoutForm?.addEventListener("change", () => {
     updatePhoneValidity();
+    updateLockerValidity();
     saveCheckoutDraftFromPage();
   });
   updatePhoneValidity();
+  updateLockerValidity();
 
   firebaseAuth.onAuthStateChanged(() => {
     setPayButtonState();
@@ -520,6 +540,23 @@ editCartButton?.addEventListener(
       e.preventDefault();
 
       const formEl = e.target as HTMLFormElement;
+
+      const lockerInput = document.getElementById("lockerInput") as HTMLInputElement | null;
+      const lockerValue = String(lockerInput?.value || "").trim();
+
+      if (!lockerValue) {
+        if (lockerInput) {
+          lockerInput.setCustomValidity("Please select a BOX NOW locker.");
+        }
+        updateLockerValidity();
+        setFlashToast("Please select a BOX NOW locker before continuing.");
+        return;
+      }
+
+      if (lockerInput) {
+        lockerInput.setCustomValidity("");
+      }
+
       if (!formEl.reportValidity()) return;
 
       let formValues;

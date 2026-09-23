@@ -28,6 +28,19 @@ const forgotPasswordLink = document.getElementById(
   "forgotPasswordLink"
 ) as HTMLAnchorElement | null;
 
+function buildAuthQuery(params: Record<string, string | undefined>): string {
+  const urlParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value && value.trim()) {
+      urlParams.set(key, value.trim());
+    }
+  });
+
+  const query = urlParams.toString();
+  return query ? `?${query}` : "";
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   showFlashToast();
 
@@ -113,11 +126,20 @@ function getRedirectUrl(): string {
 function applyRegisterRedirect(): void {
   if (!registerLink) return;
 
+  const params = new URLSearchParams(window.location.search);
   const redirect = getRedirectUrl();
+  const email = params.get("email")?.trim() || "";
+  const firstName = params.get("firstName")?.trim() || "";
+  const lastName = params.get("lastName")?.trim() || "";
 
-  registerLink.href =
-    "/register?redirect=" +
-    encodeURIComponent(redirect);
+  const query = buildAuthQuery({
+    redirect,
+    email,
+    firstName,
+    lastName,
+  });
+
+  registerLink.href = `/register${query}`;
 }
 
 function goToRedirect(delay = 800): void {

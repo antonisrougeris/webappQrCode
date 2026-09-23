@@ -18,11 +18,28 @@ void updateCartBadge();
 initMobileMenu();
 document.addEventListener("DOMContentLoaded", () => {
   applyPrefill();
+  applyLoginRedirect();
 });
 
 const form = document.getElementById("registerForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
 const googleBtn = document.querySelector<HTMLButtonElement>(".auth-google");
+const loginLink = document.getElementById(
+  "loginLink"
+) as HTMLAnchorElement | null;
+
+function buildAuthQuery(params: Record<string, string | undefined>): string {
+  const urlParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value && value.trim()) {
+      urlParams.set(key, value.trim());
+    }
+  });
+
+  const query = urlParams.toString();
+  return query ? `?${query}` : "";
+}
 
 function normalizeRedirectPath(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -52,6 +69,23 @@ function getRedirectUrl(): string {
   );
 
   return redirect || "/";
+}
+
+function applyLoginRedirect(): void {
+  if (!loginLink) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const redirect = getRedirectUrl();
+  const email = params.get("email")?.trim() || "";
+  const firstName = params.get("firstName")?.trim() || "";
+  const lastName = params.get("lastName")?.trim() || "";
+
+  loginLink.href = `/login${buildAuthQuery({
+    redirect,
+    email,
+    firstName,
+    lastName,
+  })}`;
 }
 
 function goToRedirect(delay = 800): void {

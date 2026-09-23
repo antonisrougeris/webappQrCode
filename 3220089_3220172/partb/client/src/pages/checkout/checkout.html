@@ -290,7 +290,7 @@
           </p>
 
 
-          <div id="boxnowmap"></div>
+          <div id="boxnowmap" style="display: none;"></div>
 
 
           <button
@@ -338,6 +338,7 @@
             id="lockerInput"
             name="locker"
             type="hidden"
+            required
           />
 
         </div>
@@ -911,7 +912,6 @@
 <script>
   var _bn_map_widget_config = {
     partnerId: 12243,
-    parentElement: "#boxnowmap",
     type: "popup",
     buttonSelector: ".boxnow-widget-button",
     gps: false,
@@ -945,6 +945,7 @@
       if (lockerInput) {
         lockerInput.value =
           selected.boxnowLockerId || "";
+        lockerInput.setCustomValidity("");
       }
 
       if (lockerText) {
