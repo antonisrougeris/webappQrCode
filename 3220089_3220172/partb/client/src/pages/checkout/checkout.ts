@@ -1,4 +1,4 @@
-/* 3220089_3220172 */
+
 
 import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";

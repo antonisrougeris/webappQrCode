@@ -1,0 +1,3136 @@
+openapi: '3.0.2'
+servers:
+  - url: TBA
+    description: Sandbox
+  - url: TBA
+    description: Production
+info:
+  title: Partner API
+  version: '1.68'
+  description: |
+
+    Document describes the API description for partners in order to create and track delivery requests.
+
+    <details><summary>Revision history</summary>
+
+    |Date|Author|Description|Version|
+    |-|-|-|-|
+    |2025-03-03|Filatov, R.| Change description for delivery-request's parcel weight. |1.68|
+    |2024-12-04|Hoffmann, P.| Remove P462 error code |1.67|
+    |2024-11-08|Filatov, R.| Revision of max. length descriptions for /api/v1/delivery-requests |1.66|
+    |2024-09-26|Hoffmann, P.| Add P466 error code |1.65|
+    |2024-09-25|Filatov, R.| Add P465 error for /api/{v1,v2}/delivery-requests:checkAddressDelivery |1.64|
+    |2024-08-13|Hoffmann, P.| Update `shippingRegions` in /api/v1/entrusted-partners response. |1.63|
+    |2024-07-22|Hoffmann, P.| Add `shippingRegions` and `phoneNumber` to /api/v1/entrusted-partners response. |1.62|
+    |2024-07-11|Filatov, R.| Add P461, P462, P464 errors for ArcGIS validations to /api/v2/delivery-requests:checkAddressDelivery |1.61|
+    |2024-07-08|Hoffmann, P.| Add `email` and `phoneNumber` to /api/v1/entrusted-partners response. Add `originContactEmail` and `originContactNumber` to /api/v1/delivery-requests:fromCsv request body |1.60|
+    |2024-05-23|Balagazova, K.| Add lost parcel event |1.59|
+    |2024-04-08|Hoffmann, P.| Add declareDeliveryPartnerReturn |1.58|
+    |2024-03-15|Šmolík, J.| Add generate upload label link |1.57|
+    |2024-02-02|Šmolík, J.| Add location id to /api/v1/parcels events |1.56|
+    |2023-11-15|Filatov, R.| Add P422, P423, P424 error codes |1.55|
+    |2023-11-13|Filatov, R.| Add new `/api/v2/delivery-requests:checkAddressDelivery` endpoint switched to ArcGIS |1.54|
+    |2023-11-08|Filatov, R.| Add `customerReturnsMaxAllowedSize` for /api/v1/entrusted-partners |1.53|
+    |2023-06-10|Filatov, R.| Add `weight` min/max validation (error cde P421) and always round it to 2 decimals on /api/v1/delivery-requests:customerReturns|1.52|
+    |2023-05-10|Balagazova, K.| Forbid usage of `q` parameter of `api/v1/parcels` for partner server accounts |1.51|
+    |2023-04-28|Hoffmann, P.| Remove `X-Overwrite-Date` request header from /api/v1/delivery-requests and /api/v1/entrusted-partners |1.50|
+    |2023-04-28|Azizov, J.| Add P442 error code |1.49|
+    |2023-04-12|Balagazova, K.|Add `limit` field and automatic ordering by distance to /api/v1/destinations |1.48|
+    |2023-04-04|Balagazova K.| Add `showRecipientInformation` field to /api/v1/delivery-requests /api/v1/delivery-requests:fromCsv |1.47|
+    |2023-02-23|Balagazova K.| Add customer information to the webhook message |1.46|
+    |2022-11-29|Azizov J.| Add Webhook schema and an example endpoint |1.45|
+    |2022-11-28|Vala J.| Add partner permission to /entrusted-partners response |1.44|
+    |2022-11-24|Vala J.| Add partner permission `addressAsDestination`, `codAddressAsDestination`. Validate partner permission for delivery to address and cod payment use for delivery to address when creating delivery request |1.43|
+    |2022-11-14|Vala J.| Add `X-Overwrite-Date` request header for delivery request to test Croatian currency conversion, only testeable on dev |1.42|
+    |2022-10-21|Vala J.| Add validation error code to /api/v1/simple-delivery-requests /api/v1/delivery-requests /api/v1/delivery-requests:customerReturns |1.41|
+    |2022-09-22|Šmolík, J.|Add accepted-to-locker parcel event |1.40|
+    |2022-09-08|Šmolík J.| Add support for user to choose partner they want to work with |1.39|
+    |2022-08-10|Šmolík J.| Add /labels:search to download PDF labels for defined criteria |1.38|
+    |2022-08-08|Azizov. J.| Add `region` field to /destinations and /origins endpoints |1.37|
+    |2022-07-27|Vala J.| Add EP for listing shipping label data of parcels order /api/v1/delivery-requests/{orderNumber}/label |1.36|
+    |2022-07-27|Vala J.| Add EP for listing shipping label data of parcel /api/v1/parcels/{id}/label |1.35|
+    |2022-07-22|Vala J.| Add destination_public_id column to csv export of parcels |1.34|
+    |2022-07-08|Vala J.| <ul><li>Add exportCsvUrl to headers ['X-export-url-csv'] to response from /api/v1/parcels</li><li>Add endpoint to export parcels to csv file /ui/v1/parcels.csv</li></ul> |1.33|
+    |2022-06-27|Vala J.| Add width and printerModel query parameters for zpl shipping labels for /api/v1/delivery-requests/{orderNumber}/label.{type} and /api/v1/parcels/{id}/label.{type} |1.32|
+    |2022-06-17|Šmolík, J.| Allow to select return location for delivery request |1.31|
+    |2022-05-25|Vala, J.| Add single labelUrlPdf to headers ['X-labels-url-pdf'] in response from /api/v1/delivery-requests:fromCsv |1.30|
+    |2022-05-25|Vala, J.| Add EP to handle csv import orders printing of shipping label /ui/v1/delivery-requests/{orderImportsNumber}/label.pdf |1.29|
+    |2022-05-20|Vala, J.| Add possibility to overwrite 4 rows in shipping label sender info to /api/v1/delivery-requests endpoint |1.28|
+    |2022-05-04|Azizov, J.| Add state and created filters to to /api/v1/parcels endpoint |1.27|
+    |2022-05-03|Azizov, J.| Add possibility to search parcels to /api/v1/parcels endpoint |1.26|
+    |2022-04-27|Azizov, J.| Add /api/v1/delivery-requests:customerReturns for customer returns delivery requests |1.25|
+    |2022-04-26|Vala, J.| Add createTime, updateTime to parcel list response |1.24|
+    |2022-04-21|Šmolík, J.| Add payment info to parcels |1.23|
+    |2022-02-22|Azizov, J.| Add P408 and P409 error codes |1.22|
+    |2022-02-22|Azizov, J.| Add notifySMSOnAccepted to DeliveryRequest |1.21|
+    |2022-02-01|Šmolík, J.| <ul><li>Add check address delivery endpoint</li><li>Add /api/v1/simple-delivery-requests for simpler delivery creation</li></ul> |1.20|
+    |2022-01-20|Šmolík, J.| Add P405, P406 and P407 error codes |1.19|
+    |2022-01-10|Šmolík, J.| <ul><li>Add CSV import endpoint</li><li>Add JWT custom claims description</li><li>Move 403 error codes to own section</li></ul> |1.18|
+    |2021-12-23|Šmolík, J.| <ul><li>Add new endpoint to confirm AnyAPM delivery of a parcel</li><li>Partition error codes by HTTP status response</li></ul> |1.17|
+    |2021-12-16|Šmolík, J.| Add new error code P403 |1.16|
+    |2021-12-09|Šmolík, J.| Add new error codes P401, P402 |1.15|
+    |2021-11-30|Šmolík, J.| Add delivery request origin, destination and items fields description |1.14|
+    |2021-11-11|Šmolík, J.| Add endpoint for parcel delivery cancellation |1.13|
+    |2021-11-09|Šmolík, J.| Add X403 error code spec |1.12|
+    |2021-10-14|Šmolík, J.| Add Accepted for return event |1.11|
+    |2021-10-05|Šmolík, J.| Make DeliveryRequest.items required |1.10|
+    |2021-09-22|Šmolík, J.| Add canceled event state and event|1.9|
+    |2021-09-17|Šmolík, J.| Add PDF label URLs to parcels response |1.8
+    |2021-09-13|Šmolík, J.| <ul><li>Update parcel state enum values</li><li>Remove history event displayName, add type</li></ul>|1.7
+    |2021-08-25|Azizov, J.| <ul><li>Add possibility to print labels for all parcels in order</li><li>Make contact information of origin optional in delivery request</li></ul>|1.6
+    |2021-08-02|Azizov, J.| Add items metadata to parcel |1.5|
+    |2021-07-15|Šmolík, J.| Add destination expected delivery time |1.4|
+    |2021-06-23|Šmolík, J.| Update money value fields description |1.3|
+    |2021-06-21|Šmolík, J.| <ul><li>Update Requesting a delivery text</li><li>Add `name` filter to origins and destinations </li><li>Rename delivery request code of description to plain description</li><li>Add more specific info to value amount fields</li><li>Update address country to match ISO Code</li><li>Update address postal code formatting</li><li>Update origin/destination for delivery request</li><li>Remove height, length, width from order item</li><li>Add events to parcel info</li><li>Update delivery request response</li><li>Update order number description</li><li>Add parcel id filter to /parcels</li><li>Add message to error</li><li>Make contact name required</li><li>Add delivery partner parcel ids</li><li>Remove order items' code and status</li></ul> |1.2|
+    |2021-06-14|Šmolík, J.| <ul><li>Add a todo to specify client notification type after accepting the order.</li><li> Let the partner choose to receive an email when successful delivery request is made.</li><li> Remove `typeOfOrder` from delivery request.</li><li>Add option to select delivery partner for pickup</li><li>Make item weight in the order optional</li><li>Make origin contact email required</li><li>Add support to add sender's name when making delivery request</li><li>Remove landmark and code from address</li><li>Add new error code or partners not eligible to create COD delivery requests</li><li>Add support to filter destinations/origins by type</li><li>Add support to send compartment size for order item, required for APM origin</li><li>Make `typeOfService` optional</li></ul> |1.1|
+    |2021-06-09|Šmolík, J.|Initial version|1.0|
+    </details>
+
+    # Setup
+
+    Register your company through our support.
+
+    We are going to need
+      - Company name
+      - List of Phone numbers for SMS OTP authentication of people who'll you want to have access to the Partner CMS
+      - List of addresses for pickup points - where do we pickup your order for delivery
+
+    You will get in return
+    - `OAUTH_CLIENT_ID` - OAuth2 Client ID for authenticating with the Partner API. Keep it safe. Value may vary for each environment.
+    - `OAUTH_CLIENT_SECRET` - OAuth2 Client Secret for authenticating with the Partner API. Keep it safe. Value may vary for each environment.
+    - `API_URL` - Base URL for Partner API
+
+    ## Environments
+
+    Product offers multiple environments
+      - Sandbox - For you to test the integration. Limited functionality.
+      - Production - Connected to real end-users. Use with care.
+
+    Environment setting summary:
+    | Value \ Env | Sandbox |  Production |
+    |---|---|---|
+    | `API_URL`  | N/A  | N/A |
+    | `OAUTH_CLIENT_SECRET`  | Contact Support | Contact Support |
+    | `OAUTH_CLIENT_ID`  | Contact Support  | Contact Support |
+
+
+    # API
+
+    ## Authentication
+
+    Authentication is based on OAuth2 standard, Client Credentials grant. Token endpoint `/auth-sessions`, see examples below.
+
+    Client ID and Secret MUST be passed to you from BoxNow support in advance.
+
+    In order to use the API, you MUST attach the access token to Authorization header as a Bearer token.
+
+    ### Custom JWT claims
+
+    You can find additional user information in custom claims under namespace key `https://boxnow.gr`. For example
+
+    ```json
+    {
+      "iat": 1641980553,
+      "exp": 1641984153,
+      "https://boxnow.gr": {
+        "permission": {
+          "warehouseAsOrigin": true,
+          "anyApmAsOrigin": true,
+          "anyApmToSameApmDelivery": true,
+          "anyApmToSameApmDeliveryWithoutConfirmation": true,
+          "depotAsOrigin": true
+        }
+      }
+    }
+    ```
+
+    ## Listing available destinations
+
+    You can skip this if you don't want to deliver your order to one of our APMs.
+
+    Use `/destinations` to list available APM locations we can deliver the goods to. You will refer to these records by `id` when requesting delivery later on.
+
+    ## What can influence `/destinations` endpoint response
+      - Only APMs with `Box Now Ready` state are considered
+      - APMs must be available for your required package size (see: '#/components/parameters/LocationRequiredSize')
+
+    ## Requesting a delivery
+
+    Create a delivery request to delivery your order to the client. Use `/delivery-requests` endpoint for this operation.
+
+    Once a successful request delivery is made
+      - (optional) we send you an email notifying about successful delivery request creation, if you choose to receive this email
+      - you should fetch the PDF label for each of the parcel from `/parcels/{id}/label.pdf`, print it and stick it to the parcel/s
+      - we send a courier to pick up the labeled parcel/s
+      - we notify the client via email that we have accepted the order from you and its being delivered by us
+
+    ## Modifying a delivery request
+
+    After a delivery request is successfully made, you can alter some parts of it later on. Use `/delivery-requests/{id}` endpoint for these modifications.
+
+    ## Checking on the deliveries
+
+    You can list parcel related to your delivery requests via `/parcels` endpoint.
+
+
+    ## Error codes
+
+    ### Description of codes for `400 Bad Request` responses
+
+    - `P400` - Invalid request data. Make sure are sending the request according to this documentation.
+    - `P401` - Invalid request origin location reference. Make sure you are referencing a valid location ID from Origins endpoint or valid address.
+    - `P402` - Invalid request destination location reference. Make sure you are referencing a valid location ID from Destinations endpoint or valid address.
+    - `P403` - You are not allowed to use AnyAPM-SameAPM delivery. Contact support if you believe this is a mistake.
+    - `P404` - Invalid import CSV. See error contents for additional info.
+    - `P405` - Invalid phone number. Make sure you are sending the phone number in full international format, e.g. +30 xx x xxx xxxx.
+    - `C404` - Invalid phone number. Make sure you are sending the phone number in full international format, e.g. +30 xx x xxx xxxx.
+    - `P406` - Invalid compartment/parcel size. Make sure you are sending one of required sizes 1, 2 or 3. Size is required when sending from AnyAPM directly.
+    - `P407` - Invalid country code. Make sure you are sending country code in ISO 3166-1 alpha-2 format, e.g. GR.
+    - `P408` - Invalid amountToBeCollected amount. Make sure you are sending amount in the valid range of (0, 5000>
+    - `P409` - Invalid delivery partner reference. Make sure you are referencing a valid delivery partner ID from Delivery partners endpoint.
+    - `P410` - Order number conflict. You are trying to create a delivery request for order ID that has already been created. Choose another order id.
+    - `P411` - You are not eligible to use Cash-on-delivery payment type. Use another payment type or contact our support.
+    - `P412` - You are not allowed to create customer returns deliveries. Contact support if you believe this is a mistake.
+    - `P413` - Invalid return location reference. Make sure you are referencing a valid location warehouse ID from Origins  endpoint or valid address.
+    - `P415` - You are not allowed to create delivery to home address. Contact support if you believe this is a mistake.
+    - `P416` - You are not allowed to use COD payment for delivery to home address. Contact support if you believe this is a mistake.
+    - `P417` - You are not allowed to use `q` parameter. It is forbidden for server partner accounts.
+    - `P420` - Parcel not ready for cancel. You can cancel only new, undelivered, or parcels that are not returned or lost. Make sure parcel is in transit and try again.
+    - `P421` - Invalid parcel weight. Make sure you are sending value between 0 and 10^6.
+    - `P422` - Address not found. Try to call just with postal code and country.
+    - `P423` - Nearby locker not found.
+    - `P424` - Invalid region format. Please ensure the format includes a language code followed by a country code in ISO 3166-1 alpha-2 format, separated by a hyphen, e.g. el-GR, or region exists in context.
+    - `P425` - Parcel not ready to declare a delivery partner return. Make sure parcel is not in any of the following states in order to declare a delivery partner return: 'canceled-return', 'lost', 'canceled', 'returned', 'expired-return'.
+    - `P426` - Parcel not eligible to declare a delivery partner return. Parcel needs to use a delivery partner in order to declare a return.
+    - `P430` - Parcel not ready for AnyAPM confirmation. Parcel is probably already confirmed or being delivered. Contact support if you believe this is a mistake.
+    - `P440` - Ambiguous partner. Your account is linked to multiple partners and is unclear on whose behalf you want to perform this action. Send `X-PartnerID` header with ID of the partner you want to manage. You can get list of available Partner IDs from /entrusted-partners endpoint.
+    - `P441` - Invalid X-PartnerID header. Value you provided for X-PartnerID header is either invalid or references partner you don't have access to. Make sure you are sending ID from /entrusted-partners endpoint.
+    - `P442` - Invalid limit query parameter. The query limit for this API has been exceeded. Please reduce the size of your query (max allowed is 100).
+    - `P460` - Parcel not eligible for external destination delivery. Delivery request destination.deliveryPartnerId is not set.
+    - `P461` - Invalid street. Make sure the length is not more than 100 characters.
+    - `P464` - Invalid postal code. Make sure the length is not more than 20 characters.
+
+    ### Description of codes for `403 Forbidden` responses
+
+    - `X403` - Account disabled. Your account had been disabled, contact support.
+    - `P414` - Unauthorized parcel access. You are trying to access information to parcel/s that don't belong to you. Make sure you are requesting information for parcels you have access to.
+    - `P465` - Partner doesn't have access for checking delivery addresses.
+    - `P466` - You are not allowed to create a delivery request because your account has an overdue flag and you are not a vip partner.
+
+    ### Description of codes for `503 Service Unavailable` responses
+
+    | Code | Description |
+    |---|---|
+    | `P600` | Locker bridge communication failed. There has been some error when communicating with the locker bridge. Try again later or contact support. |
+    | `P610` | Geolocation API failed. There has been some error when translating address to gps coordinates. Try again later or contact support. |
+
+# TODO Given order id is unique and only some properties can be updated.. shouldnt we allow to delete request at some point? So Partner can test creation multiple times. Atleast for Sandbox?
+paths:
+  /api/v1/auth-sessions:
+    post:
+      summary: Obtain authentication tokens
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  description: The grant_type parameter must be set to client_credentials.
+                  example: client_credentials
+                client_id:
+                  type: string
+                  description: Your application's Client ID. You can get this from our support
+                client_secret:
+                  type: string
+                  description: Your application's Client Secret. You can get this from our support
+              required:
+                - grant_type
+                - client_id
+                - client_secret
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: 'eyJz93a...k4laUWw'
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: number
+                    description: Number of seconds for which the access token is valid
+                    example: 3600
+                required:
+                  - access_token
+                  - token_type
+                  - expires_in
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+  /api/v1/destinations:
+    get:
+      summary: List available destinations to deliver the order to
+      tags:
+        - Locations
+      security:
+        - bearer: []
+      parameters:
+        - $ref: '#/components/parameters/LocationLatLng'
+        - $ref: '#/components/parameters/LocationRadius'
+        - $ref: '#/components/parameters/LocationRequiredSize'
+        - $ref: '#/components/parameters/LocationType'
+        - $ref: '#/components/parameters/LocationName'
+        - $ref: '#/components/parameters/RegionLanguageTag'
+        - $ref: '#/components/parameters/XPartnerID'
+        - $ref: '#/components/parameters/LocationLimit'
+          # Note on size/pagination: Not a issue, there are 160 APMs in the beginning - CTO
+          # Note on postalCode input: Maybe later, we should be fine with this input for the time being. We can utilize Google geolocation service to translate zip->geocode
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Destination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+
+  /api/v1/origins:
+    get:
+      summary: List available origins to pickup the order from
+      tags:
+        - Locations
+      security:
+        - bearer: []
+      parameters:
+        - $ref: '#/components/parameters/LocationLatLng'
+        - $ref: '#/components/parameters/LocationRadius'
+        - $ref: '#/components/parameters/LocationRequiredSize'
+        - $ref: '#/components/parameters/LocationType'
+        - $ref: '#/components/parameters/LocationName'
+        - $ref: '#/components/parameters/RegionLanguageTag'
+        - $ref: '#/components/parameters/XPartnerID'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+  /api/v1/delivery-requests:
+    post:
+      summary: Create a delivery request for your order
+      tags:
+        - Delivery requests
+      security:
+        - bearer: []
+      parameters:
+        - $ref: '#/components/parameters/XPartnerID'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: ID of the accepted order in our system. Can be passed to support in case of problems
+                  parcels:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Unique parcel ID in our system
+                required:
+                  - id
+                  - parcels
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P400'
+                  - $ref: '#/components/schemas/E_P401'
+                  - $ref: '#/components/schemas/E_P402'
+                  - $ref: '#/components/schemas/E_P403'
+                  - $ref: '#/components/schemas/E_P405'
+                  - $ref: '#/components/schemas/E_P406'
+                  - $ref: '#/components/schemas/E_P407'
+                  - $ref: '#/components/schemas/E_P408'
+                  - $ref: '#/components/schemas/E_P409'
+                  - $ref: '#/components/schemas/E_P410'
+                  - $ref: '#/components/schemas/E_P411'
+                  - $ref: '#/components/schemas/E_P413'
+                  - $ref: '#/components/schemas/E_P415'
+                  - $ref: '#/components/schemas/E_P416'
+                  - $ref: '#/components/schemas/E_C404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_X403'
+                  - $ref: '#/components/schemas/E_P466'
+  /api/v1/simple-delivery-requests:
+    post:
+      tags:
+        - Delivery requests
+      summary: Create delivery request for order with minimal data
+      parameters:
+        - $ref: '#/components/parameters/XPartnerID'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - origin
+                - destination
+              properties:
+                origin:
+                  type: object
+                  required:
+                    - code
+                  properties:
+                    code:
+                      type: string
+                      example: 123
+                      description: Origin location code. Contact BoxNow support to obtain list of available codes.
+                destination:
+                  allOf:
+                    - type: object
+                      required:
+                        - contactPhoneNumber
+                        - contactEmail
+                        - contactName
+                      properties:
+                        contactPhoneNumber:
+                          type: string
+                          description: Phone number in international format
+                          example: +30 21 4 655 1234
+                        contactEmail:
+                          type: string
+                          description: E-mail address
+                        contactName:
+                          type: string
+                          description: Name, e.g. person or company name
+                          example: Yiannis Papadopoulos
+                    - oneOf:
+                        - type: object
+                          required:
+                            - id
+                          properties:
+                            id:
+                              type: string
+                              format: integer
+                              example: 123
+                              description: Destination location ID, see /destinations for available IDs
+                        - type: object
+                          required:
+                            - address
+                          properties:
+                            address:
+                              type: string
+                              example: 48 Themistokli Dervi Ave, Cyprus
+                paymentMode:
+                  $ref: '#/components/schemas/PaymentMode'
+                amountToBeCollected:
+                  $ref: '#/components/schemas/AmountToBeCollected'
+                allowReturn:
+                  $ref: '#/components/schemas/AllowReturn'
+                parcelSize:
+                  description: Package size 1, 2, 3. Mandatory for delivery to AnyAPM. Default for created parcels, but can be overriden on parcel level for individual parcels.
+                  type: number
+                  example: 1
+                parcels:
+                  type: array
+                  description: Use to give us more info about the parcels. If not defined, one parcel is automatically created.
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Reference number in Your system
+                      name:
+                        type: string
+                        example: Smartphone
+                        description: Contents name label
+                      value:
+                        type: string
+                        description: Item value. Must only contain numbers with no more than one decimal point and exactly 2 decimal places.
+                        example: '3.45'
+                        default: '0.00'
+                      weight:
+                        type: number
+                        description: Item weight in kg. Can have up to 3 decimal places.
+                      size:
+                        type: number
+                        description: Compartment size required for the package. Required for `any-apm` origin.
+                      originDeliveryParcelId:
+                        type: string
+                        example: 415-02914-308
+                        description: Parcel id of 3rd party delivery service. Fill in in case you are using other delivery service to deliver us the order.
+                      destinationDeliveryParcelId:
+                        type: string
+                        example: 415-02914-308
+                        description: Parcel id of 3rd party delivery service. Fill in in case you are using other delivery service for final delivery.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: ID of the accepted order in our system. Can be passed to support in case of problems
+                  orderNumber:
+                    type: string
+                    description: Autogenerated order number. Use for subsequent requests to modify the order.
+                    example: 12309284
+                  labels:
+                    $ref: '#/components/schemas/Labels'
+                  parcels:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - labels
+                      properties:
+                        id:
+                          type: string
+                          description: Unique parcel ID in our system
+                        labels:
+                          $ref: '#/components/schemas/Labels'
+                required:
+                  - id
+                  - labels
+                  - orderNumber
+                  - parcels
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P400'
+                  - $ref: '#/components/schemas/E_P401'
+                  - $ref: '#/components/schemas/E_P402'
+                  - $ref: '#/components/schemas/E_P403'
+                  - $ref: '#/components/schemas/E_P405'
+                  - $ref: '#/components/schemas/E_P406'
+                  - $ref: '#/components/schemas/E_P407'
+                  - $ref: '#/components/schemas/E_P408'
+                  - $ref: '#/components/schemas/E_P410'
+                  - $ref: '#/components/schemas/E_P415'
+                  - $ref: '#/components/schemas/E_P416'
+                  - $ref: '#/components/schemas/E_C404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_X403'
+                  - $ref: '#/components/schemas/E_P466'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/E_P610'
+  /api/v1/delivery-requests:fromCsv:
+    post:
+      tags:
+        - Delivery requests
+      summary: Create delivery requests
+      parameters:
+        - $ref: '#/components/parameters/XPartnerID'
+      description: |
+
+        CSV Example for Delivery from a warehouse:
+
+        ```
+        from_location,destination_location,customer_phone_number,customer_email,customer_full_name,number_of_parcels(default 1),payment_mode(cod, prepaid - default),amount_to_be_collected(default 0.00),price_currency(default EUR)
+        1,2,+30 21 4 655 1234,someone@example.com,Yiannis Papadopoulos,3,cod,24.00,EUR
+        ```
+
+        CSV Example for Delivery from AnyAPM:
+
+        ```
+        destination_location,parcel_size,customer_phone_number,customer_email,customer_full_name,number_of_parcels(default 1),payment_mode(cod, prepaid - default),amount_to_be_collected(default 0.00),price_currency(default EUR)
+        2,1,+30 21 4 655 1234,someone@example.com,Yiannis Papadopoulos,3,cod,24.00,EUR
+        ```
+
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [type, file]
+              properties:
+                type:
+                  type: string
+                  enum: [from-warehouse, from-anyapm]
+                file:
+                  type: string
+                  format: binary
+                allowReturn:
+                  type: boolean
+                  default: true
+                  description: If true, client will be able to return the goods the same way he received it.
+                showRecipientInformation:
+                  $ref: '#/components/schemas/ShowRecipientInformation'
+                delimiter:
+                  type: string
+                  enum:
+                    - ','
+                    - ';'
+                  default: ','
+                  description: The selected delimiter is used for parsing CSV file
+                originContactEmail:
+                  type: string
+                  description: Email address of the sender
+                originContactNumber:
+                  type: string
+                  description: Phone number of the sender
+      responses:
+        '200':
+          description: OK
+          headers:
+            'X-labels-url-pdf':
+              schema:
+                type: string
+                example: https://boxnow.gr/ui/v1/delivery-requests/52a21300-0279-4355-9186-d509b42559ac/label.pdf?authorization=eyJwYXRoIjoiL3UxL3YxLyoifQ==
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: ID of the accepted order in our system. Can be passed to support in case of problems
+                    destination:
+                      type: object
+                      properties:
+                        contactName:
+                          type: string
+                          description: Name, e.g. person or company name
+                          example: Yiannis Papadopoulos
+                    parcels:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - id
+                          - labelUrl
+                        properties:
+                          id:
+                            type: string
+                            description: Unique parcel ID in our system
+                          labelUrl:
+                            type: string
+                            format: uri
+                            example: https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
+                  required:
+                    - id
+                    - parcels
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P400'
+                  - $ref: '#/components/schemas/E_P401'
+                  - $ref: '#/components/schemas/E_P402'
+                  - $ref: '#/components/schemas/E_P403'
+                  - $ref: '#/components/schemas/E_P404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_X403'
+                  - $ref: '#/components/schemas/E_P466'
+  /api/v1/delivery-requests:customerReturns:
+    post:
+      summary: Create a request delivery of parcel that customer would like to return
+      tags:
+        - Delivery requests
+      parameters:
+        - $ref: '#/components/parameters/XPartnerID'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sender
+                - destination
+              properties:
+                sender:
+                  type: object
+                  required:
+                    - contactPhoneNumber
+                    - contactEmail
+                    - contactName
+                  properties:
+                    contactPhoneNumber:
+                      type: string
+                      description: Phone number in international format
+                      example: +30 21 4 655 1234
+                    contactEmail:
+                      type: string
+                      description: E-mail address
+                    contactName:
+                      type: string
+                      description: Name, e.g. person or company name
+                      example: Yiannis Papadopoulos
+                destination:
+                  type: object
+                  required:
+                    - locationId
+                  properties:
+                    locationId:
+                      type: string
+                      description: Location ID of your warehouse from `/destinations` endpoint. Destination where you would like to parcel to be returned.
+                      format: integer
+                parcels:
+                  type: array
+                  description: Use to give us more info about the parcels. If not defined, one parcel is automatically created.
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Reference number in Your system
+                      name:
+                        type: string
+                        example: Smartphone
+                        description: Contents name label
+                      value:
+                        type: string
+                        description: Item value. Must only contain numbers with no more than one decimal point and exactly 2 decimal places.
+                        example: '3.45'
+                        default: '0.00'
+                      weight:
+                        type: number
+                        description: Item weight in kg. Must only contain number between 0 and 10^6. Can have up to 3 decimal places. 
+                        example: '9.999'
+                        default: '0.000'
+                      size:
+                        type: number
+                        description: Compartment size required for the package
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: ID of the accepted order in our system. Can be passed to support in case of problems
+                  orderNumber:
+                    type: string
+                    description: Autogenerated order number
+                    example: 12309284
+                  labels:
+                    $ref: '#/components/schemas/Labels'
+                  parcels:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - labels
+                      properties:
+                        id:
+                          type: string
+                          description: Unique parcel ID in our system
+                        labels:
+                          $ref: '#/components/schemas/Labels'
+                required:
+                  - id
+                  - labels
+                  - orderNumber
+                  - parcels
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P400'
+                  - $ref: '#/components/schemas/E_P402'
+                  - $ref: '#/components/schemas/E_P405'
+                  - $ref: '#/components/schemas/E_P406'
+                  - $ref: '#/components/schemas/E_P407'
+                  - $ref: '#/components/schemas/E_P412'
+                  - $ref: '#/components/schemas/E_C404'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_X403'
+  /api/v1/delivery-requests:checkAddressDelivery:
+    post:
+      security:
+        - bearer: []
+      tags:
+        - Delivery requests
+      summary: Check delivery for address is available using Google Maps Geocoding API
+      description: Expect P402 error in case no location can be found for the request.
+      parameters:
+        - $ref: '#/components/parameters/XPartnerID'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [address]
+              properties:
+                address:
+                  type: string
+                  description: Address you want to deliver to
+                  example: 48 Themistokli Dervi Ave, Cyprus
+                radius:
+                  type: number
+                  default: 500
+                  description: Radius in meters. Location must be in this radius from the input address.
+                compartmentSize:
+                  type: number
+                  description: Compartment size required for the package.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Destination'
+                  - type: object
+                    required:
+                      - distance
+                    properties:
+                      distance:
+                        type: number
+                        example: 123
+                        description: Distance from the input address in meters.
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P400'
+                  - $ref: '#/components/schemas/E_P402'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/E_P465'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/E_P610'
+  /api/v2/delivery-requests:checkAddressDelivery:
+    post:
+      security:
+        - bearer: []
+      tags:
+        - Delivery requests
+      summary: Check delivery for address is available using ArcGIS Geocoding API
+      parameters:
+        - $ref: '#/components/parameters/XPartnerID'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [postalCode, region]
+              properties:
+                city:
+                  type: string
+                  description: City
+                  example: Podgorač
+                street:
+                  type: string
+                  description: Street and street number
+                  example: Leof. Athinon-Pireos 76A
+                postalCode:
+                  type: string
+                  example: '15121'
+                  description: Postal code of the location. If set, must include only numbers
+                region:
+                  $ref: '#/components/schemas/LanguageTag'
+                radius:
+                  type: number
+                  description: Radius in meters. Location must be in this radius from the input address.
+                compartmentSize:
+                  type: number
+                  description: Compartment size required for the package.
+                zipPrecision:
+                  type: boolean
+                  default: true
+                  description: |
+                    Enhances address accuracy by validating the provided postal code. 
+                    When set to `true`, the service ensures precise address matching by cross-referencing 
+                    the input ZIP code with potential matches. 
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Destination'
+                  - type: object
+                    required:
+                      - distance
+                    properties:
+                      distance:
+                        type: number
+                        example: 123
+                        description: Distance from the input address in meters.
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P400'
+                  - $ref: '#/components/schemas/E_P424'
+                  - $ref: '#/components/schemas/E_P422'
+                  - $ref: '#/components/schemas/E_P423'
+                  - $ref: '#/components/schemas/E_P461'
+                  - $ref: '#/components/schemas/E_P464'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/E_P465'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/E_P610'
+  /api/v1/delivery-requests/{orderNumber}:
+    put:
+      security:
+        - bearer: []
+      parameters:
+        - name: orderNumber
+          in: path
+          description: Unique order number in Your system. The same you use to create the delivery request.
+          schema:
+            type: string
+          required: true
+        - $ref: '#/components/parameters/XPartnerID'
+      tags:
+        - Delivery requests
+      summary: Update a created delivery request
+      description: Ignore properties you do not wish to change.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                allowReturn:
+                  type: boolean
+                  description: Send true if you want the client to be able to return the order. False if you don't want to allow it.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Id of the accepted order that can be passed to support in case of problems
+                required:
+                  - id
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/delivery-requests/{orderNumber}/label.{type}:
+    get:
+      summary: Get printable labels for all parcels in a delivery request.
+      security:
+        - bearer: []
+      tags:
+        - Labels
+      parameters:
+        - name: orderNumber
+          in: path
+          description: Unique order number in Your system. The same you use to create the delivery request.
+          schema:
+            type: string
+          required: true
+        - $ref: '#/components/parameters/LabelType'
+        - $ref: '#/components/parameters/LabelDpi'
+        - $ref: '#/components/parameters/LabelWidth'
+        - $ref: '#/components/parameters/PrinterModel'
+        - $ref: '#/components/parameters/XPartnerID'
+      responses:
+        '200':
+          description: A labels file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /ui/v1/delivery-requests/{orderImportsNumber}/label.pdf:
+    get:
+      summary: Get printable labels for all parcels in a delivery request.
+      tags:
+        - Labels
+      parameters:
+        - name: orderImportsNumber
+          in: path
+          description: Unique order number in Your system. The same you use to create the delivery request.
+          schema:
+            type: string
+          required: true
+        - name: contentDisposition
+          in: query
+          description: Specify if the downloaded label will be opened or be downloaded.
+          schema:
+            type: string
+            enum:
+              - attachment
+              - inline
+        - $ref: '#/components/parameters/XPartnerID'
+      responses:
+        '200':
+          description: A labels file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/labels:search:
+    post:
+      tags:
+        - Labels
+      summary: Find labels as PDF
+      parameters:
+        - $ref: '#/components/parameters/XPartnerID'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parcelIds:
+                  type: array
+                  description: Response will contain only labels for these parcels (if defined).
+                  items:
+                    type: string
+                    example: 0123456789
+                orderNumbers:
+                  type: array
+                  description: Response will contain only labels for these orders (if defined).
+                  items:
+                    type: string
+                    example: 123a
+                paperSize:
+                  type: string
+                  description: Output PDF sheet size
+                  default: A6
+                  enum:
+                    - A4
+                    - A6
+                perPage:
+                  type: number
+                  description: Number of labels per sheet.
+                  default: 1
+                  enum:
+                    - 1
+                    - 2
+                    - 4
+      responses:
+        '200':
+          description: OK
+          content:
+            application/pdf:
+              schema:
+                format: binary
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_X403'
+                  - $ref: '#/components/schemas/E_P414'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/parcels/{id}/label.{type}:
+    get:
+      summary: Get printable label for parcel.
+      security:
+        - bearer: []
+      tags:
+        - Labels
+      parameters:
+        - $ref: '#/components/parameters/ParcelId'
+        - $ref: '#/components/parameters/LabelType'
+        - $ref: '#/components/parameters/LabelDpi'
+        - $ref: '#/components/parameters/LabelWidth'
+        - $ref: '#/components/parameters/PrinterModel'
+        - $ref: '#/components/parameters/XPartnerID'
+      responses:
+        '200':
+          description: A printable label file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            x-application/zpl:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/parcels/{id}:confirm-anyapm-delivery:
+    post:
+      summary: Confirm parcel has been delivered to AnyAPM
+      security:
+        - bearer: []
+      tags:
+        - Parcels
+      parameters:
+        - $ref: '#/components/parameters/ParcelId'
+        - $ref: '#/components/parameters/XPartnerID'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Invalid data
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/E_P430'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/E_P600'
+  /api/v1/parcels/{id}:cancel:
+    post:
+      summary: Cancel parcel delivery
+      description: Canceling a canceled parcel has no effect.
+      security:
+        - bearer: []
+      tags:
+        - Parcels
+      parameters:
+        - $ref: '#/components/parameters/ParcelId'
+        - $ref: '#/components/parameters/XPartnerID'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/parcels/{id}:declareDeliveryPartnerReturn:
+    post:
+      summary: Initiate a parcel return from a delivery partner
+      description: |
+        Similar to `parcels/{id}:cancel`, but designed to work for cases when
+        a delivery partner is going to be returning a parcel for any reason,
+        e.g. cancellation, standard return.
+
+        When successfully invoked, parcel will travel back to the sender.
+
+        Applicable for parcels that use a destination delivery partner.
+      security:
+        - bearer: []
+      tags:
+        - Parcels
+      parameters:
+        - $ref: '#/components/parameters/ParcelId'
+        - $ref: '#/components/parameters/XPartnerID'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Invalid data
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/E_P425'
+                  - $ref: '#/components/schemas/E_P426'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/entrusted-partners:
+    get:
+      summary: Get list of partner you can manage
+      tags:
+        - Partners
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Unique Partner ID. Use this for X-PartnerID header.
+                      example: 123
+                    displayName:
+                      type: string
+                      example: Acme
+                    assignedCurrency:
+                      type: string
+                      format: iso4217
+                    customerReturnsMaxAllowedSize:
+                      type: number
+                      description: Maximum allowed parcel size for customer returns
+                      example: 3
+                    email:
+                      type: string
+                    phoneNumber:
+                      type: string
+                    permission:
+                      $ref: '#/components/schemas/PartnerPermission'
+                    region:
+                      type: string
+                      example: 'el-GR'
+                      description: Region where contract was signed (CP 47 language tag format)
+                    shippingRegions:
+                      type: array
+                      items:
+                        type: string
+                        $ref: '#/components/schemas/LanguageTag'
+                  required:
+                    - id
+                    - displayName
+                    - assignedCurrency
+                    - email
+                    - phoneNumber
+                    - region
+                    - permission
+                    - shippingRegions
+
+  /ui/v1/parcels.csv:
+    get:
+      summary: List parcels to csv file
+      tags:
+        - Parcels
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: 'Search in: Order ID, Parcel ID, Customer name, Customer email, Customer phone number'
+        - name: orderNumber
+          in: query
+          schema:
+            type: string
+          description: Order number in your system. Return only parcels related to this order number.
+        - name: parcelId
+          in: query
+          schema:
+            type: string
+          description: ID of the parcel in our system. Return only parcel/s with this ID.
+        - name: paymentState
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentState'
+        - name: paymentMode
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentMode'
+        - name: state
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParcelState'
+        - name: createdFrom
+          in: query
+          description: 'UNIX timestamp in milliseconds'
+          schema:
+            type: string
+        - name: createdTo
+          in: query
+          description: 'UNIX timestamp in milliseconds'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: |
+
+            CSV Example:
+            ```
+            partner_name,sender_info_raw,sender_name,sender_address,sender_contact_phone,sender_email,recipient_info_raw,recipient_name,recipient_phone,recipient_email,parcel_number,order_number,delivery_address,delivery_partner_name,depot_public_id,destination_public_id,lane,weight_kg,payment_mode,amount_to_collect,currency,last_stop_order
+            Partner 1,"Partner 1
+            ΣΟΛΩΝΟΣ 12
+            10673 ΑΘΗΝΑ
+            210-XXXXXXX
+            email@partner.gr",Sender Nowak,"street city zip",+420773178937,email@sender.gr,"John Doe
+            +420773178937
+            john@doe.gr",John Doe,+420773178937,john@doe.gr,22754,100369,"Evropská 11, Praha, 16000",Important delivery partner name,ATH,APM9,Athens APMs,0.00,prepaid,0.00,EUR,1
+            ```
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+
+  /api/v1/parcels:
+    get:
+      summary: List parcel info related to your delivery requests
+      tags:
+        - Parcels
+      security:
+        - bearer: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: 'Search in: Order ID, Parcel ID, Customer name, Customer email, Customer phone number. Allowed only for partner portal users.'
+        - name: limit
+          in: query
+          schema:
+            type: number
+            default: 50
+            maximum: 100
+          description: Page size
+        - name: orderNumber
+          in: query
+          schema:
+            type: string
+          description: Order number in your system. Return only parcels related to this order number.
+        - name: parcelId
+          in: query
+          schema:
+            type: string
+          description: ID of the parcel in our system. Return only parcel/s with this ID.
+        - name: paymentState
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentState'
+        - name: paymentMode
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentMode'
+        - name: state
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParcelState'
+        - name: createdFrom
+          in: query
+          description: 'UNIX timestamp in milliseconds'
+          schema:
+            type: string
+        - name: createdTo
+          in: query
+          description: 'UNIX timestamp in milliseconds'
+          schema:
+            type: string
+        - name: pageToken
+          in: query
+          description: Set this token to return records for given page. You get this for each response.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            'X-export-url-csv':
+              schema:
+                type: string
+                example: https://boxnow.gr/ui/v1/parcels/label.csv?authorization=eyJwYXRoIjoiL3UxL3YxLyoifQ==
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    type: object
+                    properties:
+                      first:
+                        type: string
+                        description: Token to use to get to the first page
+                      last:
+                        type: string
+                        description: Token to use to get to the last page
+                      next:
+                        type: string
+                        description: Token to use to get to the next page
+                      prev:
+                        type: string
+                        description: Token to use to get to the previous page
+                    required:
+                      - first
+                      - last
+                  count:
+                    type: number
+                    description: Number of records
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Reference number in our system. You should use this when contacting support
+                        state:
+                          $ref: '#/components/schemas/ParcelState'
+                        name:
+                          type: string
+                          description: Name for the parcel contents
+                          example: Smartphone
+                        value:
+                          type: string
+                          description: Value in default current
+                          example: '4.56'
+                        weight:
+                          type: string
+                          description: Weight in kg
+                          example: '1.6'
+                        compartmentSize:
+                          type: number
+                          description: Selected compartment size
+                        originDeliveryRefId:
+                          type: string
+                          description: Parcel ID in origin delivery partner system
+                        destinationDeliveryRefId:
+                          type: string
+                          description: Parcel ID in destination delivery partner system
+                        itemRefId:
+                          type: string
+                          description: Parcel reference number in your system
+                        allowReturn:
+                          type: boolean
+                          description: Selected return value of the order
+                        deliveryRequest:
+                          $ref: '#/components/schemas/DeliveryRequest'
+                        events:
+                          $ref: '#/components/schemas/Events'
+                        parcelLabelUrl:
+                          type: string
+                          format: uri
+                          example: https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
+                        orderLabelUrl:
+                          type: string
+                          format: uri
+                          example: https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
+                        cancelationRequested:
+                          type: boolean
+                          description: True if you or system administrator had requested parcel cancelation
+                        payment:
+                          $ref: '#/components/schemas/DeliveryPayment'
+                        createTime:
+                          $ref: '#/components/schemas/DateTime'
+                        updateTime:
+                          $ref: '#/components/schemas/DateTime'
+                      required:
+                        - id
+                        - state
+                        - deliveryRequest
+                        - cancelationRequested
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+  /api/v1/parcels/{id}/label:
+    get:
+      summary: Get shipping label data of parcel
+      tags:
+        - Labels
+      security:
+        - bearer: []
+      parameters:
+        - $ref: '#/components/parameters/ParcelId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ParcelLabelData'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Not OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P414'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+  /api/v1/delivery-requests/{orderNumber}/label:
+    get:
+      summary: Get shipping label data of parcels order
+      tags:
+        - Labels
+      security:
+        - bearer: []
+      parameters:
+        - name: orderNumber
+          in: path
+          description: Unique order number in Your system. The same you use to create the delivery request.
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ParcelLabelData'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+  /api/v1/parcels/{id}/destinationlabel:generateUploadUrl:
+    post:
+      tags:
+        - Labels
+      summary: Get upload url for a custom label
+      security:
+        - bearer: []
+      parameters:
+        - $ref: '#/components/parameters/ParcelId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                destinationParcelId:
+                  description: Identifier of the parcel in the delivery partner system
+                  type: string
+                  example: 'ip123'
+              required:
+                - destinationParcelId
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUrl:
+                    type: string
+                    description: Use this URL to upload label data, e.g. PDF
+                    example: https://dummyjson.com/http/200
+                  expirationSeconds:
+                    type: number
+                    description: Number of seconds until the upload URL expires
+                    example: 3600
+                required:
+                  - uploadUrl
+                  - expirationSeconds
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Not OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/E_P460'
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/delivery-partners:
+    get:
+      summary: List of available delivery partners
+      tags:
+        - Delivery partners
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Unique Delivery partner ID
+                        name:
+                          type: string
+                          example: DHL
+                        code:
+                          type: string
+                          example: DHL
+                          description: Unique Delivery partner code
+                      required:
+                        - id
+                        - name
+                        - code
+        '403':
+          $ref: '#/components/responses/Forbidden_X403'
+  /{your-webhook-endpoint}:
+    post:
+      summary: Your webhook endpoint. Used to send You parcel events messages. You should set this endpoint in your BoxNow account.
+      tags:
+        - Webhooks
+      parameters:
+        - name: your-webhook-endpoint
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: your-optional-header
+          in: header
+          schema:
+            type: string
+          required: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookMessage'
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    DeliveryPartner:
+      type: string
+      enum:
+        - dhl
+    DeliveryRequest:
+      type: object
+      properties:
+        overwriteSenderShippingLabelInfo:
+          type: object
+          description: limit 20 characters for each row
+          properties:
+            row1:
+              type: string
+            row2:
+              type: string
+            row3:
+              type: string
+            row4:
+              type: string
+        typeOfService:
+          description: Type of delivery service. You may not be eligible to use all types of service, contact support for further information.
+          type: string
+          default: same-day
+          enum:
+            - same-day
+            - next-day
+        description:
+          description: This is the description of the order.
+          type: string
+        orderNumber:
+          type: string
+          description: Unique order reference number in Your system
+        invoiceValue:
+          type: string
+          description: Total value of the order. Must only contain numbers with no more than one decimal point and exactly 2 decimal places.
+          example: '25.50'
+        paymentMode:
+          $ref: '#/components/schemas/PaymentMode'
+        amountToBeCollected:
+          $ref: '#/components/schemas/AmountToBeCollected'
+        allowReturn:
+          $ref: '#/components/schemas/AllowReturn'
+        showRecipientInformation:
+          $ref: '#/components/schemas/ShowRecipientInformation'
+        notifyOnAccepted:
+          type: string
+          description: If set, we send a notification to this email when we accepted the order to our system.
+          example: partner@example.com
+        notifySMSOnAccepted:
+          type: string
+          description: Phone number in international format. If set, we send a sms notification to this phone number.
+          example: +30 21 4 655 1234
+        additionalInformation:
+          type: string
+          description: Additional delivery request information. This is later send through the webhook
+        returnLocation:
+          anyOf:
+            - $ref: '#/components/schemas/DeliveryLocationAddress'
+            - type: object
+              properties:
+                locationId:
+                  type: string
+                  format: integer
+                  description: Warehouse Location ID from `/origins` endpoint
+              required:
+                - locationId
+        origin:
+          allOf:
+            - type: object
+              description: Place where BoxNow workers will go to pick up the parcels
+              properties:
+                contactNumber:
+                  type: string
+                  description: Phone number
+                  example: +30 21 4 655 1234
+                contactEmail:
+                  type: string
+                  description: E-mail address
+                contactName:
+                  type: string
+                  description: Name, e.g. person or company name
+                  example: Yiannis Papadopoulos
+            - $ref: '#/components/schemas/PickupDeliveryPartnerInformation'
+            - anyOf:
+                - allOf:
+                    - $ref: '#/components/schemas/LocationAddress'
+                    - type: object
+                      properties:
+                        locationId:
+                          type: string
+                          format: integer
+                          description: Location ID from `/origins` endpoint
+                      required:
+                        - locationId
+                - allOf:
+                    - $ref: '#/components/schemas/DeliveryLocationAddress'
+        destination:
+          allOf:
+            - type: object
+              description: Place where BoxNow should deliver the parcels to
+              properties:
+                contactNumber:
+                  type: string
+                  description: Phone number
+                  example: +30 21 4 655 1234
+                contactEmail:
+                  type: string
+                  description: E-mail address (maximum 255 characters)
+                  maximum: 255
+                contactName:
+                  type: string
+                  description: Name, e.g. person or company name (maximum 255 characters)
+                  example: Yiannis Papadopoulos
+                  maximum: 255
+              required:
+                - contactNumber
+                - contactEmail
+                - contactName
+            - $ref: '#/components/schemas/DeliveryDeliveryPartnerInformation'
+            - anyOf:
+                - allOf:
+                    - $ref: '#/components/schemas/LocationAddress'
+                    - type: object
+                      properties:
+                        locationId:
+                          type: string
+                          format: integer
+                          description: Location ID from `/destinations` endpoint
+                      required:
+                        - locationId
+                - allOf:
+                    - $ref: '#/components/schemas/DeliveryLocationAddress'
+        items:
+          description: List of parcels you want to send via BoxNow.
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Item reference number in Your system (maximum 100 characters)
+                maximum: 100
+              name:
+                type: string
+                example: Smartphone
+                description: Order item name (maximum 1000 characters)
+                maximum: 1000
+              value:
+                type: string
+                description: Item value. Must only contain numbers with no more than one decimal point and exactly 2 decimal places.
+                example: '3.45'
+              weight:
+                type: number
+                description: Item weight in kg. Can have up to 3 decimal places.
+              compartmentSize:
+                type: number
+                description: Compartment size required for the package. Required only for `apm`/`any-apm` origin.
+              originDeliveryParcelId:
+                type: string
+                example: 415-02914-308
+                description: Parcel id of 3rd party delivery service. Fill in in case you are using other delivery service to deliver us the order.
+              destinationDeliveryParcelId:
+                type: string
+                example: 415-02914-308
+                description: Parcel id of 3rd party delivery service. Fill in in case you are using other delivery service for final delivery.
+            required:
+              - value
+      required:
+        - orderNumber
+        - paymentMode
+        - invoiceValue
+        - amountToBeCollected
+        - origin
+        - destination
+        - items
+    DeliveryRequestV2:
+      type: object
+      properties:
+        typeOfService:
+          description: Type of delivery service. You may not be eligible to use all types of service, contact support for further information.
+          type: string
+          default: same-day
+          enum:
+            - same-day
+            - next-day
+        description:
+          description: This is the description of the order.
+          type: string
+        orderNumber:
+          type: string
+          description: Unique order reference number in Your system
+        invoiceValue:
+          type: string
+          description: Total value of the order. Must only contain numbers with no more than one decimal point and exactly 2 decimal places.
+          example: '25.50'
+        paymentMode:
+          type: string
+          description: Payment mode. You may not be eligible to use all payment modes, contact support for further information.
+          default: prepaid
+          enum:
+            - prepaid
+            - cod
+        amountToBeCollected:
+          type: string
+          description: COD amount for COD payment mode. Must only contain numbers with no more than one decimal point and exactly 2 decimal places.
+          example: '25.50'
+        allowReturn:
+          type: boolean
+          default: false
+          description: If true, client will be able to return the goods the same way he received it.
+        notifyOnAccepted:
+          type: string
+          description: If set, we send a notification to this email when we accepted the order to our system.
+          example: partner@example.com
+        origin:
+          allOf:
+            - type: object
+              description: Place where BoxNow workers will go to pick up the parcels
+              properties:
+                contactNumber:
+                  type: string
+                  description: Phone number
+                  example: +30 21 4 655 1234
+                contactEmail:
+                  type: string
+                  description: E-mail address
+                contactName:
+                  type: string
+                  description: Name, e.g. person or company name
+                  example: Yiannis Papadopoulos
+            - $ref: '#/components/schemas/PickupDeliveryPartnerInformation'
+            - anyOf:
+                - allOf:
+                    - $ref: '#/components/schemas/LocationAddress'
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Location ID from `/origins` endpoint
+                      required:
+                        - id
+                - allOf:
+                    - $ref: '#/components/schemas/DeliveryLocationAddress'
+        destination:
+          allOf:
+            - type: object
+              description: Place where BoxNow should deliver the parcels to
+              properties:
+                contactNumber:
+                  type: string
+                  description: Phone number
+                  example: +30 21 4 655 1234
+                contactEmail:
+                  type: string
+                  description: E-mail address
+                contactName:
+                  type: string
+                  description: Name, e.g. person or company name
+                  example: Yiannis Papadopoulos
+              required:
+                - contactNumber
+                - contactEmail
+                - contactName
+            - $ref: '#/components/schemas/DeliveryDeliveryPartnerInformation'
+            - anyOf:
+                - allOf:
+                    - $ref: '#/components/schemas/LocationAddress'
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Location ID from `/destinations` endpoint
+                      required:
+                        - id
+                - allOf:
+                    - $ref: '#/components/schemas/DeliveryLocationAddress'
+        parcels:
+          description: List of parcels you want to send via BoxNow.
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Parcel reference number in Your system
+              name:
+                type: string
+                example: Smartphone
+                description: Order item name
+              value:
+                type: string
+                description: Item value. Must only contain numbers with no more than one decimal point and exactly 2 decimal places.
+                example: '3.45'
+              weight:
+                type: number
+                description: Item weight in kg. Can have up to 3 decimal places.
+              compartmentSize:
+                type: number
+                description: Compartment size required for the package. Required only for `apm`/`any-apm` origin.
+              originDeliveryParcelId:
+                type: string
+                example: 415-02914-308
+                description: Parcel id of 3rd party delivery service. Fill in in case you are using other delivery service to deliver us the order.
+              destinationDeliveryParcelId:
+                type: string
+                example: 415-02914-308
+                description: Parcel id of 3rd party delivery service. Fill in in case you are using other delivery service for final delivery.
+      required:
+        - orderNumber
+        - paymentMode
+        - invoiceValue
+        - amountToBeCollected
+        - origin
+        - destination
+        - parcels
+        - orderLabelUrl
+        - typeOfService
+        - allowReturn
+        - notifyOnAccepted
+    DeliveryDeliveryPartnerInformation:
+      type: object
+      properties:
+        deliveryPartnerId:
+          type: string
+          format: integer
+          example: '7983'
+          description: Use if want to deliver the parcels via another delivery service. ID of Delivery partner, see `/delivery-partners`
+    PickupDeliveryPartnerInformation:
+      type: object
+      properties:
+        deliveryPartnerId:
+          type: string
+          format: integer
+          example: '7983'
+          description: Use if want to pickup the parcels via another delivery service. ID of Delivery partner, see `/delivery-partners`
+    LocationAddress:
+      type: object
+      properties:
+        title:
+          type: string
+          example: ΠΑΝΤΕΛΟΓΛΟΥ ΔΗΜΗΤΡΗΣ
+        name:
+          type: string
+          example: ΠΑΝΤΕΛΟΓΛΟΥ ΔΗΜΗΤΡΗΣ
+        addressLine1:
+          type: string
+          example: ΛΕΩΦΟΡΟΣ ΕΙΡΗΝΗΣ 28
+        addressLine2:
+          type: string
+        postalCode:
+          type: string
+          example: '15121'
+          description: Postal code of the location. If set, must include only numbers
+        country:
+          type: string
+          example: GR
+          description: ISO 3166 Alpha-2 code of the country
+        note:
+          type: string
+          example: You can find it behind the pet shop
+    DeliveryLocationAddress:
+      allOf:
+        - $ref: '#/components/schemas/LocationAddress'
+        - type: object
+          required:
+            - addressLine1
+            - postalCode
+            - country
+    Location:
+      allOf:
+        - type: object
+          properties:
+            id:
+              type: string
+              description: Unique location ID
+            type:
+              $ref: '#/components/schemas/LocationType'
+            image:
+              type: string
+              example: https://via.placeholder.com/150
+              description: Location image
+            lat:
+              type: string
+              example: '48.78081955454138'
+            lng:
+              type: string
+              example: '12.446962472273063'
+            region:
+              $ref: '#/components/schemas/LanguageTag'
+          required:
+            - id
+            - type
+        - $ref: '#/components/schemas/LocationAddress'
+    LocationType:
+      type: string
+      description: |
+        Location type
+
+        - `apm` - specific APM on the given address
+
+        - `any-apm` - special location representing any APM, not a particual address
+
+        - `depot` - our transshipment yard
+
+        - `warehouse` - your warehouse where we pickup/return deliveries
+
+      enum:
+        - apm
+        - any-apm
+        - warehouse
+        - depot
+    Destination:
+      allOf:
+        - $ref: '#/components/schemas/Location'
+        - type: object
+          properties:
+            expectedDeliveryTime:
+              $ref: '#/components/schemas/DateTime'
+              description: Time we expect to deliver the parcel to this location if you create the order now
+    DateTime:
+      type: string
+      format: date-time
+      description: ISO8601 Date time format
+      example: '2021-06-07T12:33:18.723Z'
+    EventType:
+      type: string
+      description: |
+        Type of the event
+
+        `new` - Parcel has been registered to the system
+
+        `delivered` - Parcel has been delivered
+
+        `expired` - Parcel expired and will be returned to the sender
+
+        `returned` - Parcel has been returned to the sender
+
+        `in-depot` - Parcel is in one of our warehouses
+
+        `final-destination` - Parcel has reached its final destination, waiting for pickup
+
+        `canceled` - Parcel order had been canceled by the sender
+
+        `accepted-for-return` - Parcel has been accepted from customer and will be returned to the sender
+
+        `missing` - Box Now pickup courier was unable to obtain the parcel for delivery
+
+        `accepted-to-locker` - Parcel has been accepted from customer and will be sent to the recipient
+
+        `lost` - Parcel has been lost
+      example: new
+      enum:
+        - new
+        - delivered
+        - expired
+        - returned
+        - in-depot
+        - final-destination
+        - canceled
+        - accepted-for-return
+        - missing
+        - accepted-to-locker
+        - lost
+    Events:
+      type: array
+      items:
+        type: object
+        properties:
+          type:
+            $ref: '#/components/schemas/EventType'
+          locationDisplayName:
+            type: string
+            example: Ελληνικά Ταχυδρομεία
+            description: Event source location
+          locationId:
+            type: string
+            example: 123
+            description: Event source location ID
+          postalCode:
+            type: string
+            example: '104 37'
+            description: Event source location postal code
+          createTime:
+            allOf:
+              - $ref: '#/components/schemas/DateTime'
+              - description: Time when the event occurred
+        required:
+          - type
+          - createTime
+    LabelType:
+      type: string
+      enum:
+        - pdf
+        - zpl200
+        - zpl300
+    Labels:
+      type: array
+      items:
+        type: object
+        required:
+          - url
+          - type
+          - mimetype
+        properties:
+          type:
+            $ref: '#/components/schemas/LabelType'
+          mimetype:
+            type: string
+            example: application/pdf
+          url:
+            type: string
+            format: uri
+            example: https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
+    PaymentMode:
+      type: string
+      description: Payment mode. You may not be eligible to use all payment modes, contact support for further information.
+      default: prepaid
+      enum:
+        - prepaid
+        - cod
+    AmountToBeCollected:
+      type: string
+      description: COD amount for COD payment mode. Must only contain numbers with no more than one decimal point and exactly 2 decimal places.
+      example: '25.50'
+    AllowReturn:
+      type: boolean
+      default: false
+      description: If true, client will be able to return the goods the same way he received it.
+    ShowRecipientInformation:
+      type: boolean
+      description: If true, recipient phone number and email will be printed on the label.
+    DeliveryPayment:
+      type: object
+      properties:
+        mode:
+          $ref: '#/components/schemas/PaymentMode'
+        price:
+          $ref: '#/components/schemas/Money'
+        state:
+          $ref: '#/components/schemas/PaymentState'
+      required:
+        - mode
+        - price
+        - state
+    PaymentState:
+      type: string
+      enum:
+        - pending
+        - paid-by-customer
+        - refunded-to-customer
+        - transferred-to-partner
+    Money:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: string
+        currency:
+          type: string
+          format: iso4217
+    ParcelState:
+      type: string
+      description: Parcel delivery state
+      enum:
+        - new
+        - in-transit
+        - expired-return
+        - returned
+        - in-final-destination
+        - delivered
+        - lost
+        - canceled
+        - missing
+    SenderP2P:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['p2p']
+        name:
+          type: string
+        phoneNumber:
+          type: string
+        street:
+          type: string
+        city:
+          type: string
+        zip:
+          type: string
+      required:
+        - type
+        - name
+        - phoneNumber
+        - street
+        - city
+        - zip
+    SenderEshop:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['eshop']
+        shippingLabelInfo:
+          type: string
+      required:
+        - type
+        - shippingLabelInfo
+    SenderReturns:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['returns']
+        name:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+      required:
+        - type
+        - name
+        - phoneNumber
+        - email
+    RecipientReturns:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['returns']
+        shippingLabelInfo:
+          type: string
+      required:
+        - type
+        - shippingLabelInfo
+    RecipientEshopOrP2P:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['eshop', 'p2p']
+        name:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+      required:
+        - type
+        - name
+        - phoneNumber
+        - email
+    PaymentPrepaid:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - prepaid
+        parcelCount:
+          type: number
+          example: 3
+      required:
+        - type
+        - parcelCount
+    PaymentCOD:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - cod
+        parcelCount:
+          type: number
+          example: 3
+        amount:
+          type: string
+          example: '0.00'
+        currency:
+          type: string
+          example: 'EUR'
+      required:
+        - type
+        - parcelCount
+        - amount
+        - currency
+    ParcelLabelData:
+      type: object
+      properties:
+        parcel:
+          type: object
+          properties:
+            displayName:
+              type: string
+              example: '2323094171'
+            weight:
+              type: string
+              example: '0.01 kg'
+          required:
+            - displayName
+            - weight
+        partnerName:
+          type: string
+          example: Very nice partner
+        depotDisplayName:
+          type: string
+          example: 'ATH'
+        laneDisplayName:
+          type: string
+          example: 'LWH'
+        sender:
+          allOf:
+            - oneOf:
+                - $ref: '#/components/schemas/SenderP2P'
+                - $ref: '#/components/schemas/SenderEshop'
+                - $ref: '#/components/schemas/SenderReturns'
+          type: object
+          properties:
+            rawInfo:
+              type: string
+              description: Sender's raw information for the shipping label
+          required:
+            - 'rawInfo'
+        recipient:
+          allOf:
+            - oneOf:
+                - $ref: '#/components/schemas/RecipientReturns'
+                - $ref: '#/components/schemas/RecipientEshopOrP2P'
+          type: object
+          properties:
+            rawInfo:
+              type: string
+              description: Recipient's raw information for the shipping label
+          required:
+            - 'rawInfo'
+        delivery:
+          oneOf:
+            - $ref: '#/components/schemas/ApmDelivery'
+            - $ref: '#/components/schemas/DeliveryPartnerDelivery'
+        payment:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/PaymentPrepaid'
+            - $ref: '#/components/schemas/PaymentCOD'
+        createTime:
+          type: string
+          description: |
+            Date time in 24h format based on region, e.g. `Τετ 21/12/22 16:37` for `el-GR` region.
+        orderNumber:
+          type: string
+          example: '0006316103'
+      required:
+        - partnerName
+        - parcel
+        - depotId
+        - laneId
+        - sender
+        - recipient
+        - delivery
+        - payment
+        - orderNumber
+    ApmDelivery:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['apm-delivery']
+        street:
+          type: string
+        city:
+          type: string
+        zip:
+          type: string
+        destinationPublicId:
+          type: string
+        lastStopOrder:
+          type: number
+      required:
+        - type
+        - street
+        - city
+        - zip
+        - destinationPublicId
+    DeliveryPartnerDelivery:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['delivery-partner-delivery']
+        street:
+          type: string
+        city:
+          type: string
+        zip:
+          type: string
+        deliveryPartnerName:
+          type: string
+      required:
+        - type
+        - street
+        - city
+        - zip
+        - deliveryPartnerName
+    LanguageTag:
+      type: string
+      example: 'el-GR'
+      description: BCP 47 language tag format
+    PartnerPermission:
+      type: object
+      properties:
+        depotAsOrigin:
+          type: boolean
+          description: Can use Depot as origin - yes / no
+        warehouseAsOrigin:
+          type: boolean
+          description: Can use Warehouse as origin - yes / no
+        anyApmAsOrigin:
+          type: boolean
+          description: Can use AnyAPM as origin - yes / no
+        anyApmToSameApmDelivery:
+          type: boolean
+          description: Can use AnyAPM to the same APM delivery - yes / no
+        anyApmToSameApmDeliveryWithoutConfirmation:
+          type: boolean
+          description: Can deliver from AnyAPM to the same APM without confirmation - yes / no
+        customForm:
+          type: boolean
+          description: Can use the Custom form in the Partner portal? yes / no - default no
+        codPayment:
+          type: boolean
+          description: Can use COD payment mode? yes / no - default no
+        canCustomerCreateCustomerReturns:
+          type: boolean
+          description: Can customers create customer returns in the Customer portal? yes / no - default no
+        canPartnerCreateCustomerReturns:
+          type: boolean
+          description: Can create customer returns in the Partner portal? yes / no - default no
+        addressAsDestination:
+          type: boolean
+          description: Can create delivery to home address in the Partner portal? yes / no - default no
+        codAddressAsDestination:
+          type: boolean
+          description: Can use COD payment to create delivery to home address in the Partner portal? yes / no - default no
+        largerCompartmentWhileSending:
+          type: boolean
+          description: Can request larger compartment while sending from APM? yes / no - default no
+    WebhookMessage:
+      description: Webhook message
+      type: object
+      required:
+        [
+          'specversion',
+          'type',
+          'source',
+          'subject',
+          'id',
+          'time',
+          'datacontenttype',
+          'datasignature',
+          'data',
+        ]
+      properties:
+        specversion:
+          type: string
+          example: '1.0'
+        type:
+          type: string
+          description: Message type
+          example: gr.boxnow.parcel_event_change
+        source:
+          type: string
+          description: Message source
+        subject:
+          type: string
+          description: Parcel ID
+        id:
+          type: string
+          description: Message ID
+        time:
+          allOf:
+            - $ref: '#/components/schemas/DateTime'
+            - description: Message send time
+        datacontenttype:
+          type: string
+          description: Message content type
+          example: 'application/json'
+        datasignature:
+          type: string
+          description: HMAC SHA256 digest of data for receiver to verify integrity of received data
+        data:
+          type: object
+          required:
+            [
+              parcelId,
+              parcelName,
+              parcelState,
+              parcelReferenceNumber,
+              orderNumber,
+              event,
+              time,
+            ]
+          properties:
+            parcelId:
+              type: string
+              description: Parcel ID
+            parcelState:
+              $ref: '#/components/schemas/ParcelState'
+            parcelReferenceNumber:
+              type: string
+              description: Reference number in Your system
+            parcelName:
+              type: string
+              description: Item name label
+            parcelPin:
+              type: string
+              description: Parcel PIN
+            orderNumber:
+              type: string
+              description: Unique order reference number in Your system
+            event:
+              $ref: '#/components/schemas/EventType'
+            eventLocation:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  description: Name of the location where event happened
+                postalCode:
+                  type: string
+                  description: Postal code of the location where event happened
+            additionalInformation:
+              type: string
+              description: Additional information from a delivery request
+            customer:
+              type: object
+              description: Customer information. Not specified for P2P parcels.
+              properties:
+                name:
+                  type: string
+                  description: Name, e.g. person or company name
+                email:
+                  type: string
+                  description: E-mail address
+                phone:
+                  type: string
+                  description: Phone number in international format
+                  example: +30 21 4 655 1234
+            time:
+              allOf:
+                - description: Time of a event
+                - $ref: '#/components/schemas/DateTime'
+    E_P430:
+      type: object
+      properties:
+        code:
+          type: string
+          example: P430
+    E_P600:
+      type: object
+      properties:
+        code:
+          type: string
+          example: P600
+    E_P610:
+      type: object
+      properties:
+        code:
+          type: string
+          example: P610
+    E_P400:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P400
+    E_P401:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P401
+    E_P402:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P402
+    E_P403:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P403
+    E_P404:
+      type: object
+      required:
+        - code
+        - line
+        - column
+      properties:
+        code:
+          type: string
+          example: P404
+        line:
+          type: number
+          example: 1
+        column:
+          type: string
+          example: customer_full_name
+    E_P405:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P405
+    E_P406:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P406
+    E_P407:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P407
+    E_P408:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P408
+    E_P409:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P409
+    E_P410:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P410
+    E_P411:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P411
+    E_P412:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P412
+    E_P413:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P413
+    E_P420:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P420
+    E_P422:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P422
+    E_P423:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P423
+    E_P424:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P424
+    E_X403:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: X403
+    E_P414:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P414
+    E_P440:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P440
+    E_P415:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P440
+    E_P416:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P440
+    E_P441:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P441
+    E_C404:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P405
+    E_P425:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P425
+    E_P426:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P426
+    E_P460:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P460
+    E_P461:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P461
+    E_P464:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P464
+    E_P465:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P465
+    E_P466:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: P466
+  responses:
+    Unauthorized:
+      description: Not Authorized. You are either using an expired Access token to access the data or trying to initialize Auth session with invalid data.
+    NotFound:
+      description: Resource not found. You are authorized but the requested resource does not exist. Make sure the requested URL is correct.
+    BadRequest:
+      description: The server cannot or will not process the request due to something that is perceived to be your error (e.g., malformed request syntax, invalid request message). You are to modify the request before sending it again.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                description: See Error codes section for meaning of the code
+              message:
+                type: string
+                description: Developer/internal description of the error
+            required:
+              - code
+    Forbidden_X403:
+      description: Account disabled. Your account had been disabled, contact support.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: X403
+              message:
+                type: string
+                example: Account disabled. Your account had been disabled, contact support.
+            required:
+              - code
+  parameters:
+    LabelType:
+      name: type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - pdf
+          - zpl
+    LabelDpi:
+      name: dpi
+      in: query
+      schema:
+        type: number
+        enum:
+          - 200
+          - 300
+        example: 200
+        default: 200
+      description: Only applies to ZPL. 200 or 300 supported.
+    LabelWidth:
+      name: width
+      in: query
+      description: Label width in mm. Only applies to ZPL.
+      schema:
+        type: number
+        example: 100
+    PrinterModel:
+      name: printerModel
+      in: query
+      schema:
+        type: string
+        example: ZQ310
+    LocationType:
+      name: locationType
+      in: query
+      description: Return only locations with given types. If not present, filter is not applied.
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/LocationType'
+    LocationLatLng:
+      name: latlng
+      in: query
+      schema:
+        type: string
+        example: '48.78081955454138,12.446962472273063'
+        format: latlng
+      description: If applied only locations in the specified radius from this gps coord are returned
+    LocationRadius:
+      name: radius
+      in: query
+      schema:
+        type: number
+        format: integer
+        example: 1000
+        default: 25000
+      description: Radius in meters to return only locations within selected radius from given GPS location. Ignored if `latlng` is not present.
+    LocationRequiredSize:
+      name: requiredSize
+      in: query
+      schema:
+        type: number
+        format: integer
+        example: 1
+      description: |
+        Return only locations that can accept a package of your `requiredSize`.
+        If defined, the value is used based on your trust factor.
+        Otherwise, `requiredSize` is automatically set based on your usage.
+    LocationName:
+      name: name
+      in: query
+      schema:
+        type: string
+        example: ΠΑΝΤΕΛΟΓΛΟΥ ΔΗΜΗΤΡΗΣ
+      description: Return only locations with matching name
+    LocationLimit:
+      name: limit
+      in: query
+      schema:
+        type: number
+        format: integer
+      description: Limit the number of returned results. If not defined, all results are returned.
+    ParcelId:
+      name: id
+      in: path
+      description: Unique parcel ID. You have received parcel ID after a successful delivery request creation or you can list all parcels, see `/parcels`
+      schema:
+        type: string
+        example: 123456
+      required: true
+    OrderId:
+      name: id
+      in: path
+      description: Unique order ID. You have received order ID after a successful delivery request creation or you can list all orders related to parcels, see `/parcels`
+      schema:
+        type: string
+        example: 123456
+      required: true
+    RegionLanguageTag:
+      name: regionLanguageTag
+      in: query
+      schema:
+        $ref: '#/components/schemas/LanguageTag'
+    XPartnerID:
+      name: X-PartnerID
+      in: header
+      description: Partner ID you want to manage. You can list partners you are allowed to manage from /entrusted-partners endpoint.
+      schema:
+        type: string
+        example: 1

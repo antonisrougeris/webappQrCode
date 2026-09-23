@@ -7566,6 +7566,14 @@ body.cart-open {
   margin-left: 0;
 }
 
+.boxnow-map-shell {
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 
 .boxnow-delivery__top {
   display: flex;
@@ -14653,4 +14661,164 @@ a.contact-detail__value:hover {
     flex-direction: column;
   }
 
+}
+
+
+
+/* BOX NOW popup fix */
+#boxnowmap {
+  position: relative;
+  z-index: 999999;
+}
+
+/* BOX NOW generated iframe */
+#boxnowmap iframe {
+  background: #ffffff !important;
+}
+
+/* When BOX NOW creates popup elements */
+iframe[src*="boxnow"] {
+  background-color: #ffffff !important;
+}
+
+/* Force BOX NOW popup above the checkout */
+body > iframe[src*="boxnow"],
+body > div iframe[src*="boxnow"] {
+  background: #ffffff !important;
+  z-index: 999999 !important;
+}
+
+
+/* =========================================
+   BOX NOW CUSTOM MODAL
+   ========================================= */
+
+.boxnow-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.boxnow-modal.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.boxnow-modal__backdrop {
+  position: absolute;
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+.boxnow-modal__dialog {
+  position: relative;
+  z-index: 1;
+
+  width: min(100%, 1000px);
+  height: min(720px, 82vh);
+
+  background: #fff;
+
+  border-radius: 20px;
+  overflow: hidden;
+
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.28);
+
+  transform: translateY(14px) scale(0.98);
+
+  transition:
+    transform 0.2s ease;
+}
+
+.boxnow-modal.is-open .boxnow-modal__dialog {
+  transform: translateY(0) scale(1);
+}
+
+#boxnowmap {
+  width: 100%;
+  height: 100%;
+}
+
+#boxnowmap iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+  display: block;
+}
+
+
+/* Close button */
+
+.boxnow-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  z-index: 20;
+
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #fff;
+  color: #111;
+
+  font-size: 27px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.18);
+}
+
+.boxnow-modal__close:hover {
+  transform: scale(1.05);
+}
+
+
+/* Mobile */
+
+@media (max-width: 700px) {
+
+  .boxnow-modal {
+    padding: 12px;
+  }
+
+  .boxnow-modal__dialog {
+    width: 100%;
+    height: 82vh;
+
+    border-radius: 16px;
+  }
+
+}
+
+
+/* BOX NOW - align content with Delivery heading */
+.boxnow-delivery {
+  padding-left: 56px;
 }
