@@ -1,7 +1,7 @@
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 
 const CHECKOUT_URL =
-  "/src/pages/checkout/checkout.html";
+  "/checkout";
 
 document.addEventListener("DOMContentLoaded", () => {
   const checkoutButton =

@@ -98,7 +98,7 @@ export function initCookieConsent(): void {
 </p>
 
         <a
-          href="/src/pages/cookie-policy/cookie-policy.html"
+          href="/cookie-policy"
           class="cookie-policy-link"
         >
           Cookie Policy

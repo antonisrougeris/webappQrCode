@@ -46,6 +46,34 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+function normalizeRedirectPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  const cleaned = value.trim();
+
+  if (!cleaned || !cleaned.startsWith("/")) return null;
+
+  const legacyMap: Record<string, string> = {
+    "/login": "/login",
+    "/register": "/register",
+    "/forgot-password": "/forgot-password",
+    "/verify-email": "/verify-email",
+    "/checkout": "/checkout",
+    "/cart": "/cart",
+    "/my-qr": "/my-qr",
+    "/contact": "/contact",
+    "/about": "/about",
+    "/payment-security": "/payment-security",
+    "/products": "/products",
+  };
+
+  const mapped = legacyMap[cleaned] ?? cleaned;
+
+  if (mapped.startsWith("//")) return null;
+
+  return mapped;
+}
+
 function applyForgotPasswordLink(): void {
   if (!forgotPasswordLink) return;
 
@@ -63,25 +91,23 @@ function applyForgotPasswordLink(): void {
 
   const redirect = getRedirectUrl();
 
-  if (redirect && redirect !== "/index.html") {
+  if (redirect && redirect !== "/") {
     params.set("redirect", redirect);
   }
 
   const query = params.toString();
 
   forgotPasswordLink.href =
-    "/src/pages/forgot-password/forgot-password.html" +
+    "/forgot-password" +
     (query ? `?${query}` : "");
 }
 
 function getRedirectUrl(): string {
-  const redirect = new URLSearchParams(window.location.search).get("redirect");
+  const redirect = normalizeRedirectPath(
+    new URLSearchParams(window.location.search).get("redirect")
+  );
 
-  if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-    return redirect;
-  }
-
-  return "/index.html";
+  return redirect || "/";
 }
 
 function applyRegisterRedirect(): void {
@@ -90,7 +116,7 @@ function applyRegisterRedirect(): void {
   const redirect = getRedirectUrl();
 
   registerLink.href =
-    "/src/pages/register/register.html?redirect=" +
+    "/register?redirect=" +
     encodeURIComponent(redirect);
 }
 

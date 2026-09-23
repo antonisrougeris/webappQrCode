@@ -425,6 +425,24 @@ function readAndValidateCheckoutForm(
   };
 }
 
+function normalizeRoutePath(value: string | null | undefined, fallback = "/checkout"): string {
+  if (!value) return fallback;
+
+  const cleaned = value.trim();
+
+  if (!cleaned.startsWith("/")) return fallback;
+
+  const legacyMap: Record<string, string> = {
+    "/login": "/login",
+    "/register": "/register",
+    "/forgot-password": "/forgot-password",
+    "/verify-email": "/verify-email",
+    "/checkout": "/checkout",
+  };
+
+  return legacyMap[cleaned] ?? cleaned;
+}
+
 function restoreAfterAuth(): void {
   const flag = localStorage.getItem("skanare_returning_from_auth");
 
@@ -433,8 +451,6 @@ function restoreAfterAuth(): void {
     localStorage.removeItem("skanare_returning_from_auth");
   }
 }
-
-
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -534,17 +550,19 @@ if (!user) {
     body: JSON.stringify({ email }),
   });
 
-const payload = new URLSearchParams({
-  redirect: "/src/pages/checkout/checkout.html",
-  email,
-  firstName,
-  lastName,
-});
+  const redirectTarget = normalizeRoutePath(window.location.pathname, "/checkout");
+
+  const payload = new URLSearchParams({
+    redirect: redirectTarget,
+    email,
+    firstName,
+    lastName,
+  });
 
   if (res.exists) {
-    window.location.href = `/src/pages/login/login.html?${payload}`;
+    window.location.href = `/login?${payload}`;
   } else {
-    window.location.href = `/src/pages/register/register.html?${payload}`;
+    window.location.href = `/register?${payload}`;
   }
 
   return;
@@ -558,8 +576,8 @@ if (!me?.emailVerified) {
   setFlashToast("Please verify your email before checkout.");
 
   window.location.href =
-    "/src/pages/verify-email/verify-email.html?redirect=" +
-    encodeURIComponent("/src/pages/checkout/checkout.html");
+    "/verify-email?redirect=" +
+    encodeURIComponent(normalizeRoutePath(window.location.pathname, "/checkout"));
   return;
 }
 

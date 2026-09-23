@@ -34,7 +34,7 @@ export function renderHeader(): void {
           </div>
 
           <div class="nav-right">
-            <a href="/src/pages/contact/contact.html">
+            <a href="/contact">
               Contact
             </a>
 
@@ -89,7 +89,7 @@ export function renderHeader(): void {
           </div>
 
           <a
-            href="/src/pages/cart/cart.html"
+            href="/cart"
             class="header-icon-link cart-link"
             aria-label="Cart"
           >

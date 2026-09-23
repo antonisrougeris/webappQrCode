@@ -24,14 +24,34 @@ const form = document.getElementById("registerForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
 const googleBtn = document.querySelector<HTMLButtonElement>(".auth-google");
 
+function normalizeRedirectPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  const cleaned = value.trim();
+
+  if (!cleaned || !cleaned.startsWith("/")) return null;
+
+  const legacyMap: Record<string, string> = {
+    "/login": "/login",
+    "/register": "/register",
+    "/forgot-password": "/forgot-password",
+    "/verify-email": "/verify-email",
+    "/checkout": "/checkout",
+  };
+
+  const mapped = legacyMap[cleaned] ?? cleaned;
+
+  if (mapped.startsWith("//")) return null;
+
+  return mapped;
+}
+
 function getRedirectUrl(): string {
-  const redirect = new URLSearchParams(window.location.search).get("redirect");
+  const redirect = normalizeRedirectPath(
+    new URLSearchParams(window.location.search).get("redirect")
+  );
 
-  if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-    return redirect;
-  }
-
-  return "/index.html";
+  return redirect || "/";
 }
 
 function goToRedirect(delay = 800): void {
@@ -98,7 +118,7 @@ try {
   }
 
   window.location.href =
-    "/src/pages/verify-email/verify-email.html?redirect=" +
+    "/verify-email?redirect=" +
     encodeURIComponent(getRedirectUrl());
 
   return;

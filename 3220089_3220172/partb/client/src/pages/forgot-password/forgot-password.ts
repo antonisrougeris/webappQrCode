@@ -33,21 +33,34 @@ const otpHidden = document.getElementById("otpValue") as HTMLInputElement | null
 
 let currentEmail = "";
 
+function normalizeRedirectPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  const cleaned = value.trim();
+
+  if (!cleaned || !cleaned.startsWith("/")) return null;
+
+  const legacyMap: Record<string, string> = {
+    "/login": "/login",
+    "/register": "/register",
+    "/forgot-password": "/forgot-password",
+    "/verify-email": "/verify-email",
+    "/checkout": "/checkout",
+  };
+
+  const mapped = legacyMap[cleaned] ?? cleaned;
+
+  if (mapped.startsWith("//")) return null;
+
+  return mapped;
+}
+
 function getRedirectUrl(): string | null {
-  const redirect =
-    new URLSearchParams(
-      window.location.search
-    ).get("redirect");
+  const redirect = normalizeRedirectPath(
+    new URLSearchParams(window.location.search).get("redirect")
+  );
 
-  if (
-    redirect &&
-    redirect.startsWith("/") &&
-    !redirect.startsWith("//")
-  ) {
-    return redirect;
-  }
-
-  return null;
+  return redirect || null;
 }
 
 function applyForgotPasswordContext(): void {
@@ -98,7 +111,7 @@ function updateBackToLoginLink(): void {
     params.toString();
 
   backToLoginLink.href =
-    "/src/pages/login/login.html" +
+    "/login" +
     (query ? `?${query}` : "");
 }
 
@@ -281,7 +294,7 @@ resetForm?.addEventListener("submit", async (event) => {
   }
 
   window.location.href =
-    "/src/pages/login/login.html?" +
+    "/login?" +
     params.toString();
 }, 1200);
 

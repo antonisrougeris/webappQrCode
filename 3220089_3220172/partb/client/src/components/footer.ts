@@ -55,21 +55,21 @@ export function renderFooter(): void {
             <ul>
 
               <li>
-                <a href="/src/pages/my-qr/my-qr.html">
+                <a href="/my-qr">
                   <span>My QR Codes</span>
                   <span class="footer-arrow">↗</span>
                 </a>
               </li>
 
               <li>
-                <a href="/src/pages/login/login.html">
+                <a href="/login">
                   <span>Sign In</span>
                   <span class="footer-arrow">↗</span>
                 </a>
               </li>
 
               <li>
-                <a href="/src/pages/register/register.html">
+                <a href="/register">
                   <span>Create Account</span>
                   <span class="footer-arrow">↗</span>
                 </a>
@@ -91,14 +91,14 @@ export function renderFooter(): void {
             <ul>
 
               <li>
-                <a href="/src/pages/products/products.html?category=tshirt">
+                <a href="/products?category=tshirt">
                   <span>QR Clothing</span>
                   <span class="footer-arrow">↗</span>
                 </a>
               </li>
 
               <li>
-                <a href="/src/pages/products/products.html?category=accessory">
+                <a href="/products?category=accessory">
                   <span>QR Accessories</span>
                   <span class="footer-arrow">↗</span>
                 </a>
@@ -127,14 +127,14 @@ export function renderFooter(): void {
             <ul>
 
               <li>
-                <a href="/src/pages/about/about.html">
+                <a href="/about">
                   <span>About Us</span>
                   <span class="footer-arrow">↗</span>
                 </a>
               </li>
 
               <li>
-                <a href="/src/pages/contact/contact.html">
+                <a href="/contact">
                   <span>Contact</span>
                   <span class="footer-arrow">↗</span>
                 </a>
@@ -148,7 +148,7 @@ export function renderFooter(): void {
               </li>
 
               <li>
-                <a href="/src/pages/payment-security/payment-security.html">
+                <a href="/payment-security">
                   <span>Payment &amp; Security</span>
                   <span class="footer-arrow">↗</span>
                 </a>
@@ -170,35 +170,35 @@ export function renderFooter(): void {
             <ul>
 
               <li>
-                <a href="/src/pages/shipping-policy/shipping-policy.html">
+                <a href="/shipping-policy">
                   <span>Shipping Policy</span>
                   <span class="footer-arrow">↗</span>
                 </a>
               </li>
 
               <li>
-                <a href="/src/pages/refund-policy/refund-policy.html">
+                <a href="/refund-policy">
                   <span>Refund &amp; Returns</span>
                   <span class="footer-arrow">↗</span>
                 </a>
               </li>
 
               <li>
-                <a href="/src/pages/privacy-policy/privacy-policy.html">
+                <a href="/privacy-policy">
                   <span>Privacy Policy</span>
                   <span class="footer-arrow">↗</span>
                 </a>
               </li>
 
               <li>
-                <a href="/src/pages/terms/terms.html">
+                <a href="/terms">
                   <span>Terms of Service</span>
                   <span class="footer-arrow">↗</span>
                 </a>
               </li>
 
               <li>
-                <a href="/src/pages/cookie-policy/cookie-policy.html">
+                <a href="/cookie-policy">
                   <span>Cookie Policy</span>
                   <span class="footer-arrow">↗</span>
                 </a>
@@ -228,15 +228,15 @@ export function renderFooter(): void {
 
             <div class="footer-mobile-content">
 
-              <a href="/src/pages/my-qr/my-qr.html">
+              <a href="/my-qr">
                 My QR Codes
               </a>
 
-              <a href="/src/pages/login/login.html">
+              <a href="/login">
                 Sign In
               </a>
 
-              <a href="/src/pages/register/register.html">
+              <a href="/register">
                 Create Account
               </a>
 
@@ -256,11 +256,11 @@ export function renderFooter(): void {
 
             <div class="footer-mobile-content">
 
-              <a href="/src/pages/products/products.html?category=tshirt">
+              <a href="/products?category=tshirt">
                 QR Clothing
               </a>
 
-              <a href="/src/pages/products/products.html?category=accessory">
+              <a href="/products?category=accessory">
                 QR Accessories
               </a>
 
@@ -284,11 +284,11 @@ export function renderFooter(): void {
 
             <div class="footer-mobile-content">
 
-              <a href="/src/pages/about/about.html">
+              <a href="/about">
                 About Us
               </a>
 
-              <a href="/src/pages/contact/contact.html">
+              <a href="/contact">
                 Contact
               </a>
 
@@ -296,7 +296,7 @@ export function renderFooter(): void {
                 FAQ
               </a>
 
-              <a href="/src/pages/payment-security/payment-security.html">
+              <a href="/payment-security">
                 Payment &amp; Security
               </a>
 
@@ -316,23 +316,23 @@ export function renderFooter(): void {
 
             <div class="footer-mobile-content">
 
-              <a href="/src/pages/shipping-policy/shipping-policy.html">
+              <a href="/shipping-policy">
                 Shipping Policy
               </a>
 
-              <a href="/src/pages/refund-policy/refund-policy.html">
+              <a href="/refund-policy">
                 Refund &amp; Returns
               </a>
 
-              <a href="/src/pages/privacy-policy/privacy-policy.html">
+              <a href="/privacy-policy">
                 Privacy Policy
               </a>
 
-              <a href="/src/pages/terms/terms.html">
+              <a href="/terms">
                 Terms of Service
               </a>
 
-              <a href="/src/pages/cookie-policy/cookie-policy.html">
+              <a href="/cookie-policy">
                 Cookie Policy
               </a>
 
@@ -357,15 +357,15 @@ export function renderFooter(): void {
 
         <div class="footer-bottom-links">
 
-          <a href="/src/pages/privacy-policy/privacy-policy.html">
+          <a href="/privacy-policy">
             Privacy
           </a>
 
-          <a href="/src/pages/terms/terms.html">
+          <a href="/terms">
             Terms
           </a>
 
-          <a href="/src/pages/cookie-policy/cookie-policy.html">
+          <a href="/cookie-policy">
             Cookies
           </a>
 

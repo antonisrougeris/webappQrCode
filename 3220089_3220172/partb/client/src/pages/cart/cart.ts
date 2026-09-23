@@ -335,7 +335,7 @@ async function renderCart(targetId: string): Promise<void> {
     container.innerHTML = `
       <section class="cart-empty">
         <h2>Your cart is empty</h2>
-        <a class="btn-primary cart-empty-btn" href="/src/pages/products/products.html">
+        <a class="btn-primary cart-empty-btn" href="/products">
           SHOP PRODUCTS
         </a>
       </section>
@@ -575,7 +575,7 @@ return;
     }
 
     if (checkout) {
-      window.location.href = "/src/pages/checkout/checkout.html";
+      window.location.href = "/checkout";
     }
   });
 }
