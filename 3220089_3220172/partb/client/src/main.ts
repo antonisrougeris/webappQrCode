@@ -36,7 +36,7 @@ function initCountdown(): void {
     const diff = targetDate - now;
 
     if (diff <= 0) {
-      bar?.remove(); // κρύψε το bar όταν λήξει το countdown
+      bar?.remove(); 
       clearInterval(interval);
       return;
     }
