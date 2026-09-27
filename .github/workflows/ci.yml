@@ -88,6 +88,27 @@ jobs:
 
       - name: Validate dependency tree
         run: npm ls --omit=dev
+    
+      - name: Prepare backend artifact
+        run: |
+          rm -rf deploy-package
+          mkdir deploy-package
+
+          cp -a src deploy-package/
+          cp -a scripts deploy-package/
+          cp -a assets deploy-package/
+          cp -a fonts deploy-package/
+          cp package.json package-lock.json deploy-package/
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: skanare-backend
+          path: 3220089_3220172/partb/server/deploy-package/
+          if-no-files-found: error
+          retention-days: 7
+
+          
 
   ssh-test:
     name: Production SSH Test
