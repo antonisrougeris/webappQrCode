@@ -5,21 +5,24 @@ import { createId, nowIso } from "../utils/ids.js";
 
 import { sendPaidOrderEmails } from "./order-email.service.js";
 
-
-
 import {
   reserveUniqueQrShortId,
   writeQrShortIdReservation,
 } from "./qr-id.service.js";
 
-
 import {
   issueOrderReceipt,
 } from "./oxygen.service.js";
 
+import {
+  createBoxNowDelivery,
+} from "./boxnow.service.js";
+
+
 function getEventData(payload) {
   return payload?.EventData || payload?.eventData || payload?.data || payload;
 }
+
 
 function getVivaField(data, names) {
   for (const name of names) {
@@ -31,6 +34,7 @@ function getVivaField(data, names) {
   return null;
 }
 
+
 function toCents(value) {
   const n = Number(value);
 
@@ -40,11 +44,13 @@ function toCents(value) {
   return Math.round(n * 100);
 }
 
+
 function normalizeStatusId(value) {
   return String(value || "")
     .trim()
     .toUpperCase();
 }
+
 
 function isSuccessfulVivaPayment(data) {
   const status = normalizeStatusId(
@@ -57,6 +63,7 @@ function isSuccessfulVivaPayment(data) {
 
   return status === "F" || status === "5" || responseCode === "00";
 }
+
 
 async function findOrderByVivaOrderCode(tx, db, vivaOrderCode) {
   const snap = await tx.get(
@@ -85,14 +92,20 @@ async function findOrderByVivaOrderCode(tx, db, vivaOrderCode) {
   };
 }
 
+
 export async function attachVivaPaymentToOrder({
   orderId,
   vivaOrderCode,
   checkoutUrl,
   raw,
 }) {
-  if (!orderId) throw new ApiError(400, "Missing order id");
-  if (!vivaOrderCode) throw new ApiError(400, "Missing Viva order code");
+  if (!orderId) {
+    throw new ApiError(400, "Missing order id");
+  }
+
+  if (!vivaOrderCode) {
+    throw new ApiError(400, "Missing Viva order code");
+  }
 
   const db = getDB();
   const updatedAt = nowIso();
@@ -104,6 +117,7 @@ export async function attachVivaPaymentToOrder({
       {
         paymentProvider: "viva",
         paymentStatus: "pending",
+
         payment: {
           provider: "viva",
           vivaOrderCode: String(vivaOrderCode),
@@ -112,12 +126,12 @@ export async function attachVivaPaymentToOrder({
           createdAt: updatedAt,
           updatedAt,
         },
+
         updatedAt,
       },
       { merge: true }
     );
 }
-
 
 
 function sanitizeQrColor(input, fallback = "#000000") {
@@ -162,6 +176,7 @@ function sanitizeQrColor(input, fallback = "#000000") {
   return fallback;
 }
 
+
 function buildQrConfig(item) {
   return {
     textPrint:
@@ -190,6 +205,7 @@ function buildQrConfig(item) {
   };
 }
 
+
 function getItemSku(item) {
   return String(
     item.sku ??
@@ -197,6 +213,7 @@ function getItemSku(item) {
     ""
   ).trim();
 }
+
 
 function buildQrInventoryKey(item) {
   const sku = getItemSku(item);
@@ -216,484 +233,1425 @@ function buildQrInventoryKey(item) {
 }
 
 
+/* ==================================================
+   BOX NOW
+================================================== */
+
+function getBoxNowLockerId(order) {
+  return String(
+    order?.shipping?.boxnow?.destinationId ||
+    (
+      typeof order?.locker === "string"
+        ? order.locker
+        : (
+            order?.locker?.id ||
+            order?.locker?.boxnowLockerId ||
+            ""
+          )
+    )
+  ).trim();
+}
+
+
+/*
+ * Atomic claim.
+ *
+ * pending -> creating
+ *
+ * Αυτό είναι το κομμάτι που μας προστατεύει
+ * από duplicate Viva webhooks.
+ */
+async function claimBoxNowShipping(orderId) {
+  const db = getDB();
+
+  const orderRef = db
+    .collection(COLLECTIONS.ORDERS)
+    .doc(orderId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+
+    if (!snap.exists) {
+      return null;
+    }
+
+    const order = {
+      id: snap.id,
+      ...snap.data(),
+    };
+
+    if (order.paymentStatus !== "paid") {
+      return null;
+    }
+
+    if (order.delivery !== "boxnow") {
+      return null;
+    }
+
+    const shippingStatus = String(
+      order.shipping?.status || "pending"
+    )
+      .trim()
+      .toLowerCase();
+
+    /*
+     * creating:
+     * άλλο webhook το έχει ήδη αναλάβει
+     *
+     * created:
+     * έχει ήδη δημιουργηθεί BOX NOW parcel
+     *
+     * failed:
+     * δεν κάνουμε αυτόματο retry
+     */
+    if (shippingStatus !== "pending") {
+      console.log("BOX NOW shipping skipped", {
+        orderId,
+        shippingStatus,
+      });
+
+      return null;
+    }
+
+    const lockerId = getBoxNowLockerId(order);
+
+    if (!lockerId) {
+      const failedAt = nowIso();
+
+      tx.update(orderRef, {
+        "shipping.status": "failed",
+        "shipping.error": "BOX NOW destination locker is missing",
+        "shipping.failedAt": failedAt,
+        "shipping.updatedAt": failedAt,
+        updatedAt: failedAt,
+      });
+
+      return null;
+    }
+
+    const attemptId = createId("boxnowattempt");
+    const claimedAt = nowIso();
+
+    tx.update(orderRef, {
+      "shipping.status": "creating",
+      "shipping.attemptId": attemptId,
+      "shipping.claimedAt": claimedAt,
+      "shipping.updatedAt": claimedAt,
+      updatedAt: claimedAt,
+    });
+
+    return {
+      order,
+      attemptId,
+    };
+  });
+}
+
+
+/*
+ * creating -> created
+ */
+async function markBoxNowShippingCreated({
+  order,
+  attemptId,
+  result,
+}) {
+  const db = getDB();
+
+  const orderRef = db
+    .collection(COLLECTIONS.ORDERS)
+    .doc(order.id);
+
+  const parcelIds = Array.isArray(result?.parcels)
+    ? result.parcels
+        .map((parcel) => String(parcel?.id || "").trim())
+        .filter(Boolean)
+    : [];
+
+  if (!result?.id || !parcelIds.length) {
+    throw new ApiError(
+      502,
+      "BOX NOW response did not contain delivery or parcel id"
+    );
+  }
+
+  const completedAt = nowIso();
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+
+    if (!snap.exists) {
+      return;
+    }
+
+    const current = snap.data();
+
+    /*
+     * Βεβαιωνόμαστε ότι αποθηκεύουμε result
+     * μόνο για το ίδιο attempt.
+     */
+    if (current.shipping?.attemptId !== attemptId) {
+      console.warn(
+        "BOX NOW result ignored because attempt id changed",
+        {
+          orderId: order.id,
+          attemptId,
+          currentAttemptId:
+            current.shipping?.attemptId || null,
+        }
+      );
+
+      return;
+    }
+
+    tx.update(orderRef, {
+      "shipping.status": "created",
+      "shipping.error": null,
+
+      "shipping.boxnow.environment":
+        String(process.env.BOXNOW_MODE || "mock")
+          .trim()
+          .toLowerCase(),
+
+      "shipping.boxnow.originId":
+        String(process.env.BOXNOW_ORIGIN_ID || "").trim() || null,
+
+      "shipping.boxnow.destinationId":
+        getBoxNowLockerId(order),
+
+      "shipping.boxnow.deliveryRequestId":
+        String(result.id),
+
+      "shipping.boxnow.parcelIds":
+        parcelIds,
+
+      "shipping.boxnow.createdAt":
+        completedAt,
+
+      "shipping.boxnow.updatedAt":
+        completedAt,
+
+      "shipping.completedAt":
+        completedAt,
+
+      "shipping.updatedAt":
+        completedAt,
+
+      updatedAt:
+        completedAt,
+    });
+  });
+
+  console.log("BOX NOW shipping created", {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    deliveryRequestId: String(result.id),
+    parcelIds,
+  });
+}
+
+
+/*
+ * creating -> failed
+ *
+ * Η πληρωμή ΔΕΝ αλλάζει.
+ * Το order παραμένει paid.
+ */
+async function markBoxNowShippingFailed({
+  orderId,
+  attemptId,
+  error,
+}) {
+  const db = getDB();
+
+  const orderRef = db
+    .collection(COLLECTIONS.ORDERS)
+    .doc(orderId);
+
+  const failedAt = nowIso();
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+
+    if (!snap.exists) {
+      return;
+    }
+
+    const current = snap.data();
+
+    if (current.shipping?.attemptId !== attemptId) {
+      return;
+    }
+
+    tx.update(orderRef, {
+      "shipping.status": "failed",
+
+      "shipping.error":
+        error?.message ||
+        "BOX NOW delivery creation failed",
+
+      "shipping.failedAt":
+        failedAt,
+
+      "shipping.updatedAt":
+        failedAt,
+
+      updatedAt:
+        failedAt,
+    });
+  });
+
+  console.error("BOX NOW shipping failed", {
+    orderId,
+    attemptId,
+    message: error?.message,
+  });
+}
+
+
+/*
+ * Εκτελείται μόνο αφού η Viva πληρωμή
+ * έχει ήδη αποθηκευτεί ως paid.
+ */
+async function processPaidBoxNowShipping(orderId) {
+  const claimed = await claimBoxNowShipping(orderId);
+
+  if (!claimed) {
+    return;
+  }
+
+  const {
+    order,
+    attemptId,
+  } = claimed;
+
+  try {
+    console.log(
+      "Creating BOX NOW delivery after successful payment",
+      {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        destinationId: getBoxNowLockerId(order),
+        attemptId,
+      }
+    );
+
+    /*
+     * External BOX NOW API call.
+     *
+     * Πολύ σημαντικό:
+     * βρίσκεται ΕΚΤΟΣ Firestore transaction.
+     */
+    const result = await createBoxNowDelivery(order);
+
+    await markBoxNowShippingCreated({
+      order,
+      attemptId,
+      result,
+    });
+  } catch (error) {
+    await markBoxNowShippingFailed({
+      orderId: order.id,
+      attemptId,
+      error,
+    });
+
+    /*
+     * Δεν κάνουμε throw.
+     *
+     * Η Viva πληρωμή έχει ήδη ολοκληρωθεί.
+     * Δεν θέλουμε BOX NOW failure να κάνει
+     * το Viva webhook HTTP 500.
+     */
+  }
+}
+
+
+/* ==================================================
+   VIVA PAYMENT WEBHOOK
+================================================== */
 
 export async function markOrderPaidFromVivaWebhook(payload) {
   let paidOrderForEmail = null;
+
   const data = getEventData(payload);
 
   const vivaOrderCode = String(
-    getVivaField(data, ["OrderCode", "orderCode", "OrderId", "orderId"]) || ""
+    getVivaField(
+      data,
+      [
+        "OrderCode",
+        "orderCode",
+        "OrderId",
+        "orderId",
+      ]
+    ) || ""
   );
 
   const transactionId = String(
-    getVivaField(data, [
-      "TransactionId",
-      "transactionId",
-      "TransactionID",
-      "transactionID",
-    ]) || ""
+    getVivaField(
+      data,
+      [
+        "TransactionId",
+        "transactionId",
+        "TransactionID",
+        "transactionID",
+      ]
+    ) || ""
   );
 
-  const rawStatusId = getVivaField(data, [
-    "StatusId",
-    "statusId",
-    "StatusID",
-    "statusID",
-  ]);
+  const rawStatusId = getVivaField(
+    data,
+    [
+      "StatusId",
+      "statusId",
+      "StatusID",
+      "statusID",
+    ]
+  );
 
-  const amount = toCents(getVivaField(data, ["Amount", "amount"]));
+  const amount = toCents(
+    getVivaField(
+      data,
+      [
+        "Amount",
+        "amount",
+      ]
+    )
+  );
 
-  console.log("========== PAYMENT WEBHOOK PARSED ==========");
+  console.log(
+    "========== PAYMENT WEBHOOK PARSED =========="
+  );
+
   console.log({
     vivaOrderCode,
     transactionId,
     rawStatusId,
     amount,
-    successful: isSuccessfulVivaPayment(data),
+    successful:
+      isSuccessfulVivaPayment(data),
   });
 
   if (!vivaOrderCode || !transactionId) {
-    console.warn("Viva webhook ignored: invalid payload", {
-      vivaOrderCode,
-      transactionId,
-      payload,
-    });
+    console.warn(
+      "Viva webhook ignored: invalid payload",
+      {
+        vivaOrderCode,
+        transactionId,
+        payload,
+      }
+    );
+
     return;
   }
 
   if (!isSuccessfulVivaPayment(data)) {
-    console.warn("Viva webhook ignored: payment not successful", {
-      vivaOrderCode,
-      transactionId,
-      statusId: rawStatusId,
-    });
+    console.warn(
+      "Viva webhook ignored: payment not successful",
+      {
+        vivaOrderCode,
+        transactionId,
+        statusId: rawStatusId,
+      }
+    );
+
     return;
   }
 
   const db = getDB();
   const paidAt = nowIso();
 
+
   await db.runTransaction(async (tx) => {
-    const found = await findOrderByVivaOrderCode(tx, db, vivaOrderCode);
+    const found =
+      await findOrderByVivaOrderCode(
+        tx,
+        db,
+        vivaOrderCode
+      );
 
     if (!found) {
-      console.warn("Webhook transaction stopped: order not found");
+      console.warn(
+        "Webhook transaction stopped: order not found"
+      );
+
       return;
     }
 
-    const { ref, order } = found;
+    const {
+      ref,
+      order,
+    } = found;
 
-    console.log("Order found for webhook:", {
-      id: order.id,
-      orderNumber: order.orderNumber,
-      paymentStatus: order.paymentStatus,
-      customerEmail: order.customer?.email,
-      hasEmails: Boolean(order.emails?.paidOrderSentAt),
-    });
+    console.log(
+      "Order found for webhook:",
+      {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        paymentStatus: order.paymentStatus,
+        customerEmail:
+          order.customer?.email,
 
+        hasEmails:
+          Boolean(
+            order.emails?.paidOrderSentAt
+          ),
+      }
+    );
+
+
+    /*
+     * Duplicate Viva webhook.
+     *
+     * Δεν ξανατρέχουμε payment/QR logic.
+     *
+     * Μετά το transaction όμως το BOX NOW
+     * helper θα ελέγξει μόνο του:
+     *
+     * pending / creating / created / failed
+     */
     if (order.paymentStatus === "paid") {
-      console.log("Order already paid. Will still attempt email if needed.", {
-        orderId: order.id,
-        emailsSent: Boolean(order.emails?.paidOrderSentAt),
-      });
+      console.log(
+        "Order already paid. Will still check email/shipping if needed.",
+        {
+          orderId: order.id,
+          emailsSent:
+            Boolean(
+              order.emails?.paidOrderSentAt
+            ),
+          shippingStatus:
+            order.shipping?.status || null,
+        }
+      );
 
       paidOrderForEmail = order;
+
       return;
     }
 
-    // Pending checkout may have atomically reserved ready QR codes.
-    // For older orders (without inventoryReservations), retain the legacy path.
+
+    /*
+     * Pending checkout may have atomically
+     * reserved ready QR codes.
+     *
+     * For older orders without inventoryReservations,
+     * retain the legacy path.
+     */
     const qrAssignments = [];
-    const holds = Array.isArray(order.inventoryReservations)
-      ? order.inventoryReservations : null;
+
+    const holds =
+      Array.isArray(
+        order.inventoryReservations
+      )
+        ? order.inventoryReservations
+        : null;
+
 
     if (holds) {
-      if (order.inventoryReservationState !== "held") {
-        throw new ApiError(409, "Checkout inventory reservation is not held");
+      if (
+        order.inventoryReservationState !==
+        "held"
+      ) {
+        throw new ApiError(
+          409,
+          "Checkout inventory reservation is not held"
+        );
       }
-      const heldByItem = new Map(holds.map(h => [String(h.orderItemId), h]));
-      const allIds = holds.flatMap(h => h.qrIds || []);
-      if (new Set(allIds).size !== allIds.length) {
-        throw new ApiError(409, "Duplicate reserved QR detected");
-      }
-      const heldSnaps = await Promise.all(allIds.map(id => tx.get(
-        db.collection(COLLECTIONS.QR_CODES).doc(String(id))
-      )));
-      const heldDocs = new Map(heldSnaps.map(doc => [doc.id, doc]));
 
-      for (const item of order.items || []) {
-        if (!item.customQr) continue;
-        const hold = heldByItem.get(String(item.id));
-        const sku = getItemSku(item);
-        const key = buildQrInventoryKey(item);
-        const quantity = Number(item.quantity);
-        if (!hold || hold.productId !== item.productId || hold.sku !== sku ||
-            hold.inventoryKey !== key || !Number.isSafeInteger(quantity) || quantity < 1 ||
-            (hold.qrIds || []).length + hold.fallbackQuantity !== quantity) {
-          throw new ApiError(409, "Invalid checkout QR reservation");
+      const heldByItem =
+        new Map(
+          holds.map(
+            (h) => [
+              String(h.orderItemId),
+              h,
+            ]
+          )
+        );
+
+      const allIds =
+        holds.flatMap(
+          (h) =>
+            h.qrIds ||
+            []
+        );
+
+      if (
+        new Set(allIds).size !==
+        allIds.length
+      ) {
+        throw new ApiError(
+          409,
+          "Duplicate reserved QR detected"
+        );
+      }
+
+      const heldSnaps =
+        await Promise.all(
+          allIds.map(
+            (id) =>
+              tx.get(
+                db
+                  .collection(
+                    COLLECTIONS.QR_CODES
+                  )
+                  .doc(String(id))
+              )
+          )
+        );
+
+      const heldDocs =
+        new Map(
+          heldSnaps.map(
+            (doc) => [
+              doc.id,
+              doc,
+            ]
+          )
+        );
+
+
+      for (
+        const item of
+        order.items ||
+        []
+      ) {
+        if (!item.customQr) {
+          continue;
         }
-        for (const id of hold.qrIds || []) {
-          const snap = heldDocs.get(String(id));
-          const qr = snap?.data();
-          if (!snap?.exists || qr.status !== "reserved" ||
-              qr.reservationOrderId !== order.id ||
-              qr.reservationItemId !== item.id || qr.inventoryKey !== key) {
-            throw new ApiError(409, "Reserved QR changed before payment confirmation");
+
+        const hold =
+          heldByItem.get(
+            String(item.id)
+          );
+
+        const sku =
+          getItemSku(item);
+
+        const key =
+          buildQrInventoryKey(item);
+
+        const quantity =
+          Number(item.quantity);
+
+
+        if (
+          !hold ||
+          hold.productId !== item.productId ||
+          hold.sku !== sku ||
+          hold.inventoryKey !== key ||
+          !Number.isSafeInteger(quantity) ||
+          quantity < 1 ||
+          (hold.qrIds || []).length +
+            hold.fallbackQuantity !==
+            quantity
+        ) {
+          throw new ApiError(
+            409,
+            "Invalid checkout QR reservation"
+          );
+        }
+
+
+        for (
+          const id of
+          hold.qrIds ||
+          []
+        ) {
+          const snap =
+            heldDocs.get(
+              String(id)
+            );
+
+          const qr =
+            snap?.data();
+
+
+          if (
+            !snap?.exists ||
+            qr.status !== "reserved" ||
+            qr.reservationOrderId !== order.id ||
+            qr.reservationItemId !== item.id ||
+            qr.inventoryKey !== key
+          ) {
+            throw new ApiError(
+              409,
+              "Reserved QR changed before payment confirmation"
+            );
           }
-          qrAssignments.push({type: "existing", ref: snap.ref, item, sku,
-            inventoryKey: key, qrConfig: buildQrConfig(item)});
+
+
+          qrAssignments.push({
+            type: "existing",
+            ref: snap.ref,
+            item,
+            sku,
+            inventoryKey: key,
+            qrConfig:
+              buildQrConfig(item),
+          });
         }
-        for (let i = 0; i < hold.fallbackQuantity; i += 1) {
-          const qrId = createId("qr");
-          const {shortId, reservationRef} = await reserveUniqueQrShortId(tx, db);
-          qrAssignments.push({type: "new", qrId, shortId, reservationRef,
-            item, sku, inventoryKey: key, qrConfig: buildQrConfig(item)});
+
+
+        for (
+          let i = 0;
+          i < hold.fallbackQuantity;
+          i += 1
+        ) {
+          const qrId =
+            createId("qr");
+
+          const {
+            shortId,
+            reservationRef,
+          } =
+            await reserveUniqueQrShortId(
+              tx,
+              db
+            );
+
+
+          qrAssignments.push({
+            type: "new",
+            qrId,
+            shortId,
+            reservationRef,
+            item,
+            sku,
+            inventoryKey: key,
+            qrConfig:
+              buildQrConfig(item),
+          });
         }
       }
     } else {
-      const existingQrSnap = await tx.get(
-        db.collection(COLLECTIONS.QR_CODES).where("orderId", "==", order.id)
-      );
+      /*
+       * Legacy order path.
+       */
+      const existingQrSnap =
+        await tx.get(
+          db
+            .collection(
+              COLLECTIONS.QR_CODES
+            )
+            .where(
+              "orderId",
+              "==",
+              order.id
+            )
+        );
+
       if (existingQrSnap.empty) {
-        const selected = new Set();
-        for (const item of order.items || []) {
-          if (!item.customQr) continue;
-          const quantity = Number(item.quantity);
-          if (!Number.isSafeInteger(quantity) || quantity < 1) {
-            throw new ApiError(409, "Invalid legacy order quantity");
+        const selected =
+          new Set();
+
+        for (
+          const item of
+          order.items ||
+          []
+        ) {
+          if (!item.customQr) {
+            continue;
           }
-          const sku = getItemSku(item);
-          const key = buildQrInventoryKey(item);
-          const readySnap = await tx.get(db.collection(COLLECTIONS.QR_CODES)
-            .where("status", "==", "available").where("inventoryKey", "==", key));
-          const ready = readySnap.docs.filter(doc => !selected.has(doc.ref.path) &&
-            ["uploaded", "email_sent"].includes(doc.data().printStatus) &&
-            Boolean(doc.data().printFileUrl));
-          for (let i = 0; i < quantity; i += 1) {
-            const doc = ready[i];
+
+          const quantity =
+            Number(
+              item.quantity
+            );
+
+          if (
+            !Number.isSafeInteger(
+              quantity
+            ) ||
+            quantity < 1
+          ) {
+            throw new ApiError(
+              409,
+              "Invalid legacy order quantity"
+            );
+          }
+
+          const sku =
+            getItemSku(item);
+
+          const key =
+            buildQrInventoryKey(item);
+
+          const readySnap =
+            await tx.get(
+              db
+                .collection(
+                  COLLECTIONS.QR_CODES
+                )
+                .where(
+                  "status",
+                  "==",
+                  "available"
+                )
+                .where(
+                  "inventoryKey",
+                  "==",
+                  key
+                )
+            );
+
+          const ready =
+            readySnap.docs.filter(
+              (doc) =>
+                !selected.has(
+                  doc.ref.path
+                ) &&
+                [
+                  "uploaded",
+                  "email_sent",
+                ].includes(
+                  doc.data()
+                    .printStatus
+                ) &&
+                Boolean(
+                  doc.data()
+                    .printFileUrl
+                )
+            );
+
+
+          for (
+            let i = 0;
+            i < quantity;
+            i += 1
+          ) {
+            const doc =
+              ready[i];
+
             if (doc) {
-              selected.add(doc.ref.path);
-              qrAssignments.push({type: "existing", ref: doc.ref, item, sku,
-                inventoryKey: key, qrConfig: buildQrConfig(item)});
+              selected.add(
+                doc.ref.path
+              );
+
+              qrAssignments.push({
+                type: "existing",
+                ref: doc.ref,
+                item,
+                sku,
+                inventoryKey: key,
+                qrConfig:
+                  buildQrConfig(item),
+              });
             } else {
-              const qrId = createId("qr");
-              const {shortId, reservationRef} = await reserveUniqueQrShortId(tx, db);
-              qrAssignments.push({type: "new", qrId, shortId, reservationRef,
-                item, sku, inventoryKey: key, qrConfig: buildQrConfig(item)});
+              const qrId =
+                createId("qr");
+
+              const {
+                shortId,
+                reservationRef,
+              } =
+                await reserveUniqueQrShortId(
+                  tx,
+                  db
+                );
+
+              qrAssignments.push({
+                type: "new",
+                qrId,
+                shortId,
+                reservationRef,
+                item,
+                sku,
+                inventoryKey: key,
+                qrConfig:
+                  buildQrConfig(item),
+              });
             }
           }
         }
       }
     }
 
-    const expectedAmount = Math.round(Number(order.total || 0) * 100);
 
-    if (!amount || !expectedAmount || amount !== expectedAmount) {
-      throw new ApiError(400, "Viva amount does not match order total", {
-        orderId: order.id,
-        vivaOrderCode,
-        vivaAmount: amount,
-        expectedAmount,
-      });
+    const expectedAmount =
+      Math.round(
+        Number(
+          order.total ||
+          0
+        ) * 100
+      );
+
+
+    if (
+      !amount ||
+      !expectedAmount ||
+      amount !== expectedAmount
+    ) {
+      throw new ApiError(
+        400,
+        "Viva amount does not match order total",
+        {
+          orderId:
+            order.id,
+
+          vivaOrderCode,
+
+          vivaAmount:
+            amount,
+
+          expectedAmount,
+        }
+      );
     }
 
-    tx.update(ref, {
-  status: "paid",
-  paymentStatus: "paid",
 
-  // ============================
-  // FULFILLMENT
-  // ============================
+    /*
+     * Το shipping object έχει ήδη δημιουργηθεί
+     * από το order.service.js.
+     *
+     * Δεν ξαναγράφουμε:
+     *
+     * shipping.status
+     * shipping.provider
+     * shipping.boxnow.destinationId
+     *
+     * εδώ.
+     */
+    tx.update(
+      ref,
+      {
+        status:
+          "paid",
 
-  fulfillmentStatus: "to_prepare",
-  ...(holds ? { inventoryReservationState: "consumed" } : {}),
+        paymentStatus:
+          "paid",
 
-  "warehouse.checklist.productPicked": false,
-  "warehouse.checklist.sizeVerified": false,
-  "warehouse.checklist.qrAttached": false,
-  "warehouse.checklist.qrTested": false,
-  "warehouse.checklist.packed": false,
+        // ============================
+        // FULFILLMENT
+        // ============================
 
-  "receipt.uploaded": false,
-  "receipt.sentToCustomer": false,
+        fulfillmentStatus:
+          "to_prepare",
 
-  "shipping.status": "pending",
+        ...(holds
+          ? {
+              inventoryReservationState:
+                "consumed",
+            }
+          : {}),
 
-  // ============================
-  // PAYMENT
-  // ============================
+        "warehouse.checklist.productPicked":
+          false,
 
-  "payment.transactionId": transactionId,
-  "payment.statusId": rawStatusId || null,
-  "payment.amount": amount || expectedAmount,
-  "payment.rawWebhook": payload,
-  "payment.paidAt": paidAt,
-  "payment.updatedAt": paidAt,
+        "warehouse.checklist.sizeVerified":
+          false,
 
-  updatedAt: paidAt,
-});
+        "warehouse.checklist.qrAttached":
+          false,
 
-    for (const assignment of qrAssignments) {
-  const item = assignment.item;
+        "warehouse.checklist.qrTested":
+          false,
 
-  const userId =
-    order.ownerType === "user"
-      ? order.ownerId
-      : null;
+        "warehouse.checklist.packed":
+          false,
 
-  const guestId =
-    order.ownerType === "guest"
-      ? order.ownerId
-      : null;
+        "receipt.uploaded":
+          false,
 
-  if (assignment.type === "existing") {
-  tx.update(assignment.ref, {
-    status: "assigned",
-    reservationOrderId: null,
-    reservationItemId: null,
-    reservationExpiresAt: null,
+        "receipt.sentToCustomer":
+          false,
 
-    userId,
-    guestId,
 
-    orderId: order.id,
+        // ============================
+        // PAYMENT
+        // ============================
 
-    productId: item.productId,
-    productTitle: item.title,
+        "payment.transactionId":
+          transactionId,
 
-    sku: assignment.sku,
+        "payment.statusId":
+          rawStatusId ||
+          null,
 
-    inventoryKey: assignment.inventoryKey,
+        "payment.amount":
+          amount ||
+          expectedAmount,
 
-    variant: item.variant || null,
+        "payment.rawWebhook":
+          payload,
 
-    targetUrl:
-      item.qrDestination ||
-      "https://skanare.com",
+        "payment.paidAt":
+          paidAt,
 
-    fulfillmentMode: "preprinted",
+        "payment.updatedAt":
+          paidAt,
 
-    assignedAt: paidAt,
-    updatedAt: paidAt,
-  });
+        updatedAt:
+          paidAt,
+      }
+    );
 
-  continue;
-}
 
-  const qrRef = db
-    .collection(COLLECTIONS.QR_CODES)
-    .doc(assignment.qrId);
+    /*
+     * QR ASSIGNMENTS
+     */
+    for (
+      const assignment of
+      qrAssignments
+    ) {
+      const item =
+        assignment.item;
 
-  writeQrShortIdReservation(
-    tx,
-    assignment.reservationRef,
-    {
-      qrId: assignment.qrId,
-      shortId: assignment.shortId,
-      createdAt: paidAt,
+
+      const userId =
+        order.ownerType ===
+        "user"
+          ? order.ownerId
+          : null;
+
+
+      const guestId =
+        order.ownerType ===
+        "guest"
+          ? order.ownerId
+          : null;
+
+
+      if (
+        assignment.type ===
+        "existing"
+      ) {
+        tx.update(
+          assignment.ref,
+          {
+            status:
+              "assigned",
+
+            reservationOrderId:
+              null,
+
+            reservationItemId:
+              null,
+
+            reservationExpiresAt:
+              null,
+
+            userId,
+            guestId,
+
+            orderId:
+              order.id,
+
+            productId:
+              item.productId,
+
+            productTitle:
+              item.title,
+
+            sku:
+              assignment.sku,
+
+            inventoryKey:
+              assignment.inventoryKey,
+
+            variant:
+              item.variant ||
+              null,
+
+            targetUrl:
+              item.qrDestination ||
+              "https://skanare.com",
+
+            fulfillmentMode:
+              "preprinted",
+
+            assignedAt:
+              paidAt,
+
+            updatedAt:
+              paidAt,
+          }
+        );
+
+        continue;
+      }
+
+
+      const qrRef =
+        db
+          .collection(
+            COLLECTIONS.QR_CODES
+          )
+          .doc(
+            assignment.qrId
+          );
+
+
+      writeQrShortIdReservation(
+        tx,
+        assignment.reservationRef,
+        {
+          qrId:
+            assignment.qrId,
+
+          shortId:
+            assignment.shortId,
+
+          createdAt:
+            paidAt,
+        }
+      );
+
+
+      tx.set(
+        qrRef,
+        {
+          id:
+            assignment.qrId,
+
+          shortId:
+            assignment.shortId,
+
+          status:
+            "assigned",
+
+          productId:
+            item.productId,
+
+          productTitle:
+            item.title,
+
+          sku:
+            assignment.sku,
+
+          inventoryKey:
+            assignment.inventoryKey,
+
+          variant:
+            item.variant ||
+            null,
+
+          userId,
+          guestId,
+
+          orderId:
+            order.id,
+
+          targetUrl:
+            item.qrDestination ||
+            "https://skanare.com",
+
+          qrConfig:
+            assignment.qrConfig,
+
+          fulfillmentMode:
+            "made_to_order",
+
+          scans:
+            0,
+
+          createdAt:
+            paidAt,
+
+          assignedAt:
+            paidAt,
+
+          updatedAt:
+            paidAt,
+        }
+      );
     }
-  );
 
-  tx.set(qrRef, {
-    id: assignment.qrId,
-    shortId: assignment.shortId,
-
-    status: "assigned",
-
-    productId: item.productId,
-    productTitle: item.title,
-
-    sku: assignment.sku,
-
-    inventoryKey: assignment.inventoryKey,
-
-    variant: item.variant || null,
-
-    userId,
-    guestId,
-
-    orderId: order.id,
-
-    targetUrl:
-      item.qrDestination ||
-      "https://skanare.com",
-
-    qrConfig: assignment.qrConfig,
-
-    fulfillmentMode: "made_to_order",
-
-    scans: 0,
-
-    createdAt: paidAt,
-    assignedAt: paidAt,
-    updatedAt: paidAt,
-  });
-}
 
     paidOrderForEmail = {
       ...order,
-      status: "paid",
-      paymentStatus: "paid",
+
+      status:
+        "paid",
+
+      paymentStatus:
+        "paid",
+
       payment: {
-        ...(order.payment || {}),
+        ...(
+          order.payment ||
+          {}
+        ),
+
         transactionId,
-        statusId: rawStatusId || null,
-        amount: amount || expectedAmount,
-        rawWebhook: payload,
+
+        statusId:
+          rawStatusId ||
+          null,
+
+        amount:
+          amount ||
+          expectedAmount,
+
+        rawWebhook:
+          payload,
+
         paidAt,
-        updatedAt: paidAt,
+
+        updatedAt:
+          paidAt,
       },
-      updatedAt: paidAt,
+
+      updatedAt:
+        paidAt,
     };
 
-    // Remove checkoutOrderId or the customer's next checkout will be blocked.
-    tx.set(db.collection(COLLECTIONS.CARTS).doc(order.ownerId), {
-      userId: order.ownerId, items: [], updatedAt: paidAt,
-    });
+
+    /*
+     * Clear cart after successful payment.
+     */
+    tx.set(
+      db
+        .collection(
+          COLLECTIONS.CARTS
+        )
+        .doc(
+          order.ownerId
+        ),
+      {
+        userId:
+          order.ownerId,
+
+        items:
+          [],
+
+        updatedAt:
+          paidAt,
+      }
+    );
   });
 
-  console.log("After transaction paidOrderForEmail:", {
-    exists: Boolean(paidOrderForEmail),
-    orderId: paidOrderForEmail?.id,
-    emailAlreadySent: Boolean(paidOrderForEmail?.emails?.paidOrderSentAt),
-  });
 
-  if (paidOrderForEmail && process.env.PAYMENT_RECEIPT_MODE !== "manual" &&
-      !["issued", "completed"].includes(paidOrderForEmail.invoice?.status)) {
-  try {
-    const receipt =
-      await issueOrderReceipt(
+  console.log(
+    "After transaction paidOrderForEmail:",
+    {
+      exists:
+        Boolean(
+          paidOrderForEmail
+        ),
+
+      orderId:
+        paidOrderForEmail?.id,
+
+      emailAlreadySent:
+        Boolean(
+          paidOrderForEmail
+            ?.emails
+            ?.paidOrderSentAt
+        ),
+
+      delivery:
+        paidOrderForEmail?.delivery,
+
+      shippingStatus:
         paidOrderForEmail
-      );
+          ?.shipping
+          ?.status,
+    }
+  );
 
-    const issuedAt =
-      nowIso();
 
-    await getDB()
-      .collection(
-        COLLECTIONS.ORDERS
-      )
-      .doc(
+  /* ==================================================
+     BOX NOW
+     ONLY AFTER SUCCESSFUL PAYMENT
+  ================================================== */
+
+  if (
+    paidOrderForEmail?.id &&
+    paidOrderForEmail?.delivery === "boxnow"
+  ) {
+    try {
+      await processPaidBoxNowShipping(
         paidOrderForEmail.id
-      )
-      .set(
+      );
+    } catch (error) {
+      /*
+       * Extra safety.
+       *
+       * BOX NOW must never turn an already
+       * successful Viva payment into an error.
+       */
+      console.error(
+        "Unexpected BOX NOW post-payment error",
         {
-          invoice: {
-            provider:
-              "oxygen",
+          orderId:
+            paidOrderForEmail.id,
 
-            status:
-              receipt.status ||
-              "issued",
+          message:
+            error?.message,
+        }
+      );
+    }
+  }
 
-            mock:
-              Boolean(
-                receipt.mock
-              ),
 
-            externalId:
-              receipt.id ||
-              null,
+  /* ==================================================
+     RECEIPT
+  ================================================== */
 
-            number:
-              receipt.number ||
-              null,
+  if (
+    paidOrderForEmail &&
+    process.env.PAYMENT_RECEIPT_MODE !== "manual" &&
+    ![
+      "issued",
+      "completed",
+    ].includes(
+      paidOrderForEmail
+        .invoice
+        ?.status
+    )
+  ) {
+    try {
+      const receipt =
+        await issueOrderReceipt(
+          paidOrderForEmail
+        );
 
-            mark:
-              receipt.mark ||
-              null,
+      const issuedAt =
+        nowIso();
 
-            pdfUrl:
-              receipt.pdfUrl ||
-              null,
+      await getDB()
+        .collection(
+          COLLECTIONS.ORDERS
+        )
+        .doc(
+          paidOrderForEmail.id
+        )
+        .set(
+          {
+            invoice: {
+              provider:
+                "oxygen",
 
-            issuedAt:
-              receipt.issuedAt ||
-              issuedAt,
+              status:
+                receipt.status ||
+                "issued",
+
+              mock:
+                Boolean(
+                  receipt.mock
+                ),
+
+              externalId:
+                receipt.id ||
+                null,
+
+              number:
+                receipt.number ||
+                null,
+
+              mark:
+                receipt.mark ||
+                null,
+
+              pdfUrl:
+                receipt.pdfUrl ||
+                null,
+
+              issuedAt:
+                receipt.issuedAt ||
+                issuedAt,
+
+              updatedAt:
+                issuedAt,
+            },
 
             updatedAt:
               issuedAt,
           },
+          {
+            merge: true,
+          }
+        );
 
-          updatedAt:
-            issuedAt,
-        },
+      console.log(
+        "Order receipt stored",
         {
-          merge: true,
+          orderId:
+            paidOrderForEmail.id,
+
+          mock:
+            Boolean(
+              receipt.mock
+            ),
+        }
+      );
+    } catch (error) {
+      console.error(
+        "Order receipt issue failed",
+        {
+          orderId:
+            paidOrderForEmail.id,
+
+          message:
+            error?.message,
         }
       );
 
-    console.log(
-      "Order receipt stored",
-      {
-        orderId:
-          paidOrderForEmail.id,
+      const failedAt =
+        nowIso();
 
-        mock:
-          Boolean(
-            receipt.mock
-          ),
-      }
-    );
-  } catch (error) {
-    console.error(
-      "Order receipt issue failed",
-      {
-        orderId:
-          paidOrderForEmail.id,
+      await getDB()
+        .collection(
+          COLLECTIONS.ORDERS
+        )
+        .doc(
+          paidOrderForEmail.id
+        )
+        .set(
+          {
+            invoice: {
+              provider:
+                "oxygen",
 
-        message:
-          error?.message,
-      }
-    );
+              status:
+                "failed",
 
-    const failedAt =
-      nowIso();
+              error:
+                error?.message ||
+                "Receipt issue failed",
 
-    await getDB()
-      .collection(
-        COLLECTIONS.ORDERS
-      )
-      .doc(
-        paidOrderForEmail.id
-      )
-      .set(
-        {
-          invoice: {
-            provider:
-              "oxygen",
-
-            status:
-              "failed",
-
-            error:
-              error?.message ||
-              "Receipt issue failed",
+              updatedAt:
+                failedAt,
+            },
 
             updatedAt:
               failedAt,
           },
+          {
+            merge: true,
+          }
+        );
+    }
+  }
 
-          updatedAt:
-            failedAt,
-        },
+
+  /* ==================================================
+     EMAIL
+  ================================================== */
+
+  // Order confirmation is independent of
+  // BOX NOW and automated invoicing.
+  //
+  // order-email.service.js checks
+  // emails.paidOrderSentAt before sending.
+
+  if (paidOrderForEmail) {
+    try {
+      await sendPaidOrderEmails(
+        paidOrderForEmail
+      );
+    } catch (error) {
+      console.error(
+        "Paid order email failed",
         {
-          merge: true,
+          orderId:
+            paidOrderForEmail.id,
+
+          message:
+            error?.message,
         }
       );
+    }
   }
-}
-
-// Order confirmation is independent of manual or automated invoicing.
-// order-email.service.js checks emails.paidOrderSentAt before sending.
-if (paidOrderForEmail) {
-  try {
-    await sendPaidOrderEmails(paidOrderForEmail);
-  } catch (error) {
-    console.error("Paid order email failed", {
-      orderId: paidOrderForEmail.id, message: error?.message,
-    });
-  }
-}
-
 }

@@ -234,10 +234,34 @@ orderItems.push({
   },
 
   delivery: delivery || "home",
-  locker: locker || null,
-  notes: notes || "",
+locker: locker || null,
+notes: notes || "",
 
-  items: orderItems,
+shipping: {
+  provider:
+    delivery === "boxnow"
+      ? "boxnow"
+      : "manual",
+
+  status: "pending",
+
+  ...(delivery === "boxnow"
+    ? {
+        boxnow: {
+          destinationId:
+            typeof locker === "string"
+              ? locker
+              : locker?.id ||
+                locker?.boxnowLockerId ||
+                null,
+        },
+      }
+    : {}),
+},
+
+items: orderItems,
+
+
 
   subtotal,
   shippingCost,

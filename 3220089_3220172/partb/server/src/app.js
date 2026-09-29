@@ -35,6 +35,8 @@ import seoProductRoutes from "./routes/seo-product.routes.js";
 import boxNowTestRoutes
   from "./routes/boxnow-test.routes.js";
 
+  import boxNowRoutes from "./routes/boxnow.routes.js";
+
 dotenv.config();
 
 const app = express();
@@ -66,13 +68,42 @@ scriptSrc: [
   })
 );
 app.use(cors(corsOptions()));
-app.use(express.json({ limit: "100kb" }));
+app.use(
+  express.json({
+    limit: "100kb",
+
+    verify: (
+      req,
+      _res,
+      buf
+    ) => {
+      /*
+       * BOX NOW HMAC requires the exact
+       * raw JSON request.
+       *
+       * Store it only for BOX NOW webhook.
+       */
+      if (
+        req.originalUrl
+          ?.startsWith(
+            "/api/boxnow/webhook"
+          )
+      ) {
+        req.rawBody =
+          Buffer.from(
+            buf
+          );
+      }
+    },
+  })
+);
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(attachGuestSession);
 app.use(optionalAuth);
 
 
 app.use("/api/viva", vivaRoutes);
+app.use("/api/boxnow", boxNowRoutes);
 
 app.use("/", seoProductRoutes);
 app.use("/", sitemapRoutes);
