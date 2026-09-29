@@ -32,6 +32,9 @@ import { optionalAuth } from "./middleware/auth.js";
 
 import seoProductRoutes from "./routes/seo-product.routes.js";
 
+import boxNowTestRoutes
+  from "./routes/boxnow-test.routes.js";
+
 dotenv.config();
 
 const app = express();
@@ -103,7 +106,12 @@ app.use("/api/orders", ordersRoutes);
 app.use("/api/qr-codes", qrRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use(
+  "/api/test-boxnow",
+  boxNowTestRoutes
+);
 app.use(notFound);
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
