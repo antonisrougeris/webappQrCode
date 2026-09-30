@@ -1,5 +1,14 @@
 import { Resend } from "resend";
 
+function maskEmail(value) {
+  const email = String(value || "");
+  const [local, domain] = email.split("@");
+
+  if (!domain) return "redacted";
+
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
 export async function sendEmail({
   to,
   subject,
@@ -9,42 +18,40 @@ export async function sendEmail({
 }) {
   const apiKey = process.env.RESEND_API_KEY;
 
-  console.log("========== EMAIL SERVICE ==========");
-  console.log({
-    hasApiKey: Boolean(apiKey),
-    from: from || process.env.EMAIL_FROM,
-    to,
-    subject,
-  });
-
   if (!apiKey) {
     throw new Error("RESEND_API_KEY is missing");
   }
 
+  const sender =
+    from ||
+    process.env.EMAIL_FROM ||
+    "Skanare <hello@skanare.com>";
+
   const resend = new Resend(apiKey);
-  const sender = from || process.env.EMAIL_FROM || "Skanare <verify@skanare.com>";
 
   const result = await resend.emails.send({
     from: sender,
     to,
     subject,
     html,
-    ...(attachments.length
-      ? { attachments }
-      : {}),
+    ...(attachments.length ? { attachments } : {}),
   });
 
-  console.log("Resend result:", JSON.stringify(result, null, 2));
-
   if (result.error) {
-    console.error("Resend email error:", result.error);
+    console.error("email_send_failed", {
+      to: maskEmail(to),
+      subject,
+      message: result.error.message || "Email send failed",
+    });
+
     throw new Error(result.error.message || "Email send failed");
   }
 
-  console.log("Email sent successfully:", {
-    to,
+  console.info("email_sent", {
+    to: maskEmail(to),
     subject,
-    id: result.data?.id,
+    id: result.data?.id || null,
+    attachments: attachments.length,
   });
 
   return result.data;
