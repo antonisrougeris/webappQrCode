@@ -463,6 +463,13 @@ html {
   z-index: 9999;
 }
 
+.toast-stack--cart-reminder {
+  top: auto;
+  right: auto;
+  bottom: 24px;
+  left: 24px;
+}
+
 .toast-message {
   max-width: 330px;
   background: #111;
@@ -8374,6 +8381,20 @@ body.cart-open {
     background-color 0.18s ease;
 }
 
+.boxnow-locker-btn.is-invalid {
+  border-color: #b42318;
+  background: #fff7f6;
+  color: #b42318;
+}
+
+.locker-error {
+  margin: 10px 0 0;
+  color: #b42318;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
 .boxnow-locker-btn:hover {
   background: #f5f5f3;
   border-color: #999;
@@ -14821,4 +14842,21 @@ body > div iframe[src*="boxnow"] {
 /* BOX NOW - align content with Delivery heading */
 .boxnow-delivery {
   padding-left: 56px;
+}
+@media (max-width: 700px) {
+  .toast-stack--cart-reminder {
+    top: auto;
+    right: 16px;
+    bottom: 96px;
+    left: 16px;
+
+    display: flex;
+    justify-content: center;
+  }
+
+  .toast-stack--cart-reminder .toast-message {
+    width: min(100%, 420px);
+    max-width: 100%;
+    text-align: center;
+  }
 }
