@@ -710,9 +710,6 @@ let locker =
     form.get("locker") || ""
   ).trim();
 
-const lockerValidationMessage =
-  document.getElementById("lockerValidationMessage");
-
 if (!locker) {
   updateLockerValidity(true);
   return;
