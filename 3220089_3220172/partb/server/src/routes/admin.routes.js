@@ -275,10 +275,12 @@ router.get(
    DEVELOPMENT / SEED
    ========================= */
 
-router.post(
-  "/seed-products",
-  seedProducts
-);
+if (process.env.NODE_ENV !== "production") {
+  router.post(
+    "/seed-products",
+    seedProducts
+  );
+}
 
 
 export default router;
