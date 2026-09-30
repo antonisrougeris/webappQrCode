@@ -39,6 +39,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate production frontend configuration
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_QR_REDIRECT_BASE_URL: ${{ vars.VITE_QR_REDIRECT_BASE_URL }}
+        run: |
+          test -n "$VITE_API_BASE_URL" || {
+            echo "ERROR: VITE_API_BASE_URL is missing"
+            exit 1
+          }
+
+          test "$VITE_API_BASE_URL" = "https://skanare.com/api" || {
+            echo "ERROR: VITE_API_BASE_URL is not the production API"
+            exit 1
+          }
+
+          test -n "$VITE_QR_REDIRECT_BASE_URL" || {
+            echo "ERROR: VITE_QR_REDIRECT_BASE_URL is missing"
+            exit 1
+          }
+
+          echo "Production frontend configuration OK"
+
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=critical
+
       - name: Build frontend
         run: npm run build
         env:
@@ -88,6 +113,9 @@ jobs:
 
       - name: Validate dependency tree
         run: npm ls --omit=dev
+
+      - name: Audit backend dependencies
+        run: npm audit --omit=dev --audit-level=critical
     
       - name: Prepare backend artifact
         run: |
@@ -235,7 +263,7 @@ jobs:
 
           for attempt in 1 2 3 4 5 6; do
             if curl --fail --silent --show-error \
-              http://127.0.0.1:4000/api/health >/dev/null; then
+              http://127.0.0.1:4000/api/health/ready >/dev/null; then
               HEALTHY=1
               break
             fi
@@ -244,40 +272,64 @@ jobs:
             sleep 2
           done
 
-          if [ "$HEALTHY" -ne 1 ]; then
-            echo "New release failed health check."
-
+          rollback() {
             if [ -n "$PREVIOUS_RELEASE" ] &&
                [ -d "$PREVIOUS_RELEASE" ]; then
-
               echo "Rolling back to $PREVIOUS_RELEASE"
 
               ln -sfn "$PREVIOUS_RELEASE" /srv/skanare/current
               pm2 restart skanare-api
 
-              sleep 2
+              for attempt in 1 2 3 4 5 6; do
+                if curl --fail --silent --show-error \
+                  http://127.0.0.1:4000/api/health/ready >/dev/null; then
+                  echo "Rollback successful."
+                  return 0
+                fi
 
-              curl --fail --silent --show-error \
-                http://127.0.0.1:4000/api/health >/dev/null
+                sleep 2
+              done
 
-              echo "Rollback successful."
+              echo "Rollback health check failed."
+              return 1
             fi
 
+            echo "No previous release is available for rollback."
+            return 1
+          }
+
+          if [ "$HEALTHY" -ne 1 ]; then
+            echo "New release failed readiness check."
+            rollback || true
             exit 1
           fi
 
-          # Public smoke checks
-          curl --fail --silent --show-error \
-            https://skanare.com/ >/dev/null
+          # Public smoke checks. Any failure rolls the release back.
+          if ! curl --fail --silent --show-error \
+            https://skanare.com/ >/dev/null ||
+             ! curl --fail --silent --show-error \
+            https://skanare.com/login >/dev/null ||
+             ! curl --fail --silent --show-error \
+            https://skanare.com/products >/dev/null ||
+             ! curl --fail --silent --show-error \
+            https://skanare.com/api/health/ready >/dev/null; then
+            echo "Public smoke checks failed."
+            rollback || true
+            exit 1
+          fi
 
-          curl --fail --silent --show-error \
-            https://skanare.com/login >/dev/null
-
-          curl --fail --silent --show-error \
-            https://skanare.com/products >/dev/null
-
-          curl --fail --silent --show-error \
-            https://skanare.com/api/health >/dev/null
+          # Keep a small bounded release history.
+          find /srv/skanare/releases \
+            -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
+            | sort -nr \
+            | tail -n +6 \
+            | cut -d' ' -f2- \
+            | while read -r old_release; do
+                if [ "$old_release" != "$(readlink -f /srv/skanare/current)" ] &&
+                   [ "$old_release" != "$PREVIOUS_RELEASE" ]; then
+                  rm -rf "$old_release"
+                fi
+              done
 
           pm2 save
 
