@@ -356,7 +356,18 @@ export async function getOrdersForUser(userId) {
     .where("ownerType", "==", "user")
     .get();
 
-  const orders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const orders = snapshot.docs
+    .map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }))
+    .filter(
+      (order) =>
+        String(order.paymentStatus || "")
+          .trim()
+          .toLowerCase() === "paid"
+    );
+
   orders.sort(
     (a, b) =>
       new Date(b.createdAt || 0).getTime() -
