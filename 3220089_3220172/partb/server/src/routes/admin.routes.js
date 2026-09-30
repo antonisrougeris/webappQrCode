@@ -39,6 +39,11 @@ import {
   requireAdmin,
 } from "../middleware/requireAdmin.js";
 
+import {
+  assertPdfBuffer,
+  assertImageBuffer,
+} from "../utils/fileSignatures.js";
+
 
 const router = Router();
 
@@ -156,6 +161,18 @@ router.patch(
 router.post(
   "/orders/:id/receipt-file",
   receiptUpload.single("file"),
+  (req, _res, next) => {
+    try {
+      if (!req.file?.buffer) {
+        throw new Error("Receipt file is required");
+      }
+
+      assertPdfBuffer(req.file.buffer);
+      next();
+    } catch (error) {
+      next(error);
+    }
+  },
   uploadOrderReceiptPdf
 );
 
@@ -177,6 +194,23 @@ router.get(
 router.post(
   "/product-images",
   productImageUpload.array("images", 8),
+  (req, _res, next) => {
+    try {
+      const files = Array.isArray(req.files) ? req.files : [];
+
+      if (!files.length) {
+        throw new Error("At least one product image is required");
+      }
+
+      for (const file of files) {
+        assertImageBuffer(file.buffer, file.mimetype);
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  },
   uploadAdminProductImages
 );
 
