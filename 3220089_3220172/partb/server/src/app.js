@@ -2,13 +2,23 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
 
 import { connectDB, closeDB } from "./config/db.js";
 import { corsOptions } from "./config/security.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { notFound } from "./middleware/notFound.js";
 import { attachGuestSession } from "./middleware/guestSession.js";
+import { optionalAuth } from "./middleware/auth.js";
+import { requestContext } from "./middleware/requestContext.js";
+import {
+  apiLimiter,
+  authLimiter,
+  sensitiveAuthLimiter,
+  checkoutLimiter,
+  adminLimiter,
+  webhookLimiter,
+} from "./middleware/rateLimits.js";
 
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -20,40 +30,33 @@ import ordersRoutes from "./routes/orders.routes.js";
 import qrRoutes from "./routes/qr.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
-
-import cookieParser from "cookie-parser";
-
 import vivaRoutes from "./routes/viva.routes.js";
-
-
 import sitemapRoutes from "./routes/sitemap.routes.js";
-
-import { optionalAuth } from "./middleware/auth.js";
-
 import seoProductRoutes from "./routes/seo-product.routes.js";
-
-import boxNowTestRoutes
-  from "./routes/boxnow-test.routes.js";
-
-  import boxNowRoutes from "./routes/boxnow.routes.js";
+import boxNowTestRoutes from "./routes/boxnow-test.routes.js";
+import boxNowRoutes from "./routes/boxnow.routes.js";
 
 dotenv.config();
 
 const app = express();
 
+app.disable("x-powered-by");
 app.set("trust proxy", 1);
+
+app.use(requestContext);
+
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-scriptSrc: [
-  "'self'",
-  "'unsafe-inline'",
-  "https://client.crisp.chat",
-  "https://apis.google.com",
-  "https://www.gstatic.com"
-],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://client.crisp.chat",
+          "https://apis.google.com",
+          "https://www.gstatic.com",
+        ],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'", "https:", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
@@ -65,79 +68,54 @@ scriptSrc: [
         frameAncestors: ["'self'"],
       },
     },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   })
 );
+
 app.use(cors(corsOptions()));
+
 app.use(
   express.json({
     limit: "100kb",
-
-    verify: (
-      req,
-      _res,
-      buf
-    ) => {
-      /*
-       * BOX NOW HMAC requires the exact
-       * raw JSON request.
-       *
-       * Store it only for BOX NOW webhook.
-       */
-      if (
-        req.originalUrl
-          ?.startsWith(
-            "/api/boxnow/webhook"
-          )
-      ) {
-        req.rawBody =
-          Buffer.from(
-            buf
-          );
+    verify: (req, _res, buf) => {
+      if (req.originalUrl?.startsWith("/api/boxnow/webhook")) {
+        req.rawBody = Buffer.from(buf);
       }
     },
   })
 );
+
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(attachGuestSession);
 app.use(optionalAuth);
 
+/*
+ * Health endpoints are deliberately outside the general API limiter so
+ * external monitors cannot be blocked by normal customer traffic.
+ */
+app.use("/api/health", healthRoutes);
 
-app.use("/api/viva", vivaRoutes);
-app.use("/api/boxnow", boxNowRoutes);
+/*
+ * Provider webhooks are public endpoints with their own limiter.
+ */
+app.use("/api/viva", webhookLimiter, vivaRoutes);
+app.use("/api/boxnow", webhookLimiter, boxNowRoutes);
 
 app.use("/", seoProductRoutes);
 app.use("/", sitemapRoutes);
-app.use(
-  "/api",
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 300,
-    standardHeaders: true,
-    legacyHeaders: false,
-  })
-);
 
-app.use(
-  "/api/auth",
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 120,
-    standardHeaders: true,
-    legacyHeaders: false,
-  })
-);
+/*
+ * Route-specific protection is applied before the general API limiter.
+ */
+app.use("/api/auth/send-verification", sensitiveAuthLimiter);
+app.use("/api/auth/verify-email", sensitiveAuthLimiter);
+app.use("/api/auth/forgot-password", sensitiveAuthLimiter);
+app.use("/api/auth/reset-password", sensitiveAuthLimiter);
+app.use("/api/auth", authLimiter);
+app.use("/api/checkout", checkoutLimiter);
+app.use("/api/admin", adminLimiter);
+app.use("/api", apiLimiter);
 
-app.use(
-  "/api/checkout",
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 20,
-    standardHeaders: true,
-    legacyHeaders: false,
-  })
-);
-
-app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/session", sessionRoutes);
 app.use("/api/products", productsRoutes);
@@ -147,26 +125,33 @@ app.use("/api/orders", ordersRoutes);
 app.use("/api/qr-codes", qrRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
-app.use(
-  "/api/test-boxnow",
-  boxNowTestRoutes
-);
-app.use(notFound);
+app.use("/api/test-boxnow", boxNowTestRoutes);
 
+app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT || 4000);
+const HOST = process.env.HOST || "127.0.0.1";
+
 await connectDB();
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
 });
 
-process.on("SIGINT", async () => {
-  console.log("Shutting down...");
-  server.close();
-  await closeDB();
-  process.exit(0);
-});
+async function shutdown(signal) {
+  console.log(`Received ${signal}. Shutting down...`);
 
+  server.close(async () => {
+    await closeDB();
+    process.exit(0);
+  });
 
+  setTimeout(() => {
+    console.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
