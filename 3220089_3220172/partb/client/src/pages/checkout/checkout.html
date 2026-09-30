@@ -990,6 +990,14 @@
         lockerMessage.hidden = true;
       }
 
+      var lockerButton =
+        document.getElementById("selectLockerBtn");
+
+      if (lockerButton) {
+        lockerButton.classList.remove("is-invalid");
+        lockerButton.removeAttribute("aria-invalid");
+      }
+
 
       /* Close our modal after locker selection */
       closeBoxNowModal();
