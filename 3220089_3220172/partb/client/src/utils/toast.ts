@@ -1,12 +1,28 @@
 const FLASH_TOAST_KEY = "skanare_flash_toast";
 
-export function showToast(message: string): void {
-  let stack = document.getElementById("toastStack");
+type ToastPlacement = "default" | "cart-reminder";
+
+type ToastOptions = {
+  placement?: ToastPlacement;
+};
+
+export function showToast(
+  message: string,
+  options: ToastOptions = {}
+): void {
+  const isCartReminder = options.placement === "cart-reminder";
+  const stackId = isCartReminder
+    ? "toastStackCartReminder"
+    : "toastStack";
+
+  let stack = document.getElementById(stackId);
 
   if (!stack) {
     stack = document.createElement("div");
-    stack.id = "toastStack";
-    stack.className = "toast-stack";
+    stack.id = stackId;
+    stack.className = isCartReminder
+      ? "toast-stack toast-stack--cart-reminder"
+      : "toast-stack";
     document.body.appendChild(stack);
   }
 
