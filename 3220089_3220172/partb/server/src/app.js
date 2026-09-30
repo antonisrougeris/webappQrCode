@@ -11,6 +11,7 @@ import { notFound } from "./middleware/notFound.js";
 import { attachGuestSession } from "./middleware/guestSession.js";
 import { optionalAuth } from "./middleware/auth.js";
 import { requestContext } from "./middleware/requestContext.js";
+import { csrfProtection } from "./middleware/csrf.js";
 import {
   apiLimiter,
   authLimiter,
@@ -86,6 +87,7 @@ app.use(
 );
 
 app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(csrfProtection);
 app.use(attachGuestSession);
 app.use(optionalAuth);
 
