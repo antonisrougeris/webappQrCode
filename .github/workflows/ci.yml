@@ -109,7 +109,8 @@ jobs:
         run: npm ci
 
       - name: Validate backend syntax
-        run: node --check src/app.js
+        run: |
+          find src scripts -type f -name '*.js' -print0             | xargs -0 -n1 node --check
 
       - name: Validate dependency tree
         run: npm ls --omit=dev
