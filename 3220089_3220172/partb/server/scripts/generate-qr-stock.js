@@ -23,6 +23,12 @@ import { generatePrintQrImage } from "../src/utils/generatePrintQrImage.js";
 
 import { generatePrintSheet } from "../src/utils/generatePrintSheet.js";
 
+function isTshirtPrintSize(size) {
+  return ["S", "M", "L", "XL", "2XL", "XXL"].includes(
+    String(size || "").trim().toUpperCase()
+  );
+}
+
 const PUBLIC_QR_BASE_URL =
   process.env.QR_PUBLIC_BASE_URL ||
   "https://go.skanare.com";
@@ -244,14 +250,19 @@ async function main() {
       // GENERATE A3 DTF SHEET
       // =========================
 
-      const a3Buffer =
-        await generatePrintSheet({
-          qrBuffer,
+      const printBuffer =
+        isTshirtPrintSize(sizeArg)
+          ? await generatePrintSheet({
+              qrBuffer,
 
-          shirtColor:
-            colorArg ||
-            "Black",
-        });
+              shirtColor:
+                colorArg ||
+                "Black",
+
+              shirtSize:
+                sizeArg,
+            })
+          : qrBuffer;
 
       // =========================
       // UPLOAD A3 TO STORAGE
@@ -265,7 +276,7 @@ async function main() {
       const uploaded =
         await uploadQrToStorage(
           `stock-${result.qrId}`,
-          a3Buffer
+          printBuffer
         );
 
       if (!uploaded?.url) {

@@ -78,6 +78,13 @@ const QR_CODES_COLLECTION =
    HELPERS
    ========================================================= */
 
+function isTshirtPrintSize(size) {
+  return ["S", "M", "L", "XL", "2XL", "XXL"].includes(
+    String(size || "").trim().toUpperCase()
+  );
+}
+
+
 function normalizeProductId(product) {
   return String(product.id || product.slug || "")
     .trim()
@@ -2344,17 +2351,23 @@ export const generateAdminQrStock =
             size: printConfig.size || 3540,
           });
 
-          const a3Buffer = await generatePrintSheet({
-  qrBuffer,
-  shirtColor: color || "Black",
-  shirtSize: size,
-});
+          // A3 shirt sheets include the Skanare logo and neck label,
+          // so they are only valid for actual T-shirt sizes. Accessories
+          // (shown as "One size" in admin and stored as an empty size)
+          // should keep the generated QR artwork as-is.
+          const printBuffer = isTshirtPrintSize(size)
+            ? await generatePrintSheet({
+                qrBuffer,
+                shirtColor: color || "Black",
+                shirtSize: size,
+              })
+            : qrBuffer;
 
 
           const uploaded =
             await uploadQrToStorage(
               `stock-${result.qrId}`,
-              a3Buffer
+              printBuffer
             );
 
 
