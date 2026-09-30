@@ -26,21 +26,53 @@ export const checkout = asyncHandler(async (req, res) => {
     notes: body.notes || "",
   });
 
-  const viva = await createVivaPaymentOrder(result.order);
+  const existingVivaOrderCode =
+    result.order?.payment?.vivaOrderCode;
+
+  const existingCheckoutUrl =
+    result.order?.payment?.checkoutUrl;
+
+  if (
+    existingVivaOrderCode &&
+    existingCheckoutUrl
+  ) {
+    return ok(
+      res,
+      {
+        ...result,
+        vivaOrderCode:
+          String(existingVivaOrderCode),
+        checkoutUrl:
+          String(existingCheckoutUrl),
+      },
+      200
+    );
+  }
+
+  const viva =
+    await createVivaPaymentOrder(
+      result.order
+    );
+
   await attachVivaPaymentToOrder({
     orderId: result.orderId,
-    vivaOrderCode: viva.vivaOrderCode,
-    checkoutUrl: viva.checkoutUrl,
-    raw: viva.raw,
+    vivaOrderCode:
+      viva.vivaOrderCode,
+    checkoutUrl:
+      viva.checkoutUrl,
+    raw:
+      viva.raw,
   });
 
   return ok(
     res,
     {
       ...result,
-      vivaOrderCode: viva.vivaOrderCode,
-      checkoutUrl: viva.checkoutUrl,
+      vivaOrderCode:
+        viva.vivaOrderCode,
+      checkoutUrl:
+        viva.checkoutUrl,
     },
-    201
+    result.reused ? 200 : 201
   );
 });
