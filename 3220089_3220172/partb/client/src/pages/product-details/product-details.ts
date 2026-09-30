@@ -997,7 +997,10 @@ if (imageStage) {
         let qrDestination = rawQrDestination || "https://skanare.com";
 
         if (!rawQrDestination) {
-          showToast("Don’t forget to add your own QR URL later.");
+          showToast(
+            "Don’t forget to add your own QR URL later.",
+            { placement: "cart-reminder" }
+          );
         } else if (/^https?:\/\//i.test(rawQrDestination)) {
           try {
             new URL(rawQrDestination);
