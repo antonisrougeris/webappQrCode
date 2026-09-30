@@ -4,6 +4,8 @@ import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
+import { sendEmail } from "./email.service.js";
+import { brandedEmailTemplate } from "./email-template.service.js";
 
 
 /* ==================================================
@@ -357,6 +359,84 @@ async function findBoxNowOrder(
   return null;
 }
 
+
+
+
+async function sendDeliveredOrderEmail(orderId) {
+  const db = getDB();
+  const ref = db
+    .collection(COLLECTIONS.ORDERS)
+    .doc(String(orderId));
+
+  const snap = await ref.get();
+
+  if (!snap.exists) return;
+
+  const order = {
+    id: snap.id,
+    ...snap.data(),
+  };
+
+  if (order.emails?.deliveredOrderSentAt) {
+    return;
+  }
+
+  const customerEmail = String(
+    order.customer?.email || ""
+  ).trim();
+
+  if (!customerEmail) {
+    console.warn("BOX NOW delivered email skipped: customer email missing", {
+      orderId: order.id,
+    });
+    return;
+  }
+
+  const firstName = String(
+    order.customer?.firstName || ""
+  ).trim();
+
+  await sendEmail({
+    from:
+      process.env.EMAIL_ORDER ||
+      process.env.EMAIL_FROM,
+    to: customerEmail,
+    subject: `Your Skanare order ${order.orderNumber || order.id} was delivered`,
+    html: brandedEmailTemplate({
+      title: "Your order was delivered",
+      intro:
+        `Hi ${firstName || "there"}, BOX NOW marked your Skanare order as delivered.`,
+      body: `
+        <div style="background:#f7f7f7;border-radius:16px;padding:18px;margin:22px 0;color:#111;">
+          <p style="margin:0 0 8px;"><strong>Order:</strong> ${order.orderNumber || order.id}</p>
+          <p style="margin:0;"><strong>Status:</strong> Delivered</p>
+        </div>
+        <p style="color:#555;line-height:1.7;margin:0;">
+          We hope you enjoy your Skanare order. If something is not right,
+          contact us at hello@skanare.com.
+        </p>
+      `,
+    }),
+  });
+
+  const sentAt = nowIso();
+
+  await ref.set(
+    {
+      emails: {
+        ...(order.emails || {}),
+        deliveredOrderSentAt: sentAt,
+        deliveredOrderEmail: customerEmail,
+      },
+      updatedAt: sentAt,
+    },
+    { merge: true }
+  );
+
+  console.info("BOX NOW delivered email sent", {
+    orderId: order.id,
+  });
+}
 
 /* ==================================================
    EVENT PROCESSING
@@ -734,6 +814,20 @@ export async function processBoxNowWebhook({
     result
   );
 
+  /*
+   * Email delivery confirmation outside the Firestore transaction.
+   * If sending fails, return an error so BOX NOW retries. On retry,
+   * the event update is idempotent and this email is attempted again
+   * until deliveredOrderSentAt exists.
+   */
+  if (
+    event === "delivered" &&
+    result?.orderId
+  ) {
+    await sendDeliveredOrderEmail(
+      result.orderId
+    );
+  }
 
   return result;
 }
