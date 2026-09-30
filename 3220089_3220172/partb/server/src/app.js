@@ -118,10 +118,20 @@ app.use(
 );
 
 app.use(
-  ["/api/auth", "/api/checkout"],
+  "/api/auth",
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 30,
+    limit: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
+
+app.use(
+  "/api/checkout",
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
     standardHeaders: true,
     legacyHeaders: false,
   })
