@@ -210,8 +210,6 @@ price: Number(
 
     quantity,
     qrDestination: nextQrDestination,
-    checkoutOrderId: null,
-    checkoutStartedAt: null,
     updatedAt: nowIso(),
   };
 
@@ -303,6 +301,8 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
           updatedAt: now,
         }))
       : [],
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
     updatedAt: now,
   };
 
@@ -376,6 +376,8 @@ export async function copyUserCartToGuestCart({ userId, guestId }) {
           updatedAt: now,
         }))
       : [],
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
     updatedAt: now,
   };
 
