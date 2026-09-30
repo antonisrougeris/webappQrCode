@@ -331,9 +331,10 @@ export async function sendPaidOrderEmails(order) {
             qr.qrConfig?.qrColor ||
             qr.qrConfig?.color ||
             "#000000",
+          // Empty text is intentional: preserve it instead of
+          // replacing it with the old "SCAN ME" fallback.
           text:
-            qr.qrConfig?.textPrint ||
-            "SCAN ME",
+            String(qr.qrConfig?.textPrint ?? "").trim(),
           textPosition:
             qr.qrConfig?.textPosition ||
             "bottom",
