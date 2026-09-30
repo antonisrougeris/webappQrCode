@@ -10,6 +10,7 @@ import { generatePrintQrImage } from "../utils/generatePrintQrImage.js";
 
 
 import { generatePrintSheet } from "../utils/generatePrintSheet.js";
+import { getBoxNowOrderLabel } from "./boxnow.service.js";
 
 
 function money(value, currency = "EUR") {
@@ -65,6 +66,12 @@ function orderItemsHtml(order) {
       `;
     })
     .join("");
+}
+
+function isTshirtPrintSize(size) {
+  return ["S", "M", "L", "XL", "2XL", "XXL"].includes(
+    String(size || "").trim().toUpperCase()
+  );
 }
 
 function customerName(order) {
@@ -265,21 +272,14 @@ export async function sendPaidOrderEmails(order) {
   if (!freshSnap.exists) return;
 
   const freshOrder = { id: freshSnap.id, ...freshSnap.data() };
-
-  if (freshOrder.emails?.paidOrderSentAt) return;
-
   const adminEmail = process.env.ADMIN_EMAIL;
   const from = process.env.EMAIL_ORDER || process.env.EMAIL_FROM;
 
-  const sent = {
-    customerOrderEmail: null,
-    adminOrderEmail: null,
-  };
-
-  // =========================
-  // CUSTOMER EMAIL
-  // =========================
-  if (freshOrder.customer?.email) {
+  // Customer and admin messages are idempotent independently.
+  if (
+    freshOrder.customer?.email &&
+    !freshOrder.emails?.customerOrderSentAt
+  ) {
     await sendEmail({
       from,
       to: freshOrder.customer.email,
@@ -287,23 +287,29 @@ export async function sendPaidOrderEmails(order) {
       html: customerOrderHtml(freshOrder),
     });
 
-    sent.customerOrderEmail = freshOrder.customer.email;
+    await orderRef.set(
+      {
+        emails: {
+          customerOrderSentAt: nowIso(),
+          customerOrderEmail: freshOrder.customer.email,
+        },
+        updatedAt: nowIso(),
+      },
+      { merge: true }
+    );
   }
 
-  // =========================
-  // ADMIN EMAIL
-  // =========================
-  if (adminEmail) {
+  if (
+    adminEmail &&
+    !freshOrder.emails?.adminOrderSentAt
+  ) {
     const attachments = [];
     const downloadLinks = [];
 
     const QR_BASE_URL =
       process.env.QR_REDIRECT_BASE_URL ||
-    "https://redirectqr-qrk4dnnhta-ew.a.run.app";
+      "https://redirectqr-qrk4dnnhta-ew.a.run.app";
 
-    // =========================
-    // FETCH QR FROM FIRESTORE
-    // =========================
     const qrSnap = await db
       .collection("qrCodes")
       .where("orderId", "==", freshOrder.id)
@@ -311,58 +317,90 @@ export async function sendPaidOrderEmails(order) {
 
     for (const doc of qrSnap.docs) {
       const qr = doc.data();
-
       const qrUrl = `${QR_BASE_URL}/${qr.shortId}`;
 
-      // SAME AS FRONTEND
-const qrBuffer = await generatePrintQrImage(
-  qrUrl,
-  {
-    qrColor:
-      qr.qrConfig?.qrColor ||
-      qr.qrConfig?.color ||
-      "#000000",
+      const qrBuffer = await generatePrintQrImage(
+        qrUrl,
+        {
+          qrColor:
+            qr.qrConfig?.qrColor ||
+            qr.qrConfig?.color ||
+            "#000000",
+          textColor:
+            qr.qrConfig?.textColor ||
+            qr.qrConfig?.qrColor ||
+            qr.qrConfig?.color ||
+            "#000000",
+          text:
+            qr.qrConfig?.textPrint ||
+            "SCAN ME",
+          textPosition:
+            qr.qrConfig?.textPosition ||
+            "bottom",
+        }
+      );
 
-    textColor:
-      qr.qrConfig?.textColor ||
-      qr.qrConfig?.qrColor ||
-      qr.qrConfig?.color ||
-      "#000000",
+      let buffer = qrBuffer;
+      let filename = `qr-${qr.productTitle || qr.shortId}.png`;
 
-    text:
-      qr.qrConfig?.textPrint ||
-      "SCAN ME",
+      if (isTshirtPrintSize(qr.variant?.size)) {
+        buffer = await generatePrintSheet({
+          qrBuffer,
+          shirtColor: qr.variant?.color || "Black",
+          shirtSize: qr.variant?.size,
+        });
 
-    textPosition:
-      qr.qrConfig?.textPosition ||
-      "bottom",
-  }
-);
+        filename = `print-${qr.productTitle || qr.shortId}.png`;
+      }
 
-const buffer = await generatePrintSheet({
-  qrBuffer,
-  shirtColor: qr.variant?.color || "Black",
-  shirtSize: qr.variant?.size,
-});
-      // =========================
-      // UPLOAD PNG TO STORAGE
-      // =========================
-      const uploaded = await uploadQrToStorage(freshOrder.id, buffer);
+      const uploaded =
+        await uploadQrToStorage(
+          freshOrder.id,
+          buffer
+        );
 
       downloadLinks.push(uploaded.url);
 
-      // =========================
-      // EMAIL ATTACHMENT
-      // =========================
       attachments.push({
-        filename: `qr-${qr.productTitle}.png`,
+        filename,
         content: buffer,
       });
     }
 
-    // =========================
-    // SEND EMAIL
-    // =========================
+    // BOX NOW voucher is fetched on demand and attached only
+    // when a real delivery was created. Voucher failure must
+    // not block the admin order email.
+    if (
+      freshOrder.delivery === "boxnow" &&
+      freshOrder.shipping?.provider === "boxnow" &&
+      freshOrder.shipping?.boxnow?.environment === "production" &&
+      freshOrder.shipping?.boxnow?.deliveryRequestId &&
+      freshOrder.orderNumber
+    ) {
+      try {
+        const voucherBuffer =
+          await getBoxNowOrderLabel(
+            freshOrder.orderNumber
+          );
+
+        attachments.push({
+          filename:
+            `BOXNOW-${freshOrder.orderNumber}.pdf`,
+          content:
+            voucherBuffer,
+        });
+      } catch (error) {
+        console.error(
+          "BOX NOW voucher attachment failed",
+          {
+            orderId: freshOrder.id,
+            orderNumber: freshOrder.orderNumber,
+            message: error?.message,
+          }
+        );
+      }
+    }
+
     await sendEmail({
       from,
       to: adminEmail,
@@ -374,36 +412,45 @@ const buffer = await generatePrintSheet({
 
         <h3>QR Downloads</h3>
         ${downloadLinks
-          .map((l) => `<a href="${l}" target="_blank">Download QR</a>`)
+          .map(
+            (link) =>
+              `<a href="${link}" target="_blank">Download QR</a>`
+          )
           .join("<br/>")}
       `,
       attachments,
     });
 
-    sent.adminOrderEmail = adminEmail;
-
-    // =========================
-    // SAVE LINKS TO ORDER
-    // =========================
     await orderRef.set(
       {
         qrFiles: downloadLinks,
+        emails: {
+          adminOrderSentAt: nowIso(),
+          adminOrderEmail: adminEmail,
+        },
+        updatedAt: nowIso(),
       },
       { merge: true }
     );
   }
 
-  // =========================
-  // MARK SENT
-  // =========================
-  await orderRef.set(
-    {
-      emails: {
-        paidOrderSentAt: nowIso(),
-        ...sent,
+  const finalSnap = await orderRef.get();
+  const finalOrder = finalSnap.exists
+    ? finalSnap.data()
+    : {};
+
+  if (
+    finalOrder?.emails?.customerOrderSentAt &&
+    (!adminEmail || finalOrder?.emails?.adminOrderSentAt)
+  ) {
+    await orderRef.set(
+      {
+        emails: {
+          paidOrderSentAt: nowIso(),
+        },
+        updatedAt: nowIso(),
       },
-      updatedAt: nowIso(),
-    },
-    { merge: true }
-  );
+      { merge: true }
+    );
+  }
 }

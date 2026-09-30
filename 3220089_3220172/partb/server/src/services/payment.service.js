@@ -1128,6 +1128,9 @@ export async function markOrderPaidFromVivaWebhook(payload) {
         fulfillmentStatus:
           "to_prepare",
 
+        qrCodesCreated:
+          qrAssignments.length,
+
         ...(holds
           ? {
               inventoryReservationState:
@@ -1367,6 +1370,12 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       paymentStatus:
         "paid",
 
+      fulfillmentStatus:
+        "to_prepare",
+
+      qrCodesCreated:
+        qrAssignments.length,
+
       payment: {
         ...(
           order.payment ||
@@ -1414,6 +1423,12 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
         items:
           [],
+
+        checkoutOrderId:
+          null,
+
+        checkoutStartedAt:
+          null,
 
         updatedAt:
           paidAt,

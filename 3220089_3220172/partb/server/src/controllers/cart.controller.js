@@ -14,8 +14,13 @@ import {
   copyUserCartToGuestCart,
 } from "../services/cart.service.js";
 
+import {
+  createGuestId,
+  setGuestCookie,
+} from "../middleware/guestSession.js";
+
 export const getCart = asyncHandler(async (req, res) => {
-  const owner = getCartOwner(req);
+  const owner = getCartOwner(req, res);
 
 const cart = await getCartByUserId(owner.id);
 
@@ -52,7 +57,7 @@ export const addToCart = asyncHandler(async (req, res) => {
   const variant = normalizeVariantInput(req.body?.variant);
   const qrDestination = optionalUrl(req.body?.qrDestination, "qrDestination");
 
-  const owner = getCartOwner(req);
+  const owner = getCartOwner(req, res);
 
   const cart = await addCartItem({
     userId: owner.id, // 🔥 reuse same field
@@ -71,7 +76,7 @@ export const patchCartItem = asyncHandler(async (req, res) => {
   const quantity = assertPositiveInteger(req.body?.quantity, "quantity");
   const qrDestination = optionalUrl(req.body?.qrDestination, "qrDestination");
 
-  const owner = getCartOwner(req);
+  const owner = getCartOwner(req, res);
 
 const cart = await updateCartItem({
   userId: owner.id,
@@ -87,7 +92,7 @@ const cart = await updateCartItem({
 export const deleteCartItem = asyncHandler(async (req, res) => {
   const itemId = assertString(req.params.itemId, "itemId");
 
-  const owner = getCartOwner(req);
+  const owner = getCartOwner(req, res);
 
 const cart = await removeCartItem({
   userId: owner.id,
@@ -99,14 +104,27 @@ const cart = await removeCartItem({
 });
 
 
-function getCartOwner(req) {
+function getCartOwner(req, res) {
   if (req.user?.uid) {
-    return { type: "user", id: req.user.uid };
+    return {
+      type: "user",
+      id: req.user.uid,
+    };
   }
 
   if (req.guestId) {
-    return { type: "guest", id: req.guestId };
+    return {
+      type: "guest",
+      id: req.guestId,
+    };
   }
 
-  throw new Error("Missing cart identity");
+  const guestId = createGuestId();
+  setGuestCookie(res, guestId);
+  req.guestId = guestId;
+
+  return {
+    type: "guest",
+    id: guestId,
+  };
 }

@@ -1,6 +1,12 @@
 import { Resend } from "resend";
 
-export async function sendEmail({ to, subject, html, from }) {
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  from,
+  attachments = [],
+}) {
   const apiKey = process.env.RESEND_API_KEY;
 
   console.log("========== EMAIL SERVICE ==========");
@@ -23,6 +29,9 @@ export async function sendEmail({ to, subject, html, from }) {
     to,
     subject,
     html,
+    ...(attachments.length
+      ? { attachments }
+      : {}),
   });
 
   console.log("Resend result:", JSON.stringify(result, null, 2));

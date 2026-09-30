@@ -91,8 +91,41 @@ async function loadOrder(): Promise<void> {
         ? `/orders/${encodeURIComponent(lookup.value)}`
         : `/orders/viva/${encodeURIComponent(lookup.value)}`;
 
-    const res = await apiRequest<{ order: Order }>(path);
-    const order = res.order;
+    let order: Order | null = null;
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const res =
+        await apiRequest<{ order: Order }>(
+          path
+        );
+
+      order = res.order;
+
+      if (
+        String(
+          order.paymentStatus ||
+          order.status ||
+          ""
+        )
+          .trim()
+          .toLowerCase() === "paid"
+      ) {
+        break;
+      }
+
+      await new Promise((resolve) =>
+        window.setTimeout(
+          resolve,
+          1000
+        )
+      );
+    }
+
+    if (!order) {
+      throw new Error(
+        "Order could not be loaded"
+      );
+    }
 
     container.innerHTML = `
       <div class="payment-summary-row">

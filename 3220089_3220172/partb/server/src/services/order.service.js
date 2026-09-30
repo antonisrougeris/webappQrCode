@@ -90,6 +90,41 @@ export async function checkoutCartForOwner({
     const cartItems = Array.isArray(cart.items) ? cart.items : [];
     if (!cartItems.length) throw new ApiError(400, "Cart is empty");
 
+    /*
+     * Checkout idempotency:
+     * if a previous click already created a pending order for this cart,
+     * reuse it instead of decrementing stock and creating another order.
+     */
+    if (cart.checkoutOrderId) {
+      const existingRef = db
+        .collection(COLLECTIONS.ORDERS)
+        .doc(String(cart.checkoutOrderId));
+
+      const existingSnap = await tx.get(existingRef);
+
+      if (existingSnap.exists) {
+        const existingOrder = {
+          id: existingSnap.id,
+          ...existingSnap.data(),
+        };
+
+        if (
+          existingOrder.ownerId === ownerId &&
+          existingOrder.ownerType === ownerType &&
+          existingOrder.paymentStatus === "pending"
+        ) {
+          return {
+            orderId: existingOrder.id,
+            orderNumber: existingOrder.orderNumber,
+            qrCodesRequired:
+              Number(existingOrder.qrCodesRequired || 0),
+            order: existingOrder,
+            reused: true,
+          };
+        }
+      }
+    }
+
     const productRefs = cartItems.map((item) =>
       db.collection(COLLECTIONS.PRODUCTS).doc(String(item.productId))
     );
@@ -285,7 +320,21 @@ items: orderItems,
 };
 
     for (const update of stockUpdates) tx.update(update.ref, update.patch);
-    tx.set(db.collection(COLLECTIONS.ORDERS).doc(orderId), order);
+
+    tx.set(
+      db.collection(COLLECTIONS.ORDERS).doc(orderId),
+      order
+    );
+
+    tx.set(
+      cartRef,
+      {
+        checkoutOrderId: orderId,
+        checkoutStartedAt: createdAt,
+        updatedAt: createdAt,
+      },
+      { merge: true }
+    );
 
     return {
   orderId,
@@ -307,7 +356,18 @@ export async function getOrdersForUser(userId) {
     .where("ownerType", "==", "user")
     .get();
 
-  const orders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const orders = snapshot.docs
+    .map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }))
+    .filter(
+      (order) =>
+        String(order.paymentStatus || "")
+          .trim()
+          .toLowerCase() === "paid"
+    );
+
   orders.sort(
     (a, b) =>
       new Date(b.createdAt || 0).getTime() -

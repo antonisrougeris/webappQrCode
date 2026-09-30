@@ -707,6 +707,9 @@ function renderCustomerOrders(
             ?.trackingNumber ||
           order?.shipping
             ?.parcelId ||
+          order?.shipping
+            ?.boxnow
+            ?.parcelIds?.[0] ||
           "";
 
 

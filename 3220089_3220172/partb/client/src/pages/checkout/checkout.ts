@@ -57,6 +57,7 @@ function saveCheckoutDraftFromPage(): void {
 }
 
 let discount = 0;
+let checkoutSubmitting = false;
 
 function formatPrice(n: number): string {
   return new Intl.NumberFormat("el-GR", {
@@ -614,26 +615,38 @@ if (!user) {
   return;
 }
 
-const me = await getMe();
-
-if (!me?.emailVerified) {
-  saveCheckoutDraft(e.target as HTMLFormElement);
-
-  setFlashToast("Please verify your email before checkout.");
-
-  window.location.href =
-    "/verify-email?redirect=" +
-    encodeURIComponent(normalizeRoutePath(window.location.pathname, "/checkout"));
+if (checkoutSubmitting) {
   return;
 }
 
-      const submitButton = document.querySelector<HTMLButtonElement>(
-        "#checkoutForm button[type='submit']"
-      );
+checkoutSubmitting = true;
+
+const submitButton = document.querySelector<HTMLButtonElement>(
+  "#checkoutForm button[type='submit']"
+);
+
+submitButton && (submitButton.disabled = true);
+submitButton && (submitButton.textContent = "Preparing payment...");
 
       try {
-        submitButton && (submitButton.disabled = true);
-        submitButton && (submitButton.textContent = "Preparing payment...");
+        const me = await getMe();
+
+        if (!me?.emailVerified) {
+          saveCheckoutDraft(e.target as HTMLFormElement);
+
+          setFlashToast("Please verify your email before checkout.");
+
+          window.location.href =
+            "/verify-email?redirect=" +
+            encodeURIComponent(
+              normalizeRoutePath(
+                window.location.pathname,
+                "/checkout"
+              )
+            );
+
+          return;
+        }
 
         const form = new FormData(formEl);
         const cart = await getCart();
@@ -719,6 +732,7 @@ if (lockerValidationMessage) {
         console.error("Checkout failed:", error);
         setFlashToast(error instanceof Error ? error.message : "Checkout failed.");
       } finally {
+        checkoutSubmitting = false;
         submitButton && (submitButton.disabled = false);
         setPayButtonState();
       }
