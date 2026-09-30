@@ -125,7 +125,9 @@ app.use("/api/orders", ordersRoutes);
 app.use("/api/qr-codes", qrRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
-app.use("/api/test-boxnow", boxNowTestRoutes);
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api/test-boxnow", boxNowTestRoutes);
+}
 
 app.use(notFound);
 app.use(errorHandler);
