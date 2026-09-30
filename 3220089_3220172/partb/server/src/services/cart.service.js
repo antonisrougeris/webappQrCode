@@ -133,6 +133,8 @@ price: Number(
   const nextCart = {
     userId,
     items: cart.items,
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
     updatedAt: nowIso(),
   };
 
@@ -208,12 +210,16 @@ price: Number(
 
     quantity,
     qrDestination: nextQrDestination,
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
     updatedAt: nowIso(),
   };
 
   const nextCart = {
     userId,
     items: cart.items,
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
     updatedAt: nowIso(),
   };
 
@@ -241,6 +247,8 @@ export async function removeCartItem({ userId, itemId }) {
   const nextCart = {
     userId,
     items: nextItems,
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
     updatedAt: nowIso(),
   };
 
@@ -261,6 +269,8 @@ export async function clearCart(userId) {
   const nextCart = {
     userId,
     items: [],
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
     updatedAt: nowIso(),
   };
 
@@ -332,6 +342,8 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
   const nextUserCart = {
     userId,
     items: mergedItems,
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
     updatedAt: nowIso(),
   };
 
