@@ -341,31 +341,56 @@ function updatePhoneValidity(): void {
   }
 }
 
-function updateLockerValidity(): void {
+function updateLockerValidity(showError = false): boolean {
   const lockerInput = document.getElementById("lockerInput") as HTMLInputElement | null;
   const lockerMessage = document.getElementById("lockerValidationMessage");
+  const lockerButton = document.getElementById("selectLockerBtn") as HTMLButtonElement | null;
 
-  if (!lockerInput) return;
+  if (!lockerInput) return false;
 
   const user = firebaseAuth.currentUser;
   if (!user) {
     lockerInput.setCustomValidity("");
+    lockerButton?.classList.remove("is-invalid");
+    lockerButton?.removeAttribute("aria-invalid");
+
     if (lockerMessage) {
       lockerMessage.textContent = "";
       lockerMessage.hidden = true;
     }
-    return;
+
+    return true;
   }
 
   const lockerValue = String(lockerInput.value || "").trim();
-  const errorMessage = lockerValue ? "" : "Please select a BOX NOW locker.";
+  const hasLocker = Boolean(lockerValue);
+  const errorMessage = "Please select a BOX NOW locker before continuing.";
 
-  lockerInput.setCustomValidity(errorMessage);
+  lockerInput.setCustomValidity(hasLocker ? "" : errorMessage);
 
-  if (lockerMessage) {
-    lockerMessage.textContent = errorMessage;
-    lockerMessage.hidden = !errorMessage;
+  if (hasLocker) {
+    lockerButton?.classList.remove("is-invalid");
+    lockerButton?.removeAttribute("aria-invalid");
+
+    if (lockerMessage) {
+      lockerMessage.textContent = "";
+      lockerMessage.hidden = true;
+    }
+
+    return true;
   }
+
+  if (showError) {
+    lockerButton?.classList.add("is-invalid");
+    lockerButton?.setAttribute("aria-invalid", "true");
+
+    if (lockerMessage) {
+      lockerMessage.textContent = errorMessage;
+      lockerMessage.hidden = false;
+    }
+  }
+
+  return false;
 }
 
 function readAndValidateCheckoutForm(
@@ -557,11 +582,21 @@ editCartButton?.addEventListener(
       const lockerValue = String(lockerInput?.value || "").trim();
 
       if (user && !lockerValue) {
-        if (lockerInput) {
-          lockerInput.setCustomValidity("Please select a BOX NOW locker.");
-        }
-        updateLockerValidity();
-        setFlashToast("Please select a BOX NOW locker before continuing.");
+        updateLockerValidity(true);
+
+        const lockerButton = document.getElementById(
+          "selectLockerBtn"
+        ) as HTMLButtonElement | null;
+
+        lockerButton?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        window.setTimeout(() => {
+          lockerButton?.focus({ preventScroll: true });
+        }, 250);
+
         return;
       }
 
@@ -679,19 +714,11 @@ const lockerValidationMessage =
   document.getElementById("lockerValidationMessage");
 
 if (!locker) {
-  if (lockerValidationMessage) {
-    lockerValidationMessage.textContent =
-      "Please select a BOX NOW locker.";
-    lockerValidationMessage.hidden = false;
-  }
-
+  updateLockerValidity(true);
   return;
 }
 
-if (lockerValidationMessage) {
-  lockerValidationMessage.textContent = "";
-  lockerValidationMessage.hidden = true;
-}
+updateLockerValidity(false);
         const result = await checkout({
   customer: {
     firstName,
