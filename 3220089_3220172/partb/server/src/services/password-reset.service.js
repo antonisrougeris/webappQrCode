@@ -4,13 +4,14 @@ import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
 import { sendEmail } from "./email.service.js";
+import { otpEmailTemplate } from "./email-template.service.js";
 
 const COLLECTION = "passwordResets";
 const OTP_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
 function createOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(crypto.randomInt(100000, 1000000));
 }
 
 function hashOtp(otp) {
@@ -51,16 +52,13 @@ export async function requestPasswordResetOtp({ email }) {
   await sendEmail({
     to: email,
     subject: "Reset your Skanare password",
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px">
-        <h1 style="margin:0 0 12px">Reset your password</h1>
-        <p>Your password reset code is:</p>
-        <div style="font-size:32px;font-weight:800;letter-spacing:6px;background:#f4f4f4;padding:18px;text-align:center;border-radius:12px">
-          ${otp}
-        </div>
-        <p style="color:#666;margin-top:20px">This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>
-      </div>
-    `,
+    html: otpEmailTemplate({
+      title: "Reset your Skanare password",
+      intro: "Use the code below to reset your password.",
+      code: otp,
+      expiresMinutes: 10,
+      warning: "If you did not request a password reset, you can ignore this email.",
+    }),
   });
 
   return { sent: true };
