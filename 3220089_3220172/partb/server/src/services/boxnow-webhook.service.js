@@ -25,7 +25,7 @@ import { brandedEmailTemplate } from "./email-template.service.js";
  * This function extracts the exact raw JSON substring
  * belonging to the top-level "data" property.
  */
-function extractRawDataObject(rawBody) {
+export function extractRawDataObject(rawBody) {
   const raw =
     Buffer.isBuffer(rawBody)
       ? rawBody.toString("utf8")
@@ -211,7 +211,7 @@ function extractRawDataObject(rawBody) {
    SIGNATURE
 ================================================== */
 
-function verifyBoxNowSignature({
+export function verifyBoxNowSignature({
   rawBody,
   signature,
 }) {
