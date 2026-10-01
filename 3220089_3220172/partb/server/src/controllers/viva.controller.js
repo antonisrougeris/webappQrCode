@@ -5,6 +5,14 @@ import {
 } from "../services/viva.service.js";
 import { markOrderPaidFromVivaWebhook } from "../services/payment.service.js";
 
+export function isVivaPaymentCreatedEvent(body) {
+  return Number(
+    body?.EventTypeId ??
+      body?.eventTypeId ??
+      0
+  ) === 1796;
+}
+
 export const verifyVivaWebhook = asyncHandler(async (_req, res) => {
   const key = await getVivaWebhookVerificationKey();
   return res.status(200).json(key);
@@ -18,10 +26,10 @@ export const handleVivaWebhook = asyncHandler(async (req, res) => {
   );
 
   /*
-   * Only Transaction Payment Created marks an order as paid.
-   * Other Viva event types are acknowledged without changing payment state.
+   * Only Transaction Payment Created (1796) may mark an order as paid.
+   * Missing/unknown event types are acknowledged without changing state.
    */
-  if (eventTypeId && eventTypeId !== 1796) {
+  if (!isVivaPaymentCreatedEvent(req.body)) {
     console.info("Viva webhook ignored", {
       requestId: req.requestId,
       eventTypeId,
@@ -37,7 +45,7 @@ export const handleVivaWebhook = asyncHandler(async (req, res) => {
 
   console.info("Viva payment webhook processed", {
     requestId: req.requestId,
-    eventTypeId: eventTypeId || 1796,
+    eventTypeId,
   });
 
   return res.status(200).json({ message: "ok" });
