@@ -129,6 +129,9 @@ jobs:
       - name: Validate dependency tree
         run: npm ls --omit=dev
 
+      - name: Run backend tests
+        run: npm test
+
       - name: Audit backend dependencies
         run: npm audit --omit=dev --audit-level=critical
     
