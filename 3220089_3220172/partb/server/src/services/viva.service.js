@@ -243,22 +243,8 @@ export async function retrieveVivaTransaction(transactionId) {
   return payload;
 }
 
-export async function verifyVivaWebhookWithProvider(payload) {
+export function validateVivaWebhookTransaction(payload, transaction) {
   const data = payload?.EventData || payload?.eventData || payload?.data || payload || {};
-
-  const transactionId = String(
-    data?.TransactionId ||
-      data?.transactionId ||
-      data?.TransactionID ||
-      data?.transactionID ||
-      ""
-  ).trim();
-
-  if (!transactionId) {
-    throw new ApiError(400, "Viva webhook is missing transaction id");
-  }
-
-  const transaction = await retrieveVivaTransaction(transactionId);
 
   const webhookOrderCode = String(
     data?.OrderCode ||
@@ -313,3 +299,24 @@ export async function verifyVivaWebhookWithProvider(payload) {
 
   return transaction;
 }
+
+export async function verifyVivaWebhookWithProvider(payload) {
+  const data = payload?.EventData || payload?.eventData || payload?.data || payload || {};
+
+  const transactionId = String(
+    data?.TransactionId ||
+      data?.transactionId ||
+      data?.TransactionID ||
+      data?.transactionID ||
+      ""
+  ).trim();
+
+  if (!transactionId) {
+    throw new ApiError(400, "Viva webhook is missing transaction id");
+  }
+
+  const transaction = await retrieveVivaTransaction(transactionId);
+
+  return validateVivaWebhookTransaction(payload, transaction);
+}
+
