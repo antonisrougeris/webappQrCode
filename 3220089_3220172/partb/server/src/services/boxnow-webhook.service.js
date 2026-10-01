@@ -680,7 +680,6 @@ export async function processBoxNowWebhook({
               orderId:
                 order.id,
             };
-          }
         }
 
 
