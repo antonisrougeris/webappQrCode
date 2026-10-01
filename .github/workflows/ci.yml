@@ -77,6 +77,20 @@ jobs:
           VITE_QR_REDIRECT_BASE_URL: ${{ vars.VITE_QR_REDIRECT_BASE_URL }}
           VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
 
+      - name: Guard production bundle against development URLs
+        run: |
+          if grep -R -n -E 'csb\\.app|localhost:[0-9]+|127\\.0\\.0\\.1:[0-9]+' dist; then
+            echo "ERROR: development URL found in production frontend bundle"
+            exit 1
+          fi
+
+          grep -R -q 'https://skanare.com/api' dist || {
+            echo "ERROR: production API URL not found in frontend bundle"
+            exit 1
+          }
+
+          echo "Production frontend bundle guard OK"
+
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
         with:
