@@ -4,6 +4,7 @@ import crypto from "crypto";
 import {
   extractRawDataObject,
   verifyBoxNowSignature,
+  shouldIgnoreBoxNowEvent,
 } from "../src/services/boxnow-webhook.service.js";
 
 const secret = "boxnow-test-secret";
@@ -98,5 +99,42 @@ test("rejects malformed raw body without data object", () => {
   assert.throws(
     () => extractRawDataObject(Buffer.from('{"id":"msg-1","event":"delivered"}')),
     /does not contain data object/
+  );
+});
+
+test("ignores duplicate BOX NOW event with the same timestamp", () => {
+  assert.equal(
+    shouldIgnoreBoxNowEvent(
+      "2026-10-01T09:00:00.000Z",
+      "2026-10-01T09:00:00.000Z"
+    ),
+    true
+  );
+});
+
+test("ignores BOX NOW event older than the last processed event", () => {
+  assert.equal(
+    shouldIgnoreBoxNowEvent(
+      "2026-10-01T09:00:00.000Z",
+      "2026-10-01T08:59:59.000Z"
+    ),
+    true
+  );
+});
+
+test("accepts a newer BOX NOW event", () => {
+  assert.equal(
+    shouldIgnoreBoxNowEvent(
+      "2026-10-01T09:00:00.000Z",
+      "2026-10-01T09:00:01.000Z"
+    ),
+    false
+  );
+});
+
+test("accepts first BOX NOW event when no previous timestamp exists", () => {
+  assert.equal(
+    shouldIgnoreBoxNowEvent(null, "2026-10-01T09:00:00.000Z"),
+    false
   );
 });
