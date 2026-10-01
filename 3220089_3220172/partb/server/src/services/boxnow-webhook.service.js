@@ -438,6 +438,19 @@ async function sendDeliveredOrderEmail(orderId) {
   });
 }
 
+export function shouldIgnoreBoxNowEvent(previousEventTime, eventTime) {
+  if (!previousEventTime) return false;
+
+  const previousTimestamp = Date.parse(previousEventTime);
+  const incomingTimestamp = Date.parse(eventTime);
+
+  return (
+    Number.isFinite(previousTimestamp) &&
+    Number.isFinite(incomingTimestamp) &&
+    incomingTimestamp <= previousTimestamp
+  );
+}
+
 /* ==================================================
    EVENT PROCESSING
 ================================================== */
@@ -635,19 +648,12 @@ export async function processBoxNowWebhook({
          *
          * Ignore same or older event.
          */
-        if (previousEventTime) {
-          const previousTimestamp =
-            Date.parse(
-              previousEventTime
-            );
-
-          if (
-            Number.isFinite(
-              previousTimestamp
-            ) &&
-            parsedEventTime <=
-              previousTimestamp
-          ) {
+        if (
+          shouldIgnoreBoxNowEvent(
+            previousEventTime,
+            eventTime
+          )
+        ) {
             console.log(
               "BOX NOW duplicate/old webhook ignored",
               {
