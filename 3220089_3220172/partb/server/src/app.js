@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import lusca from "lusca";
 
 import { connectDB, closeDB } from "./config/db.js";
 import { corsOptions } from "./config/security.js";
@@ -11,7 +12,6 @@ import { notFound } from "./middleware/notFound.js";
 import { attachGuestSession } from "./middleware/guestSession.js";
 import { optionalAuth } from "./middleware/auth.js";
 import { requestContext } from "./middleware/requestContext.js";
-import { csrfProtection } from "./middleware/csrf.js";
 import {
   apiLimiter,
   authLimiter,
@@ -87,7 +87,34 @@ app.use(
 );
 
 app.use(cookieParser(process.env.COOKIE_SECRET));
-app.use(csrfProtection);
+
+/*
+ * Provider callbacks are server-to-server requests and cannot provide
+ * a browser CSRF token. Mount them before browser CSRF protection.
+ */
+app.use("/api/viva", webhookLimiter, vivaRoutes);
+app.use("/api/boxnow", webhookLimiter, boxNowRoutes);
+
+/*
+ * Browser requests use Lusca's double-submit token protection.
+ * The token is exposed to the frontend in a readable cookie and must
+ * be echoed back in the X-CSRF-Token header for unsafe methods.
+ */
+app.use(
+  lusca.csrf({
+    cookie: {
+      name: "csrf_token",
+      options: {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      },
+    },
+    header: "X-CSRF-Token",
+  })
+);
+
 app.use(attachGuestSession);
 app.use(optionalAuth);
 
@@ -96,12 +123,6 @@ app.use(optionalAuth);
  * external monitors cannot be blocked by normal customer traffic.
  */
 app.use("/api/health", healthRoutes);
-
-/*
- * Provider webhooks are public endpoints with their own limiter.
- */
-app.use("/api/viva", webhookLimiter, vivaRoutes);
-app.use("/api/boxnow", webhookLimiter, boxNowRoutes);
 
 app.use("/", seoProductRoutes);
 app.use("/", sitemapRoutes);
