@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { validateVivaWebhookTransaction } from "../src/services/viva.service.js";
+import { isVivaPaymentCreatedEvent } from "../src/controllers/viva.controller.js";
 
 const provider = {
   orderCode: "987654",
@@ -63,4 +64,16 @@ test("rejects zero or missing Viva amount", () => {
     () => validateVivaWebhookTransaction(payload({ Amount: 0 }), { ...provider, amount: 0 }),
     /verification mismatch/
   );
+});
+
+test("accepts only Viva Transaction Payment Created event type", () => {
+  assert.equal(isVivaPaymentCreatedEvent({ EventTypeId: 1796 }), true);
+  assert.equal(isVivaPaymentCreatedEvent({ eventTypeId: 1796 }), true);
+});
+
+test("rejects missing or unrelated Viva event types", () => {
+  assert.equal(isVivaPaymentCreatedEvent({}), false);
+  assert.equal(isVivaPaymentCreatedEvent({ EventTypeId: 0 }), false);
+  assert.equal(isVivaPaymentCreatedEvent({ EventTypeId: 1797 }), false);
+  assert.equal(isVivaPaymentCreatedEvent({ EventTypeId: "1796" }), true);
 });
