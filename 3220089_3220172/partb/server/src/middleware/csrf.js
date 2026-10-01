@@ -23,9 +23,18 @@ function sameToken(left, right) {
 }
 
 function trustedOrigin(req) {
-  const origin = String(req.get("origin") || "").replace(/\/+$/, "");
+  const origin = String(req.get("origin") || "");
   if (!origin) return false;
-  return getAllowedOrigins().includes(origin);
+
+  let normalizedOrigin;
+
+  try {
+    normalizedOrigin = new URL(origin).origin;
+  } catch {
+    return false;
+  }
+
+  return getAllowedOrigins().includes(normalizedOrigin);
 }
 
 export function csrfProtection(req, res, next) {
