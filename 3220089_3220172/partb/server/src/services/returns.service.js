@@ -380,101 +380,230 @@ export async function getReturnForAdmin(returnId) {
 export async function approveReturnForAdmin(returnId, adminUser) {
   const db = getDB();
   const ref = collection(db).doc(String(returnId));
+  const attemptId = createId("returnapproval");
+  const startedAt = nowIso();
 
-  const request = await getReturnForAdmin(returnId);
+  const claim = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
 
-  if (
-    ["approved", "label_ready", "dropped_off", "in_transit", "refund_pending", "refunded"].includes(
-      request.status
-    )
-  ) {
-    return request;
-  }
-
-  if (!["requested", "provider_failed"].includes(request.status)) {
-    throw new ApiError(409, "Return is not ready for approval");
-  }
-
-  const order = await getOrder(request.orderId);
-  const result = await createBoxNowCustomerReturn(request, order);
-  const parcel = Array.isArray(result?.parcels) ? result.parcels[0] : null;
-  const parcelId = text(parcel?.id, 200) || null;
-  const approvedAt = nowIso();
-
-  const patch = {
-    status: parcelId && !result?.mock ? "label_ready" : "approved",
-    approvedAt,
-    review: {
-      ...(request.review || {}),
-      approvedBy: adminUser?.uid || null,
-      approvedByEmail: adminUser?.email || null,
-      approvedAt,
-    },
-    boxnow: {
-      ...(request.boxnow || {}),
-      environment: result?.mock ? "mock" : String(process.env.BOXNOW_MODE || "mock"),
-      deliveryRequestId: result?.id || null,
-      orderNumber: text(result?.orderNumber || result?.id, 200) || null,
-      parcelId,
-      rawCreateResponse: result,
-      lastEvent: "new",
-      lastEventAt: approvedAt,
-    },
-    history: [
-      ...(request.history || []),
-      {
-        status: parcelId && !result?.mock ? "label_ready" : "approved",
-        at: approvedAt,
-        actor: "admin",
-        adminUid: adminUser?.uid || null,
-      },
-    ],
-    updatedAt: approvedAt,
-  };
-
-  await ref.set(patch, { merge: true });
-  const updated = { ...request, ...patch };
-
-  let labelBuffer = null;
-
-  if (parcelId && !result?.mock) {
-    try {
-      labelBuffer = await getBoxNowParcelLabel(parcelId);
-    } catch (error) {
-      console.error("BOX NOW return label attachment failed", {
-        returnId,
-        parcelId,
-        message: error?.message || String(error),
-      });
+    if (!snap.exists) {
+      throw new ApiError(404, "Return request not found");
     }
+
+    const request = { id: snap.id, ...snap.data() };
+
+    if (
+      ["approved", "label_ready", "dropped_off", "in_transit", "refund_pending", "refunded"].includes(
+        request.status
+      )
+    ) {
+      return {
+        claimed: false,
+        alreadyApproved: true,
+        request,
+      };
+    }
+
+    if (request.status === "approving") {
+      throw new ApiError(
+        409,
+        "This return is already being approved. Refresh in a moment."
+      );
+    }
+
+    if (!["requested", "provider_failed"].includes(request.status)) {
+      throw new ApiError(409, "Return is not ready for approval");
+    }
+
+    tx.update(ref, {
+      status: "approving",
+      review: {
+        ...(request.review || {}),
+        approvalStartedAt: startedAt,
+        approvedBy: adminUser?.uid || null,
+        approvedByEmail: adminUser?.email || null,
+      },
+      boxnow: {
+        ...(request.boxnow || {}),
+        approvalAttemptId: attemptId,
+      },
+      history: [
+        ...(request.history || []),
+        {
+          status: "approving",
+          at: startedAt,
+          actor: "admin",
+          adminUid: adminUser?.uid || null,
+        },
+      ],
+      updatedAt: startedAt,
+    });
+
+    return {
+      claimed: true,
+      alreadyApproved: false,
+      request: {
+        ...request,
+        status: "approving",
+        boxnow: {
+          ...(request.boxnow || {}),
+          approvalAttemptId: attemptId,
+        },
+      },
+    };
+  });
+
+  if (claim.alreadyApproved) {
+    return claim.request;
   }
 
-  await notifyBestEffort(
-    () =>
-      sendReturnEmail({
-        to: order.customer?.email,
-        subject: `Return ${updated.returnNumber} approved`,
-        title: "Your return is approved",
-        intro: "Your BOX NOW return voucher is ready.",
-        body: `
-          <p style="color:#555;line-height:1.7;">
-            Pack the approved items securely and use the BOX NOW return voucher.
-          </p>
-          <p><a href="${pageUrl(updated.id)}">Open return page →</a></p>
-        `,
-        attachments: labelBuffer
-          ? [
-              {
-                filename: `SKANARE-return-${updated.returnNumber}.pdf`,
-                content: labelBuffer,
-              },
-            ]
-          : [],
-      }),
-    { returnId }
-  );
+  const request = claim.request;
+  const order = await getOrder(request.orderId);
 
-  return updated;
+  try {
+    const result = await createBoxNowCustomerReturn(request, order);
+    const parcel = Array.isArray(result?.parcels) ? result.parcels[0] : null;
+    const parcelId = text(parcel?.id, 200) || null;
+    const approvedAt = nowIso();
+    const nextStatus =
+      parcelId && !result?.mock
+        ? "label_ready"
+        : "approved";
+
+    const updated = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+
+      if (!snap.exists) {
+        throw new ApiError(404, "Return request not found");
+      }
+
+      const current = { id: snap.id, ...snap.data() };
+
+      if (current.boxnow?.approvalAttemptId !== attemptId) {
+        throw new ApiError(
+          409,
+          "Return approval changed while BOX NOW was processing"
+        );
+      }
+
+      const patch = {
+        status: nextStatus,
+        approvedAt,
+        review: {
+          ...(current.review || {}),
+          approvedAt,
+        },
+        boxnow: {
+          ...(current.boxnow || {}),
+          environment:
+            result?.mock
+              ? "mock"
+              : String(process.env.BOXNOW_MODE || "mock"),
+          deliveryRequestId: result?.id || null,
+          orderNumber: text(result?.orderNumber || result?.id, 200) || null,
+          parcelId,
+          rawCreateResponse: result,
+          lastEvent: "new",
+          lastEventAt: approvedAt,
+        },
+        history: [
+          ...(current.history || []),
+          {
+            status: nextStatus,
+            at: approvedAt,
+            actor: "admin",
+            adminUid: adminUser?.uid || null,
+          },
+        ],
+        updatedAt: approvedAt,
+      };
+
+      tx.set(ref, patch, { merge: true });
+
+      return {
+        ...current,
+        ...patch,
+      };
+    });
+
+    let labelBuffer = null;
+
+    if (parcelId && !result?.mock) {
+      try {
+        labelBuffer = await getBoxNowParcelLabel(parcelId);
+      } catch (error) {
+        console.error("BOX NOW return label attachment failed", {
+          returnId,
+          parcelId,
+          message: error?.message || String(error),
+        });
+      }
+    }
+
+    await notifyBestEffort(
+      () =>
+        sendReturnEmail({
+          to: order.customer?.email,
+          subject: `Return ${updated.returnNumber} approved`,
+          title: "Your return is approved",
+          intro: "Your BOX NOW return voucher is ready.",
+          body: `
+            <p style="color:#555;line-height:1.7;">
+              Pack the approved items securely and use the BOX NOW return voucher.
+            </p>
+            <p><a href="${pageUrl(updated.id)}">Open return page →</a></p>
+          `,
+          attachments: labelBuffer
+            ? [
+                {
+                  filename: `SKANARE-return-${updated.returnNumber}.pdf`,
+                  content: labelBuffer,
+                },
+              ]
+            : [],
+        }),
+      { returnId }
+    );
+
+    return updated;
+  } catch (error) {
+    const failedAt = nowIso();
+
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+
+      if (!snap.exists) return;
+
+      const current = { id: snap.id, ...snap.data() };
+
+      if (current.boxnow?.approvalAttemptId !== attemptId) {
+        return;
+      }
+
+      tx.set(
+        ref,
+        {
+          status: "provider_failed",
+          providerError: {
+            message: error?.message || String(error),
+            at: failedAt,
+          },
+          history: [
+            ...(current.history || []),
+            {
+              status: "provider_failed",
+              at: failedAt,
+              actor: "system",
+            },
+          ],
+          updatedAt: failedAt,
+        },
+        { merge: true }
+      );
+    });
+
+    throw error;
+  }
 }
 
 export async function rejectReturnForAdmin(returnId, adminUser, note) {
