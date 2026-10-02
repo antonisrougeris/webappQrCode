@@ -87,7 +87,20 @@ app.use(
   })
 );
 
-app.use(cookieParser(process.env.COOKIE_SECRET));
+const cookieSigningSecret =
+  process.env.COOKIE_SECRET ||
+  process.env.GUEST_SESSION_SECRET;
+
+if (
+  !cookieSigningSecret ||
+  cookieSigningSecret.length < 32
+) {
+  throw new Error(
+    "COOKIE_SECRET or GUEST_SESSION_SECRET must be at least 32 characters"
+  );
+}
+
+app.use(cookieParser(cookieSigningSecret));
 
 /*
  * Provider callbacks are server-to-server requests and cannot provide
@@ -97,24 +110,71 @@ app.use("/api/viva", webhookLimiter, vivaRoutes);
 app.use("/api/boxnow", webhookLimiter, boxNowRoutes);
 
 /*
- * Browser requests use Lusca's double-submit token protection.
- * The token is exposed to the frontend in a readable cookie and must
- * be echoed back in the X-CSRF-Token header for unsafe methods.
+ * Lusca requires req.session because it stores the server-side CSRF secret
+ * there. Skanare does not otherwise use Express sessions, so persist only
+ * that small secret in a signed, HttpOnly cookie instead of adding a
+ * server-side session store.
  */
-app.use(
-  lusca.csrf({
-    cookie: {
-      name: "csrf_token",
-      options: {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-      },
+const csrfProtection = lusca.csrf({
+  cookie: {
+    name: "csrf_token",
+    options: {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
     },
-    header: "X-CSRF-Token",
-  })
-);
+  },
+  header: "X-CSRF-Token",
+});
+
+app.use((req, res, next) => {
+  const existingSecret =
+    req.signedCookies?.csrf_session_secret ||
+    null;
+
+  req.session = {};
+
+  if (existingSecret) {
+    req.session._csrfSecret =
+      existingSecret;
+  }
+
+  csrfProtection(
+    req,
+    res,
+    (error) => {
+      const currentSecret =
+        req.session?._csrfSecret;
+
+      if (
+        currentSecret &&
+        currentSecret !==
+          existingSecret
+      ) {
+        res.cookie(
+          "csrf_session_secret",
+          currentSecret,
+          {
+            signed: true,
+            httpOnly: true,
+            secure:
+              process.env.NODE_ENV ===
+              "production",
+            sameSite: "lax",
+            path: "/",
+          }
+        );
+      }
+
+      if (error) {
+        return next(error);
+      }
+
+      return next();
+    }
+  );
+});
 
 app.use(attachGuestSession);
 app.use(optionalAuth);
