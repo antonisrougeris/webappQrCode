@@ -309,6 +309,24 @@ export async function createReturnRequest({
     { returnId }
   );
 
+  await notifyBestEffort(
+    () =>
+      sendReturnEmail({
+        to: process.env.ADMIN_EMAIL,
+        subject: `New return request ${result.request.returnNumber}`,
+        title: "New return request",
+        intro: `A customer requested a return for order ${result.request.orderNumber}.`,
+        body: `
+          <p style="color:#555;line-height:1.7;">
+            Customer: <strong>${text(result.order.customer?.email, 320)}</strong><br/>
+            Estimated item refund: <strong>€${Number(result.request.refundEstimate).toFixed(2)}</strong>.
+          </p>
+          <p>Review the request in Skanare Admin → Returns.</p>
+        `,
+      }),
+    { returnId, recipient: "admin" }
+  );
+
   return result.request;
 }
 
@@ -672,7 +690,28 @@ export async function markReturnReceivedForAdmin(returnId, adminUser) {
   };
 
   await ref.set(patch, { merge: true });
-  return { ...request, ...patch };
+
+  const updated = { ...request, ...patch };
+  const order = await getOrder(request.orderId);
+
+  await notifyBestEffort(
+    () =>
+      sendReturnEmail({
+        to: order.customer?.email,
+        subject: `Return ${updated.returnNumber} received`,
+        title: "We received your return",
+        intro: "Your returned parcel is now awaiting refund processing.",
+        body: `
+          <p style="color:#555;line-height:1.7;">
+            We will inspect the returned items and record the approved refund.
+            Estimated item refund: <strong>€${Number(updated.refundEstimate || 0).toFixed(2)}</strong>.
+          </p>
+        `,
+      }),
+    { returnId }
+  );
+
+  return updated;
 }
 
 async function deactivateReturnedQrCodes(returnRequest, order) {
