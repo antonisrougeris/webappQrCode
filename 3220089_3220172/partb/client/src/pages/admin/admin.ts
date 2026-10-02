@@ -51,6 +51,19 @@ const KNOWN_COLOR_HEX: Record<string, string> = {
    API
    ========================================================= */
 
+function readAdminCookie(name: string): string | null {
+  const prefix = `${encodeURIComponent(name)}=`;
+
+  for (const part of document.cookie.split(";")) {
+    const cookie = part.trim();
+    if (cookie.startsWith(prefix)) {
+      return decodeURIComponent(cookie.slice(prefix.length));
+    }
+  }
+
+  return null;
+}
+
 async function adminApi(
   path: string,
   options: RequestInit = {}
@@ -65,6 +78,11 @@ async function adminApi(
   const headers = new Headers(options.headers || {});
 
   headers.set("Authorization", `Bearer ${token}`);
+
+  const csrfToken = readAdminCookie("csrf_token");
+  if (csrfToken && !headers.has("X-CSRF-Token")) {
+    headers.set("X-CSRF-Token", csrfToken);
+  }
 
   const isFormData = options.body instanceof FormData;
 
