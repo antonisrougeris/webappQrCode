@@ -881,6 +881,26 @@ function renderCustomerOrders(
 
             ${tracking}
 
+            ${(
+              order?.shipping?.status === "delivered" ||
+              status === "completed"
+            )
+              ? `
+                <div class="account-order__tracking">
+                  <div class="account-order__tracking-info">
+                    <span>Need to send something back?</span>
+                    <strong>Start a self-service return</strong>
+                  </div>
+                  <a
+                    href="/returns?orderId=${encodeURIComponent(order?.id || "")}"
+                    class="account-order__tracking-link"
+                  >
+                    Return items →
+                  </a>
+                </div>
+              `
+              : ""}
+
           </article>
         `;
       })

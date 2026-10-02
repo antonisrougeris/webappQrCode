@@ -63,6 +63,11 @@ export default defineConfig({
           "src/pages/refund-policy/refund-policy.html"
         ),
 
+        returns: resolve(
+          __dirname,
+          "src/pages/returns/returns.html"
+        ),
+
         privacyPolicy: resolve(
           __dirname,
           "src/pages/privacy-policy/privacy-policy.html"

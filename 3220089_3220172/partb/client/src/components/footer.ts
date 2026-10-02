@@ -62,6 +62,13 @@ export function renderFooter(): void {
               </li>
 
               <li>
+                <a href="/returns">
+                  <span>Returns Center</span>
+                  <span class="footer-arrow">↗</span>
+                </a>
+              </li>
+
+              <li>
                 <a href="/login">
                   <span>Sign In</span>
                   <span class="footer-arrow">↗</span>
@@ -230,6 +237,10 @@ export function renderFooter(): void {
 
               <a href="/my-qr">
                 My QR Codes
+              </a>
+
+              <a href="/returns">
+                Returns Center
               </a>
 
               <a href="/login">

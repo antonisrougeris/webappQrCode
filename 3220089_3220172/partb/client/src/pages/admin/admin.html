@@ -230,6 +230,7 @@
         <button class="admin-nav__item is-active" data-view="dashboard" type="button"><span class="admin-nav__icon">◫</span>Dashboard</button>
         <button class="admin-nav__item" data-view="fulfillment" type="button"><span class="admin-nav__icon">▣</span><span>Fulfillment</span><span id="fulfillmentBadge" class="nav-badge" hidden></span></button>
         <button class="admin-nav__item" data-view="orders" type="button"><span class="admin-nav__icon">▤</span>Orders</button>
+        <button class="admin-nav__item" data-view="returns" type="button"><span class="admin-nav__icon">↩</span>Returns</button>
         <button class="admin-nav__item" data-view="products" type="button"><span class="admin-nav__icon">□</span>Products</button>
         <button class="admin-nav__item" data-view="customers" type="button"><span class="admin-nav__icon">♙</span>Customers</button>
         <button class="admin-nav__item" data-view="qr" type="button"><span class="admin-nav__icon">⌗</span>QR Codes</button>
@@ -313,6 +314,19 @@
             </table>
           </div>
         </div>
+      </section>
+
+      <!-- RETURNS -->
+      <section id="view-returns" class="admin-view hidden">
+        <div class="admin-section__header">
+          <div>
+            <span class="admin-eyebrow">Reverse logistics</span>
+            <h2>Returns</h2>
+            <p>Review requests, create BOX NOW return vouchers, receive parcels and record refunds.</p>
+          </div>
+          <button id="refreshReturns" class="admin-text-button" type="button">Refresh ↻</button>
+        </div>
+        <div id="adminReturnsList" class="fulfillment-list"></div>
       </section>
 
       <!-- PRODUCTS -->
