@@ -92,7 +92,7 @@ jobs:
           echo "Production frontend bundle guard OK"
 
       - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: skanare-frontend
           path: 3220089_3220172/partb/client/dist/
@@ -147,7 +147,7 @@ jobs:
           cp package.json package-lock.json deploy-package/
 
       - name: Upload backend artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: skanare-backend
           path: 3220089_3220172/partb/server/deploy-package/
