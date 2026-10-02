@@ -215,39 +215,58 @@ function openReturnForm(order: EligibleOrder): void {
 
         return `
           <div class="return-item" data-return-item="${esc(item.id)}" data-price="${Number(item.unitPrice || 0)}">
-            <input class="return-item__selected" type="checkbox" aria-label="Select ${esc(item.title)}" />
-            <div>
-              <div class="return-item__title">${esc(item.title || "Skanare product")}</div>
-              <div class="return-item__details">
-                ${item.variant?.color ? esc(item.variant.color) : ""}
-                ${item.variant?.size ? ` · Size ${esc(item.variant.size)}` : ""}
-                · ${money(item.unitPrice, order.currency)}
+            <label class="return-item__check">
+              <input
+                class="return-item__selected"
+                type="checkbox"
+                aria-label="Select ${esc(item.title)}"
+              />
+            </label>
+
+            <div class="return-item__body">
+              <div class="return-item__summary">
+                <div>
+                  <div class="return-item__title">${esc(item.title || "Skanare product")}</div>
+                  <div class="return-item__details">
+                    ${item.variant?.color ? esc(item.variant.color) : ""}
+                    ${item.variant?.size ? ` · Size ${esc(item.variant.size)}` : ""}
+                    · ${money(item.unitPrice, order.currency)}
+                  </div>
+                </div>
+
+                <div class="return-item__controls">
+                  <label>
+                    <span class="return-control-label">Quantity</span>
+                    <select class="return-item__quantity" disabled>
+                      ${Array.from({ length: max }, (_, i) => i + 1)
+                        .map((qty) => `<option value="${qty}">${qty}</option>`)
+                        .join("")}
+                    </select>
+                  </label>
+                </div>
               </div>
-            </div>
-            <div class="return-item__controls">
-              <label>
-                <span class="return-muted">Qty</span>
-                <select class="return-item__quantity">
-                  ${Array.from({ length: max }, (_, i) => i + 1)
-                    .map((qty) => `<option value="${qty}">${qty}</option>`)
-                    .join("")}
-                </select>
-              </label>
-            </div>
-            <div class="return-reason-row">
-              <label>
-                <span class="return-muted">Reason</span>
-                <select class="return-item__reason">
-                  <option value="">Choose a reason</option>
-                  ${reasons
-                    .map(([value, label]) => `<option value="${value}">${label}</option>`)
-                    .join("")}
-                </select>
-              </label>
-              <label>
-                <span class="return-muted">Item note (optional)</span>
-                <input class="return-item__note" maxlength="1000" placeholder="Tell us more" />
-              </label>
+
+              <div class="return-reason-row">
+                <label>
+                  <span class="return-control-label">Reason for return</span>
+                  <select class="return-item__reason" disabled>
+                    <option value="">Choose a reason</option>
+                    ${reasons
+                      .map(([value, label]) => `<option value="${value}">${label}</option>`)
+                      .join("")}
+                  </select>
+                </label>
+
+                <label>
+                  <span class="return-control-label">Item note <span class="return-muted">(optional)</span></span>
+                  <input
+                    class="return-item__note"
+                    maxlength="1000"
+                    placeholder="Add details about this item"
+                    disabled
+                  />
+                </label>
+              </div>
             </div>
           </div>
         `;
@@ -256,6 +275,11 @@ function openReturnForm(order: EligibleOrder): void {
   }
 
   form?.reset();
+
+  formItems
+    ?.querySelectorAll<HTMLElement>("[data-return-item]")
+    .forEach(syncReturnItemState);
+
   if (orderIdInput) orderIdInput.value = order.id;
   if (formStatus) formStatus.textContent = "";
   updateEstimate();
@@ -289,7 +313,39 @@ function updateEstimate(): void {
   }
 }
 
-formItems?.addEventListener("change", updateEstimate);
+function syncReturnItemState(row: HTMLElement): void {
+  const selected =
+    row.querySelector<HTMLInputElement>(".return-item__selected");
+
+  const enabled = Boolean(selected?.checked);
+
+  row.classList.toggle("is-selected", enabled);
+
+  row
+    .querySelectorAll<
+      HTMLSelectElement | HTMLInputElement
+    >(
+      ".return-item__quantity, .return-item__reason, .return-item__note"
+    )
+    .forEach((control) => {
+      control.disabled = !enabled;
+    });
+}
+
+formItems?.addEventListener("change", (event) => {
+  const target = event.target as HTMLElement | null;
+  const row = target?.closest<HTMLElement>("[data-return-item]");
+
+  if (row) {
+    syncReturnItemState(row);
+  }
+
+  updateEstimate();
+
+  if (formStatus?.textContent) {
+    formStatus.textContent = "";
+  }
+});
 
 document.getElementById("closeReturnForm")?.addEventListener(
   "click",

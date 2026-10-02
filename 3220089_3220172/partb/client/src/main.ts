@@ -886,14 +886,14 @@ function renderCustomerOrders(
               status === "completed"
             )
               ? `
-                <div class="account-order__tracking">
+                <div class="account-order__tracking account-order__return">
                   <div class="account-order__tracking-info">
                     <span>Need to send something back?</span>
                     <strong>Start a self-service return</strong>
                   </div>
                   <a
                     href="/returns?orderId=${encodeURIComponent(order?.id || "")}"
-                    class="account-order__tracking-link"
+                    class="account-order__tracking-link account-order__return-link"
                   >
                     Return items →
                   </a>
