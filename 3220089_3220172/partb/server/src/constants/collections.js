@@ -5,6 +5,7 @@ export const COLLECTIONS = {
   ORDERS: "orders",
   QR_CODES: "qrCodes",
   REVIEWS: "reviews",
+  RETURNS: "returns",
     QR_SHORT_IDS: "qrShortIds",
 
 };

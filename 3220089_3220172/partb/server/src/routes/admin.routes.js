@@ -36,6 +36,15 @@ import {
 } from "../middleware/auth.js";
 
 import {
+  adminApproveReturn,
+  adminDownloadReturnLabel,
+  adminListReturns,
+  adminMarkReturnReceived,
+  adminMarkReturnRefunded,
+  adminRejectReturn,
+} from "../controllers/returns.controller.js";
+
+import {
   requireAdmin,
 } from "../middleware/requireAdmin.js";
 
@@ -127,6 +136,18 @@ router.get(
   "/orders/:id",
   getAdminOrder
 );
+
+
+/* =========================
+   RETURNS
+   ========================= */
+
+router.get("/returns", adminListReturns);
+router.post("/returns/:returnId/approve", adminApproveReturn);
+router.post("/returns/:returnId/reject", adminRejectReturn);
+router.post("/returns/:returnId/received", adminMarkReturnReceived);
+router.post("/returns/:returnId/refunded", adminMarkReturnRefunded);
+router.get("/returns/:returnId/label", adminDownloadReturnLabel);
 
 
 /* =========================

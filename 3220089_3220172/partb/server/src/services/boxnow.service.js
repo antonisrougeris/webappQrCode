@@ -70,6 +70,13 @@ function getConfig() {
         process.env.BOXNOW_ORIGIN_ID || ""
       ).trim(),
 
+    returnDestinationId:
+      String(
+        process.env.BOXNOW_RETURN_DESTINATION_ID ||
+        process.env.BOXNOW_ORIGIN_ID ||
+        ""
+      ).trim(),
+
     defaultCompartmentSize:
       Number(
         process.env.BOXNOW_DEFAULT_COMPARTMENT_SIZE || 1
@@ -806,6 +813,87 @@ export async function createBoxNowDelivery(
   );
 
   return result;
+}
+
+
+/* ==================================================
+   CUSTOMER RETURN DELIVERY
+================================================== */
+
+export async function createBoxNowCustomerReturn(
+  returnRequest,
+  order
+) {
+  if (!returnRequest || !order) {
+    throw new ApiError(400, "Missing return request or order");
+  }
+
+  if (isMockMode()) {
+    const parcelId = createMockParcelId();
+
+    return {
+      mock: true,
+      id: `MOCK-RETURN-${Date.now()}`,
+      orderNumber: `MOCK-${returnRequest.returnNumber}`,
+      labels: [],
+      parcels: [{ id: parcelId, labels: [] }],
+    };
+  }
+
+  const config = getConfig();
+  const destinationId = String(
+    config.returnDestinationId || config.originId || ""
+  ).trim();
+
+  if (!destinationId) {
+    throw new ApiError(500, "BOX NOW return destination is not configured");
+  }
+
+  const contactName = getCustomerName(order);
+  const contactEmail = String(order?.customer?.email || "").trim();
+  const contactPhone = String(order?.customer?.phone || "").trim();
+
+  if (!contactName || !contactEmail || !contactPhone) {
+    throw new ApiError(
+      400,
+      "Customer contact details are incomplete for BOX NOW return"
+    );
+  }
+
+  const payload = {
+    sender: {
+      contactPhoneNumber: contactPhone,
+      contactEmail,
+      contactName,
+    },
+    destination: {
+      locationId: destinationId,
+    },
+    parcels: [
+      {
+        id: String(returnRequest.returnNumber),
+        name: `Skanare return ${returnRequest.orderNumber}`,
+        value: normalizeMoney(returnRequest.refundEstimate),
+        weight: 0,
+        size: normalizeCompartmentSize(config.defaultCompartmentSize),
+      },
+    ],
+  };
+
+  console.log("BOX NOW creating customer return", {
+    environment: getEnvironmentLabel(),
+    returnId: returnRequest.id,
+    returnNumber: returnRequest.returnNumber,
+    destinationId,
+  });
+
+  return boxNowRequest(
+    "/api/v1/delivery-requests:customerReturns",
+    {
+      method: "POST",
+      body: payload,
+    }
+  );
 }
 
 /* ==================================================

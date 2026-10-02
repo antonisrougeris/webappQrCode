@@ -6,6 +6,7 @@ import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
 import { sendEmail } from "./email.service.js";
 import { brandedEmailTemplate } from "./email-template.service.js";
+import { processBoxNowReturnWebhookEvent } from "./returns.service.js";
 
 
 /* ==================================================
@@ -813,6 +814,23 @@ export async function processBoxNowWebhook({
       }
     );
 
+
+  if (result?.reason === "order_not_found") {
+    const returnResult = await processBoxNowReturnWebhookEvent({
+      orderNumber,
+      parcelId,
+      event,
+      eventTime,
+      messageId,
+      data,
+      receivedAt,
+    });
+
+    if (returnResult) {
+      console.log("BOX NOW return webhook processed", returnResult);
+      return returnResult;
+    }
+  }
 
   console.log(
     "BOX NOW webhook processed",
