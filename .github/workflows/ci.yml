@@ -168,13 +168,13 @@ jobs:
 
     steps:
       - name: Download frontend artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: skanare-frontend
           path: deploy/client/dist
 
       - name: Download backend artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: skanare-backend
           path: deploy/server
