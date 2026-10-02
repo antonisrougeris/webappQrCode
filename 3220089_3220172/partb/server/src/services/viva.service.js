@@ -207,3 +207,116 @@ export async function getVivaWebhookVerificationKey() {
 
   return payload;
 }
+
+
+export async function retrieveVivaTransaction(transactionId) {
+  const id = String(transactionId || "").trim();
+
+  if (!id) {
+    throw new ApiError(400, "Missing Viva transaction id");
+  }
+
+  const token = await getVivaAccessToken();
+
+  const response = await fetch(
+    `${getVivaBaseApi()}/checkout/v2/transactions/${encodeURIComponent(id)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    }
+  );
+
+  const payload = await readJsonResponse(response);
+
+  if (!response.ok) {
+    console.error("Viva retrieve transaction failed:", response.status, payload);
+    throw new ApiError(
+      502,
+      `Failed to verify Viva transaction (${response.status})`,
+      payload
+    );
+  }
+
+  return payload;
+}
+
+export function validateVivaWebhookTransaction(payload, transaction) {
+  const data = payload?.EventData || payload?.eventData || payload?.data || payload || {};
+
+  const webhookOrderCode = String(
+    data?.OrderCode ||
+      data?.orderCode ||
+      data?.OrderId ||
+      data?.orderId ||
+      ""
+  ).trim();
+
+  const providerOrderCode = String(
+    transaction?.orderCode ||
+      transaction?.OrderCode ||
+      ""
+  ).trim();
+
+  const webhookStatus = String(
+    data?.StatusId ||
+      data?.statusId ||
+      data?.StatusID ||
+      data?.statusID ||
+      ""
+  ).trim().toUpperCase();
+
+  const providerStatus = String(
+    transaction?.statusId ||
+      transaction?.StatusId ||
+      ""
+  ).trim().toUpperCase();
+
+  const webhookAmountCents = Math.round(
+    Number(data?.Amount ?? data?.amount ?? 0) * 100
+  );
+
+  const providerAmountCents = Math.round(
+    Number(transaction?.amount ?? transaction?.Amount ?? 0) * 100
+  );
+
+  if (
+    !webhookOrderCode ||
+    !providerOrderCode ||
+    webhookOrderCode !== providerOrderCode ||
+    webhookStatus !== providerStatus ||
+    !webhookAmountCents ||
+    webhookAmountCents !== providerAmountCents
+  ) {
+    throw new ApiError(400, "Viva webhook verification mismatch");
+  }
+
+  if (providerStatus !== "F") {
+    throw new ApiError(400, "Viva transaction is not completed");
+  }
+
+  return transaction;
+}
+
+export async function verifyVivaWebhookWithProvider(payload) {
+  const data = payload?.EventData || payload?.eventData || payload?.data || payload || {};
+
+  const transactionId = String(
+    data?.TransactionId ||
+      data?.transactionId ||
+      data?.TransactionID ||
+      data?.transactionID ||
+      ""
+  ).trim();
+
+  if (!transactionId) {
+    throw new ApiError(400, "Viva webhook is missing transaction id");
+  }
+
+  const transaction = await retrieveVivaTransaction(transactionId);
+
+  return validateVivaWebhookTransaction(payload, transaction);
+}
+

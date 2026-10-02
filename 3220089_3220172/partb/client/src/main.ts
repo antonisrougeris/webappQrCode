@@ -12,11 +12,36 @@ import { initCookieConsent } from "./components/cookieConsent";
 
 import QRCode from "qrcode";
 
+function readCookie(name: string): string | null {
+  const prefix = `${encodeURIComponent(name)}=`;
+
+  for (const part of document.cookie.split(";")) {
+    const cookie = part.trim();
+
+    if (cookie.startsWith(prefix)) {
+      return decodeURIComponent(cookie.slice(prefix.length));
+    }
+  }
+
+  return null;
+}
+
 async function initGuestSession(): Promise<void> {
   try {
+    // Prime the CSRF cookie through a safe request before creating a guest session.
+    await fetch(`${import.meta.env.VITE_API_BASE_URL}/health/live`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const csrfToken = readCookie("csrf_token");
+
     await fetch(`${import.meta.env.VITE_API_BASE_URL}/session/guest`, {
       method: "POST",
       credentials: "include",
+      headers: csrfToken
+        ? { "X-CSRF-Token": csrfToken }
+        : {},
     });
   } catch (error) {
     console.error("Failed to initialize guest session:", error);
@@ -855,6 +880,26 @@ function renderCustomerOrders(
             ${progress}
 
             ${tracking}
+
+            ${(
+              order?.shipping?.status === "delivered" ||
+              status === "completed"
+            )
+              ? `
+                <div class="account-order__tracking">
+                  <div class="account-order__tracking-info">
+                    <span>Need to send something back?</span>
+                    <strong>Start a self-service return</strong>
+                  </div>
+                  <a
+                    href="/returns?orderId=${encodeURIComponent(order?.id || "")}"
+                    class="account-order__tracking-link"
+                  >
+                    Return items →
+                  </a>
+                </div>
+              `
+              : ""}
 
           </article>
         `;

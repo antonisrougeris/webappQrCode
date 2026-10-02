@@ -29,6 +29,7 @@ const stockForm = document.getElementById("stockForm") as HTMLFormElement | null
 
 let currentOrders: any[] = [];
 let currentFulfillmentOrders: any[] = [];
+let currentReturns: any[] = [];
 let currentProducts: any[] = [];
 let currentQrCodes: any[] = [];
 
@@ -50,6 +51,19 @@ const KNOWN_COLOR_HEX: Record<string, string> = {
    API
    ========================================================= */
 
+function readAdminCookie(name: string): string | null {
+  const prefix = `${encodeURIComponent(name)}=`;
+
+  for (const part of document.cookie.split(";")) {
+    const cookie = part.trim();
+    if (cookie.startsWith(prefix)) {
+      return decodeURIComponent(cookie.slice(prefix.length));
+    }
+  }
+
+  return null;
+}
+
 async function adminApi(
   path: string,
   options: RequestInit = {}
@@ -64,6 +78,11 @@ async function adminApi(
   const headers = new Headers(options.headers || {});
 
   headers.set("Authorization", `Bearer ${token}`);
+
+  const csrfToken = readAdminCookie("csrf_token");
+  if (csrfToken && !headers.has("X-CSRF-Token")) {
+    headers.set("X-CSRF-Token", csrfToken);
+  }
 
   const isFormData = options.body instanceof FormData;
 
@@ -187,6 +206,7 @@ function openView(view: string) {
     dashboard: "Dashboard",
     fulfillment: "Fulfillment",
     orders: "Orders",
+    returns: "Returns",
     products: "Products",
     customers: "Customers",
     qr: "QR Codes",
@@ -221,6 +241,9 @@ async function loadView(view: string) {
       break;
     case "orders":
       await loadOrders();
+      break;
+    case "returns":
+      await loadReturns();
       break;
     case "products":
       await loadProducts();
@@ -849,6 +872,242 @@ function closeDrawer() {
 
 document.getElementById("closeAdminDrawer")?.addEventListener("click", closeDrawer);
 document.getElementById("adminDrawerOverlay")?.addEventListener("click", closeDrawer);
+
+
+/* =========================================================
+   RETURNS
+   ========================================================= */
+
+async function loadReturns() {
+  const data = await adminApi("/returns");
+  currentReturns = data.returns || [];
+  renderReturns();
+}
+
+function returnStatusLabel(status: unknown) {
+  return String(status || "requested")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function renderReturns() {
+  const target = document.getElementById("adminReturnsList");
+  if (!target) return;
+
+  if (!currentReturns.length) {
+    target.innerHTML = `<div class="admin-section"><p class="admin-muted">No return requests yet.</p></div>`;
+    return;
+  }
+
+  target.innerHTML = currentReturns
+    .map((request: any) => {
+      const status = String(request.status || "requested");
+      const canReview = ["requested", "provider_failed"].includes(status);
+      const canReceive = ["approved", "label_ready", "dropped_off", "in_transit", "provider_issue"].includes(status);
+      const canRefund = status === "refund_pending";
+      const canLabel = Boolean(request.boxnow?.parcelId) && !["rejected", "cancelled"].includes(status);
+
+      const items = Array.isArray(request.items)
+        ? request.items
+            .map(
+              (item: any) => `
+                <div class="admin-list__item">
+                  <strong>${escapeHtml(item.title || "Product")}</strong>
+                  <span>
+                    Qty ${Number(item.quantity || 0)}
+                    ${item.variant?.size ? ` · ${escapeHtml(item.variant.size)}` : ""}
+                    · ${escapeHtml(item.reasonLabel || item.reason || "")}
+                  </span>
+                </div>
+              `
+            )
+            .join("")
+        : "";
+
+      return `
+        <article class="fulfillment-card">
+          <div class="fulfillment-card__top">
+            <div>
+              <span class="admin-eyebrow">RETURN ${escapeHtml(request.returnNumber || request.id)}</span>
+              <h3>Order ${escapeHtml(request.orderNumber || request.orderId || "")}</h3>
+              <div class="admin-muted">
+                ${escapeHtml(
+                  [request.customer?.firstName, request.customer?.lastName]
+                    .filter(Boolean)
+                    .join(" ")
+                )}
+                · ${escapeHtml(request.customer?.email || "")}
+              </div>
+            </div>
+            <span class="admin-badge admin-badge--${escapeHtml(status)}">
+              ${escapeHtml(returnStatusLabel(status))}
+            </span>
+          </div>
+
+          <div style="margin:16px 0;">
+            ${items}
+          </div>
+
+          ${request.customerNote
+            ? `<p class="admin-muted"><strong>Customer note:</strong> ${escapeHtml(request.customerNote)}</p>`
+            : ""}
+
+          ${request.providerError?.message
+            ? `<p class="admin-status" style="color:#9b1c1c;">BOX NOW: ${escapeHtml(request.providerError.message)}</p>`
+            : ""}
+
+          <div class="fulfillment-card__footer">
+            <div>
+              <strong>${formatMoney(Number(request.refundEstimate || 0))}</strong>
+              <div class="admin-muted">Estimated item refund</div>
+            </div>
+            <div class="admin-actions">
+              ${canLabel
+                ? `<button class="admin-secondary-button" data-return-label="${escapeHtml(request.id)}">Voucher PDF</button>`
+                : ""}
+              ${canReview
+                ? `<button class="admin-secondary-button" data-return-reject="${escapeHtml(request.id)}">Reject</button>
+                   <button class="admin-primary-button" data-return-approve="${escapeHtml(request.id)}">Approve + BOX NOW</button>`
+                : ""}
+              ${canReceive
+                ? `<button class="admin-secondary-button" data-return-received="${escapeHtml(request.id)}">Mark received</button>`
+                : ""}
+              ${canRefund
+                ? `<button class="admin-primary-button" data-return-refunded="${escapeHtml(request.id)}">Record refund</button>`
+                : ""}
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function returnAction(
+  returnId: string,
+  action: "approve" | "reject" | "received" | "refunded"
+) {
+  let body: Record<string, unknown> | undefined;
+
+  if (action === "reject") {
+    const note = window.prompt(
+      "Reason shown to the customer:",
+      "This return request could not be approved."
+    );
+    if (note === null) return;
+    body = { note };
+  }
+
+  if (action === "refunded") {
+    const request = currentReturns.find((item) => item.id === returnId);
+    const amountInput = window.prompt(
+      "Refund amount:",
+      String(request?.refundEstimate ?? "")
+    );
+    if (amountInput === null) return;
+
+    const amount = Number(amountInput);
+    if (!Number.isFinite(amount) || amount < 0) {
+      window.alert("Enter a valid refund amount.");
+      return;
+    }
+
+    const reference = window.prompt(
+      "Refund/payment reference (optional):",
+      ""
+    );
+
+    body = {
+      amount,
+      reference: reference || "",
+    };
+  }
+
+  await adminApi(
+    `/returns/${encodeURIComponent(returnId)}/${action}`,
+    {
+      method: "POST",
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    }
+  );
+
+  await loadReturns();
+}
+
+document.getElementById("refreshReturns")?.addEventListener("click", () => {
+  void loadReturns();
+});
+
+document.addEventListener("click", (event) => {
+  const target = event.target as HTMLElement;
+
+  const approve = target.closest<HTMLElement>("[data-return-approve]");
+  if (approve?.dataset.returnApprove) {
+    void returnAction(approve.dataset.returnApprove, "approve").catch((error) => {
+      window.alert(error instanceof Error ? error.message : "Return approval failed.");
+    });
+    return;
+  }
+
+  const reject = target.closest<HTMLElement>("[data-return-reject]");
+  if (reject?.dataset.returnReject) {
+    void returnAction(reject.dataset.returnReject, "reject").catch((error) => {
+      window.alert(error instanceof Error ? error.message : "Return rejection failed.");
+    });
+    return;
+  }
+
+  const received = target.closest<HTMLElement>("[data-return-received]");
+  if (received?.dataset.returnReceived) {
+    void returnAction(received.dataset.returnReceived, "received").catch((error) => {
+      window.alert(error instanceof Error ? error.message : "Could not update return.");
+    });
+    return;
+  }
+
+  const refunded = target.closest<HTMLElement>("[data-return-refunded]");
+  if (refunded?.dataset.returnRefunded) {
+    void returnAction(refunded.dataset.returnRefunded, "refunded").catch((error) => {
+      window.alert(error instanceof Error ? error.message : "Could not record refund.");
+    });
+    return;
+  }
+
+  const label = target.closest<HTMLElement>("[data-return-label]");
+  if (label?.dataset.returnLabel) {
+    void downloadAdminReturnLabel(label.dataset.returnLabel);
+  }
+});
+
+async function downloadAdminReturnLabel(returnId: string) {
+  const user = firebaseAuth.currentUser;
+  if (!user) throw new Error("Administrator not signed in");
+
+  const token = await user.getIdToken();
+  const response = await fetch(
+    `/api/admin/returns/${encodeURIComponent(returnId)}/label`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.message || "Return voucher is not available.");
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `SKANARE-return-${returnId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 /* =========================================================
    PRODUCTS

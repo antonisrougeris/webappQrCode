@@ -1,7 +1,18 @@
+function normalizeConfiguredOrigin(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  try {
+    return new URL(raw).origin;
+  } catch {
+    throw new Error(`Invalid CORS_ORIGIN value: ${raw}`);
+  }
+}
+
 export function getAllowedOrigins() {
   return String(process.env.CORS_ORIGIN || "")
     .split(",")
-    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .map(normalizeConfiguredOrigin)
     .filter(Boolean);
 }
 
@@ -15,24 +26,30 @@ export function corsOptions() {
 
   return {
     origin(origin, callback) {
-      // Επιτρέπει curl, Postman, server-to-server requests
-      // που δεν στέλνουν Origin header.
+      // curl/Postman/server-to-server requests may omit Origin.
       if (!origin) {
         return callback(null, true);
       }
 
-      const normalizedOrigin = origin.replace(/\/+$/, "");
+      let normalizedOrigin;
+
+      try {
+        normalizedOrigin = new URL(origin).origin;
+      } catch {
+        console.warn("Blocked malformed CORS origin");
+        return callback(null, false);
+      }
 
       if (allowedOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
 
-      console.warn("Blocked CORS origin:", origin);
+      console.warn("Blocked CORS origin:", normalizedOrigin);
       return callback(null, false);
     },
 
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
   };
 }

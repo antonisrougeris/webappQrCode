@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The production application accesses Firestore through Firebase Admin
+    // on the server. The browser does not need direct Firestore access.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

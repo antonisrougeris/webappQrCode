@@ -1240,6 +1240,9 @@ export async function markOrderPaidFromVivaWebhook(payload) {
             orderId:
               order.id,
 
+            orderItemId:
+              item.id,
+
             productId:
               item.productId,
 
@@ -1334,6 +1337,9 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
           orderId:
             order.id,
+
+          orderItemId:
+            item.id,
 
           targetUrl:
             item.qrDestination ||

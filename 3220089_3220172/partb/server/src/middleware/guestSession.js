@@ -31,8 +31,15 @@ function decodeGuestSession(token) {
   const [payload, signature] = token.split(".");
   const expected = sign(payload);
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected)))
+  const receivedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (
+    receivedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
+  ) {
     return null;
+  }
 
   const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
   if (!parsed?.guestId || Date.now() - Number(parsed.iat || 0) > MAX_AGE_MS)
@@ -45,10 +52,14 @@ export function createGuestId() {
 }
 
 export function setGuestCookie(res, guestId) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const secureCookie =
+    isProduction || String(process.env.COOKIE_SECURE || "").toLowerCase() === "true";
+
   res.cookie(COOKIE_NAME, encodeGuestSession(guestId), {
     httpOnly: true,
-    sameSite: "none",
-    secure: true,
+    sameSite: isProduction ? "lax" : "lax",
+    secure: secureCookie,
     maxAge: MAX_AGE_MS,
     path: "/",
   });

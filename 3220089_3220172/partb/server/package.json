@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "seed:products": "node scripts/seedProducts.js"
+    "seed:products": "node scripts/seedProducts.js",
+    "test": "node --test"
   },
   "dependencies": {
     "canvas": "^3.2.3",
@@ -18,6 +19,7 @@
     "firebase-admin": "^13.0.2",
     "helmet": "^8.2.0",
     "libphonenumber-js": "^1.13.12",
+    "lusca": "^1.7.0",
     "multer": "^2.4.0",
     "qrcode": "^1.5.4",
     "resend": "^6.16.0",

@@ -16,11 +16,31 @@ export interface ApiEnvelope<T> {
   error?: string;
 }
 
+function readCookie(name: string): string | null {
+  const prefix = `${encodeURIComponent(name)}=`;
+
+  for (const part of document.cookie.split(";")) {
+    const cookie = part.trim();
+
+    if (cookie.startsWith(prefix)) {
+      return decodeURIComponent(cookie.slice(prefix.length));
+    }
+  }
+
+  return null;
+}
+
 async function buildHeaders(init?: HeadersInit): Promise<Headers> {
   const headers = new Headers(init || {});
 
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+
+  const csrfToken = readCookie("csrf_token");
+
+  if (csrfToken && !headers.has("X-CSRF-Token")) {
+    headers.set("X-CSRF-Token", csrfToken);
   }
 
   const user = firebaseAuth.currentUser;

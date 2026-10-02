@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Uploads are performed by the trusted server using Firebase Admin.
+    // Keep direct browser access denied unless a specific use case is added.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
