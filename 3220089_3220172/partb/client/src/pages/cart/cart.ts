@@ -802,20 +802,82 @@ function closeCartDrawer(): void {
 }
 
 function setupCartDrawer(): void {
-  const cartLinks = document.querySelectorAll("[data-cart-link], .cart-link");
-  const closeBtn = document.getElementById("closeCart");
-  const overlay = document.getElementById("cartOverlay");
+  const root =
+    document.documentElement;
 
-  cartLinks.forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      openCartDrawer();
-      void renderCart("cartDrawerContent");
-    });
-  });
+  if (
+    root.dataset
+      .cartDrawerDelegated ===
+    "true"
+  ) {
+    return;
+  }
 
-  closeBtn?.addEventListener("click", closeCartDrawer);
-  overlay?.addEventListener("click", closeCartDrawer);
+  root.dataset
+    .cartDrawerDelegated =
+    "true";
+
+  document.addEventListener(
+    "click",
+    (event) => {
+      const target =
+        event.target as
+          HTMLElement | null;
+
+      if (!target) return;
+
+      const cartLink =
+        target.closest<
+          HTMLAnchorElement
+        >(
+          "[data-cart-link], .cart-link"
+        );
+
+      if (cartLink) {
+        const drawer =
+          document.getElementById(
+            "cartDrawer"
+          );
+
+        const overlay =
+          document.getElementById(
+            "cartOverlay"
+          );
+
+        /*
+         * If this page does not include the drawer markup,
+         * keep the normal /cart navigation fallback.
+         */
+        if (
+          drawer &&
+          overlay
+        ) {
+          event.preventDefault();
+
+          openCartDrawer();
+
+          void renderCart(
+            "cartDrawerContent"
+          );
+        }
+
+        return;
+      }
+
+      if (
+        target.closest(
+          "#closeCart"
+        ) ||
+        target ===
+          document.getElementById(
+            "cartOverlay"
+          )
+      ) {
+        event.preventDefault();
+        closeCartDrawer();
+      }
+    }
+  );
 }
 
 async function initCart(): Promise<void> {
