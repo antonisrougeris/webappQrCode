@@ -214,15 +214,42 @@ function setupVariantControls(
   const firstAvailable = variants.find(v => Number(v.stock || 0) > 0);
   let selectedColor = selectableColors.find(c => c.toLowerCase() === String(product.defaultColor || "").toLowerCase())
     || firstAvailable?.color || selectableColors[0];
-  const variantsForColor = () => variants.filter(v => String(v.color || "").toLowerCase() === selectedColor.toLowerCase());
-  const sizesForColor = () => unique(variantsForColor().map(v => v.size));
+  const variantsForColor = () =>
+    variants.filter(
+      v =>
+        String(v.color || "").toLowerCase() ===
+        selectedColor.toLowerCase()
+    );
+
+  const productHasSizes =
+    variants.some(
+      variant =>
+        String(variant.size || "").trim().length > 0
+    );
+
+  const sizesForColor = () =>
+    unique(variantsForColor().map(v => v.size));
+
   let selectedSize = "";
-  const getSelectedVariant = () =>
-    selectedSize
-      ? variantsForColor().find(
+
+  const getSelectedVariant = () => {
+    const candidates = variantsForColor();
+
+    if (!productHasSizes) {
+      return (
+        candidates.find(
+          variant => Number(variant.stock || 0) > 0
+        ) ||
+        candidates[0]
+      );
+    }
+
+    return selectedSize
+      ? candidates.find(
           v => String(v.size || "") === selectedSize
         )
       : undefined;
+  };
 
   function redraw(): void {
     const candidates = variantsForColor();
@@ -243,15 +270,34 @@ function setupVariantControls(
         const available = Number(variant?.stock || 0) > 0;
         return `<button type="button" data-size="${safeProductText(size)}" class="option-btn ${size === selectedSize ? "active" : ""} ${available ? "" : "out-of-stock"}" ${available ? "" : "disabled"} aria-pressed="${size === selectedSize}">${safeProductText(size)}</button>`;
       }).join("");
-      sizeOptions.hidden = !sizes.length;
+      sizeOptions.hidden =
+        !productHasSizes ||
+        !sizes.length;
     }
-const sizeRow =
-  wrapper?.querySelector<HTMLElement>(".size-row");
-      if (sizeRow) sizeRow.hidden = !sizes.length;
+
+    const sizeRow =
+      wrapper?.querySelector<HTMLElement>(
+        ".size-row"
+      );
+
+    if (sizeRow) {
+      sizeRow.hidden =
+        !productHasSizes ||
+        !sizes.length;
+    }
+
     if (sizeLabel) {
       sizeLabel.textContent =
-        selectedSize ||
-        (sizes.length === 1 ? "Select" : "Select a size");
+        productHasSizes
+          ? (
+              selectedSize ||
+              (
+                sizes.length === 1
+                  ? "Select"
+                  : "Select a size"
+              )
+            )
+          : "";
     }
     if (colorRow) colorRow.hidden = colors.length === 0;
     if (colorLabel) colorLabel.textContent = selectedColor || "Default";
@@ -282,18 +328,22 @@ const sizeRow =
     if (quantityText) quantityText.textContent = String(quantity);
 
     if (stockEl) {
-      if (!selectedSize) {
-        stockEl.textContent = availableInColor
-          ? "Select a size"
-          : "Out of stock";
-        stockEl.style.color = availableInColor
-          ? "#6b6b65"
-          : "#b42318";
+      if (productHasSizes && !selectedSize) {
+        stockEl.textContent =
+          availableInColor
+            ? "Select a size"
+            : "Out of stock";
+
+        stockEl.style.color =
+          availableInColor
+            ? "#6b6b65"
+            : "#b42318";
       } else {
         stockEl.textContent =
           selectedVariantStock > 0
             ? "In stock"
             : "Out of stock";
+
         stockEl.style.color =
           selectedVariantStock > 0
             ? "#129447"
@@ -315,8 +365,13 @@ const sizeRow =
   colorOptions?.addEventListener("click", event => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-product-color]");
     if (!button || button.disabled) return;
-    selectedColor = button.dataset.productColor || "";
-    selectedSize = "";
+    selectedColor =
+      button.dataset.productColor || "";
+
+    if (productHasSizes) {
+      selectedSize = "";
+    }
+
     onColorChanged(selectedColor);
     redraw();
   });
@@ -1039,47 +1094,71 @@ if (imageStage) {
       addBtn.disabled = !isInStock(product, getSelectedVariant());
 
       addBtn.addEventListener("click", async () => {
-        const rawQrDestination = qrDestinationInput?.value.trim() || "";
-        let qrDestination = rawQrDestination || "https://skanare.com";
+        const selectedVariant =
+          getSelectedVariant();
 
-        if (!rawQrDestination) {
-          showToast(
-            "Don’t forget to add your own QR URL later.",
-            { placement: "cart-reminder" }
+        const requiresSizeSelection =
+          (product.variants || []).some(
+            variant =>
+              String(
+                variant.size || ""
+              ).trim().length > 0
           );
-        } else if (/^https?:\/\//i.test(rawQrDestination)) {
-          try {
-            new URL(rawQrDestination);
-          } catch {
-            showToast(
-              "Please enter a valid URL, for example https://example.com"
-            );
-            qrDestinationInput?.focus();
-            return;
-          }
-        }
 
-        const selectedVariant = getSelectedVariant();
+        if (
+          requiresSizeSelection &&
+          !selectedVariant
+        ) {
+          const originalText =
+            addBtn.textContent ||
+            "Add to cart";
 
-        if ((product.variants || []).length && !selectedVariant) {
-          const originalText = addBtn.textContent || "Add to cart";
-
-          addBtn.classList.add("needs-selection");
-          addBtn.textContent = "Choose a size";
+          addBtn.textContent =
+            "Choose a size";
 
           document
-            .getElementById("sizeOptions")
+            .getElementById(
+              "sizeOptions"
+            )
             ?.scrollIntoView({
               behavior: "smooth",
               block: "center",
             });
 
           window.setTimeout(() => {
-            addBtn.classList.remove("needs-selection");
-            addBtn.textContent = originalText;
-          }, 1400);
+            addBtn.textContent =
+              originalText;
+          }, 1200);
 
           return;
+        }
+
+        const rawQrDestination =
+          qrDestinationInput?.value.trim() ||
+          "";
+
+        const qrDestination =
+          rawQrDestination ||
+          "https://skanare.com";
+
+        if (
+          rawQrDestination &&
+          /^https?:\/\//i.test(
+            rawQrDestination
+          )
+        ) {
+          try {
+            new URL(
+              rawQrDestination
+            );
+          } catch {
+            showToast(
+              "Please enter a valid URL, for example https://example.com"
+            );
+
+            qrDestinationInput?.focus();
+            return;
+          }
         }
 
         if (!isInStock(product, selectedVariant)) {
@@ -1115,15 +1194,28 @@ if (imageStage) {
 
           await updateCartBadge();
 
-          addBtn.textContent = "Added to cart!";
-          addBtn.classList.remove("btn-primary");
-          addBtn.classList.add("btn-outline");
+          if (!rawQrDestination) {
+            showToast(
+              "Don’t forget to add your own QR URL later.",
+              {
+                placement:
+                  "cart-reminder",
+              }
+            );
+          }
+
+          addBtn.textContent =
+            "Added to cart!";
 
           setTimeout(() => {
-            addBtn.disabled = !isInStock(product, getSelectedVariant());
-            addBtn.textContent = "Add to cart";
-            addBtn.classList.add("btn-primary");
-            addBtn.classList.remove("btn-outline");
+            addBtn.disabled =
+              !isInStock(
+                product,
+                getSelectedVariant()
+              );
+
+            addBtn.textContent =
+              "Add to cart";
           }, 900);
 
           openExistingCartDrawer();
