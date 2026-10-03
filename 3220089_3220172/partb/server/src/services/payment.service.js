@@ -1838,6 +1838,19 @@ export async function markOrderPaidFromVivaWebhook(payload) {
                 receipt.number ||
                 null,
 
+              type:
+                receipt.type ||
+                (
+                  paidOrderForEmail.billing?.documentType === "invoice"
+                    ? "invoice"
+                    : "retail_receipt"
+                ),
+
+              invoiceDetails:
+                paidOrderForEmail.billing?.documentType === "invoice"
+                  ? paidOrderForEmail.billing?.invoiceDetails || null
+                  : null,
+
               mark:
                 receipt.mark ||
                 null,
