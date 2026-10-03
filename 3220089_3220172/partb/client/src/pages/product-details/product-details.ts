@@ -222,6 +222,7 @@ function setupVariantControls(
     );
 
   const productHasSizes =
+    product.category === "tshirt" &&
     variants.some(
       variant =>
         String(variant.size || "").trim().length > 0
@@ -1098,6 +1099,7 @@ if (imageStage) {
           getSelectedVariant();
 
         const requiresSizeSelection =
+          product.category === "tshirt" &&
           (product.variants || []).some(
             variant =>
               String(
