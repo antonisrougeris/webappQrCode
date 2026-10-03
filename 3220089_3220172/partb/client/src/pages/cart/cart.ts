@@ -2,7 +2,10 @@
 
 import { initNav } from "../../components/initNav";
 import { initMobileMenu } from "../../components/menu";
-import { updateCartBadge } from "../../utils/cart-badge";
+import {
+  updateCartBadge,
+  updateCartBadgeFromCart,
+} from "../../utils/cart-badge";
 import {
   getCart,
   addCartItem,
@@ -18,6 +21,9 @@ initMobileMenu();
 
 const FREE_SHIPPING_TARGET = 50;
 const FREE_STICKERS_TARGET = 80;
+
+let currentCart: Cart | null = null;
+let catalogCache: Product[] | null = null;
 
 function showToast(message: string): void {
   let stack = document.getElementById("toastStack");
@@ -319,18 +325,45 @@ async function renderCrossSell(cartItems: CartItem[], products: Product[]): Prom
   }
 }
 
-async function renderCart(targetId: string): Promise<void> {
-  const container = document.getElementById(targetId);
+async function getCatalogCached(): Promise<Product[]> {
+  if (catalogCache) {
+    return catalogCache;
+  }
+
+  catalogCache =
+    await getProducts()
+      .catch(
+        () => [] as Product[]
+      );
+
+  return catalogCache;
+}
+
+async function renderCartFromState(
+  targetId: string,
+  cart: Cart
+): Promise<void> {
+  const container =
+    document.getElementById(
+      targetId
+    );
+
   if (!container) return;
 
-  container.classList.remove("cart-empty-state");
+  container.classList.remove(
+    "cart-empty-state"
+  );
 
-  const cart = await getCart();
-  const items = getCartItems(cart);
-  const total = getCartTotal(cart);
+  const items =
+    getCartItems(cart);
+
+  const total =
+    getCartTotal(cart);
 
   if (items.length === 0) {
-    container.classList.add("cart-empty-state");
+    container.classList.add(
+      "cart-empty-state"
+    );
 
     container.innerHTML = `
       <section class="cart-empty">
@@ -340,18 +373,33 @@ async function renderCart(targetId: string): Promise<void> {
         </a>
       </section>
     `;
+
     return;
   }
 
-  // Fetch once: color-specific cart photos and cross-sell share the same catalog.
-  const catalog = await getProducts().catch(() => [] as Product[]);
-  const crossSell = await renderCrossSell(items, catalog);
+  const catalog =
+    await getCatalogCached();
+
+  const crossSell =
+    await renderCrossSell(
+      items,
+      catalog
+    );
 
   container.innerHTML = `
     ${updateProgress(total)}
 
     <section class="drawer-cart-list">
-      ${items.map((item, index) => renderCartItem(item, index, catalog)).join("")}
+      ${items
+        .map(
+          (item, index) =>
+            renderCartItem(
+              item,
+              index,
+              catalog
+            )
+        )
+        .join("")}
     </section>
 
     <section class="cart-summary">
@@ -361,8 +409,10 @@ async function renderCart(targetId: string): Promise<void> {
       </div>
       <div class="cart-summary-meta">
         <small>${getCartCount(cart)} item${
-    getCartCount(cart) === 1 ? "" : "s"
-  }</small>
+          getCartCount(cart) === 1
+            ? ""
+            : "s"
+        }</small>
       </div>
     </section>
 
@@ -376,66 +426,171 @@ async function renderCart(targetId: string): Promise<void> {
   `;
 }
 
-async function refreshAllCartViews(): Promise<void> {
-  const loading = document.getElementById("cartLoading");
-  const error = document.getElementById("cartError");
+async function renderCart(
+  targetId: string
+): Promise<void> {
+  const cart =
+    await getCart();
 
-  if (loading) loading.hidden = false;
-  if (error) error.hidden = true;
+  currentCart = cart;
+
+  await renderCartFromState(
+    targetId,
+    cart
+  );
+}
+
+async function refreshAllCartViews(
+  nextCart?: Cart
+): Promise<void> {
+  const loading =
+    document.getElementById(
+      "cartLoading"
+    );
+
+  const error =
+    document.getElementById(
+      "cartError"
+    );
+
+  if (loading) {
+    loading.hidden = false;
+  }
+
+  if (error) {
+    error.hidden = true;
+  }
 
   try {
-    await renderCart("cartDrawerContent");
-    await updateCartBadge();
+    if (nextCart) {
+      currentCart = nextCart;
+
+      await renderCartFromState(
+        "cartDrawerContent",
+        nextCart
+      );
+
+      updateCartBadgeFromCart(
+        nextCart
+      );
+    } else {
+      await renderCart(
+        "cartDrawerContent"
+      );
+
+      if (currentCart) {
+        updateCartBadgeFromCart(
+          currentCart
+        );
+      } else {
+        await updateCartBadge();
+      }
+    }
 
     window.dispatchEvent(
-      new CustomEvent("skanare:cart-updated")
+      new CustomEvent(
+        "skanare:cart-updated"
+      )
     );
   } catch (err) {
-    console.error("Cart render failed:", err);
+    console.error(
+      "Cart render failed:",
+      err
+    );
 
     if (error) {
       error.hidden = false;
       error.textContent =
-        err instanceof Error ? err.message : "Failed to load cart.";
+        err instanceof Error
+          ? err.message
+          : "Failed to load cart.";
     }
   } finally {
-    if (loading) loading.hidden = true;
+    if (loading) {
+      loading.hidden = true;
+    }
   }
 }
 
-async function changeItemQuantity(itemId: string, nextQuantity: number) {
-  if (nextQuantity <= 0) {
-    await removeCartItem(itemId);
-    await refreshAllCartViews();
-    return;
-  }
+async function changeItemQuantity(
+  itemId: string,
+  nextQuantity: number
+) {
+  const cart =
+    currentCart ||
+    await getCart();
 
-  const cart = await getCart();
-  const items = getCartItems(cart);
-  const item = items.find(
-    (entry, index) => getCartItemKey(entry, index) === itemId
-  );
+  currentCart = cart;
+
+  const items =
+    getCartItems(cart);
+
+  const item =
+    items.find(
+      (entry, index) =>
+        getCartItemKey(
+          entry,
+          index
+        ) === itemId
+    );
 
   if (!item) return;
 
-  const maxStock = getItemAvailableStock(item);
+  if (nextQuantity <= 0) {
+    const nextCart =
+      await removeCartItem(
+        itemId
+      );
 
-  if (nextQuantity > maxStock) {
-    showToast("We don't have more items in this size.");
+    await refreshAllCartViews(
+      nextCart
+    );
+
     return;
   }
 
-  await updateCartItem(itemId, {
-    quantity: nextQuantity,
-    qrDestination: getCartItemQr(item) || "https://skanare.com",
-  });
+  const maxStock =
+    getItemAvailableStock(
+      item
+    );
 
-  await refreshAllCartViews();
+  if (nextQuantity > maxStock) {
+    showToast(
+      "We don't have more items in this size."
+    );
+
+    return;
+  }
+
+  const nextCart =
+    await updateCartItem(
+      itemId,
+      {
+        quantity:
+          nextQuantity,
+
+        qrDestination:
+          getCartItemQr(item) ||
+          "https://skanare.com",
+      }
+    );
+
+  await refreshAllCartViews(
+    nextCart
+  );
 }
 
-async function deleteItem(itemId: string): Promise<void> {
-  await removeCartItem(itemId);
-  await refreshAllCartViews();
+async function deleteItem(
+  itemId: string
+): Promise<void> {
+  const nextCart =
+    await removeCartItem(
+      itemId
+    );
+
+  await refreshAllCartViews(
+    nextCart
+  );
 }
 
 function bindCartActions(): void {
@@ -482,14 +637,22 @@ return;
         addBtn.disabled = true;
         addBtn.textContent = "...";
 
-        await addCartItem({
-          productId: product._id || product.id,
-          quantity: 1,
-          variant: selectedVariant,
-          qrDestination: "https://skanare.com",
-        });
+        const nextCart =
+          await addCartItem({
+            productId:
+              product._id ||
+              product.id,
 
-        await refreshAllCartViews();
+            quantity: 1,
+            variant:
+              selectedVariant,
+            qrDestination:
+              "https://skanare.com",
+          });
+
+        await refreshAllCartViews(
+          nextCart
+        );
         openCartDrawer();
 
         addBtn.textContent = "✓";
@@ -532,13 +695,25 @@ return;
       if (!itemId) return;
 
       try {
-        const cart = await getCart();
-        const item = getCartItems(cart).find(
-          (entry, index) => getCartItemKey(entry, index) === itemId
-        );
+        const item =
+          getCartItems(
+            currentCart
+          ).find(
+            (entry, index) =>
+              getCartItemKey(
+                entry,
+                index
+              ) === itemId
+          );
+
         if (!item) return;
 
-        await changeItemQuantity(itemId, Number(item.quantity || 0) - 1);
+        await changeItemQuantity(
+          itemId,
+          Number(
+            item.quantity || 0
+          ) - 1
+        );
       } catch (error: any) {
         console.error("Decrease quantity failed:", error);
         showToast(error?.message || "Failed to update quantity.");
@@ -551,13 +726,25 @@ return;
       if (!itemId) return;
 
       try {
-        const cart = await getCart();
-        const item = getCartItems(cart).find(
-          (entry, index) => getCartItemKey(entry, index) === itemId
-        );
+        const item =
+          getCartItems(
+            currentCart
+          ).find(
+            (entry, index) =>
+              getCartItemKey(
+                entry,
+                index
+              ) === itemId
+          );
+
         if (!item) return;
 
-        await changeItemQuantity(itemId, Number(item.quantity || 0) + 1);
+        await changeItemQuantity(
+          itemId,
+          Number(
+            item.quantity || 0
+          ) + 1
+        );
       } catch (error: any) {
         console.error("Increase quantity failed:", error);
         showToast(error?.message || "Failed to update quantity.");
