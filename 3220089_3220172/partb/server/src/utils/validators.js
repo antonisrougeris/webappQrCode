@@ -65,6 +65,16 @@ function validPostalCodeForCountry(postalCode, countryCode) {
   return patterns[countryCode]?.test(postalCode) ?? false;
 }
 
+const invoiceDetailsSchema = z.object({
+  companyName: z.string().trim().min(1).max(160),
+  vatNumber: z.string().trim().min(1).max(20),
+  taxOffice: z.string().trim().min(1).max(120),
+  activity: z.string().trim().min(1).max(160),
+  address: z.string().trim().min(1).max(180),
+  city: z.string().trim().min(1).max(120),
+  postalCode: z.string().trim().min(1).max(20),
+});
+
 export const checkoutSchema = z.object({
   phoneCountryCode: countrySchema.default("GR"),
 
@@ -90,7 +100,11 @@ export const checkoutSchema = z.object({
 
   delivery: z.enum(["home", "boxnow"]).optional().default("home"),
 
-  locker: z.any().optional().nullable(),
+  locker: z.string().trim().max(160).optional().nullable(),
+
+  documentType: z.enum(["receipt", "invoice"]).optional().default("receipt"),
+
+  invoiceDetails: invoiceDetailsSchema.optional().nullable(),
 
   notes: z.string().trim().max(1000).optional().default(""),
 }).superRefine((checkout, context) => {
@@ -117,9 +131,17 @@ export const checkoutSchema = z.object({
     });
   }
 
+  if (checkout.documentType === "invoice" && !checkout.invoiceDetails) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["invoiceDetails"],
+      message: "Invoice details are required",
+    });
+  }
+
   // BOX NOW does not require a home shipping address
   if (checkout.delivery === "boxnow") {
-    if (!checkout.locker) {
+    if (!String(checkout.locker || "").trim()) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["locker"],

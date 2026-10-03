@@ -216,13 +216,26 @@ function setupVariantControls(
     || firstAvailable?.color || selectableColors[0];
   const variantsForColor = () => variants.filter(v => String(v.color || "").toLowerCase() === selectedColor.toLowerCase());
   const sizesForColor = () => unique(variantsForColor().map(v => v.size));
-  const firstAvailableInColor = variantsForColor().find(v => Number(v.stock || 0) > 0);
-  let selectedSize = firstAvailableInColor?.size || sizesForColor()[0] || "";
-  const getSelectedVariant = () => variantsForColor().find(v => String(v.size || "") === selectedSize);
+  let selectedSize = "";
+  const getSelectedVariant = () =>
+    selectedSize
+      ? variantsForColor().find(
+          v => String(v.size || "") === selectedSize
+        )
+      : undefined;
 
   function redraw(): void {
     const candidates = variantsForColor();
-    if (!candidates.some(v => String(v.size || "") === selectedSize)) selectedSize = candidates[0]?.size || "";
+
+    if (
+      selectedSize &&
+      !candidates.some(
+        v => String(v.size || "") === selectedSize
+      )
+    ) {
+      selectedSize = "";
+    }
+
     const sizes = sizesForColor();
     if (sizeOptions) {
       sizeOptions.innerHTML = sizes.map(size => {
@@ -235,7 +248,11 @@ function setupVariantControls(
 const sizeRow =
   wrapper?.querySelector<HTMLElement>(".size-row");
       if (sizeRow) sizeRow.hidden = !sizes.length;
-    if (sizeLabel) sizeLabel.textContent = selectedSize || "One size";
+    if (sizeLabel) {
+      sizeLabel.textContent =
+        selectedSize ||
+        (sizes.length === 1 ? "Select" : "Select a size");
+    }
     if (colorRow) colorRow.hidden = colors.length === 0;
     if (colorLabel) colorLabel.textContent = selectedColor || "Default";
     if (colorOptions) {
@@ -248,15 +265,45 @@ const sizeRow =
       }).join("");
     }
     const variant = getSelectedVariant();
+    const availableInColor = candidates.some(
+      candidate => Number(candidate?.stock || 0) > 0
+    );
+
     selectedVariantStock = Number(variant?.stock || 0);
-    if (quantity > Math.max(1, selectedVariantStock)) quantity = 1;
+
+    if (
+      selectedVariantStock > 0 &&
+      quantity > selectedVariantStock
+    ) {
+      quantity = 1;
+    }
+
     const quantityText = document.getElementById("quantityValue");
     if (quantityText) quantityText.textContent = String(quantity);
+
     if (stockEl) {
-      stockEl.textContent = selectedVariantStock > 0 ? "In stock" : "Out of stock";
-      stockEl.style.color = selectedVariantStock > 0 ? "#129447" : "#b42318";
+      if (!selectedSize) {
+        stockEl.textContent = availableInColor
+          ? "Select a size"
+          : "Out of stock";
+        stockEl.style.color = availableInColor
+          ? "#6b6b65"
+          : "#b42318";
+      } else {
+        stockEl.textContent =
+          selectedVariantStock > 0
+            ? "In stock"
+            : "Out of stock";
+        stockEl.style.color =
+          selectedVariantStock > 0
+            ? "#129447"
+            : "#b42318";
+      }
     }
-    if (addButton) addButton.disabled = !variant || selectedVariantStock <= 0;
+
+    if (addButton) {
+      addButton.disabled = !availableInColor;
+    }
   }
 
   sizeOptions?.addEventListener("click", event => {
@@ -269,8 +316,7 @@ const sizeRow =
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-product-color]");
     if (!button || button.disabled) return;
     selectedColor = button.dataset.productColor || "";
-    const available = variantsForColor().find(v => Number(v.stock || 0) > 0);
-    selectedSize = available?.size || variantsForColor()[0]?.size || "";
+    selectedSize = "";
     onColorChanged(selectedColor);
     redraw();
   });
@@ -984,7 +1030,7 @@ if (imageStage) {
     }
 
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
-    selectedVariantStock = getSelectedVariant()?.stock ?? product.stock ?? 0;
+    selectedVariantStock = 0;
     updateQuantity();
 
     await renderRelatedProducts(product);
@@ -1014,6 +1060,27 @@ if (imageStage) {
         }
 
         const selectedVariant = getSelectedVariant();
+
+        if ((product.variants || []).length && !selectedVariant) {
+          const originalText = addBtn.textContent || "Add to cart";
+
+          addBtn.classList.add("needs-selection");
+          addBtn.textContent = "Choose a size";
+
+          document
+            .getElementById("sizeOptions")
+            ?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+
+          window.setTimeout(() => {
+            addBtn.classList.remove("needs-selection");
+            addBtn.textContent = originalText;
+          }, 1400);
+
+          return;
+        }
 
         if (!isInStock(product, selectedVariant)) {
           showToast("This variant is out of stock.");

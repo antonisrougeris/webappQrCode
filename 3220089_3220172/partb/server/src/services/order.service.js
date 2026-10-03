@@ -2,6 +2,12 @@ import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
+import {
+  getCheckoutReservationMs,
+  isReservationActive,
+  releaseInventoryHold,
+  reserveInventoryHold,
+} from "./inventory-reservation.service.js";
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -74,8 +80,20 @@ export async function checkoutCartForOwner({
   delivery,
   locker,
   notes,
+  documentType = "receipt",
+  invoiceDetails = null,
 }) {
   if (!ownerId) throw new ApiError(401, "Missing checkout owner");
+
+  if (
+    delivery === "boxnow" &&
+    !String(locker || "").trim()
+  ) {
+    throw new ApiError(
+      400,
+      "Choose a BOX NOW locker before payment"
+    );
+  }
 
   const db = getDB();
   const orderId = createId("order");
@@ -111,16 +129,82 @@ export async function checkoutCartForOwner({
         if (
           existingOrder.ownerId === ownerId &&
           existingOrder.ownerType === ownerType &&
-          existingOrder.paymentStatus === "pending"
+          existingOrder.paymentStatus === "pending" &&
+          existingOrder.stockReservationState === "held" &&
+          isReservationActive(
+            existingOrder.stockReservationExpiresAt
+          )
         ) {
-          return {
-            orderId: existingOrder.id,
-            orderNumber: existingOrder.orderNumber,
-            qrCodesRequired:
-              Number(existingOrder.qrCodesRequired || 0),
-            order: existingOrder,
-            reused: true,
-          };
+          const requestedLocker =
+            String(locker || "").trim();
+
+          const existingLocker =
+            String(
+              existingOrder.shipping?.boxnow?.destinationId ||
+              existingOrder.locker ||
+              ""
+            ).trim();
+
+          if (
+            delivery !== "boxnow" ||
+            (
+              requestedLocker &&
+              existingLocker === requestedLocker
+            )
+          ) {
+            const refreshedAt = nowIso();
+
+            const checkoutRefresh = {
+              customer: {
+                ...existingOrder.customer,
+                firstName: customer.firstName,
+                lastName: customer.lastName,
+                email: customer.email,
+                phone: customer.phone || "",
+                phoneCountryCode:
+                  phoneCountryCode || "GR",
+              },
+
+              billing: {
+                documentType:
+                  documentType === "invoice"
+                    ? "invoice"
+                    : "receipt",
+
+                invoiceDetails:
+                  documentType === "invoice"
+                    ? invoiceDetails
+                    : null,
+              },
+
+              notes:
+                notes || "",
+
+              updatedAt:
+                refreshedAt,
+            };
+
+            tx.set(
+              existingRef,
+              checkoutRefresh,
+              {
+                merge:
+                  true,
+              }
+            );
+
+            return {
+              orderId: existingOrder.id,
+              orderNumber: existingOrder.orderNumber,
+              qrCodesRequired:
+                Number(existingOrder.qrCodesRequired || 0),
+              order: {
+                ...existingOrder,
+                ...checkoutRefresh,
+              },
+              reused: true,
+            };
+          }
         }
       }
     }
@@ -147,17 +231,20 @@ export async function checkoutCartForOwner({
         throw new ApiError(400, `Product "${product.title}" is unavailable`);
 
       const quantity = toNumber(item.quantity, 0);
-      const { variant, index } = findVariant(product, item.variant);
-      const stockPatch = assertAndDecrementStock(
-        product,
-        variant,
-        index,
-        quantity
-      );
-      stockUpdates.push({
-        ref: productRefs[i],
-        patch: { ...stockPatch, updatedAt: createdAt },
-      });
+
+      if (
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > 99
+      ) {
+        throw new ApiError(
+          400,
+          "Invalid item quantity"
+        );
+      }
+
+      const { variant } =
+        findVariant(product, item.variant);
 
 
 const unitPrice = toNumber(variant?.price ?? product.price, 0);
@@ -272,6 +359,18 @@ orderItems.push({
 locker: locker || null,
 notes: notes || "",
 
+billing: {
+  documentType:
+    documentType === "invoice"
+      ? "invoice"
+      : "receipt",
+
+  invoiceDetails:
+    documentType === "invoice"
+      ? invoiceDetails
+      : null,
+},
+
 shipping: {
   provider:
     delivery === "boxnow"
@@ -319,8 +418,6 @@ items: orderItems,
   updatedAt: createdAt,
 };
 
-    for (const update of stockUpdates) tx.update(update.ref, update.patch);
-
     tx.set(
       db.collection(COLLECTIONS.ORDERS).doc(orderId),
       order
@@ -343,6 +440,117 @@ items: orderItems,
   order,
 };
   });
+
+  if (result.reused) {
+    return result;
+  }
+
+  const promoted = [];
+
+  try {
+    for (const item of result.order.items || []) {
+      const hold = await reserveInventoryHold({
+        holdId:
+          `order:${result.orderId}:${item.id}`,
+        orderItemId:
+          item.id,
+        ownerId,
+        productId: item.productId,
+        selectedVariant: item.variant,
+        quantity: Number(item.quantity || 0),
+        phase: "checkout",
+        orderId: result.orderId,
+        ttlMs: getCheckoutReservationMs(),
+      });
+
+      promoted.push(hold);
+    }
+  } catch (error) {
+    await Promise.allSettled(
+      promoted.map((hold) =>
+        releaseInventoryHold({
+          holdId: hold.holdId,
+          inventoryKey: hold.inventoryKey,
+        })
+      )
+    );
+
+    const failedAt = nowIso();
+
+    await db
+      .collection(COLLECTIONS.ORDERS)
+      .doc(result.orderId)
+      .set(
+        {
+          stockReservationState: "failed",
+          stockReservationError:
+            error?.message ||
+            "Could not reserve inventory",
+          updatedAt: failedAt,
+        },
+        { merge: true }
+      );
+
+    await db
+      .collection(COLLECTIONS.CARTS)
+      .doc(ownerId)
+      .set(
+        {
+          checkoutOrderId: null,
+          checkoutStartedAt: null,
+          updatedAt: failedAt,
+        },
+        { merge: true }
+      );
+
+    throw error;
+  }
+
+  await Promise.allSettled(
+    (result.order.items || []).map((item) =>
+      releaseInventoryHold({
+        holdId:
+          item.id,
+        inventoryKey:
+          promoted.find(
+            (hold) =>
+              String(hold.orderItemId) ===
+              String(item.id)
+          )?.inventoryKey ||
+          "",
+      })
+    )
+  );
+
+  const stockReservationExpiresAt =
+    promoted
+      .map((hold) => hold.expiresAt)
+      .sort()
+      .at(-1) ||
+    new Date(
+      Date.now() +
+      getCheckoutReservationMs()
+    ).toISOString();
+
+  const reservationPatch = {
+    stockReservations: promoted,
+    stockReservationState: "held",
+    stockReservationExpiresAt,
+    updatedAt: nowIso(),
+  };
+
+  await db
+    .collection(COLLECTIONS.ORDERS)
+    .doc(result.orderId)
+    .set(
+      reservationPatch,
+      { merge: true }
+    );
+
+  result.order = {
+    ...result.order,
+    ...reservationPatch,
+  };
 
   return result;
 }

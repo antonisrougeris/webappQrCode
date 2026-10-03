@@ -18,6 +18,11 @@ import {
   createBoxNowDelivery,
 } from "./boxnow.service.js";
 
+import {
+  pruneExpiredHolds,
+  reservationDocId,
+} from "./inventory-reservation.service.js";
+
 
 function getEventData(payload) {
   return payload?.EventData || payload?.eventData || payload?.data || payload;
@@ -230,6 +235,27 @@ function buildQrInventoryKey(item) {
     size || "-",
     color || "-",
   ].join("::");
+}
+
+function findStoredVariantIndex(product, selectedVariant) {
+  const variants = Array.isArray(product?.variants)
+    ? product.variants
+    : [];
+
+  if (!variants.length) {
+    return -1;
+  }
+
+  const sku = String(selectedVariant?.sku || "").trim();
+  const size = String(selectedVariant?.size || "").trim().toLowerCase();
+  const color = String(selectedVariant?.color || "").trim().toLowerCase();
+
+  return variants.findIndex(
+    (variant) =>
+      String(variant?.sku || "").trim() === sku &&
+      String(variant?.size || "").trim().toLowerCase() === size &&
+      String(variant?.color || "").trim().toLowerCase() === color
+  );
 }
 
 
@@ -1101,6 +1127,295 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
 
     /*
+     * New checkout flow:
+     * stock is only consumed after Viva confirms payment.
+     *
+     * Cart / pending checkout reservations reduce storefront availability
+     * but do NOT mutate product stock.
+     */
+    const stockReservations =
+      Array.isArray(order.stockReservations)
+        ? order.stockReservations
+        : null;
+
+    if (stockReservations) {
+      if (
+        order.stockReservationState !== "held" ||
+        Date.parse(String(order.stockReservationExpiresAt || "")) <= Date.now()
+      ) {
+        throw new ApiError(
+          409,
+          "Checkout inventory reservation expired before payment confirmation"
+        );
+      }
+
+      const reservationByItem = new Map(
+        stockReservations.map((reservation) => [
+          String(
+            reservation.orderItemId ||
+            reservation.holdId ||
+            ""
+          ),
+          reservation,
+        ])
+      );
+
+      const fallbackByItem = new Map();
+
+      for (const item of order.items || []) {
+        const quantity = Number(item.quantity || 0);
+        const reservation = reservationByItem.get(String(item.id));
+
+        if (
+          !reservation ||
+          Number(reservation.quantity || 0) !== quantity
+        ) {
+          throw new ApiError(
+            409,
+            "Checkout inventory reservation does not match the order"
+          );
+        }
+
+        if (!item.customQr) {
+          fallbackByItem.set(String(item.id), quantity);
+        }
+      }
+
+      for (const assignment of qrAssignments) {
+        if (assignment.type !== "new") continue;
+
+        const itemId = String(assignment.item?.id || "");
+
+        fallbackByItem.set(
+          itemId,
+          Number(fallbackByItem.get(itemId) || 0) + 1
+        );
+      }
+
+      const productIds = [
+        ...new Set(
+          (order.items || []).map((item) =>
+            String(item.productId)
+          )
+        ),
+      ];
+
+      const productEntries = await Promise.all(
+        productIds.map(async (productId) => {
+          const productRef = db
+            .collection(COLLECTIONS.PRODUCTS)
+            .doc(productId);
+
+          return {
+            productId,
+            productRef,
+            snap: await tx.get(productRef),
+          };
+        })
+      );
+
+      const products = new Map(
+        productEntries.map((entry) => [
+          entry.productId,
+          entry,
+        ])
+      );
+
+      const holdKeys = [
+        ...new Set(
+          stockReservations
+            .map((reservation) =>
+              String(reservation.inventoryKey || "")
+            )
+            .filter(Boolean)
+        ),
+      ];
+
+      const holdEntries = await Promise.all(
+        holdKeys.map(async (inventoryKey) => {
+          const holdRef = db
+            .collection(COLLECTIONS.INVENTORY_HOLDS)
+            .doc(reservationDocId(inventoryKey));
+
+          return {
+            inventoryKey,
+            holdRef,
+            snap: await tx.get(holdRef),
+          };
+        })
+      );
+
+      const liveHoldsById = new Map();
+
+      for (const entry of holdEntries) {
+        if (!entry.snap.exists) {
+          continue;
+        }
+
+        for (
+          const hold of pruneExpiredHolds(
+            entry.snap.data()?.holds,
+            Date.now()
+          )
+        ) {
+          liveHoldsById.set(
+            String(hold.id),
+            hold
+          );
+        }
+      }
+
+      for (const reservation of stockReservations) {
+        const liveHold =
+          liveHoldsById.get(
+            String(reservation.holdId || "")
+          );
+
+        if (
+          !liveHold ||
+          String(liveHold.orderId || "") !==
+            String(order.id) ||
+          String(liveHold.orderItemId || "") !==
+            String(reservation.orderItemId || "") ||
+          liveHold.phase !== "checkout" ||
+          Number(liveHold.quantity || 0) !==
+            Number(reservation.quantity || 0)
+        ) {
+          throw new ApiError(
+            409,
+            "Checkout inventory reservation is no longer active"
+          );
+        }
+      }
+
+      for (const item of order.items || []) {
+        const requiredFallback =
+          Number(
+            fallbackByItem.get(String(item.id)) || 0
+          );
+
+        if (requiredFallback <= 0) {
+          continue;
+        }
+
+        const entry =
+          products.get(String(item.productId));
+
+        if (!entry?.snap?.exists) {
+          throw new ApiError(
+            409,
+            "Product disappeared before payment confirmation"
+          );
+        }
+
+        const product = {
+          id: entry.snap.id,
+          ...entry.snap.data(),
+        };
+
+        const variantIndex =
+          findStoredVariantIndex(
+            product,
+            item.variant
+          );
+
+        if (variantIndex >= 0) {
+          const variants = [
+            ...(product.variants || []),
+          ];
+
+          const currentStock =
+            Number(
+              variants[variantIndex]?.stock || 0
+            );
+
+          if (currentStock < requiredFallback) {
+            throw new ApiError(
+              409,
+              "Reserved stock is no longer available"
+            );
+          }
+
+          variants[variantIndex] = {
+            ...variants[variantIndex],
+            stock:
+              currentStock -
+              requiredFallback,
+          };
+
+          tx.update(
+            entry.productRef,
+            {
+              variants,
+              updatedAt:
+                paidAt,
+            }
+          );
+        } else {
+          const currentStock =
+            Number(product.stock || 0);
+
+          if (currentStock < requiredFallback) {
+            throw new ApiError(
+              409,
+              "Reserved stock is no longer available"
+            );
+          }
+
+          tx.update(
+            entry.productRef,
+            {
+              stock:
+                currentStock -
+                requiredFallback,
+              updatedAt:
+                paidAt,
+            }
+          );
+        }
+      }
+
+      for (const entry of holdEntries) {
+        if (!entry.snap.exists) {
+          continue;
+        }
+
+        const active =
+          pruneExpiredHolds(
+            entry.snap.data()?.holds,
+            Date.now()
+          );
+
+        const orderItemIds =
+          new Set(
+            (order.items || []).map((item) =>
+              String(item.id)
+            )
+          );
+
+        tx.set(
+          entry.holdRef,
+          {
+            holds:
+              active.filter(
+                (hold) =>
+                  !orderItemIds.has(
+                    String(hold.id)
+                  )
+              ),
+            updatedAt:
+              paidAt,
+          },
+          {
+            merge:
+              true,
+          }
+        );
+      }
+    }
+
+
+    /*
      * Το shipping object έχει ήδη δημιουργηθεί
      * από το order.service.js.
      *
@@ -1135,6 +1450,15 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           ? {
               inventoryReservationState:
                 "consumed",
+            }
+          : {}),
+
+        ...(stockReservations
+          ? {
+              stockReservationState:
+                "consumed",
+              stockReservationConsumedAt:
+                paidAt,
             }
           : {}),
 
@@ -1560,6 +1884,19 @@ export async function markOrderPaidFromVivaWebhook(payload) {
               number:
                 receipt.number ||
                 null,
+
+              type:
+                receipt.type ||
+                (
+                  paidOrderForEmail.billing?.documentType === "invoice"
+                    ? "invoice"
+                    : "retail_receipt"
+                ),
+
+              invoiceDetails:
+                paidOrderForEmail.billing?.documentType === "invoice"
+                  ? paidOrderForEmail.billing?.invoiceDetails || null
+                  : null,
 
               mark:
                 receipt.mark ||

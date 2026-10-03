@@ -6,8 +6,13 @@ import { normalizeUrlOrThrow } from "../utils/validators.js";
 import {
   getProductByIdOrSlug,
   resolveVariantOrThrow,
-  assertStockForVariant,
 } from "./product.service.js";
+
+import {
+  getInventoryKey,
+  releaseInventoryHold,
+  reserveInventoryHold,
+} from "./inventory-reservation.service.js";
 
 import {
   chooseProductImages,
@@ -58,7 +63,6 @@ export async function addCartItem({
   }
 
   const variant = resolveVariantOrThrow(product, selectedVariant);
-  assertStockForVariant(product, variant, quantity);
 
   if (product.customQr && !qrDestination) {
     throw new ApiError(400, "qrDestination is required for this product");
@@ -89,16 +93,35 @@ export async function addCartItem({
     const existing = cart.items[existingIndex];
     const nextQty = Number(existing.quantity || 0) + quantity;
 
-    assertStockForVariant(product, variant, nextQty);
+    const hold = await reserveInventoryHold({
+      holdId: existing.id,
+      ownerId: userId,
+      productId: product.id,
+      selectedVariant: variant,
+      quantity: nextQty,
+      phase: "cart",
+    });
 
     cart.items[existingIndex] = {
       ...existing,
       quantity: nextQty,
+      reservationExpiresAt: hold.expiresAt,
       updatedAt: nowIso(),
     };
   } else {
+    const itemId = createId("cartitem");
+
+    const hold = await reserveInventoryHold({
+      holdId: itemId,
+      ownerId: userId,
+      productId: product.id,
+      selectedVariant: variant,
+      quantity,
+      phase: "cart",
+    });
+
     cart.items.push({
-      id: createId("cartitem"),
+      id: itemId,
       productId: product.id,
       slug: product.slug || product.id,
       title: product.title,
@@ -125,6 +148,7 @@ price: Number(
         : null,
       qrDestination: normalizedQrDestination,
       customQr: !!product.customQr,
+      reservationExpiresAt: hold.expiresAt,
       createdAt: nowIso(),
       updatedAt: nowIso(),
     });
@@ -175,7 +199,14 @@ export async function updateCartItem({
     ? resolveVariantOrThrow(product, current.variant)
     : null;
 
-  assertStockForVariant(product, resolvedVariant, quantity);
+  const hold = await reserveInventoryHold({
+    holdId: current.id,
+    ownerId: userId,
+    productId: product.id,
+    selectedVariant: resolvedVariant,
+    quantity,
+    phase: "cart",
+  });
 
   let nextQrDestination = null;
 
@@ -210,6 +241,7 @@ price: Number(
 
     quantity,
     qrDestination: nextQrDestination,
+    reservationExpiresAt: hold.expiresAt,
     updatedAt: nowIso(),
   };
 
@@ -236,9 +268,10 @@ export async function removeCartItem({ userId, itemId }) {
   const db = getDB();
   const cart = await getCartByUserId(userId);
 
+  const removedItem = cart.items.find((item) => item.id === itemId);
   const nextItems = cart.items.filter((item) => item.id !== itemId);
 
-  if (nextItems.length === cart.items.length) {
+  if (!removedItem || nextItems.length === cart.items.length) {
     throw new ApiError(404, "Cart item not found");
   }
 
@@ -254,6 +287,14 @@ export async function removeCartItem({ userId, itemId }) {
     merge: true,
   });
 
+  await releaseInventoryHold({
+    holdId: removedItem.id,
+    inventoryKey: getInventoryKey(
+      removedItem.productId,
+      removedItem.variant
+    ),
+  });
+
   return nextCart;
 }
 
@@ -263,6 +304,7 @@ export async function removeCartItem({ userId, itemId }) {
 
 export async function clearCart(userId) {
   const db = getDB();
+  const current = await getCartByUserId(userId);
 
   const nextCart = {
     userId,
@@ -275,6 +317,18 @@ export async function clearCart(userId) {
   await db.collection(COLLECTIONS.CARTS).doc(userId).set(nextCart, {
     merge: true,
   });
+
+  await Promise.all(
+    (current.items || []).map((item) =>
+      releaseInventoryHold({
+        holdId: item.id,
+        inventoryKey: getInventoryKey(
+          item.productId,
+          item.variant
+        ),
+      })
+    )
+  );
 
   return nextCart;
 }
