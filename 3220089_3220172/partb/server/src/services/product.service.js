@@ -4,6 +4,10 @@ import { ApiError } from '../utils/apiError.js';
 import { normalizeText } from '../utils/product.js';
 import { chooseProductImages } from './product-colors.service.js';
 import { availabilityForProduct, inventoryKey, isReadyQr } from './stock-availability.service.js';
+import {
+  getInventoryKey,
+  readActiveReservationCounts,
+} from './inventory-reservation.service.js';
 
 function withDefaultGallery(product) {
   const images = chooseProductImages(product, product.defaultColor);
@@ -66,6 +70,45 @@ async function readReadyCounts(db) {
   return counts;
 }
 
+function applyActiveReservations(product, reservedCounts) {
+  if (Array.isArray(product.variants) && product.variants.length) {
+    const variants = product.variants.map((variant) => {
+      const key = getInventoryKey(product.id, variant);
+      const reserved = Number(reservedCounts.get(key) || 0);
+      const gross = Number(variant.stock || 0);
+
+      return {
+        ...variant,
+        reservedStock: reserved,
+        stock: Math.max(0, gross - reserved),
+      };
+    });
+
+    return {
+      ...product,
+      variants,
+      reservedStock: variants.reduce(
+        (sum, variant) => sum + Number(variant.reservedStock || 0),
+        0
+      ),
+      stock: variants.reduce(
+        (sum, variant) => sum + Number(variant.stock || 0),
+        0
+      ),
+    };
+  }
+
+  const key = getInventoryKey(product.id, null);
+  const reserved = Number(reservedCounts.get(key) || 0);
+  const gross = Number(product.stock || 0);
+
+  return {
+    ...product,
+    reservedStock: reserved,
+    stock: Math.max(0, gross - reserved),
+  };
+}
+
 export async function listProductsService({category, q, featured, limit} = {}) {
   const db = getDB();
   const snap = await db.collection(COLLECTIONS.PRODUCTS).get();
@@ -84,8 +127,19 @@ export async function listProductsService({category, q, featured, limit} = {}) {
   const n = Number(limit);
   if (Number.isSafeInteger(n) && n > 0) products = products.slice(0, n);
   if (!products.some(p => p.customQr && p.variants?.length)) return products.map(withDefaultGallery);
-  const ready = await readReadyCounts(db);
-  return products.map(p => withDefaultGallery(availabilityForProduct(p, ready)));
+  const [ready, reserved] = await Promise.all([
+    readReadyCounts(db),
+    readActiveReservationCounts(db),
+  ]);
+
+  return products.map((product) =>
+    withDefaultGallery(
+      applyActiveReservations(
+        availabilityForProduct(product, ready),
+        reserved
+      )
+    )
+  );
 }
 
 export async function getProductByIdOrSlug(idOrSlug) {
@@ -102,6 +156,15 @@ export async function getProductByIdOrSlug(idOrSlug) {
   }
   if (product.active === false) throw new ApiError(404, 'Product not found');
   if (!product.customQr || !product.variants?.length) return withDefaultGallery(product);
-  const ready = await readReadyCounts(db);
-  return withDefaultGallery(availabilityForProduct(product, ready));
+  const [ready, reserved] = await Promise.all([
+    readReadyCounts(db),
+    readActiveReservationCounts(db),
+  ]);
+
+  return withDefaultGallery(
+    applyActiveReservations(
+      availabilityForProduct(product, ready),
+      reserved
+    )
+  );
 }
