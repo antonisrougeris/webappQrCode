@@ -128,6 +128,7 @@ export async function reserveInventoryHold({
   ownerId,
   productId,
   selectedVariant,
+  orderItemId = holdId,
   quantity,
   phase = "cart",
   orderId = null,
@@ -207,7 +208,12 @@ export async function reserveInventoryHold({
     const nextHold = {
       id: String(holdId),
       ownerId: ownerId ? String(ownerId) : null,
-      cartItemId: String(holdId),
+      cartItemId:
+        phase === "cart"
+          ? String(orderItemId)
+          : null,
+      orderItemId:
+        String(orderItemId),
       orderId: orderId ? String(orderId) : null,
       productId: product.id,
       sku: String(variant?.sku || ""),
@@ -239,6 +245,7 @@ export async function reserveInventoryHold({
 
     return {
       holdId: String(holdId),
+      orderItemId: String(orderItemId),
       inventoryKey,
       productId: product.id,
       sku: String(variant?.sku || ""),
