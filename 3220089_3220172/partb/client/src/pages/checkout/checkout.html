@@ -362,6 +362,123 @@
       </section>
 
 
+      <!-- BILLING DOCUMENT -->
+      <section class="checkout-page__section">
+
+        <div class="checkout-section-heading">
+          <span>03</span>
+
+          <div>
+            <h2>Receipt or invoice</h2>
+            <p>
+              Choose the document you need for this order.
+            </p>
+          </div>
+        </div>
+
+        <div class="checkout-billing-choice">
+          <label class="checkout-billing-option">
+            <input
+              type="radio"
+              name="documentType"
+              value="receipt"
+              checked
+            />
+            <span>
+              <strong>Receipt</strong>
+              <small>Standard retail receipt.</small>
+            </span>
+          </label>
+
+          <label class="checkout-billing-option">
+            <input
+              type="radio"
+              name="documentType"
+              value="invoice"
+            />
+            <span>
+              <strong>Invoice</strong>
+              <small>For a business or professional purchase.</small>
+            </span>
+          </label>
+        </div>
+
+        <div
+          id="invoiceFields"
+          class="checkout-invoice-fields hidden"
+        >
+          <div class="checkout-field-row">
+            <label class="checkout-field">
+              <span>Company / legal name</span>
+              <input
+                name="invoiceCompanyName"
+                autocomplete="organization"
+                maxlength="160"
+              />
+            </label>
+
+            <label class="checkout-field">
+              <span>VAT number / AFM</span>
+              <input
+                name="invoiceVatNumber"
+                inputmode="numeric"
+                maxlength="20"
+              />
+            </label>
+          </div>
+
+          <div class="checkout-field-row">
+            <label class="checkout-field">
+              <span>Tax office (DOY)</span>
+              <input
+                name="invoiceTaxOffice"
+                maxlength="120"
+              />
+            </label>
+
+            <label class="checkout-field">
+              <span>Business activity</span>
+              <input
+                name="invoiceActivity"
+                maxlength="160"
+              />
+            </label>
+          </div>
+
+          <label class="checkout-field">
+            <span>Billing address</span>
+            <input
+              name="invoiceAddress"
+              autocomplete="street-address"
+              maxlength="180"
+            />
+          </label>
+
+          <div class="checkout-field-row">
+            <label class="checkout-field">
+              <span>City</span>
+              <input
+                name="invoiceCity"
+                autocomplete="address-level2"
+                maxlength="120"
+              />
+            </label>
+
+            <label class="checkout-field">
+              <span>Postal code</span>
+              <input
+                name="invoicePostalCode"
+                inputmode="numeric"
+                autocomplete="postal-code"
+                maxlength="10"
+              />
+            </label>
+          </div>
+        </div>
+
+      </section>
+
+
       <button
         type="submit"
         class="checkout-page__btn"
