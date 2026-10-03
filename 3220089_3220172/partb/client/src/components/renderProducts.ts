@@ -36,13 +36,28 @@ function getProductImages(product: Product): string[] {
   return images;
 }
 
+export interface RenderProductsOptions {
+  eagerFirstImages?: number;
+}
+
 export function renderProducts(
   container: HTMLElement,
-  products: Product[]
+  products: Product[],
+  options: RenderProductsOptions = {}
 ): void {
   container.innerHTML = "";
 
-  products.forEach((product) => {
+  const eagerFirstImages =
+    Math.max(
+      0,
+      Number(
+        options.eagerFirstImages ||
+        0
+      )
+    );
+
+  products.forEach(
+    (product, productIndex) => {
     const productId = product.id || product._id;
 
     if (!productId) return;
@@ -75,23 +90,50 @@ export function renderProducts(
 
     const imagesHtml = images
       .map(
-        (image, index) => `
+        (image, index) => {
+          const isPrimary =
+            index === 0;
+
+          const isPriority =
+            isPrimary &&
+            productIndex <
+              eagerFirstImages;
+
+          return `
           <img
             class="product-image ${
-              index === 0 ? "is-active" : ""
+              isPrimary
+                ? "is-active"
+                : ""
             }"
             src="${escapeHtml(image)}"
             alt="${
-              index === 0
-                ? escapeHtml(product.title)
+              isPrimary
+                ? escapeHtml(
+                    product.title
+                  )
                 : ""
             }"
-            loading="lazy"
+            loading="${
+              isPriority
+                ? "eager"
+                : "lazy"
+            }"
+            fetchpriority="${
+              isPriority
+                ? "high"
+                : "low"
+            }"
             decoding="async"
             data-image-index="${index}"
-            ${index !== 0 ? 'aria-hidden="true"' : ""}
+            ${
+              !isPrimary
+                ? 'aria-hidden="true"'
+                : ""
+            }
           />
-        `
+        `;
+        }
       )
       .join("");
 

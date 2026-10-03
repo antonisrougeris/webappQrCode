@@ -77,6 +77,26 @@ function ensureStyles(): void {
       box-sizing: border-box;
     }
 
+    /*
+     * Edge/Windows can add its own password reveal icon only after
+     * the user starts typing. Hide native reveal/clear controls so
+     * the field always shows a single Skanare toggle.
+     */
+    .password-visibility > input::-ms-reveal,
+    .password-visibility > input::-ms-clear {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+
+    .password-visibility > input::-webkit-credentials-auto-fill-button {
+      visibility: hidden;
+      display: none !important;
+      pointer-events: none;
+      position: absolute;
+      right: 0;
+    }
+
     .password-visibility__toggle {
       position: absolute;
       top: 50%;
