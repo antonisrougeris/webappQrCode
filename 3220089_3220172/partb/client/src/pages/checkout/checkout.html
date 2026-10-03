@@ -1079,6 +1079,12 @@
           selected.boxnowLockerId || "";
 
         lockerInput.setCustomValidity("");
+
+        lockerInput.dispatchEvent(
+          new Event("change", {
+            bubbles: true
+          })
+        );
       }
 
 
