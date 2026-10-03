@@ -9,9 +9,12 @@ import {
 import { initNav } from "../../components/initNav";
 import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
+import { initPasswordVisibility } from "../../utils/password-visibility";
 import { firebaseAuth } from "../../services/firebase";
 import { saveToken } from "../../services/auth";
 import { register, sendVerificationCode } from "../../services/api";
+
+initPasswordVisibility();
 
 initNav();
 void updateCartBadge();
