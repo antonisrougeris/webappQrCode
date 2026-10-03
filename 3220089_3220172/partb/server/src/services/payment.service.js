@@ -1151,7 +1151,11 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
       const reservationByItem = new Map(
         stockReservations.map((reservation) => [
-          String(reservation.holdId || ""),
+          String(
+            reservation.orderItemId ||
+            reservation.holdId ||
+            ""
+          ),
           reservation,
         ])
       );
@@ -1240,6 +1244,49 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           };
         })
       );
+
+      const liveHoldsById = new Map();
+
+      for (const entry of holdEntries) {
+        if (!entry.snap.exists) {
+          continue;
+        }
+
+        for (
+          const hold of pruneExpiredHolds(
+            entry.snap.data()?.holds,
+            Date.now()
+          )
+        ) {
+          liveHoldsById.set(
+            String(hold.id),
+            hold
+          );
+        }
+      }
+
+      for (const reservation of stockReservations) {
+        const liveHold =
+          liveHoldsById.get(
+            String(reservation.holdId || "")
+          );
+
+        if (
+          !liveHold ||
+          String(liveHold.orderId || "") !==
+            String(order.id) ||
+          String(liveHold.orderItemId || "") !==
+            String(reservation.orderItemId || "") ||
+          liveHold.phase !== "checkout" ||
+          Number(liveHold.quantity || 0) !==
+            Number(reservation.quantity || 0)
+        ) {
+          throw new ApiError(
+            409,
+            "Checkout inventory reservation is no longer active"
+          );
+        }
+      }
 
       for (const item of order.items || []) {
         const requiredFallback =
