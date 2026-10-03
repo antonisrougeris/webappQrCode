@@ -58,6 +58,7 @@ function saveCheckoutDraftFromPage(): void {
 
 let discount = 0;
 let checkoutSubmitting = false;
+let checkoutHasItems = true;
 
 function formatPrice(n: number): string {
   return new Intl.NumberFormat("el-GR", {
@@ -114,12 +115,19 @@ function setPayButtonState(): void {
 
   const user = firebaseAuth.currentUser;
 
+  if (!checkoutHasItems) {
+    button.disabled = true;
+    button.textContent = "Add products to continue";
+    return;
+  }
+
+  button.disabled = checkoutSubmitting;
+
   if (!user) {
     button.textContent = "Sign in to pay with viva.com";
   } else {
     button.textContent = "Pay with viva.com";
   }
-  
 }
 
 
@@ -135,8 +143,21 @@ async function render(): Promise<void> {
 
   let subtotal = 0;
 
+  const summary =
+    document.querySelector<HTMLElement>(".checkout-page__summary");
+
   if (items.length === 0) {
-    container.innerHTML = `<p>Your cart is empty.</p>`;
+    checkoutHasItems = false;
+    summary?.classList.add("is-empty");
+
+    container.innerHTML = `
+      <div class="checkout-empty-state">
+        <strong>Your cart is empty</strong>
+        <p>Add a product before continuing to payment.</p>
+        <a href="/products">Shop products →</a>
+      </div>
+    `;
+
     document.getElementById("subtotal")!.textContent = formatPrice(0);
     document.getElementById("shipping")!.textContent = formatPrice(0);
     document.getElementById("total")!.textContent = formatPrice(0);
@@ -144,8 +165,13 @@ async function render(): Promise<void> {
     const msg = document.getElementById("freeShippingMsg");
     if (msg) msg.textContent = "";
 
+    setPayButtonState();
     return;
   }
+
+  checkoutHasItems = true;
+  summary?.classList.remove("is-empty");
+  setPayButtonState();
 
   container.innerHTML = items
     .map((item) => {
@@ -341,6 +367,75 @@ function updatePhoneValidity(): void {
   }
 }
 
+function updateBillingDocumentFields(): void {
+  const selected = document.querySelector<HTMLInputElement>(
+    'input[name="documentType"]:checked'
+  );
+
+  const invoiceFields = document.getElementById("invoiceFields");
+  const wantsInvoice = selected?.value === "invoice";
+
+  invoiceFields?.classList.toggle("hidden", !wantsInvoice);
+
+  const invoiceNames = [
+    "invoiceCompanyName",
+    "invoiceVatNumber",
+    "invoiceTaxOffice",
+    "invoiceActivity",
+    "invoiceAddress",
+    "invoiceCity",
+    "invoicePostalCode",
+  ];
+
+  for (const name of invoiceNames) {
+    const input = document.querySelector<HTMLInputElement>(
+      `[name="${name}"]`
+    );
+
+    if (input) {
+      input.required = wantsInvoice;
+    }
+  }
+}
+
+function readInvoiceDetails(form: FormData) {
+  const documentType =
+    String(form.get("documentType") || "receipt") === "invoice"
+      ? "invoice"
+      : "receipt";
+
+  if (documentType === "receipt") {
+    return {
+      documentType,
+      invoiceDetails: null,
+    } as const;
+  }
+
+  const required = (name: string, label: string) => {
+    const value = String(form.get(name) || "").trim();
+
+    if (!value) {
+      throw new Error(`${label} is required for an invoice.`);
+    }
+
+    return value;
+  };
+
+  return {
+    documentType,
+    invoiceDetails: {
+      companyName: required("invoiceCompanyName", "Company name"),
+      vatNumber: required("invoiceVatNumber", "VAT number / AFM"),
+      taxOffice: required("invoiceTaxOffice", "Tax office"),
+      activity: required("invoiceActivity", "Business activity"),
+      address: required("invoiceAddress", "Billing address"),
+      city: required("invoiceCity", "Billing city"),
+      postalCode: required("invoicePostalCode", "Billing postal code"),
+    },
+  } as const;
+}
+
+
 function updateLockerValidity(showError = false): boolean {
   const lockerInput = document.getElementById("lockerInput") as HTMLInputElement | null;
   const lockerMessage = document.getElementById("lockerValidationMessage");
@@ -528,6 +623,17 @@ editCartButton?.addEventListener(
 );
 
   const checkoutForm = document.getElementById("checkoutForm") as HTMLFormElement | null;
+
+  updateBillingDocumentFields();
+
+  checkoutForm
+    ?.querySelectorAll<HTMLInputElement>('input[name="documentType"]')
+    .forEach((radio) => {
+      radio.addEventListener("change", () => {
+        updateBillingDocumentFields();
+        saveCheckoutDraftFromPage();
+      });
+    });
   checkoutForm?.addEventListener("input", (event) => {
     const target = event.target as HTMLInputElement | HTMLTextAreaElement | null;
     if (target?.name === "phoneNumber" || target?.name === "postalCode") {
@@ -547,6 +653,10 @@ editCartButton?.addEventListener(
 
   firebaseAuth.onAuthStateChanged(() => {
     setPayButtonState();
+    void render();
+  });
+
+  window.addEventListener("skanare:cart-updated", () => {
     void render();
   });
 
@@ -705,6 +815,11 @@ submitButton && (submitButton.textContent = "Preparing payment...");
 
 const delivery = "boxnow" as const;
 
+const {
+  documentType,
+  invoiceDetails,
+} = readInvoiceDetails(form);
+
 let locker =
   String(
     form.get("locker") || ""
@@ -740,6 +855,8 @@ updateLockerValidity(false);
   locker,
   phoneCountryCode,
   notes: "",
+  documentType,
+  invoiceDetails,
 });
 
         if (result.checkoutUrl) {
