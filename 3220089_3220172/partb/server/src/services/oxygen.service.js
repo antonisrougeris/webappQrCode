@@ -37,6 +37,11 @@ function createMockReceipt(order) {
   const receiptNumber =
     `MOCK-${Date.now()}`;
 
+  const documentType =
+    order?.billing?.documentType === "invoice"
+      ? "invoice"
+      : "retail_receipt";
+
   return {
     mock: true,
 
@@ -53,7 +58,12 @@ function createMockReceipt(order) {
       receiptNumber,
 
     type:
-      "retail_receipt",
+      documentType,
+
+    invoiceDetails:
+      documentType === "invoice"
+        ? order?.billing?.invoiceDetails || null
+        : null,
 
     mark:
       null,
@@ -162,7 +172,7 @@ export async function issueOrderReceipt(
 
   if (isMockMode()) {
     console.log(
-      "OXYGEN MOCK receipt issued",
+      "OXYGEN MOCK fiscal document issued",
       {
         orderId:
           order.id,
