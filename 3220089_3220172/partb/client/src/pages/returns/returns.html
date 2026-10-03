@@ -111,6 +111,32 @@
   </main>
 
   <div id="siteFooter"></div>
+
+  <div
+    id="cartOverlay"
+    class="cart-overlay hidden"
+  ></div>
+
+  <aside
+    id="cartDrawer"
+    class="cart-drawer hidden"
+    aria-label="Shopping cart"
+  >
+    <header class="cart-header">
+      <h2>Your Cart</h2>
+      <button
+        id="closeCart"
+        type="button"
+        aria-label="Close cart"
+      >
+        ✕
+      </button>
+    </header>
+
+    <div id="cartDrawerContent"></div>
+  </aside>
+
   <script type="module" src="./returns.ts"></script>
+  <script type="module" src="/src/pages/cart/cart.ts"></script>
 </body>
 </html>
