@@ -1094,6 +1094,29 @@ if (orders) {
    HOMEPAGE PRODUCTS
 ========================= */
 
+let homepageProductsPromise:
+  Promise<
+    Awaited<
+      ReturnType<
+        typeof getProducts
+      >
+    >
+  > | null = null;
+
+function getHomepageProductsOnce() {
+  if (
+    !homepageProductsPromise
+  ) {
+    homepageProductsPromise =
+      getProducts({
+        featured: true,
+        active: true,
+      });
+  }
+
+  return homepageProductsPromise;
+}
+
 async function loadHomepageProducts(
   gridId: string,
   loadingId: string,
@@ -1113,16 +1136,43 @@ async function loadHomepageProducts(
     emptyEl?.setAttribute("hidden", "");
     errorEl?.setAttribute("hidden", "");
 
-    const products = await getProducts({
-      category,
-      featured: true,
-      active: true,
-      limit: 4,
-    });
+    const products =
+      await getHomepageProductsOnce();
 
-    const safeProducts = Array.isArray(products) ? products : [];
+    const safeProducts =
+      (
+        Array.isArray(products)
+          ? products
+          : []
+      )
+        .filter(
+          product =>
+            product.category
+              ?.toLowerCase() ===
+            category
+        )
+        .slice(0, 4);
 
-    renderProducts(grid, safeProducts);
+    /*
+     * The clothing row is the first product row users see.
+     * Discover its cover images immediately instead of waiting
+     * for browser lazy-load heuristics. Other images stay lazy.
+     */
+    renderProducts(
+      grid,
+      safeProducts,
+      {
+        eagerFirstImages:
+          category === "tshirt"
+            ? 4
+            : (
+                window.location.hash ===
+                  "#accessories"
+                  ? 4
+                  : 0
+              ),
+      }
+    );
 
     loadingEl?.setAttribute("hidden", "");
 
