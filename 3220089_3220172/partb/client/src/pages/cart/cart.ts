@@ -386,6 +386,10 @@ async function refreshAllCartViews(): Promise<void> {
   try {
     await renderCart("cartDrawerContent");
     await updateCartBadge();
+
+    window.dispatchEvent(
+      new CustomEvent("skanare:cart-updated")
+    );
   } catch (err) {
     console.error("Cart render failed:", err);
 
@@ -599,6 +603,10 @@ function closeCartDrawer(): void {
 
   drawer?.classList.remove("open");
   document.body.classList.remove("cart-open");
+
+  window.dispatchEvent(
+    new CustomEvent("skanare:cart-updated")
+  );
 
   setTimeout(() => {
     drawer?.classList.add("hidden");
