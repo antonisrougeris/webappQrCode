@@ -152,12 +152,56 @@ export async function checkoutCartForOwner({
               existingLocker === requestedLocker
             )
           ) {
+            const refreshedAt = nowIso();
+
+            const checkoutRefresh = {
+              customer: {
+                ...existingOrder.customer,
+                firstName: customer.firstName,
+                lastName: customer.lastName,
+                email: customer.email,
+                phone: customer.phone || "",
+                phoneCountryCode:
+                  phoneCountryCode || "GR",
+              },
+
+              billing: {
+                documentType:
+                  documentType === "invoice"
+                    ? "invoice"
+                    : "receipt",
+
+                invoiceDetails:
+                  documentType === "invoice"
+                    ? invoiceDetails
+                    : null,
+              },
+
+              notes:
+                notes || "",
+
+              updatedAt:
+                refreshedAt,
+            };
+
+            tx.set(
+              existingRef,
+              checkoutRefresh,
+              {
+                merge:
+                  true,
+              }
+            );
+
             return {
               orderId: existingOrder.id,
               orderNumber: existingOrder.orderNumber,
               qrCodesRequired:
                 Number(existingOrder.qrCodesRequired || 0),
-              order: existingOrder,
+              order: {
+                ...existingOrder,
+                ...checkoutRefresh,
+              },
               reused: true,
             };
           }
