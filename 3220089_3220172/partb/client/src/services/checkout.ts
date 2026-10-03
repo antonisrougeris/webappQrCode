@@ -19,6 +19,16 @@ export interface CheckoutShippingAddress {
   addressLine2?: string;
 }
 
+export interface CheckoutInvoiceDetails {
+  companyName: string;
+  vatNumber: string;
+  taxOffice: string;
+  activity: string;
+  address: string;
+  city: string;
+  postalCode: string;
+}
+
 export interface CheckoutPayload {
   customer: CheckoutCustomer;
   shippingAddress: CheckoutShippingAddress;
@@ -26,6 +36,8 @@ export interface CheckoutPayload {
   delivery?: "home" | "boxnow";
   locker?: string;
   notes?: string;
+  documentType?: "receipt" | "invoice";
+  invoiceDetails?: CheckoutInvoiceDetails | null;
 }
 
 export interface CheckoutResult {
