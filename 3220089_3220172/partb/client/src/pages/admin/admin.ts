@@ -5,6 +5,7 @@ import {
 } from "firebase/auth";
 
 import { firebaseAuth } from "../../services/firebase";
+import { initPasswordVisibility } from "../../utils/password-visibility";
 
 /* =========================================================
    DOM
@@ -22,6 +23,8 @@ const productModal = document.getElementById("productModal");
 const productForm = document.getElementById("productForm") as HTMLFormElement | null;
 const stockModal = document.getElementById("stockModal");
 const stockForm = document.getElementById("stockForm") as HTMLFormElement | null;
+
+initPasswordVisibility();
 
 /* =========================================================
    STATE
