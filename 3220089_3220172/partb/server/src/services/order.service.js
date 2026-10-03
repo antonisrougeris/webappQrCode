@@ -406,7 +406,10 @@ items: orderItems,
   try {
     for (const item of result.order.items || []) {
       const hold = await reserveInventoryHold({
-        holdId: item.id,
+        holdId:
+          `order:${result.orderId}:${item.id}`,
+        orderItemId:
+          item.id,
         ownerId,
         productId: item.productId,
         selectedVariant: item.variant,
@@ -458,6 +461,22 @@ items: orderItems,
 
     throw error;
   }
+
+  await Promise.allSettled(
+    (result.order.items || []).map((item) =>
+      releaseInventoryHold({
+        holdId:
+          item.id,
+        inventoryKey:
+          promoted.find(
+            (hold) =>
+              String(hold.orderItemId) ===
+              String(item.id)
+          )?.inventoryKey ||
+          "",
+      })
+    )
+  );
 
   const stockReservationExpiresAt =
     promoted
