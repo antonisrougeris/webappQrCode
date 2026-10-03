@@ -9,12 +9,15 @@ import {
 import { initNav } from "../../components/initNav";
 import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
+import { initPasswordVisibility } from "../../utils/password-visibility";
 import { firebaseAuth } from "../../services/firebase";
 import { removeToken, saveToken } from "../../services/auth";
 import { login, register } from "../../services/api";
 
 
 import { showFlashToast } from "../../utils/toast.ts";
+
+initPasswordVisibility();
 
 const form = document.getElementById("loginForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");

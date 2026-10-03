@@ -356,6 +356,14 @@
   margin-top: 1px;
 }
 
+.returns-condition > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
 .returns-form__footer {
   display: flex;
   justify-content: space-between;
@@ -497,6 +505,28 @@
 
   .return-reason-row {
     grid-template-columns: 1fr;
+  }
+
+  .returns-condition {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .returns-condition input {
+    width: 18px !important;
+    min-width: 18px;
+    height: 18px;
+    margin-top: 2px;
+  }
+
+  .returns-condition > span {
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.55;
   }
 
   .returns-form__footer .returns-primary,

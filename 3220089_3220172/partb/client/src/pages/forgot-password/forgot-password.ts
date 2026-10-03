@@ -3,7 +3,10 @@
 import { initNav } from "../../components/initNav";
 import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
+import { initPasswordVisibility } from "../../utils/password-visibility";
 import { requestPasswordReset, resetPassword } from "../../services/api";
+
+initPasswordVisibility();
 
 const requestStep = document.getElementById("requestStep");
 const resetStep = document.getElementById("resetStep");
