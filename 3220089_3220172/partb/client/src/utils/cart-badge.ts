@@ -3,7 +3,7 @@
 import { getCart } from "../services/cart";
 import { isLoggedIn } from "../services/auth";
 
-function getCartCount(cart: {
+export function getCartCount(cart: {
   totalItems?: number;
   items?: Array<{ quantity?: number }>;
 }): number {
@@ -21,11 +21,39 @@ function getCartCount(cart: {
   return 0;
 }
 
+export function updateCartBadgeFromCart(cart: {
+  totalItems?: number;
+  items?: Array<{ quantity?: number }>;
+}): void {
+  const cartLink =
+    document.querySelector<HTMLElement>(
+      "[data-cart-link]"
+    );
+
+  if (!cartLink) return;
+
+  if (!isLoggedIn()) {
+    cartLink.textContent = "Cart";
+    return;
+  }
+
+  const totalItems =
+    getCartCount(cart);
+
+  cartLink.textContent =
+    totalItems > 0
+      ? `Cart (${totalItems})`
+      : "Cart";
+}
+
 /**
- * Updates the cart badge in the navigation with the current cart item count
+ * Updates the cart badge in the navigation with the current cart item count.
  */
 export async function updateCartBadge(): Promise<void> {
-  const cartLink = document.querySelector<HTMLElement>("[data-cart-link]");
+  const cartLink =
+    document.querySelector<HTMLElement>(
+      "[data-cart-link]"
+    );
 
   if (!cartLink) return;
 
@@ -36,11 +64,13 @@ export async function updateCartBadge(): Promise<void> {
     }
 
     const cart = await getCart();
-    const totalItems = getCartCount(cart);
-
-    cartLink.textContent = totalItems > 0 ? `Cart (${totalItems})` : "Cart";
+    updateCartBadgeFromCart(cart);
   } catch (error) {
-    console.error("Failed to update cart badge:", error);
+    console.error(
+      "Failed to update cart badge:",
+      error
+    );
+
     cartLink.textContent = "Cart";
   }
 }
