@@ -25,6 +25,11 @@ export interface CartItem {
   qrDestination?: string;
 }
 
+export interface GiftOptions {
+  giftBox: boolean;
+  personalNote: string;
+}
+
 export interface Cart {
   id?: string;
   userId?: string;
@@ -32,6 +37,7 @@ export interface Cart {
   subtotal?: number;
   totalItems?: number;
   currency?: string;
+  giftOptions?: GiftOptions;
 }
 
 export interface AddToCartPayload {
@@ -104,6 +110,17 @@ export async function removeCartItem(itemId: string): Promise<Cart> {
       method: "DELETE",
     }
   );
+
+  return res.cart;
+}
+
+export async function updateCartGiftOptions(
+  payload: GiftOptions
+): Promise<Cart> {
+  const res = await apiRequest<{ cart: Cart }>("/cart/gift-options", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 
   return res.cart;
 }
