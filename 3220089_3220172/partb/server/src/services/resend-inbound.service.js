@@ -6,7 +6,7 @@ const ALLOWED_INBOUND_RECIPIENTS = new Set([
 ]);
 
 const DEFAULT_FORWARD_TO = "adminskanare@gmail.com";
-const DEFAULT_FORWARD_FROM = "Skanare Mail <hello@skanare.com>";
+const DEFAULT_FORWARD_FROM = "Skanare Forwarding <forward@skanare.com>";
 
 function normalizeAddress(value) {
   return String(value || "").trim().toLowerCase();
@@ -51,7 +51,6 @@ function getForwardDestination() {
 function getForwardSender() {
   return (
     process.env.INBOUND_EMAIL_FORWARD_FROM ||
-    process.env.EMAIL_FROM ||
     DEFAULT_FORWARD_FROM
   ).trim();
 }
