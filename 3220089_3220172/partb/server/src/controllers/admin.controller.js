@@ -3232,3 +3232,152 @@ export const shipOrderAndNotify =
         });
     }
   );
+
+/* =========================================================
+   CONTACT INBOX
+   ========================================================= */
+
+export const getAdminContactMessages = asyncHandler(
+  async (_req, res) => {
+    const db = getDB();
+    const snap = await db
+      .collection(COLLECTIONS.CONTACT_MESSAGES || "contactMessages")
+      .limit(500)
+      .get();
+
+    const messages = snapshotToDocs(snap)
+      .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+
+    return res.status(200).json({
+      messages,
+      count: messages.length,
+      unread: messages.filter((item) => item.status === "new").length,
+    });
+  }
+);
+
+export const markAdminContactMessageRead = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+    const id = cleanString(req.params.id, 200);
+    const ref = db
+      .collection(COLLECTIONS.CONTACT_MESSAGES || "contactMessages")
+      .doc(id);
+
+    const snap = await ref.get();
+
+    if (!snap.exists) {
+      throw new ApiError(404, "Contact message not found");
+    }
+
+    const readAt = nowIso();
+
+    await ref.set(
+      {
+        status: "read",
+        readAt,
+        readBy: req.user?.uid || null,
+        updatedAt: readAt,
+      },
+      { merge: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      readAt,
+    });
+  }
+);
+
+export const replyToAdminContactMessage = asyncHandler(
+  async (req, res) => {
+    const db = getDB();
+    const id = cleanString(req.params.id, 200);
+    const body = cleanString(req.body?.message, 5000);
+
+    if (!body) {
+      throw new ApiError(400, "Reply message is required");
+    }
+
+    const ref = db
+      .collection(COLLECTIONS.CONTACT_MESSAGES || "contactMessages")
+      .doc(id);
+
+    const snap = await ref.get();
+
+    if (!snap.exists) {
+      throw new ApiError(404, "Contact message not found");
+    }
+
+    const contact = {
+      id: snap.id,
+      ...snap.data(),
+    };
+
+    const to = cleanString(contact.email, 320);
+
+    if (!to) {
+      throw new ApiError(400, "Contact email is missing");
+    }
+
+    const sent = await sendEmail({
+      from:
+        process.env.CONTACT_EMAIL_FROM ||
+        process.env.EMAIL_FROM ||
+        "Skanare Contact <contact@skanare.com>",
+      to,
+      subject: `Re: Skanare contact — ${cleanString(contact.name, 120) || "your message"}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;color:#111;line-height:1.6">
+          <p>${body
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\n", "<br>")}</p>
+          <hr style="border:0;border-top:1px solid #e5e5e5;margin:28px 0">
+          <p style="color:#777;font-size:13px">
+            Original message:<br>
+            ${cleanString(contact.message, 5000)
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll("\n", "<br>")}
+          </p>
+        </div>
+      `,
+    });
+
+    const sentAt = nowIso();
+    const replies = Array.isArray(contact.replies)
+      ? contact.replies
+      : [];
+
+    await ref.set(
+      {
+        status: "replied",
+        readAt: contact.readAt || sentAt,
+        readBy: contact.readBy || req.user?.uid || null,
+        repliedAt: sentAt,
+        updatedAt: sentAt,
+        replies: [
+          ...replies,
+          {
+            id: createId("reply"),
+            message: body,
+            sentAt,
+            sentBy: req.user?.uid || null,
+            sentByEmail: req.user?.email || null,
+            resendId: sent?.id || null,
+          },
+        ],
+      },
+      { merge: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      sentAt,
+      resendId: sent?.id || null,
+    });
+  }
+);
