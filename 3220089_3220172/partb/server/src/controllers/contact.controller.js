@@ -1,4 +1,7 @@
 import { sendEmail } from "../services/email.service.js";
+import { getDB } from "../config/db.js";
+import { COLLECTIONS } from "../constants/collections.js";
+import { createId, nowIso } from "../utils/ids.js";
 import {
   contactFormSchema,
   parseOrThrow,
@@ -28,6 +31,25 @@ export async function submitContactForm(req, res, next) {
       "Invalid contact form"
     );
 
+    const db = getDB();
+    const messageId = createId("contact");
+    const createdAt = nowIso();
+    const messageRef = db
+      .collection(COLLECTIONS.CONTACT_MESSAGES || "contactMessages")
+      .doc(messageId);
+
+    await messageRef.set({
+      id: messageId,
+      name: body.name,
+      email: body.email,
+      message: body.message,
+      status: "new",
+      source: "contact_form",
+      replies: [],
+      createdAt,
+      updatedAt: createdAt,
+    });
+
     const to =
       process.env.CONTACT_EMAIL_TO ||
       "adminskanare@gmail.com";
@@ -56,8 +78,22 @@ export async function submitContactForm(req, res, next) {
       `,
     });
 
+    await messageRef.set(
+      {
+        emailDelivery: {
+          status: "sent",
+          resendId: sent?.id || null,
+          to,
+          sentAt: nowIso(),
+        },
+        updatedAt: nowIso(),
+      },
+      { merge: true }
+    );
+
     console.info("contact_form_email_sent", {
       requestId: req.requestId,
+      messageId,
       resendId: sent?.id || null,
       to,
     });

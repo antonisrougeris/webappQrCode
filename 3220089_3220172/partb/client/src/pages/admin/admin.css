@@ -1166,3 +1166,106 @@ button {
 
 .admin-default-color { max-width:320px; }
 .admin-default-color select { min-width:200px; }
+
+
+/* =========================================================
+   CONTACT MESSAGES
+   ========================================================= */
+
+.admin-messages-list {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-message-card {
+  background: #fff;
+  border: 1px solid #e3e3dd;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.admin-message-card.is-unread {
+  border-color: #111;
+  box-shadow: inset 4px 0 0 #111;
+}
+
+.admin-message-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.admin-message-card__top h3 {
+  margin: 5px 0 4px;
+}
+
+.admin-message-card__top a {
+  color: inherit;
+}
+
+.admin-message-card__meta {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  color: #777;
+  font-size: 12px;
+}
+
+.admin-message-card__body {
+  margin-top: 18px;
+  padding: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f7f7f3;
+  border-radius: 10px;
+  line-height: 1.55;
+}
+
+.admin-message-thread {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-message-reply {
+  margin-left: 28px;
+  padding: 12px 14px;
+  border-left: 3px solid #111;
+  background: #fafafa;
+}
+
+.admin-message-reply p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
+.admin-message-reply-box {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-message-reply-box textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 100px;
+  border: 1px solid #d8d8d1;
+  border-radius: 10px;
+  padding: 12px;
+  font: inherit;
+}
+
+@media (max-width: 700px) {
+  .admin-message-card__top {
+    flex-direction: column;
+  }
+
+  .admin-message-card__meta {
+    justify-items: start;
+  }
+
+  .admin-message-reply {
+    margin-left: 0;
+  }
+}

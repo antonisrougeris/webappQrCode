@@ -33,6 +33,7 @@ initPasswordVisibility();
 let currentOrders: any[] = [];
 let currentFulfillmentOrders: any[] = [];
 let currentReturns: any[] = [];
+let currentContactMessages: any[] = [];
 let currentProducts: any[] = [];
 let currentQrCodes: any[] = [];
 
@@ -210,6 +211,7 @@ function openView(view: string) {
     fulfillment: "Fulfillment",
     orders: "Orders",
     returns: "Returns",
+    messages: "Messages",
     products: "Products",
     customers: "Customers",
     qr: "QR Codes",
@@ -248,6 +250,9 @@ async function loadView(view: string) {
     case "returns":
       await loadReturns();
       break;
+    case "messages":
+      await loadContactMessages();
+      break;
     case "products":
       await loadProducts();
       break;
@@ -268,7 +273,12 @@ async function loadView(view: string) {
    ========================================================= */
 
 async function loadDashboard() {
-  const data = await adminApi("/dashboard");
+  const [data] = await Promise.all([
+    adminApi("/dashboard"),
+    loadContactMessages().catch((error) => {
+      console.warn("Could not load contact inbox badge", error);
+    }),
+  ]);
 
   setText("statRevenue", formatMoney(data.revenue || 0));
   setText("statOrders", String(data.orders || 0));
@@ -379,6 +389,7 @@ async function loadFulfillment() {
   setText("fulfillmentPreparing", String(summary.preparing ?? countFulfillment("preparing")));
   setText("fulfillmentReady", String(summary.ready ?? countFulfillment("ready")));
   setText("fulfillmentShipped", String(summary.shipped ?? countFulfillment("shipped")));
+  setText("fulfillmentCompleted", String(summary.completed ?? countFulfillment("completed")));
 
   const actionCount =
     Number(summary.toPrepare ?? countFulfillment("to_prepare")) +
@@ -563,10 +574,11 @@ async function openOrder(orderId: string) {
       </div>
       <div class="drawer-status-actions">
         ${order.paymentStatus === "paid" ? `
-          <button class="admin-secondary-button" data-drawer-status="to_prepare">To prepare</button>
-          <button class="admin-secondary-button" data-drawer-status="preparing">Preparing</button>
-          <button class="admin-secondary-button" data-drawer-status="ready">Ready</button>
-          <button class="admin-secondary-button" data-drawer-status="completed">Completed</button>
+          ${status === "to_prepare" ? `<button class="admin-secondary-button" data-drawer-status="preparing">Start preparing</button>` : ""}
+          ${status === "preparing" ? `<button class="admin-secondary-button" data-drawer-status="ready">Mark ready</button>` : ""}
+          ${status === "ready" ? `<span class="admin-muted">Ready to ship. Use “Ship order & notify customer” below.</span>` : ""}
+          ${status === "shipped" ? `<span class="admin-muted">Shipped. Waiting for BOX NOW delivery confirmation.</span>` : ""}
+          ${status === "completed" ? `<span class="admin-muted">Completed automatically from BOX NOW delivery confirmation.</span>` : ""}
         ` : `<span class="admin-muted">Fulfillment becomes available after payment.</span>`}
       </div>
     </div>
@@ -1126,6 +1138,148 @@ async function downloadAdminReturnLabel(returnId: string) {
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+/* =========================================================
+   CONTACT MESSAGES
+   ========================================================= */
+
+async function loadContactMessages() {
+  const data = await adminApi("/contact-messages");
+  currentContactMessages = data.messages || [];
+
+  const badge = document.getElementById("messagesBadge");
+  const unread = Number(data.unread || 0);
+
+  if (badge) {
+    badge.textContent = String(unread);
+    badge.hidden = unread === 0;
+  }
+
+  renderContactMessages();
+}
+
+function renderContactMessages() {
+  const target = document.getElementById("adminMessagesList");
+  if (!target) return;
+
+  if (!currentContactMessages.length) {
+    target.innerHTML =
+      `<div class="admin-section"><p class="admin-muted">No contact messages yet.</p></div>`;
+    return;
+  }
+
+  target.innerHTML = currentContactMessages
+    .map((message: any) => {
+      const status = String(message.status || "new");
+      const replies = Array.isArray(message.replies) ? message.replies : [];
+
+      return `
+        <article class="admin-message-card ${status === "new" ? "is-unread" : ""}" data-contact-message="${escapeHtml(message.id)}">
+          <div class="admin-message-card__top">
+            <div>
+              <span class="admin-eyebrow">${status === "new" ? "NEW MESSAGE" : "CONTACT"}</span>
+              <h3>${escapeHtml(message.name || "Customer")}</h3>
+              <a href="mailto:${escapeHtml(message.email || "")}">${escapeHtml(message.email || "")}</a>
+            </div>
+            <div class="admin-message-card__meta">
+              <span class="admin-badge admin-badge--${escapeHtml(status)}">${escapeHtml(status)}</span>
+              <span>${formatDate(message.createdAt)}</span>
+            </div>
+          </div>
+
+          <div class="admin-message-card__body">${escapeHtml(message.message || "")}</div>
+
+          ${replies.length ? `
+            <div class="admin-message-thread">
+              ${replies.map((reply: any) => `
+                <div class="admin-message-reply">
+                  <strong>Admin reply · ${formatDate(reply.sentAt)}</strong>
+                  <p>${escapeHtml(reply.message || "")}</p>
+                </div>
+              `).join("")}
+            </div>
+          ` : ""}
+
+          <div class="admin-message-reply-box">
+            <textarea
+              rows="4"
+              maxlength="5000"
+              placeholder="Write a reply..."
+              data-contact-reply-text="${escapeHtml(message.id)}"
+            ></textarea>
+            <div class="admin-actions">
+              ${status === "new" ? `<button class="admin-secondary-button" data-contact-read="${escapeHtml(message.id)}">Mark as read</button>` : ""}
+              <button class="admin-primary-button" data-contact-reply="${escapeHtml(message.id)}">Send reply</button>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+document.getElementById("refreshMessages")?.addEventListener("click", () => {
+  void loadContactMessages();
+});
+
+document.getElementById("adminMessagesList")?.addEventListener("click", async (event) => {
+  const target = event.target as HTMLElement;
+
+  const readButton =
+    target.closest<HTMLButtonElement>("[data-contact-read]");
+
+  if (readButton?.dataset.contactRead) {
+    readButton.disabled = true;
+    try {
+      await adminApi(
+        `/contact-messages/${encodeURIComponent(readButton.dataset.contactRead)}/read`,
+        { method: "PATCH" }
+      );
+      await loadContactMessages();
+    } catch (error) {
+      window.alert(errorMessage(error));
+      readButton.disabled = false;
+    }
+    return;
+  }
+
+  const replyButton =
+    target.closest<HTMLButtonElement>("[data-contact-reply]");
+
+  if (replyButton?.dataset.contactReply) {
+    const id = replyButton.dataset.contactReply;
+    const textarea =
+      document.querySelector<HTMLTextAreaElement>(
+        `[data-contact-reply-text="${CSS.escape(id)}"]`
+      );
+
+    const message = textarea?.value.trim() || "";
+
+    if (!message) {
+      window.alert("Write a reply first.");
+      return;
+    }
+
+    replyButton.disabled = true;
+    replyButton.textContent = "Sending...";
+
+    try {
+      await adminApi(
+        `/contact-messages/${encodeURIComponent(id)}/reply`,
+        {
+          method: "POST",
+          body: JSON.stringify({ message }),
+        }
+      );
+      await loadContactMessages();
+    } catch (error) {
+      window.alert(errorMessage(error));
+      replyButton.disabled = false;
+      replyButton.textContent = "Send reply";
+    }
+  }
+});
+
 
 /* =========================================================
    PRODUCTS

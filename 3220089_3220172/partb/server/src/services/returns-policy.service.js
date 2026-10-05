@@ -33,11 +33,8 @@ const RANK = {
   refunded: 6,
 };
 
-export function getReturnWindowDays(value = process.env.RETURN_WINDOW_DAYS) {
-  const days = Number(value || 14);
-  return Number.isFinite(days) && days >= 1 && days <= 365
-    ? Math.floor(days)
-    : 14;
+export function getReturnWindowDays() {
+  return 14;
 }
 
 export function getOrderDeliveredAt(order) {

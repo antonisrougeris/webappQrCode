@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   advanceReturnStatus,
   getOrderReturnEligibility,
+  getReturnWindowDays,
   mapBoxNowReturnEvent,
 } from "../src/services/returns-policy.service.js";
 
@@ -48,4 +49,20 @@ test("does not regress return status", () => {
     advanceReturnStatus("refunded", "in_transit"),
     "refunded"
   );
+});
+
+
+test("return window is always 14 days", () => {
+  const previous = process.env.RETURN_WINDOW_DAYS;
+  process.env.RETURN_WINDOW_DAYS = "30";
+
+  try {
+    assert.equal(getReturnWindowDays(), 14);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.RETURN_WINDOW_DAYS;
+    } else {
+      process.env.RETURN_WINDOW_DAYS = previous;
+    }
+  }
 });
