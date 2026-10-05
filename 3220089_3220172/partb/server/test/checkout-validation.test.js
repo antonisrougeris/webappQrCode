@@ -78,16 +78,32 @@ test("invoice checkout accepts complete business details", () => {
 });
 
 
-test("checkout accepts gift box and a personal note", () => {
+test("checkout accepts free gift-ready tier and hides prices", () => {
   const payload = baseCheckout();
   payload.giftOptions = {
-    giftBox: true,
+    tier: "simple",
+    personalNote: "This must be removed for simple gifting.",
+  };
+
+  const result = checkoutSchema.safeParse(payload);
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.giftOptions.tier, "simple");
+  assert.equal(result.data.giftOptions.giftBox, false);
+  assert.equal(result.data.giftOptions.personalNote, "");
+});
+
+test("checkout accepts premium gifting with a personal note", () => {
+  const payload = baseCheckout();
+  payload.giftOptions = {
+    tier: "premium",
     personalNote: "Happy birthday! Enjoy your gift.",
   };
 
   const result = checkoutSchema.safeParse(payload);
 
   assert.equal(result.success, true);
+  assert.equal(result.data.giftOptions.tier, "premium");
   assert.equal(result.data.giftOptions.giftBox, true);
   assert.equal(
     result.data.giftOptions.personalNote,
@@ -95,10 +111,24 @@ test("checkout accepts gift box and a personal note", () => {
   );
 });
 
-test("checkout rejects gift notes longer than 200 characters", () => {
+test("no-gift tier clears premium-only note data", () => {
   const payload = baseCheckout();
   payload.giftOptions = {
-    giftBox: true,
+    tier: "none",
+    personalNote: "Should not be retained.",
+  };
+
+  const result = checkoutSchema.safeParse(payload);
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.giftOptions.tier, "none");
+  assert.equal(result.data.giftOptions.personalNote, "");
+});
+
+test("checkout rejects premium notes longer than 200 characters", () => {
+  const payload = baseCheckout();
+  payload.giftOptions = {
+    tier: "premium",
     personalNote: "x".repeat(201),
   };
 
