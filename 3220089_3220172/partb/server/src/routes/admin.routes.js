@@ -29,6 +29,9 @@ import {
   getAdminCustomers,
   getAdminQrCodes,
   getAdminPayments,
+  getAdminContactMessages,
+  markAdminContactMessageRead,
+  replyToAdminContactMessage,
 } from "../controllers/admin.controller.js";
 
 import {
@@ -279,6 +282,26 @@ router.get(
 router.get(
   "/qr-codes",
   getAdminQrCodes
+);
+
+
+/* =========================
+   CONTACT INBOX
+   ========================= */
+
+router.get(
+  "/contact-messages",
+  getAdminContactMessages
+);
+
+router.patch(
+  "/contact-messages/:id/read",
+  markAdminContactMessageRead
+);
+
+router.post(
+  "/contact-messages/:id/reply",
+  replyToAdminContactMessage
 );
 
 
