@@ -1269,3 +1269,31 @@ button {
     margin-left: 0;
   }
 }
+
+
+/* Product commerce metadata */
+.admin-product__pricing {
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:7px;
+  margin:0 0 7px;
+}
+.admin-product__pricing strong {
+  font-size:13px;
+}
+.admin-product__old-price {
+  color:#8a8a84;
+  text-decoration:line-through;
+}
+.admin-product__sale {
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  padding:0 7px;
+  border-radius:999px;
+  background:#fde8e6;
+  color:#b42318;
+  font-size:10px;
+  font-weight:800;
+}
