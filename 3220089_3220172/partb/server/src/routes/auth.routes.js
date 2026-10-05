@@ -1,5 +1,5 @@
 import express from "express";
-import { register, login, me, checkEmail } from "../controllers/auth.controller.js";
+import { register, login, me } from "../controllers/auth.controller.js";
 import {
   sendEmailVerificationOtp,
   verifyEmailCode,
@@ -19,7 +19,6 @@ router.get("/me", requireAuth, me);
 router.post("/send-verification", requireAuth, sendEmailVerificationOtp);
 router.post("/verify-email", requireAuth, verifyEmailCode);
 
-router.post("/check-email", checkEmail);
 
 // ✅ ΝΕΟ — χωρίς requireAuth, γιατί ο χρήστης δεν είναι συνδεδεμένος
 router.post("/forgot-password", forgotPassword);
