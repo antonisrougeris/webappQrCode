@@ -20,6 +20,11 @@ function saveCheckoutDraft(formEl: HTMLFormElement): void {
     draft[key] = String(value);
   });
 
+  formEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name]')
+    .forEach((checkbox) => {
+      draft[checkbox.name] = String(checkbox.checked);
+    });
+
   localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
 }
 
@@ -42,6 +47,11 @@ function restoreCheckoutDraft(): void {
           `input[name="${CSS.escape(key)}"][value="${CSS.escape(value)}"]`
         );
         if (radio) radio.checked = true;
+        return;
+      }
+
+      if (el.type === "checkbox") {
+        el.checked = value === "true" || value === "on";
         return;
       }
 
@@ -136,6 +146,30 @@ function setPayButtonState(): void {
 async function render(): Promise<void> {
   const cart = await getCart();
   const items: CartItem[] = cart?.items || [];
+
+  const giftBoxInput = document.querySelector<HTMLInputElement>(
+    'input[name="giftBox"]'
+  );
+  const personalNoteInput = document.querySelector<HTMLTextAreaElement>(
+    'textarea[name="personalNote"]'
+  );
+
+  if (
+    giftBoxInput &&
+    giftBoxInput.dataset.cartGiftInitialized !== "true"
+  ) {
+    giftBoxInput.checked = Boolean(cart?.giftOptions?.giftBox);
+    giftBoxInput.dataset.cartGiftInitialized = "true";
+  }
+
+  if (
+    personalNoteInput &&
+    personalNoteInput.dataset.cartGiftInitialized !== "true"
+  ) {
+    personalNoteInput.value =
+      cart?.giftOptions?.personalNote || "";
+    personalNoteInput.dataset.cartGiftInitialized = "true";
+  }
 
 
 
@@ -854,6 +888,12 @@ updateLockerValidity(false);
   locker,
   phoneCountryCode,
   notes: "",
+  giftOptions: {
+    giftBox: form.get("giftBox") === "true",
+    personalNote: String(
+      form.get("personalNote") || ""
+    ).trim(),
+  },
   documentType,
   invoiceDetails,
 });
