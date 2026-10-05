@@ -753,6 +753,35 @@ export async function processBoxNowWebhook({
             "shipping.deliveredAt"
           ] =
             eventTime;
+
+          patch.fulfillmentStatus =
+            "completed";
+
+          patch.completedAt =
+            eventTime;
+
+          patch.completionSource =
+            "boxnow_webhook";
+
+          patch.history = [
+            ...(
+              Array.isArray(order.history)
+                ? order.history
+                : []
+            ),
+            {
+              action:
+                "order_completed",
+              at:
+                eventTime,
+              source:
+                "boxnow_webhook",
+              providerEvent:
+                event,
+              parcelId:
+                parcelId || null,
+            },
+          ];
         }
 
 
