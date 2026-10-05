@@ -1,0 +1,77 @@
+name: SKANARE Security Audit
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "43 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Source Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run Skanare source security audit
+        id: source_audit
+        continue-on-error: true
+        run: node ops/security-audit/run-audit.mjs
+
+      - name: Publish audit summary
+        if: always()
+        run: |
+          if [ -f security-audit-output/security-audit-report.md ]; then
+            cat security-audit-output/security-audit-report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "# SKANARE Security Audit" >> "$GITHUB_STEP_SUMMARY"
+            echo "Audit report was not generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skanare-security-audit-${{ github.run_number }}
+          path: security-audit-output/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Install frontend dependencies
+        working-directory: 3220089_3220172/partb/client
+        run: npm ci
+
+      - name: Audit frontend production dependencies
+        working-directory: 3220089_3220172/partb/client
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Install backend dependencies
+        working-directory: 3220089_3220172/partb/server
+        run: npm ci
+
+      - name: Audit backend production dependencies
+        working-directory: 3220089_3220172/partb/server
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Enforce source audit result
+        if: always()
+        run: |
+          test "${{ steps.source_audit.outcome }}" = "success" || {
+            echo "Source security audit found one or more failed invariants."
+            exit 1
+          }
