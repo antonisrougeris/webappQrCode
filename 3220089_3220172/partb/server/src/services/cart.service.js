@@ -53,6 +53,7 @@ export async function getCartByUserId(userId) {
     return {
       userId,
       items: [],
+      giftOptions: normalizeGiftOptions({ tier: "none" }),
       updatedAt: nowIso(),
     };
   }
