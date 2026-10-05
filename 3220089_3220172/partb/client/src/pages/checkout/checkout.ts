@@ -9,7 +9,7 @@ import {
   type CountryCode,
 } from "libphonenumber-js";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
-const GIFT_BOX_PRICE = 1.5;
+const PREMIUM_GIFT_PRICE = 1.5;
 import { setFlashToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
 
@@ -155,34 +155,58 @@ async function render(): Promise<void> {
   const cart = await getCart();
   const items: CartItem[] = cart?.items || [];
 
-  const giftBoxInput = document.querySelector<HTMLInputElement>(
-    'input[name="giftBox"]'
-  );
+  const giftSection =
+    document.getElementById("gift-options") as HTMLDetailsElement | null;
+
   const personalNoteInput = document.querySelector<HTMLTextAreaElement>(
     'textarea[name="personalNote"]'
   );
 
   if (
-    giftBoxInput &&
-    giftBoxInput.dataset.cartGiftInitialized !== "true"
+    giftSection &&
+    giftSection.dataset.cartGiftInitialized !== "true"
   ) {
-    giftBoxInput.checked = Boolean(cart?.giftOptions?.giftBox);
-    giftBoxInput.dataset.cartGiftInitialized = "true";
+    const cartTier =
+      cart?.giftOptions?.tier === "simple" ||
+      cart?.giftOptions?.tier === "premium"
+        ? cart.giftOptions.tier
+        : cart?.giftOptions?.giftBox
+          ? "premium"
+          : "none";
+
+    const tierInput =
+      document.querySelector<HTMLInputElement>(
+        `input[name="giftTier"][value="${cartTier}"]`
+      );
+
+    if (tierInput) {
+      tierInput.checked = true;
+    }
+
+    if (personalNoteInput) {
+      personalNoteInput.value =
+        cart?.giftOptions?.personalNote || "";
+    }
+
+    giftSection.dataset.cartGiftInitialized = "true";
   }
 
-  if (
-    personalNoteInput &&
-    personalNoteInput.dataset.cartGiftInitialized !== "true"
-  ) {
-    personalNoteInput.value =
-      cart?.giftOptions?.personalNote || "";
-    personalNoteInput.dataset.cartGiftInitialized = "true";
-  }
+  const giftTier =
+    (
+      document.querySelector<HTMLInputElement>(
+        'input[name="giftTier"]:checked'
+      )?.value || "none"
+    ) as "none" | "simple" | "premium";
 
-  const giftBoxSelected = Boolean(giftBoxInput?.checked);
   const hasGiftOptions =
-    giftBoxSelected ||
-    Boolean(personalNoteInput?.value.trim());
+    giftTier !== "none";
+
+  document
+    .querySelector<HTMLElement>("[data-checkout-gift-note]")
+    ?.classList.toggle(
+      "hidden",
+      giftTier !== "premium"
+    );
 
   const giftSummaryAction =
     document.querySelector<HTMLElement>(
@@ -270,8 +294,8 @@ async function render(): Promise<void> {
       discountedSubtotal
     );
   const giftFee =
-    giftBoxSelected
-      ? GIFT_BOX_PRICE
+    giftTier === "premium"
+      ? PREMIUM_GIFT_PRICE
       : 0;
   const total =
     discountedSubtotal +
@@ -727,16 +751,14 @@ editCartButton?.addEventListener(
           ".checkout-gift-summary__action"
         );
 
+      const tier =
+        document.querySelector<HTMLInputElement>(
+          'input[name="giftTier"]:checked'
+        )?.value || "none";
+
       if (action) {
         action.textContent =
-          target.value.trim() ||
-          (
-            document.querySelector<HTMLInputElement>(
-              'input[name="giftBox"]'
-            )?.checked
-          )
-            ? "Added"
-            : "Add";
+          tier === "none" ? "Add" : "Added";
       }
     }
   });
@@ -749,7 +771,7 @@ editCartButton?.addEventListener(
     saveCheckoutDraftFromPage();
 
     if (
-      target?.name === "giftBox" ||
+      target?.name === "giftTier" ||
       target?.name === "personalNote"
     ) {
       void render();
@@ -966,10 +988,19 @@ updateLockerValidity(false);
   phoneCountryCode,
   notes: "",
   giftOptions: {
-    giftBox: form.get("giftBox") === "true",
-    personalNote: String(
-      form.get("personalNote") || ""
-    ).trim(),
+    tier:
+      String(form.get("giftTier") || "none") as
+        | "none"
+        | "simple"
+        | "premium",
+    giftBox:
+      String(form.get("giftTier") || "none") === "premium",
+    personalNote:
+      String(form.get("giftTier") || "none") === "premium"
+        ? String(
+            form.get("personalNote") || ""
+          ).trim()
+        : "",
   },
   documentType,
   invoiceDetails,
