@@ -1423,6 +1423,8 @@ function openProductModal(product: any = null) {
 
   setInputValue("productPrice", product?.price ?? "");
   setInputValue("productCurrency", product?.currency || "EUR");
+  setInputValue("productDiscountPercent", product?.discountPercent ?? 0);
+  setInputValue("productMerchandisingTag", product?.merchandisingTag || "none");
   setChecked("productFeatured", Boolean(product?.featured));
   setChecked("productActive", product?.active !== false);
   setChecked("productCustomQr", product?.customQr !== false);
@@ -1486,6 +1488,8 @@ function resetProductForm() {
   setChecked("productFeatured", false);
   setChecked("productActive", true);
   setChecked("productCustomQr", true);
+  setInputValue("productDiscountPercent", 0);
+  setInputValue("productMerchandisingTag", "none");
 
   setInputValue("productCurrency", "EUR");
 
@@ -2041,6 +2045,8 @@ function collectProductPayload() {
     category: inputValue("productCategory") || "General",
     price: Number(inputValue("productPrice") || 0),
     currency: inputValue("productCurrency") || "EUR",
+    discountPercent: Math.min(90, Math.max(0, Math.round(Number(inputValue("productDiscountPercent") || 0)))),
+    merchandisingTag: inputValue("productMerchandisingTag") || "none",
     featured: checked("productFeatured"),
     active: checked("productActive"),
     customQr: checked("productCustomQr"),
