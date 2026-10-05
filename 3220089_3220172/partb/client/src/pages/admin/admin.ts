@@ -591,6 +591,21 @@ async function openOrder(orderId: string) {
       <pre>${escapeHtml(JSON.stringify(order.locker || order.shippingAddress || {}, null, 2))}</pre>
     </div>
 
+    ${order.giftOptions?.tier && order.giftOptions.tier !== "none" ? `
+    <div class="admin-detail-group">
+      <h3>Gift fulfillment</h3>
+      <p><strong>${escapeHtml(
+        order.giftOptions.tier === "premium"
+          ? "Premium gift"
+          : "Gift-ready"
+      )}</strong>${Number(order.giftFee || 0) > 0 ? ` · ${formatMoney(Number(order.giftFee || 0))}` : " · Free"}</p>
+      <p>Hide prices in parcel: <strong>Yes</strong></p>
+      <p>Include gift / returns receipt card: <strong>Yes</strong></p>
+      ${order.giftOptions.tier === "premium" ? `<p>Premium gift box: <strong>Yes</strong></p>` : ""}
+      ${order.giftOptions.personalNote ? `<p>Personal note:</p><pre>${escapeHtml(order.giftOptions.personalNote)}</pre>` : ""}
+    </div>
+    ` : ""}
+
     <div class="admin-detail-group">
       <h3>Items to prepare</h3>
       <div class="drawer-process-summary">
