@@ -14,7 +14,36 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-const GIFT_BOX_PRICE = 1.5;
+const PREMIUM_GIFT_PRICE = 1.5;
+
+function normalizeGiftOptions(value = {}) {
+  const legacyPremium = Boolean(value?.giftBox);
+  const tier =
+    value?.tier === "simple" ||
+    value?.tier === "premium" ||
+    value?.tier === "none"
+      ? value.tier
+      : legacyPremium
+        ? "premium"
+        : "none";
+
+  return {
+    tier,
+    giftBox: tier === "premium",
+    hidePrices: tier !== "none",
+    includeGiftReceipt: tier !== "none",
+    personalNote:
+      tier === "premium"
+        ? String(value?.personalNote || "").trim()
+        : "",
+  };
+}
+
+function giftFeeFor(value) {
+  return normalizeGiftOptions(value).tier === "premium"
+    ? PREMIUM_GIFT_PRICE
+    : 0;
+}
 
 function calculateShipping(subtotal, delivery) {
   if (subtotal >= 50) return 0;
@@ -83,6 +112,7 @@ export async function checkoutCartForOwner({
   locker,
   notes,
   giftOptions = {
+    tier: "none",
     giftBox: false,
     personalNote: "",
   },
@@ -152,9 +182,7 @@ export async function checkoutCartForOwner({
             ).trim();
 
           const requestedGiftFee =
-            giftOptions?.giftBox
-              ? GIFT_BOX_PRICE
-              : 0;
+            giftFeeFor(giftOptions);
 
           const existingGiftFee =
             Number(existingOrder.giftFee || 0);
@@ -198,18 +226,15 @@ export async function checkoutCartForOwner({
                 notes || "",
 
               giftOptions: {
-                giftBox: Boolean(giftOptions?.giftBox),
-                personalNote: String(
-                  giftOptions?.personalNote || ""
-                ).trim(),
-                giftBoxPrice: giftOptions?.giftBox ? GIFT_BOX_PRICE : 0,
+                ...normalizeGiftOptions(giftOptions),
+                price: giftFeeFor(giftOptions),
               },
 
-              giftFee: giftOptions?.giftBox ? GIFT_BOX_PRICE : 0,
+              giftFee: giftFeeFor(giftOptions),
               total:
                 Number(existingOrder.subtotal || 0) +
                 Number(existingOrder.shippingCost || 0) +
-                (giftOptions?.giftBox ? GIFT_BOX_PRICE : 0),
+                (giftFeeFor(giftOptions)),
 
               updatedAt:
                 refreshedAt,
@@ -358,7 +383,7 @@ orderItems.push({
     }
 
     const shippingCost = calculateShipping(subtotal, delivery);
-    const giftFee = giftOptions?.giftBox ? GIFT_BOX_PRICE : 0;
+    const giftFee = giftFeeFor(giftOptions);
     const total = subtotal + shippingCost + giftFee;
 
     const order = {
@@ -392,11 +417,8 @@ locker: locker || null,
 notes: notes || "",
 
 giftOptions: {
-  giftBox: Boolean(giftOptions?.giftBox),
-  personalNote: String(
-    giftOptions?.personalNote || ""
-  ).trim(),
-  giftBoxPrice: giftFee,
+  ...normalizeGiftOptions(giftOptions),
+  price: giftFee,
 },
 
 giftFee,

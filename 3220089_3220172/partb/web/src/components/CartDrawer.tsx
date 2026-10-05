@@ -15,7 +15,7 @@ import { getProducts, type Product } from "@/lib/products";
 
 const FREE_SHIPPING_TARGET = 50;
 const FREE_STICKERS_TARGET = 80;
-const GIFT_BOX_PRICE = 1.5;
+const PREMIUM_GIFT_PRICE = 1.5;
 
 export function CartDrawer() {
   const [open, setOpen] = useState(false);
@@ -24,7 +24,7 @@ export function CartDrawer() {
   const [crossSell, setCrossSell] = useState<Product[]>([]);
   const [toast, setToast] = useState("");
   const [giftOpen, setGiftOpen] = useState(false);
-  const [giftBox, setGiftBox] = useState(false);
+  const [giftTier, setGiftTier] = useState<"none" | "simple" | "premium">("none");
   const [personalNote, setPersonalNote] = useState("");
 
   async function loadCart() {
@@ -32,7 +32,15 @@ export function CartDrawer() {
       setError("");
       const nextCart = await getCart();
       setCart(nextCart);
-      setGiftBox(Boolean(nextCart.giftOptions?.giftBox));
+      const nextTier =
+        nextCart.giftOptions?.tier === "simple" ||
+        nextCart.giftOptions?.tier === "premium"
+          ? nextCart.giftOptions.tier
+          : nextCart.giftOptions?.giftBox
+            ? "premium"
+            : "none";
+
+      setGiftTier(nextTier);
       setPersonalNote(nextCart.giftOptions?.personalNote || "");
       await loadCrossSell(nextCart);
     } catch (err: any) {
@@ -111,9 +119,17 @@ export function CartDrawer() {
     }, 0);
   }, [cart, items]);
 
+  const cartGiftTier =
+    cart?.giftOptions?.tier === "simple" ||
+    cart?.giftOptions?.tier === "premium"
+      ? cart.giftOptions.tier
+      : cart?.giftOptions?.giftBox
+        ? "premium"
+        : "none";
+
   const giftFee =
-    cart?.giftOptions?.giftBox
-      ? GIFT_BOX_PRICE
+    cartGiftTier === "premium"
+      ? PREMIUM_GIFT_PRICE
       : 0;
 
   const total =
@@ -183,8 +199,12 @@ export function CartDrawer() {
   async function saveGiftOptions() {
     try {
       const nextCart = await updateCartGiftOptions({
-        giftBox,
-        personalNote: personalNote.trim(),
+        tier: giftTier,
+        giftBox: giftTier === "premium",
+        personalNote:
+          giftTier === "premium"
+            ? personalNote.trim()
+            : "",
       });
 
       setCart(nextCart);
@@ -324,18 +344,24 @@ export function CartDrawer() {
                   </svg>
                 </span>
                 <span className="cart-gift-text">
-                  {cart?.giftOptions?.giftBox || cart?.giftOptions?.personalNote
-                    ? "GIFT OPTIONS ADDED"
-                    : "ADD GIFT BOX & PERSONAL NOTE"}
+                  {cartGiftTier !== "none"
+                    ? cartGiftTier === "premium"
+                      ? "PREMIUM GIFT ADDED"
+                      : "GIFT-READY OPTION ADDED"
+                    : "MAKE THIS A GIFT"}
                 </span>
                 <span className="cart-gift-arrow" aria-hidden="true">→</span>
               </button>
 
               <section className="cart-summary">
-                {giftFee > 0 ? (
+                {cartGiftTier !== "none" ? (
                   <div className="cart-summary-gift">
-                    <span>Gift box</span>
-                    <strong>+{formatPrice(giftFee)}</strong>
+                    <span>{cartGiftTier === "premium" ? "Premium gift" : "Gift-ready"}</span>
+                    <strong>
+                      {cartGiftTier === "premium"
+                        ? "+" + formatPrice(giftFee)
+                        : "Free"}
+                    </strong>
                   </div>
                 ) : null}
 
@@ -434,39 +460,68 @@ export function CartDrawer() {
             </button>
 
             <span className="cart-gift-dialog__eyebrow">Make it a gift</span>
-            <h3 id="cartGiftTitle">Gift box & personal note</h3>
+            <h3 id="cartGiftTitle">Choose your gift experience</h3>
             <p className="cart-gift-dialog__copy">
-              Add gift packaging and an optional message. You can review or edit these options again at checkout.
+              Choose a simple gift-ready order or upgrade to premium packaging with a personal message.
             </p>
 
-            <label className="cart-gift-check">
-              <input
-                type="checkbox"
-                checked={giftBox}
-                onChange={(event) => setGiftBox(event.target.checked)}
-              />
-              <span className="cart-gift-check__copy">
-                <strong>
-                  <span>Add gift box</span>
-                  <em>+{formatPrice(GIFT_BOX_PRICE)}</em>
-                </strong>
-                <small>We'll package the order as a gift.</small>
-              </span>
-            </label>
+            <div className="cart-gift-tiers">
+              {[
+                {
+                  value: "none",
+                  title: "No gift / remove gift options",
+                  copy: "Return to a standard order with normal pricing shown.",
+                  price: "Free",
+                },
+                {
+                  value: "simple",
+                  title: "Gift-ready",
+                  copy: "Hide prices in the parcel and include a gift/returns receipt card.",
+                  price: "Free",
+                },
+                {
+                  value: "premium",
+                  title: "Premium gift",
+                  copy: "Premium gift box, hidden prices, gift/returns receipt and personal note.",
+                  price: "+" + formatPrice(PREMIUM_GIFT_PRICE),
+                },
+              ].map((option) => (
+                <label className="cart-gift-tier" key={option.value}>
+                  <input
+                    type="radio"
+                    name="cartGiftTier"
+                    value={option.value}
+                    checked={giftTier === option.value}
+                    onChange={() =>
+                      setGiftTier(
+                        option.value as "none" | "simple" | "premium"
+                      )
+                    }
+                  />
+                  <span className="cart-gift-tier__copy">
+                    <strong>{option.title}</strong>
+                    <small>{option.copy}</small>
+                  </span>
+                  <span className="cart-gift-tier__price">{option.price}</span>
+                </label>
+              ))}
+            </div>
 
-            <label className="cart-gift-note">
-              <span>
-                Personal note <small>(optional)</small>
-              </span>
-              <textarea
-                rows={5}
-                maxLength={200}
-                value={personalNote}
-                onChange={(event) => setPersonalNote(event.target.value)}
-                placeholder="Write your message..."
-              />
-              <small>{personalNote.length}/200 characters</small>
-            </label>
+            {giftTier === "premium" ? (
+              <label className="cart-gift-note">
+                <span>
+                  Personal note <small>(premium only)</small>
+                </span>
+                <textarea
+                  rows={5}
+                  maxLength={200}
+                  value={personalNote}
+                  onChange={(event) => setPersonalNote(event.target.value)}
+                  placeholder="Write your message..."
+                />
+                <small>{personalNote.length}/200 characters</small>
+              </label>
+            ) : null}
 
             <div className="cart-gift-dialog__actions">
               <button

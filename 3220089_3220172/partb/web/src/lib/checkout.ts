@@ -22,7 +22,8 @@ export interface CheckoutPayload {
   locker?: string;
   notes?: string;
   giftOptions?: {
-    giftBox: boolean;
+    tier: "none" | "simple" | "premium";
+    giftBox?: boolean;
     personalNote: string;
   };
 }

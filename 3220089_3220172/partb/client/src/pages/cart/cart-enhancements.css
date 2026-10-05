@@ -299,3 +299,65 @@ body.gift-dialog-open {
     width: min(430px, calc(100vw - 32px));
   }
 }
+
+
+/* Tiered gift choices */
+.cart-gift-tiers {
+  display: grid;
+  gap: 10px;
+}
+
+.cart-gift-tier {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.cart-gift-tier:hover {
+  border-color: #bdbdbd;
+  background: #fafafa;
+}
+
+.cart-gift-tier input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #111;
+}
+
+.cart-gift-tier__copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.cart-gift-tier__copy strong {
+  font-size: 0.92rem;
+}
+
+.cart-gift-tier__copy small {
+  color: #6f6f6f;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.cart-gift-tier__price {
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.cart-gift-tier--premium {
+  border-color: #cfcfcf;
+}
+
+.cart-gift-tier:has(input:checked) {
+  border-color: #111;
+  box-shadow: 0 0 0 1px #111;
+  background: #fbfbfb;
+}

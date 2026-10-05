@@ -18,6 +18,29 @@ import {
   chooseProductImages,
 } from "./product-colors.service.js";
 
+function normalizeGiftOptions(value = {}) {
+  const legacyPremium = Boolean(value?.giftBox);
+  const tier =
+    value?.tier === "simple" ||
+    value?.tier === "premium" ||
+    value?.tier === "none"
+      ? value.tier
+      : legacyPremium
+        ? "premium"
+        : "none";
+
+  return {
+    tier,
+    giftBox: tier === "premium",
+    hidePrices: tier !== "none",
+    includeGiftReceipt: tier !== "none",
+    personalNote:
+      tier === "premium"
+        ? String(value?.personalNote || "").trim()
+        : "",
+  };
+}
+
 /* =========================
    GET CART
 ========================= */
@@ -30,6 +53,7 @@ export async function getCartByUserId(userId) {
     return {
       userId,
       items: [],
+      giftOptions: normalizeGiftOptions({ tier: "none" }),
       updatedAt: nowIso(),
     };
   }
@@ -39,10 +63,7 @@ export async function getCartByUserId(userId) {
   return {
     userId,
     items: Array.isArray(data.items) ? data.items : [],
-    giftOptions: {
-      giftBox: Boolean(data.giftOptions?.giftBox),
-      personalNote: String(data.giftOptions?.personalNote || "").trim(),
-    },
+    giftOptions: normalizeGiftOptions(data.giftOptions),
     updatedAt: data.updatedAt || nowIso(),
   };
 }
@@ -161,10 +182,7 @@ price: Number(
   const nextCart = {
     userId,
     items: cart.items,
-    giftOptions: cart.giftOptions || {
-      giftBox: false,
-      personalNote: "",
-    },
+    giftOptions: normalizeGiftOptions(cart.giftOptions),
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -256,10 +274,7 @@ price: Number(
   const nextCart = {
     userId,
     items: cart.items,
-    giftOptions: cart.giftOptions || {
-      giftBox: false,
-      personalNote: "",
-    },
+    giftOptions: normalizeGiftOptions(cart.giftOptions),
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -282,12 +297,7 @@ export async function updateCartGiftOptions({
   const nextCart = {
     userId,
     items: cart.items,
-    giftOptions: {
-      giftBox: Boolean(giftOptions?.giftBox),
-      personalNote: String(
-        giftOptions?.personalNote || ""
-      ).trim(),
-    },
+    giftOptions: normalizeGiftOptions(giftOptions),
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -318,10 +328,7 @@ export async function removeCartItem({ userId, itemId }) {
   const nextCart = {
     userId,
     items: nextItems,
-    giftOptions: cart.giftOptions || {
-      giftBox: false,
-      personalNote: "",
-    },
+    giftOptions: normalizeGiftOptions(cart.giftOptions),
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -353,10 +360,7 @@ export async function clearCart(userId) {
   const nextCart = {
     userId,
     items: [],
-    giftOptions: {
-      giftBox: false,
-      personalNote: "",
-    },
+    giftOptions: normalizeGiftOptions({ tier: "none" }),
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -403,10 +407,9 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
           updatedAt: now,
         }))
       : [],
-    giftOptions: guestCart.giftOptions || userCart.giftOptions || {
-      giftBox: false,
-      personalNote: "",
-    },
+    giftOptions: normalizeGiftOptions(
+      guestCart.giftOptions || userCart.giftOptions
+    ),
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: now,
@@ -448,10 +451,9 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
   const nextUserCart = {
     userId,
     items: mergedItems,
-    giftOptions: guestCart.giftOptions || userCart.giftOptions || {
-      giftBox: false,
-      personalNote: "",
-    },
+    giftOptions: normalizeGiftOptions(
+      guestCart.giftOptions || userCart.giftOptions
+    ),
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -486,10 +488,7 @@ export async function copyUserCartToGuestCart({ userId, guestId }) {
           updatedAt: now,
         }))
       : [],
-    giftOptions: userCart.giftOptions || {
-      giftBox: false,
-      personalNote: "",
-    },
+    giftOptions: normalizeGiftOptions(userCart.giftOptions),
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: now,
