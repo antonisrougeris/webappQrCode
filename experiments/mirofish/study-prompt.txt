@@ -1,0 +1,28 @@
+Simulate potential Skanare customers reacting to the product concept, storefront, pricing, trust signals, QR-code value proposition, purchase flow, shipping/returns expectations, and post-purchase QR management.
+
+Treat the agents as synthetic research participants, not as statistically representative real customers.
+
+Questions to answer:
+1. Which customer segments understand the value proposition immediately, and which do not?
+2. What are the top objections before purchase?
+3. Which parts of the product concept create confusion or distrust?
+4. Are current price points perceived as reasonable for the product and value offered?
+5. What information would customers need before adding a product to cart?
+6. What concerns arise around QR privacy, link safety, permanence, maintenance, and whether the QR continues working?
+7. What concerns arise around sizing, product quality, printing durability, shipping, BOX NOW delivery, returns, and refunds?
+8. Which product types are most attractive: T-shirts, QR card, keychain, tote bag, stickers?
+9. Which customer groups are most likely to buy: creators, students/young adults, nightlife/social users, small businesses, event organisers, brands, freelancers, networking professionals?
+10. Identify likely abandonment points in the purchase journey and explain why.
+11. Identify wording or UX elements that should be changed before launch.
+12. Suggest 10 concrete improvements ranked by expected impact.
+13. For each major finding, include which simulated personas expressed it and whether the finding was common or isolated.
+14. Separate findings into:
+    - messaging/value proposition
+    - product/pricing
+    - trust/safety
+    - UX/purchase flow
+    - shipping/returns
+    - post-purchase QR management
+15. End with a launch-readiness assessment, biggest risks, and the 5 tests that should be validated with actual human users.
+
+Do not present synthetic-agent reactions as real conversion rates, polling, or causal evidence.
