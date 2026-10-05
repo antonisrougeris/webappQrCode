@@ -38,6 +38,7 @@ import sitemapRoutes from "./routes/sitemap.routes.js";
 import seoProductRoutes from "./routes/seo-product.routes.js";
 import boxNowTestRoutes from "./routes/boxnow-test.routes.js";
 import boxNowRoutes from "./routes/boxnow.routes.js";
+import resendRoutes from "./routes/resend.routes.js";
 
 dotenv.config();
 
@@ -86,7 +87,10 @@ app.use(
   express.json({
     limit: "100kb",
     verify: (req, _res, buf) => {
-      if (req.originalUrl?.startsWith("/api/boxnow/webhook")) {
+      if (
+        req.originalUrl?.startsWith("/api/boxnow/webhook") ||
+        req.originalUrl?.startsWith("/api/resend/webhook")
+      ) {
         req.rawBody = Buffer.from(buf);
       }
     },
@@ -114,6 +118,7 @@ app.use(cookieParser(cookieSigningSecret));
  */
 app.use("/api/viva", webhookLimiter, vivaRoutes);
 app.use("/api/boxnow", webhookLimiter, boxNowRoutes);
+app.use("/api/resend", webhookLimiter, resendRoutes);
 
 /*
  * Lusca requires req.session because it stores the server-side CSRF secret
