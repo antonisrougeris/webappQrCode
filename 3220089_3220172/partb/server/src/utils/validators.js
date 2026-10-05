@@ -9,7 +9,7 @@ export const noteSchema = z.string().trim().max(1000).optional().default("");
 export const contactFormSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(254),
-  message: z.string().trim().min(10).max(5000),
+  message: z.string().trim().min(1).max(5000),
 });
 
 const supportedCountries = [
