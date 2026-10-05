@@ -189,12 +189,32 @@ async function renderFullProductPage(product, nonce) {
      PRE-RENDER VISIBLE PRODUCT CONTENT
   ------------------------------------------------------- */
 
-  const price = new Intl.NumberFormat("el-GR", {
+  const priceFormatter = new Intl.NumberFormat("el-GR", {
     style: "currency",
     currency: "EUR",
-  }).format(
-    Number(product.price ?? product.priceEUR ?? 0)
-  );
+  });
+
+  const currentPriceValue =
+    Number(product.price ?? product.priceEUR ?? 0);
+
+  const originalPriceValue =
+    Number(product.originalPrice ?? currentPriceValue);
+
+  const discountPercent =
+    Math.max(0, Number(product.discountPercent || 0));
+
+  const onSale =
+    Boolean(product.onSale) &&
+    discountPercent > 0 &&
+    originalPriceValue > currentPriceValue;
+
+  const price =
+    priceFormatter.format(currentPriceValue);
+
+  const priceHtml =
+    onSale
+      ? `<span class="product-price__old">${escapeHtml(priceFormatter.format(originalPriceValue))}</span><span class="product-price__current">${escapeHtml(price)}</span>`
+      : `<span class="product-price__current">${escapeHtml(price)}</span>`;
 
   const inStock = isInStock(product);
 
@@ -205,7 +225,7 @@ async function renderFullProductPage(product, nonce) {
 
   html = html.replace(
     /(<p\b[^>]*id=["']productPrice["'][^>]*>)[\s\S]*?(<\/p>)/i,
-    `$1${escapeHtml(price)}$2`
+    `$1${priceHtml}$2`
   );
 
   html = html.replace(
@@ -228,6 +248,28 @@ async function renderFullProductPage(product, nonce) {
   html = html.replace(
     /(<div\b[^>]*id=["']productStock["'][^>]*>)[\s\S]*?(<\/div>)/i,
     `$1${inStock ? "In stock" : "Out of stock"}$2`
+  );
+
+  html = html.replace(
+    /(<p\b[^>]*id=["']productBadge["'][^>]*>)[\s\S]*?(<\/p>)/i,
+    (match, start, end) => {
+      if (!product.badge) {
+        return match.replace(/\shidden\b/i, "");
+      }
+
+      return `${start.replace(/\shidden\b/i, "")}${escapeHtml(product.badge)}${end}`;
+    }
+  );
+
+  html = html.replace(
+    /(<p\b[^>]*id=["']productSaleBadge["'][^>]*>)[\s\S]*?(<\/p>)/i,
+    (match, start, end) => {
+      if (!onSale) {
+        return match;
+      }
+
+      return `${start.replace(/\shidden\b/i, "")}-${discountPercent}%${end}`;
+    }
   );
 
   /* -------------------------------------------------------
