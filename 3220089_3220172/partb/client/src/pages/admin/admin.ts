@@ -273,7 +273,12 @@ async function loadView(view: string) {
    ========================================================= */
 
 async function loadDashboard() {
-  const data = await adminApi("/dashboard");
+  const [data] = await Promise.all([
+    adminApi("/dashboard"),
+    loadContactMessages().catch((error) => {
+      console.warn("Could not load contact inbox badge", error);
+    }),
+  ]);
 
   setText("statRevenue", formatMoney(data.revenue || 0));
   setText("statOrders", String(data.orders || 0));
