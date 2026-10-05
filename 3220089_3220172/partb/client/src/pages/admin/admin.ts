@@ -1296,6 +1296,26 @@ async function loadProducts() {
   renderProducts();
 }
 
+function renderAdminProductPrice(product: any): string {
+  const regular = Number(product?.price || 0);
+  const discount = Math.min(90, Math.max(0, Number(product?.discountPercent || 0)));
+  if (!discount) {
+    return `<div class="admin-product__pricing"><strong>${formatMoney(regular)}</strong></div>`;
+  }
+  const sale = Math.round(regular * (1 - discount / 100) * 100) / 100;
+  return `<div class="admin-product__pricing"><span class="admin-product__old-price">${formatMoney(regular)}</span><strong>${formatMoney(sale)}</strong><span class="admin-product__sale">-${discount}%</span></div>`;
+}
+
+function adminMerchandisingLabel(value: unknown): string {
+  const labels: Record<string, string> = {
+    new: "New",
+    featured: "Featured",
+    best_seller: "Best seller",
+    limited: "Limited",
+  };
+  return labels[String(value || "").toLowerCase()] || "";
+}
+
 function renderProducts() {
   const grid = document.getElementById("adminProductsGrid");
   if (!grid) return;
@@ -1339,8 +1359,12 @@ function renderProducts() {
               </span>
             </h3>
 
-            <p>${formatMoney(Number(product.price || 0))}</p>
-            <div class="admin-muted">${escapeHtml(product.id || "")} · ${escapeHtml(product.category || "General")}</div>
+            ${renderAdminProductPrice(product)}
+            <div class="admin-muted">
+              ${escapeHtml(product.id || "")} · ${escapeHtml(product.category || "General")}
+              ${product.featured ? " · Homepage" : ""}
+              ${adminMerchandisingLabel(product.merchandisingTag) ? ` · ${escapeHtml(adminMerchandisingLabel(product.merchandisingTag))}` : ""}
+            </div>
 
             <div class="admin-product__stock-box">
               <div class="admin-product__stock-row">
