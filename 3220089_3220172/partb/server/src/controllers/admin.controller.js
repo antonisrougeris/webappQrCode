@@ -2914,6 +2914,16 @@ export const shipOrderAndNotify =
         );
       }
 
+      if (
+        fulfillmentStatus(order) !== "ready" &&
+        fulfillmentStatus(order) !== "shipped"
+      ) {
+        throw new ApiError(
+          409,
+          "Order must be Ready before it can be shipped"
+        );
+      }
+
 
       /*
        * Idempotency:
