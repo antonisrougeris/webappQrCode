@@ -39,6 +39,10 @@ export async function getCartByUserId(userId) {
   return {
     userId,
     items: Array.isArray(data.items) ? data.items : [],
+    giftOptions: {
+      giftBox: Boolean(data.giftOptions?.giftBox),
+      personalNote: String(data.giftOptions?.personalNote || "").trim(),
+    },
     updatedAt: data.updatedAt || nowIso(),
   };
 }
@@ -157,6 +161,10 @@ price: Number(
   const nextCart = {
     userId,
     items: cart.items,
+    giftOptions: cart.giftOptions || {
+      giftBox: false,
+      personalNote: "",
+    },
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -248,6 +256,38 @@ price: Number(
   const nextCart = {
     userId,
     items: cart.items,
+    giftOptions: cart.giftOptions || {
+      giftBox: false,
+      personalNote: "",
+    },
+    checkoutOrderId: null,
+    checkoutStartedAt: null,
+    updatedAt: nowIso(),
+  };
+
+  await db.collection(COLLECTIONS.CARTS).doc(userId).set(nextCart, {
+    merge: true,
+  });
+
+  return nextCart;
+}
+
+export async function updateCartGiftOptions({
+  userId,
+  giftOptions,
+}) {
+  const db = getDB();
+  const cart = await getCartByUserId(userId);
+
+  const nextCart = {
+    userId,
+    items: cart.items,
+    giftOptions: {
+      giftBox: Boolean(giftOptions?.giftBox),
+      personalNote: String(
+        giftOptions?.personalNote || ""
+      ).trim(),
+    },
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -278,6 +318,10 @@ export async function removeCartItem({ userId, itemId }) {
   const nextCart = {
     userId,
     items: nextItems,
+    giftOptions: cart.giftOptions || {
+      giftBox: false,
+      personalNote: "",
+    },
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -309,6 +353,10 @@ export async function clearCart(userId) {
   const nextCart = {
     userId,
     items: [],
+    giftOptions: {
+      giftBox: false,
+      personalNote: "",
+    },
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -355,6 +403,10 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
           updatedAt: now,
         }))
       : [],
+    giftOptions: guestCart.giftOptions || userCart.giftOptions || {
+      giftBox: false,
+      personalNote: "",
+    },
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: now,
@@ -396,6 +448,14 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
   const nextUserCart = {
     userId,
     items: mergedItems,
+    giftOptions: cart.giftOptions || {
+      giftBox: false,
+      personalNote: "",
+    },
+    giftOptions: guestCart.giftOptions || userCart.giftOptions || {
+      giftBox: false,
+      personalNote: "",
+    },
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: nowIso(),
@@ -430,6 +490,10 @@ export async function copyUserCartToGuestCart({ userId, guestId }) {
           updatedAt: now,
         }))
       : [],
+    giftOptions: userCart.giftOptions || {
+      giftBox: false,
+      personalNote: "",
+    },
     checkoutOrderId: null,
     checkoutStartedAt: null,
     updatedAt: now,
