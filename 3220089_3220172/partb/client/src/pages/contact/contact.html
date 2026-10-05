@@ -947,59 +947,10 @@
 
 
 
-  <!-- =========================================
-       CONTACT FORM SCRIPT
-       ========================================= -->
-
-  <script>
-    const form =
-      document.getElementById("contactForm");
-
-    const status =
-      document.getElementById("formStatus");
-
-
-    form.addEventListener(
-      "submit",
-      async (event) => {
-
-        event.preventDefault();
-
-        const data =
-          Object.fromEntries(
-            new FormData(form)
-          );
-
-        try {
-
-          status.textContent =
-            "Sending...";
-
-          /*
-           * Temporary behaviour.
-           * Replace later with backend request.
-           */
-
-          await new Promise(
-            (resolve) =>
-              setTimeout(resolve, 800)
-          );
-
-          status.textContent =
-            "Message sent successfully!";
-
-          form.reset();
-
-        } catch (error) {
-
-          status.textContent =
-            "Failed to send message.";
-
-        }
-
-      }
-    );
-  </script>
+  <script
+    type="module"
+    src="/src/pages/contact/contact.ts"
+  ></script>
 
 
   <script
