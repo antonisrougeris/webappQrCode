@@ -58,9 +58,7 @@ function productUrl(product) {
 
 function renderProductCard(product, index = 0, eagerFirstImages = 0) {
   const images = getImages(product);
-  const badge =
-    product?.badge ||
-    (product?.featured ? "Featured" : "");
+  const badge = product?.badge || "";
 
   const imageHtml = images.length
     ? images
