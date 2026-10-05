@@ -1,5 +1,4 @@
 import { firebaseAuth } from "@/lib/firebase";
-import { getToken, saveToken } from "@/lib/auth";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "https://skanare.com/api";
@@ -11,18 +10,11 @@ async function buildHeaders(init?: HeadersInit): Promise<Headers> {
     headers.set("Content-Type", "application/json");
   }
 
+  await firebaseAuth.authStateReady();
   const user = firebaseAuth.currentUser;
 
   if (user) {
     const token = await user.getIdToken();
-    saveToken(token);
-    headers.set("Authorization", `Bearer ${token}`);
-    return headers;
-  }
-
-  const token = getToken();
-
-  if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
