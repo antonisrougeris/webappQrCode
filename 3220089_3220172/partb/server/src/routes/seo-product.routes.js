@@ -254,7 +254,7 @@ async function renderFullProductPage(product, nonce) {
     /(<p\b[^>]*id=["']productBadge["'][^>]*>)[\s\S]*?(<\/p>)/i,
     (match, start, end) => {
       if (!product.badge) {
-        return match.replace(/\shidden\b/i, "");
+        return match;
       }
 
       return `${start.replace(/\shidden\b/i, "")}${escapeHtml(product.badge)}${end}`;
