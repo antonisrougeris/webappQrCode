@@ -161,6 +161,12 @@ image:
 price: Number(
   variant?.price ?? product.price
 ),
+      originalPrice: Number(
+        product.originalPrice ?? product.price
+      ),
+      discountPercent: Number(
+        product.discountPercent || 0
+      ),
       currency: product.currency || "EUR",
 
       quantity,
@@ -263,6 +269,12 @@ image:
 price: Number(
   resolvedVariant?.price ?? product.price
 ),
+    originalPrice: Number(
+      product.originalPrice ?? product.price
+    ),
+    discountPercent: Number(
+      product.discountPercent || 0
+    ),
     currency: product.currency || "EUR",
 
     quantity,
