@@ -7,6 +7,7 @@ import { checkout } from "@/lib/checkout";
 import { getMe } from "@/lib/api";
 
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
+const GIFT_BOX_PRICE = 1.5;
 
 export default function CheckoutPage() {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -18,6 +19,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [giftBox, setGiftBox] = useState(false);
   const [personalNote, setPersonalNote] = useState("");
+  const [giftOpen, setGiftOpen] = useState(false);
 
   useEffect(() => {
     restoreDraft();
@@ -45,7 +47,8 @@ export default function CheckoutPage() {
 
   const discountedSubtotal = subtotal * (1 - discount / 100);
   const shipping = calculateShipping(discountedSubtotal, delivery);
-  const total = discountedSubtotal + shipping;
+  const giftFee = giftBox ? GIFT_BOX_PRICE : 0;
+  const total = discountedSubtotal + shipping + giftFee;
 
   function applyDiscount(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -280,36 +283,55 @@ export default function CheckoutPage() {
           </div>
 
           <div className="checkout-page__section checkout-gift-section" id="gift-options">
-            <h3>Gift options</h3>
-            <p className="checkout-gift-intro">
-              Add gift packaging and an optional personal message.
-            </p>
-
-            <label className="checkout-gift-option">
-              <input
-                type="checkbox"
-                checked={giftBox}
-                onChange={(event) => setGiftBox(event.target.checked)}
-              />
-              <span>
-                <strong>Add gift box</strong>
-                <small>We'll package the order as a gift.</small>
+            <button
+              type="button"
+              className="checkout-gift-summary"
+              onClick={() => setGiftOpen((value) => !value)}
+              aria-expanded={giftOpen}
+            >
+              <span className="checkout-gift-summary__index">04</span>
+              <span className="checkout-gift-summary__copy">
+                <strong>Gift options</strong>
+                <small>Add a gift box for +€1.50 and an optional note.</small>
               </span>
-            </label>
-
-            <label className="checkout-gift-note">
-              <span>
-                Personal note <small>(optional)</small>
+              <span className="checkout-gift-summary__action">
+                {giftBox || personalNote.trim() ? "Added" : "Add"}
+                {giftOpen ? " −" : " +"}
               </span>
-              <textarea
-                rows={5}
-                maxLength={200}
-                value={personalNote}
-                onChange={(event) => setPersonalNote(event.target.value)}
-                placeholder="Write your message..."
-              />
-              <small>{personalNote.length}/200 characters</small>
-            </label>
+            </button>
+
+            {giftOpen ? (
+              <div className="checkout-gift-body">
+                <label className="checkout-gift-option">
+                  <input
+                    type="checkbox"
+                    checked={giftBox}
+                    onChange={(event) => setGiftBox(event.target.checked)}
+                  />
+                  <span className="checkout-gift-option__copy">
+                    <strong>
+                      <span>Add gift box</span>
+                      <em>+€1.50</em>
+                    </strong>
+                    <small>We'll package the order as a gift.</small>
+                  </span>
+                </label>
+
+                <label className="checkout-gift-note">
+                  <span>
+                    Personal note <small>(optional)</small>
+                  </span>
+                  <textarea
+                    rows={5}
+                    maxLength={200}
+                    value={personalNote}
+                    onChange={(event) => setPersonalNote(event.target.value)}
+                    placeholder="Write your message..."
+                  />
+                  <small>{personalNote.length}/200 characters</small>
+                </label>
+              </div>
+            ) : null}
           </div>
 
           <button
@@ -386,6 +408,13 @@ export default function CheckoutPage() {
             <span>Shipping</span>
             <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
           </div>
+
+          {giftFee > 0 ? (
+            <div className="checkout-line checkout-gift-fee">
+              <span>Gift box</span>
+              <span>+{formatPrice(giftFee)}</span>
+            </div>
+          ) : null}
 
           <div className="checkout-total">
             <span>Total</span>
