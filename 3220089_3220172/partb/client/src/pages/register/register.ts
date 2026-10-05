@@ -13,6 +13,7 @@ import { initPasswordVisibility } from "../../utils/password-visibility";
 import { firebaseAuth } from "../../services/firebase";
 import { saveToken } from "../../services/auth";
 import { register, sendVerificationCode } from "../../services/api";
+import { normalizeSameOriginPath } from "../../utils/redirect";
 
 initPasswordVisibility();
 
@@ -44,30 +45,8 @@ function buildAuthQuery(params: Record<string, string | undefined>): string {
   return query ? `?${query}` : "";
 }
 
-function normalizeRedirectPath(value: string | null | undefined): string | null {
-  if (!value) return null;
-
-  const cleaned = value.trim();
-
-  if (!cleaned || !cleaned.startsWith("/")) return null;
-
-  const legacyMap: Record<string, string> = {
-    "/login": "/login",
-    "/register": "/register",
-    "/forgot-password": "/forgot-password",
-    "/verify-email": "/verify-email",
-    "/checkout": "/checkout",
-  };
-
-  const mapped = legacyMap[cleaned] ?? cleaned;
-
-  if (mapped.startsWith("//")) return null;
-
-  return mapped;
-}
-
 function getRedirectUrl(): string {
-  const redirect = normalizeRedirectPath(
+  const redirect = normalizeSameOriginPath(
     new URLSearchParams(window.location.search).get("redirect")
   );
 
