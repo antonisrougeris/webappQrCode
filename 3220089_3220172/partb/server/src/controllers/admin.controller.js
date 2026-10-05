@@ -1251,6 +1251,10 @@ export const getAdminFulfillment = asyncHandler(
         shipped: paidOrders.filter(
           (order) => order.fulfillmentStatus === "shipped"
         ).length,
+
+        completed: paidOrders.filter(
+          (order) => order.fulfillmentStatus === "completed"
+        ).length,
       },
     });
   }
@@ -1273,9 +1277,15 @@ export const updateOrderFulfillment = asyncHandler(
       "to_prepare",
       "preparing",
       "ready",
-      "completed",
       "cancelled",
     ];
+
+    if (status === "completed") {
+      throw new ApiError(
+        403,
+        "Completed is set automatically only after BOX NOW confirms delivery"
+      );
+    }
 
     if (!allowedStatuses.includes(status)) {
       throw new ApiError(400, "Invalid fulfillment status");
@@ -1333,10 +1343,6 @@ export const updateOrderFulfillment = asyncHandler(
 
     if (status === "shipped") {
       update.shippedAt = nowIso();
-    }
-
-    if (status === "completed") {
-      update.completedAt = nowIso();
     }
 
     await ref.update(update);
