@@ -480,47 +480,50 @@
 
 
       <!-- GIFT OPTIONS -->
-      <section class="checkout-page__section checkout-gift-section" id="gift-options">
-        <div class="checkout-section-heading">
-          <span>04</span>
+      <details class="checkout-page__section checkout-gift-section" id="gift-options">
+        <summary class="checkout-gift-summary">
+          <span class="checkout-gift-summary__index">04</span>
+          <span class="checkout-gift-summary__copy">
+            <strong>Gift options</strong>
+            <small>Add a gift box for +€1.50 and an optional note.</small>
+          </span>
+          <span class="checkout-gift-summary__action">Add</span>
+        </summary>
 
-          <div>
-            <h2>Gift options</h2>
-            <p>
-              Add gift packaging and an optional personal message.
-            </p>
-          </div>
+        <div class="checkout-gift-body">
+          <label class="checkout-gift-option">
+            <input
+              type="checkbox"
+              name="giftBox"
+              value="true"
+            />
+
+            <span class="checkout-gift-option__copy">
+              <strong>
+                <span>Add gift box</span>
+                <em>+€1.50</em>
+              </strong>
+              <small>We'll package the order as a gift.</small>
+            </span>
+          </label>
+
+          <label class="checkout-gift-note">
+            <span>
+              Personal note
+              <small>(optional)</small>
+            </span>
+
+            <textarea
+              name="personalNote"
+              rows="5"
+              maxlength="200"
+              placeholder="Write your message..."
+            ></textarea>
+
+            <small>Maximum 200 characters.</small>
+          </label>
         </div>
-
-        <label class="checkout-gift-option">
-          <input
-            type="checkbox"
-            name="giftBox"
-            value="true"
-          />
-
-          <span>
-            <strong>Add gift box</strong>
-            <small>We'll package the order as a gift.</small>
-          </span>
-        </label>
-
-        <label class="checkout-gift-note">
-          <span>
-            Personal note
-            <small>(optional)</small>
-          </span>
-
-          <textarea
-            name="personalNote"
-            rows="5"
-            maxlength="200"
-            placeholder="Write your message..."
-          ></textarea>
-
-          <small>Maximum 200 characters.</small>
-        </label>
-      </section>
+      </details>
 
 
       <button
@@ -604,6 +607,11 @@
         <span>BOX NOW delivery</span>
 
         <span id="shipping"></span>
+      </div>
+
+      <div id="giftFeeRow" class="checkout-line checkout-gift-fee hidden">
+        <span>Gift box</span>
+        <span id="giftFee">+€1.50</span>
       </div>
 
 
