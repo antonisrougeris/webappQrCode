@@ -11,6 +11,7 @@ import {
   addCartItem,
   updateCartItem,
   removeCartItem,
+  updateCartGiftOptions,
   type Cart,
   type CartItem,
 } from "../../services/cart";
@@ -52,6 +53,15 @@ function formatPrice(value: number): string {
     style: "currency",
     currency: "EUR",
   }).format(value || 0);
+}
+
+function escapeHtml(value: string): string {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function getProductImage(product: Product): string {
@@ -419,14 +429,60 @@ async function renderCartFromState(
         .join("")}
     </section>
 
-    <div class="cart-gift-row">
+    <button
+      type="button"
+      class="cart-gift-row"
+      data-gift-open
+      aria-haspopup="dialog"
+    >
       <span class="cart-gift-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" width="20" height="20">
           <path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H8.5A2.5 2.5 0 1 1 11 4.5C11 6 12 7 12 7Zm0 0h3.5A2.5 2.5 0 1 0 13 4.5C13 6 12 7 12 7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>
-      <span class="cart-gift-text">ADD GIFT BOX &amp; PERSONAL NOTE</span>
+      <span class="cart-gift-text">
+        ${cart.giftOptions?.giftBox || cart.giftOptions?.personalNote
+          ? "GIFT OPTIONS ADDED"
+          : "ADD GIFT BOX & PERSONAL NOTE"}
+      </span>
       <span class="cart-gift-arrow" aria-hidden="true">→</span>
+    </button>
+
+    <div class="cart-gift-dialog hidden" data-gift-dialog role="dialog" aria-modal="true" aria-labelledby="cartGiftTitle">
+      <div class="cart-gift-dialog__backdrop" data-gift-close></div>
+      <div class="cart-gift-dialog__panel">
+        <button type="button" class="cart-gift-dialog__close" data-gift-close aria-label="Close gift options">×</button>
+        <span class="cart-gift-dialog__eyebrow">Make it a gift</span>
+        <h3 id="cartGiftTitle">Gift box & personal note</h3>
+        <p class="cart-gift-dialog__copy">
+          Add gift packaging and an optional message. You can review or edit these options again at checkout.
+        </p>
+
+        <label class="cart-gift-check">
+          <input
+            type="checkbox"
+            id="cartGiftBox"
+            ${cart.giftOptions?.giftBox ? "checked" : ""}
+          />
+          <span>
+            <strong>Add gift box</strong>
+            <small>We'll package the order as a gift.</small>
+          </span>
+        </label>
+
+        <label class="cart-gift-note">
+          <span>Personal note <small>(optional)</small></span>
+          <textarea id="cartGiftNote" maxlength="200" rows="5" placeholder="Write your message...">${escapeHtml(
+            cart.giftOptions?.personalNote || ""
+          )}</textarea>
+          <small>Maximum 200 characters.</small>
+        </label>
+
+        <div class="cart-gift-dialog__actions">
+          <button type="button" class="cart-gift-cancel" data-gift-close>Cancel</button>
+          <button type="button" class="cart-gift-save" data-gift-save>Save gift options</button>
+        </div>
+      </div>
     </div>
 
     <section class="cart-summary">
@@ -625,6 +681,56 @@ function bindCartActions(): void {
   document.addEventListener("click", async (event) => {
     const target = event.target as HTMLElement | null;
     if (!target) return;
+
+    const giftOpen = target.closest("[data-gift-open]");
+    const giftClose = target.closest("[data-gift-close]");
+    const giftSave = target.closest("[data-gift-save]") as HTMLButtonElement | null;
+    const giftDialog = document.querySelector<HTMLElement>("[data-gift-dialog]");
+
+    if (giftOpen) {
+      giftDialog?.classList.remove("hidden");
+      document.body.classList.add("gift-dialog-open");
+      window.setTimeout(() => {
+        document.getElementById("cartGiftNote")?.focus();
+      }, 0);
+      return;
+    }
+
+    if (giftClose) {
+      giftDialog?.classList.add("hidden");
+      document.body.classList.remove("gift-dialog-open");
+      return;
+    }
+
+    if (giftSave) {
+      const giftBox = (
+        document.getElementById("cartGiftBox") as HTMLInputElement | null
+      )?.checked || false;
+
+      const personalNote = (
+        document.getElementById("cartGiftNote") as HTMLTextAreaElement | null
+      )?.value?.trim() || "";
+
+      try {
+        giftSave.disabled = true;
+        giftSave.textContent = "Saving...";
+
+        const nextCart = await updateCartGiftOptions({
+          giftBox,
+          personalNote,
+        });
+
+        await refreshAllCartViews(nextCart);
+        document.body.classList.remove("gift-dialog-open");
+        showToast("Gift options saved.");
+      } catch (error: any) {
+        giftSave.disabled = false;
+        giftSave.textContent = "Save gift options";
+        showToast(error?.message || "Failed to save gift options.");
+      }
+
+      return;
+    }
 
     const card = target.closest(".cart-cross-card") as HTMLElement | null;
 
