@@ -4,7 +4,6 @@ import {
   registerUser,
   loginUser,
   getCurrentUser,
-  checkEmailExists,
 } from "../services/auth.service.js";
 import { mergeGuestCartIntoUserCart } from "../services/cart.service.js";
 
@@ -54,10 +53,3 @@ export const me = asyncHandler(async (req, res) => {
   return ok(res, { user });
 });
 
-export const checkEmail = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-
-  const result = await checkEmailExists(email);
-
-  return ok(res, result);
-});
