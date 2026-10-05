@@ -25,8 +25,9 @@ export async function sendEmail({
 
   const sender =
     from ||
+    process.env.CONTACT_EMAIL_FROM ||
     process.env.EMAIL_FROM ||
-    "Skanare <hello@skanare.com>";
+    "Skanare Contact <contact@skanare.com>";
 
   const resend = new Resend(apiKey);
 
