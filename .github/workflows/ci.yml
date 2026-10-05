@@ -77,6 +77,30 @@ jobs:
           VITE_QR_REDIRECT_BASE_URL: ${{ vars.VITE_QR_REDIRECT_BASE_URL }}
           VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
 
+      - name: Verify SEO product prerendering
+        run: |
+          grep -q 'data-prerendered-product="true"' dist/index.html || {
+            echo "ERROR: homepage product cards were not prerendered"
+            exit 1
+          }
+
+          grep -q 'data-prerender="homepage-products"' dist/index.html || {
+            echo "ERROR: homepage product ItemList JSON-LD is missing"
+            exit 1
+          }
+
+          grep -q 'data-prerendered-product="true"' dist/src/pages/products/products.html || {
+            echo "ERROR: products page cards were not prerendered"
+            exit 1
+          }
+
+          grep -q 'data-prerender="products-page"' dist/src/pages/products/products.html || {
+            echo "ERROR: products page ItemList JSON-LD is missing"
+            exit 1
+          }
+
+          echo "SEO prerendering validation OK"
+
       - name: Guard production bundle against development URLs
         run: |
           if grep -R -n -E 'csb\\.app|localhost:[0-9]+|127\\.0\\.0\\.1:[0-9]+' dist; then
