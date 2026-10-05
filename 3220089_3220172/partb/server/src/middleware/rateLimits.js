@@ -37,6 +37,12 @@ export const checkoutLimiter = buildLimiter({
   message: "Too many checkout attempts, please try again later",
 });
 
+export const contactLimiter = buildLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  message: "Too many contact messages, please try again later",
+});
+
 export const adminLimiter = buildLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 180,
