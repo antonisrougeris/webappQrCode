@@ -208,10 +208,10 @@ export function verifyResendWebhook({
   return resend.webhooks.verify({
     payload: rawBody,
     headers: {
-      id: headers["svix-id"],
-      timestamp: headers["svix-timestamp"],
-      signature: headers["svix-signature"],
+      "svix-id": headers["svix-id"],
+      "svix-timestamp": headers["svix-timestamp"],
+      "svix-signature": headers["svix-signature"],
     },
-    webhookSecret,
+    secret: webhookSecret,
   });
 }
