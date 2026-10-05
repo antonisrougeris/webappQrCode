@@ -9,6 +9,7 @@ import {
   type CountryCode,
 } from "libphonenumber-js";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
+const GIFT_BOX_PRICE = 1.5;
 import { setFlashToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
 
@@ -178,7 +179,20 @@ async function render(): Promise<void> {
     personalNoteInput.dataset.cartGiftInitialized = "true";
   }
 
+  const giftBoxSelected = Boolean(giftBoxInput?.checked);
+  const hasGiftOptions =
+    giftBoxSelected ||
+    Boolean(personalNoteInput?.value.trim());
 
+  const giftSummaryAction =
+    document.querySelector<HTMLElement>(
+      ".checkout-gift-summary__action"
+    );
+
+  if (giftSummaryAction) {
+    giftSummaryAction.textContent =
+      hasGiftOptions ? "Added" : "Add";
+  }
 
   const container = document.getElementById("checkoutItems");
   if (!container) return;
@@ -203,6 +217,10 @@ async function render(): Promise<void> {
     document.getElementById("subtotal")!.textContent = formatPrice(0);
     document.getElementById("shipping")!.textContent = formatPrice(0);
     document.getElementById("total")!.textContent = formatPrice(0);
+
+    document
+      .getElementById("giftFeeRow")
+      ?.classList.add("hidden");
 
     const msg = document.getElementById("freeShippingMsg");
     if (msg) msg.textContent = "";
@@ -247,17 +265,40 @@ async function render(): Promise<void> {
     .join("");
 
   const discountedSubtotal = subtotal * (1 - discount / 100);
-const shipping =
-  calculateShipping(
-    discountedSubtotal
-  );
-    const total = discountedSubtotal + shipping;
+  const shipping =
+    calculateShipping(
+      discountedSubtotal
+    );
+  const giftFee =
+    giftBoxSelected
+      ? GIFT_BOX_PRICE
+      : 0;
+  const total =
+    discountedSubtotal +
+    shipping +
+    giftFee;
 
   document.getElementById("subtotal")!.textContent =
     formatPrice(discountedSubtotal);
 
   document.getElementById("shipping")!.textContent =
     shipping === 0 ? "Free" : formatPrice(shipping);
+
+  const giftFeeRow =
+    document.getElementById("giftFeeRow");
+
+  giftFeeRow?.classList.toggle(
+    "hidden",
+    giftFee === 0
+  );
+
+  const giftFeeValue =
+    document.getElementById("giftFee");
+
+  if (giftFeeValue) {
+    giftFeeValue.textContent =
+      "+" + formatPrice(giftFee);
+  }
 
   document.getElementById("total")!.textContent = formatPrice(total);
 
@@ -679,11 +720,40 @@ editCartButton?.addEventListener(
     updatePhoneValidity();
     updateLockerValidity();
     saveCheckoutDraftFromPage();
+
+    if (target?.name === "personalNote") {
+      const action =
+        document.querySelector<HTMLElement>(
+          ".checkout-gift-summary__action"
+        );
+
+      if (action) {
+        action.textContent =
+          target.value.trim() ||
+          (
+            document.querySelector<HTMLInputElement>(
+              'input[name="giftBox"]'
+            )?.checked
+          )
+            ? "Added"
+            : "Add";
+      }
+    }
   });
-  checkoutForm?.addEventListener("change", () => {
+  checkoutForm?.addEventListener("change", (event) => {
+    const target =
+      event.target as HTMLInputElement | HTMLTextAreaElement | null;
+
     updatePhoneValidity();
     updateLockerValidity();
     saveCheckoutDraftFromPage();
+
+    if (
+      target?.name === "giftBox" ||
+      target?.name === "personalNote"
+    ) {
+      void render();
+    }
   });
   updatePhoneValidity();
   updateLockerValidity();

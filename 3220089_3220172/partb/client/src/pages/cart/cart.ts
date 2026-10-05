@@ -23,6 +23,7 @@ initMobileMenu();
 
 const FREE_SHIPPING_TARGET = 50;
 const FREE_STICKERS_TARGET = 80;
+const GIFT_BOX_PRICE = 1.5;
 
 let currentCart: Cart | null = null;
 let catalogCache: Product[] | null = null;
@@ -382,8 +383,16 @@ async function renderCartFromState(
   const items =
     getCartItems(cart);
 
-  const total =
+  const merchandiseTotal =
     getCartTotal(cart);
+
+  const giftFee =
+    cart.giftOptions?.giftBox
+      ? GIFT_BOX_PRICE
+      : 0;
+
+  const total =
+    merchandiseTotal + giftFee;
 
   updateCartHeaderCount(cart);
 
@@ -414,7 +423,7 @@ async function renderCartFromState(
     );
 
   container.innerHTML = `
-    ${updateProgress(total)}
+    ${updateProgress(merchandiseTotal)}
 
     <section class="drawer-cart-list">
       ${items
@@ -464,8 +473,8 @@ async function renderCartFromState(
             id="cartGiftBox"
             ${cart.giftOptions?.giftBox ? "checked" : ""}
           />
-          <span>
-            <strong>Add gift box</strong>
+          <span class="cart-gift-check__copy">
+            <strong>Add gift box <em>+${formatPrice(GIFT_BOX_PRICE)}</em></strong>
             <small>We'll package the order as a gift.</small>
           </span>
         </label>
@@ -486,6 +495,11 @@ async function renderCartFromState(
     </div>
 
     <section class="cart-summary">
+      ${giftFee > 0 ? `
+      <div class="cart-summary-gift">
+        <span>Gift box</span>
+        <strong>+${formatPrice(giftFee)}</strong>
+      </div>` : ""}
       <div>
         <span>Total</span>
         <strong>${formatPrice(total)}</strong>
