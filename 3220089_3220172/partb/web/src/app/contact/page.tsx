@@ -1,3 +1,5 @@
+import { ContactForm } from "@/components/ContactForm";
+
 export const metadata = {
   title: "Contact | Skanare",
   description: "Contact Skanare for questions about QR clothing and accessories.",
@@ -17,27 +19,7 @@ export default function ContactPage() {
             <a href="mailto:info@skanare.com">info@skanare.com</a>
           </p>
 
-          <form className="contact-form">
-            <div className="form-grid">
-              <input type="text" name="name" placeholder="Name" required />
-              <input type="email" name="email" placeholder="E-mail" required />
-            </div>
-
-            <textarea
-              name="message"
-              placeholder="Message"
-              rows={6}
-              required
-            />
-
-            <button type="submit" className="btn-primary">
-              Send message
-            </button>
-
-            <p className="form-status">
-              For now, please email us directly at info@skanare.com.
-            </p>
-          </form>
+          <ContactForm />
         </section>
       </main>
 
