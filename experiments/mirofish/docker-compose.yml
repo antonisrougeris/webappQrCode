@@ -1,0 +1,14 @@
+services:
+  mirofish:
+    # Official upstream image. For a long-lived experiment, pin a reviewed digest after the first successful run.
+    image: ghcr.io/666ghj/mirofish:latest
+    container_name: skanare-mirofish
+    env_file:
+      - .env
+    ports:
+      # Avoid conflicts with Skanare's own services.
+      - "3100:3000"
+      - "5101:5001"
+    restart: "no"
+    volumes:
+      - ./data/uploads:/app/backend/uploads
