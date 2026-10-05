@@ -186,6 +186,51 @@ async function renderFullProductPage(product, nonce) {
   );
 
   /* -------------------------------------------------------
+     PRE-RENDER VISIBLE PRODUCT CONTENT
+  ------------------------------------------------------- */
+
+  const price = new Intl.NumberFormat("el-GR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(
+    Number(product.price ?? product.priceEUR ?? 0)
+  );
+
+  const inStock = isInStock(product);
+
+  html = html.replace(
+    /(<h1\b[^>]*id=["']productTitle["'][^>]*>)[\s\S]*?(<\/h1>)/i,
+    `$1${escapeHtml(product.title)}$2`
+  );
+
+  html = html.replace(
+    /(<p\b[^>]*id=["']productPrice["'][^>]*>)[\s\S]*?(<\/p>)/i,
+    `$1${escapeHtml(price)}$2`
+  );
+
+  html = html.replace(
+    /(<p\b[^>]*id=["']productDescription["'][^>]*>)[\s\S]*?(<\/p>)/i,
+    `$1${escapeHtml(description)}$2`
+  );
+
+  html = html.replace(
+    /<img\b([^>]*\bid=["']productImage["'][^>]*)>/i,
+    (match, attrs) => {
+      let nextAttrs = attrs
+        .replace(/\s+src=["'][^"']*["']/i, "")
+        .replace(/\s+alt=["'][^"']*["']/i, "")
+        .replace(/\s+hidden\b/i, "");
+
+      return `<img${nextAttrs} src="${escapeHtml(image)}" alt="${escapeHtml(product.title)}">`;
+    }
+  );
+
+  html = html.replace(
+    /(<div\b[^>]*id=["']productStock["'][^>]*>)[\s\S]*?(<\/div>)/i,
+    `$1${inStock ? "In stock" : "Out of stock"}$2`
+  );
+
+  /* -------------------------------------------------------
      GENERATE PRODUCT METADATA
   ------------------------------------------------------- */
 
