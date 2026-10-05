@@ -17,6 +17,9 @@ import {
 import {
   chooseProductImages,
 } from "./product-colors.service.js";
+import {
+  calculateDiscountedPrice,
+} from "./product-pricing.service.js";
 
 function normalizeGiftOptions(value = {}) {
   const legacyPremium = Boolean(value?.giftBox);
@@ -158,11 +161,16 @@ image:
       // Δεν εμπιστευόμαστε ποτέ τιμές από client.
       // Αυτό είναι server snapshot για εμφάνιση cart.
       // Στο checkout πρέπει πάλι να ξαναϋπολογίζονται από product DB.
-price: Number(
-  variant?.price ?? product.price
+price: calculateDiscountedPrice(
+  variant?.price ??
+    product.originalPrice ??
+    product.price,
+  product.discountPercent
 ),
       originalPrice: Number(
-        product.originalPrice ?? product.price
+        variant?.price ??
+        product.originalPrice ??
+        product.price
       ),
       discountPercent: Number(
         product.discountPercent || 0
@@ -266,11 +274,16 @@ image:
     resolvedVariant?.color
   )[0] || null,
 
-price: Number(
-  resolvedVariant?.price ?? product.price
+price: calculateDiscountedPrice(
+  resolvedVariant?.price ??
+    product.originalPrice ??
+    product.price,
+  product.discountPercent
 ),
     originalPrice: Number(
-      product.originalPrice ?? product.price
+      resolvedVariant?.price ??
+      product.originalPrice ??
+      product.price
     ),
     discountPercent: Number(
       product.discountPercent || 0
