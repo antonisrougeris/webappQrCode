@@ -448,10 +448,6 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
   const nextUserCart = {
     userId,
     items: mergedItems,
-    giftOptions: cart.giftOptions || {
-      giftBox: false,
-      personalNote: "",
-    },
     giftOptions: guestCart.giftOptions || userCart.giftOptions || {
       giftBox: false,
       personalNote: "",
