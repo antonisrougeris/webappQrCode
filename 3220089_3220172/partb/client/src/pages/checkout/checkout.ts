@@ -52,10 +52,17 @@ function restoreCheckoutDraft(): void {
 
       if (el.type === "checkbox") {
         el.checked = value === "true" || value === "on";
+        if (key === "giftBox") {
+          el.dataset.cartGiftInitialized = "true";
+        }
         return;
       }
 
       el.value = value;
+
+      if (key === "personalNote") {
+        el.dataset.cartGiftInitialized = "true";
+      }
     });
   } catch {
     localStorage.removeItem(CHECKOUT_DRAFT_KEY);
