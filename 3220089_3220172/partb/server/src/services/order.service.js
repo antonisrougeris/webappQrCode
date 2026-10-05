@@ -14,6 +14,8 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+const GIFT_BOX_PRICE = 1.5;
+
 function calculateShipping(subtotal, delivery) {
   if (subtotal >= 50) return 0;
   if (delivery === "boxnow") return 2.0;
@@ -189,7 +191,14 @@ export async function checkoutCartForOwner({
                 personalNote: String(
                   giftOptions?.personalNote || ""
                 ).trim(),
+                giftBoxPrice: giftOptions?.giftBox ? GIFT_BOX_PRICE : 0,
               },
+
+              giftFee: giftOptions?.giftBox ? GIFT_BOX_PRICE : 0,
+              total:
+                Number(existingOrder.subtotal || 0) +
+                Number(existingOrder.shippingCost || 0) +
+                (giftOptions?.giftBox ? GIFT_BOX_PRICE : 0),
 
               updatedAt:
                 refreshedAt,
@@ -338,7 +347,8 @@ orderItems.push({
     }
 
     const shippingCost = calculateShipping(subtotal, delivery);
-    const total = subtotal + shippingCost;
+    const giftFee = giftOptions?.giftBox ? GIFT_BOX_PRICE : 0;
+    const total = subtotal + shippingCost + giftFee;
 
     const order = {
   id: orderId,
@@ -375,7 +385,10 @@ giftOptions: {
   personalNote: String(
     giftOptions?.personalNote || ""
   ).trim(),
+  giftBoxPrice: giftFee,
 },
+
+giftFee,
 
 billing: {
   documentType:
