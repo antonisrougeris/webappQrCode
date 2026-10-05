@@ -48,6 +48,10 @@ import {
   generatePrintSheet,
 } from "../utils/generatePrintSheet.js";
 
+import {
+  refreshStorefrontProductHtmlSafe,
+} from "../services/storefront-seo-html.service.js";
+
 
 
 const __filename =
@@ -355,6 +359,10 @@ export const seedProducts = asyncHandler(
     }
 
     await batch.commit();
+
+    await refreshStorefrontProductHtmlSafe({
+      reason: "admin_seed_products",
+    });
 
     return ok(res, {
       message:
@@ -1754,12 +1762,20 @@ export const createAdminProduct =
         product
       );
 
+      const seoSync =
+        await refreshStorefrontProductHtmlSafe({
+          reason: "admin_create_product",
+        });
+
 
       return res
         .status(201)
         .json({
 
           success: true,
+
+          seoSynced:
+            seoSync.success,
 
           product: {
             ...product,
@@ -2000,12 +2016,20 @@ export const updateAdminProduct =
         ...updated.data(),
       };
 
+      const seoSync =
+        await refreshStorefrontProductHtmlSafe({
+          reason: "admin_update_product",
+        });
+
 
       return res
         .status(200)
         .json({
 
           success: true,
+
+          seoSynced:
+            seoSync.success,
 
           product: {
             ...product,
@@ -2050,8 +2074,15 @@ export const archiveAdminProduct = asyncHandler(
       updatedAt: nowIso(),
     });
 
+    const seoSync =
+      await refreshStorefrontProductHtmlSafe({
+        reason: "admin_archive_product",
+      });
+
     return res.status(200).json({
       success: true,
+      seoSynced:
+        seoSync.success,
       id,
     });
   }
@@ -2629,6 +2660,10 @@ export const generateAdminQrStock =
         }
       }
 
+
+      await refreshStorefrontProductHtmlSafe({
+        reason: "admin_generate_qr_stock",
+      });
 
       return res
         .status(201)

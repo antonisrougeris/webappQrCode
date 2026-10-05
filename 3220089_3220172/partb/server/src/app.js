@@ -41,6 +41,10 @@ import boxNowTestRoutes from "./routes/boxnow-test.routes.js";
 import boxNowRoutes from "./routes/boxnow.routes.js";
 import resendRoutes from "./routes/resend.routes.js";
 import contactRoutes from "./routes/contact.routes.js";
+import {
+  refreshStorefrontProductHtmlSafe,
+  startStorefrontProductHtmlRefreshLoop,
+} from "./services/storefront-seo-html.service.js";
 
 dotenv.config();
 
@@ -235,6 +239,20 @@ const PORT = Number(process.env.PORT || 4000);
 const HOST = process.env.HOST || "127.0.0.1";
 
 await connectDB();
+
+/*
+ * Keep the static Vite storefront HTML synchronized with Firestore.
+ * Nginx still serves the frontend directly, but the HTML files are
+ * refreshed from the authoritative product service on startup and
+ * periodically for stock changes caused outside the Admin product editor.
+ */
+await refreshStorefrontProductHtmlSafe({
+  reason: "startup",
+});
+
+startStorefrontProductHtmlRefreshLoop({
+  intervalMs: 60_000,
+});
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);

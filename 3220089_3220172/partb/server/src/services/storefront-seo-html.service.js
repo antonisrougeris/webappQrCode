@@ -1,0 +1,430 @@
+import { readFile, rename, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+import { listProductsService } from "./product.service.js";
+
+const distDir = fileURLToPath(
+  new URL("../../../client/dist/", import.meta.url)
+);
+
+const LIVE_MARKER_PREFIX = "SKANARE_LIVE";
+
+let activeRefresh = null;
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function formatPrice(value) {
+  return new Intl.NumberFormat("el-GR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(Number(value || 0));
+}
+
+function getImages(product) {
+  const images = Array.isArray(product?.images)
+    ? product.images.filter(
+        (image) =>
+          typeof image === "string" &&
+          image.trim()
+      )
+    : [];
+
+  if (!images.length && product?.image) {
+    images.push(product.image);
+  }
+
+  return images;
+}
+
+function isInStock(product) {
+  if (typeof product?.stock === "number") {
+    return product.stock > 0;
+  }
+
+  if (
+    Array.isArray(product?.variants) &&
+    product.variants.length
+  ) {
+    return product.variants.some(
+      (variant) =>
+        Number(variant?.stock || 0) > 0
+    );
+  }
+
+  return true;
+}
+
+function productUrl(product) {
+  const identifier =
+    product?.slug ||
+    product?.id ||
+    product?._id;
+
+  return identifier
+    ? `/product/${encodeURIComponent(identifier)}`
+    : "#";
+}
+
+export function renderProductCard(
+  product,
+  index = 0,
+  eagerFirstImages = 0
+) {
+  const images = getImages(product);
+  const badge =
+    product?.badge ||
+    (product?.featured ? "Featured" : "");
+
+  const imageHtml = images.length
+    ? images
+        .map((image, imageIndex) => {
+          const primary = imageIndex === 0;
+          const priority =
+            primary &&
+            index < eagerFirstImages;
+
+          return `
+            <img
+              class="product-image ${primary ? "is-active" : ""}"
+              src="${escapeHtml(image)}"
+              alt="${primary ? escapeHtml(product?.title || "") : ""}"
+              loading="${priority ? "eager" : "lazy"}"
+              fetchpriority="${priority ? "high" : "low"}"
+              decoding="async"
+              data-image-index="${imageIndex}"
+              ${primary ? "" : 'aria-hidden="true"'}
+            />`;
+        })
+        .join("")
+    : `
+        <div
+          class="mini-shirt product-image-fallback"
+          aria-hidden="true"
+        ></div>`;
+
+  return `
+    <article class="product-card" data-prerendered-product="true">
+      <a
+        href="${escapeHtml(productUrl(product))}"
+        class="product-card-anchor"
+        aria-label="View ${escapeHtml(product?.title || "")}"
+      >
+        <div class="product-media ${product?.category === "accessory" ? "grey" : ""}">
+          ${badge ? `<span class="badge">${escapeHtml(badge)}</span>` : ""}
+          ${imageHtml}
+        </div>
+
+        <div class="product-body">
+          <div class="product-row">
+            <h3 class="product-title">${escapeHtml(product?.title || "")}</h3>
+            <p class="price">${formatPrice(product?.price ?? product?.priceEUR ?? 0)}</p>
+          </div>
+
+          <p class="product-stock ${isInStock(product) ? "is-in-stock" : "is-out-of-stock"}">
+            ${isInStock(product) ? "In stock" : "Out of stock"}
+          </p>
+        </div>
+      </a>
+    </article>`;
+}
+
+export function itemListJsonLd(products, name) {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    itemListElement: products.map(
+      (product, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `https://skanare.com${productUrl(product)}`,
+        item: {
+          "@type": "Product",
+          name: product?.title || "",
+          image:
+            getImages(product)[0] ||
+            undefined,
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "EUR",
+            price: String(
+              product?.price ??
+                product?.priceEUR ??
+                0
+            ),
+            availability: isInStock(product)
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+          },
+        },
+      })
+    ),
+  }).replace(/</g, "\\u003c");
+}
+
+export function replaceLiveBlock(
+  html,
+  key,
+  content
+) {
+  const start =
+    `<!-- ${LIVE_MARKER_PREFIX}:${key}:START -->`;
+
+  const end =
+    `<!-- ${LIVE_MARKER_PREFIX}:${key}:END -->`;
+
+  const startIndex = html.indexOf(start);
+  const endIndex = html.indexOf(
+    end,
+    startIndex + start.length
+  );
+
+  if (
+    startIndex < 0 ||
+    endIndex < 0
+  ) {
+    throw new Error(
+      `Missing live SEO markers for ${key}`
+    );
+  }
+
+  return (
+    html.slice(
+      0,
+      startIndex + start.length
+    ) +
+    "\n" +
+    content +
+    "\n" +
+    html.slice(endIndex)
+  );
+}
+
+async function atomicWrite(file, content) {
+  const tempFile =
+    `${file}.${process.pid}.${Date.now()}.tmp`;
+
+  await writeFile(
+    tempFile,
+    content,
+    "utf8"
+  );
+
+  await rename(
+    tempFile,
+    file
+  );
+}
+
+async function refreshOnce(reason) {
+  const products =
+    await listProductsService();
+
+  const featured =
+    products.filter(
+      (product) =>
+        Boolean(product?.featured)
+    );
+
+  const tshirts = featured
+    .filter(
+      (product) =>
+        String(
+          product?.category || ""
+        ).toLowerCase() ===
+        "tshirt"
+    )
+    .slice(0, 4);
+
+  const accessories = featured
+    .filter(
+      (product) =>
+        String(
+          product?.category || ""
+        ).toLowerCase() ===
+        "accessory"
+    )
+    .slice(0, 4);
+
+  const homepageFile =
+    path.join(
+      distDir,
+      "index.html"
+    );
+
+  const productsFile =
+    path.join(
+      distDir,
+      "src/pages/products/products.html"
+    );
+
+  let [
+    homepageHtml,
+    productsHtml,
+  ] = await Promise.all([
+    readFile(homepageFile, "utf8"),
+    readFile(productsFile, "utf8"),
+  ]);
+
+  homepageHtml = replaceLiveBlock(
+    homepageHtml,
+    "GRID:featuredTshirtsGrid",
+    tshirts
+      .map((product, index) =>
+        renderProductCard(
+          product,
+          index,
+          4
+        )
+      )
+      .join("\n")
+  );
+
+  homepageHtml = replaceLiveBlock(
+    homepageHtml,
+    "GRID:featuredAccessoriesGrid",
+    accessories
+      .map((product, index) =>
+        renderProductCard(
+          product,
+          index,
+          0
+        )
+      )
+      .join("\n")
+  );
+
+  homepageHtml = replaceLiveBlock(
+    homepageHtml,
+    "JSONLD:homepage-products",
+    `<script type="application/ld+json" data-prerender="homepage-products">
+${itemListJsonLd(
+  [...tshirts, ...accessories],
+  "Featured Skanare products"
+)}
+</script>`
+  );
+
+  productsHtml = replaceLiveBlock(
+    productsHtml,
+    "GRID:productsGrid",
+    products
+      .map((product) =>
+        renderProductCard(product)
+      )
+      .join("\n")
+  );
+
+  productsHtml = replaceLiveBlock(
+    productsHtml,
+    "JSONLD:products-page",
+    `<script type="application/ld+json" data-prerender="products-page">
+${itemListJsonLd(
+  products,
+  "Skanare products"
+)}
+</script>`
+  );
+
+  await Promise.all([
+    atomicWrite(
+      homepageFile,
+      homepageHtml
+    ),
+    atomicWrite(
+      productsFile,
+      productsHtml
+    ),
+  ]);
+
+  console.info(
+    "storefront_seo_html_refreshed",
+    {
+      reason,
+      products:
+        products.length,
+      featuredTshirts:
+        tshirts.length,
+      featuredAccessories:
+        accessories.length,
+    }
+  );
+
+  return {
+    products:
+      products.length,
+    featuredTshirts:
+      tshirts.length,
+    featuredAccessories:
+      accessories.length,
+  };
+}
+
+export function refreshStorefrontProductHtml({
+  reason = "manual",
+} = {}) {
+  if (activeRefresh) {
+    return activeRefresh;
+  }
+
+  activeRefresh =
+    refreshOnce(reason)
+      .finally(() => {
+        activeRefresh = null;
+      });
+
+  return activeRefresh;
+}
+
+export async function refreshStorefrontProductHtmlSafe({
+  reason = "manual",
+} = {}) {
+  try {
+    return {
+      success: true,
+      ...(await refreshStorefrontProductHtml({
+        reason,
+      })),
+    };
+  } catch (error) {
+    console.error(
+      "storefront_seo_html_refresh_failed",
+      {
+        reason,
+        message:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      }
+    );
+
+    return {
+      success: false,
+    };
+  }
+}
+
+export function startStorefrontProductHtmlRefreshLoop({
+  intervalMs = 60_000,
+} = {}) {
+  const timer = setInterval(
+    () => {
+      void refreshStorefrontProductHtmlSafe({
+        reason: "periodic",
+      });
+    },
+    intervalMs
+  );
+
+  timer.unref();
+
+  return timer;
+}

@@ -178,7 +178,11 @@ function replaceGrid(html, gridId, renderedCards) {
 
   return html.replace(
     pattern,
-    `$1\n<!-- prerendered products for crawlers and first paint -->\n${renderedCards}\n$2`
+    `$1
+<!-- SKANARE_LIVE:GRID:${gridId}:START -->
+${renderedCards}
+<!-- SKANARE_LIVE:GRID:${gridId}:END -->
+$2`
   );
 }
 
@@ -196,9 +200,11 @@ function hideLoadingMessage(html, loadingId) {
 
 function injectJsonLd(html, jsonLd, marker) {
   const block = `
+<!-- SKANARE_LIVE:JSONLD:${marker}:START -->
 <script type="application/ld+json" data-prerender="${marker}">
 ${jsonLd}
 </script>
+<!-- SKANARE_LIVE:JSONLD:${marker}:END -->
 `;
 
   if (!/<\/head>/i.test(html)) {
