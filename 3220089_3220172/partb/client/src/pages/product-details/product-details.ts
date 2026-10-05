@@ -423,7 +423,15 @@ async function renderRelatedProducts(currentProduct: Product): Promise<void> {
 
             <div class="related-product-body">
               <h3>${product.title}</h3>
-              <p>${formatPrice(product.price)}</p>
+              <p class="related-product-price">
+                ${
+                  Boolean(product.onSale) &&
+                  Number(product.originalPrice ?? product.price) > product.price
+                    ? `<span class="related-product-price__old">${formatPrice(Number(product.originalPrice))}</span>`
+                    : ""
+                }
+                <span>${formatPrice(product.price)}</span>
+              </p>
 
               <button
                 type="button"
@@ -541,6 +549,7 @@ const id = getProductIdentifier();
   const priceEl = document.getElementById("productPrice");
   const stockEl = document.getElementById("productStock");
   const badgeEl = document.getElementById("productBadge") as HTMLElement | null;
+  const saleBadgeEl = document.getElementById("productSaleBadge") as HTMLElement | null;
   const imageEl = document.getElementById(
     "productImage"
   ) as HTMLImageElement | null;
@@ -674,8 +683,26 @@ injectProductSchema(product);
         : "Accessory • Custom editable QR"
     );
     setText(descEl, product.description || product.shortDescription || "");
-    setText(priceEl, formatPrice(product.price));
+
+    const discountPercent = Math.max(0, Number(product.discountPercent || 0));
+    const originalPrice = Number(product.originalPrice ?? product.price);
+    const onSale = Boolean(product.onSale) && discountPercent > 0 && originalPrice > product.price;
+
+    if (priceEl) {
+      priceEl.innerHTML = onSale
+        ? `<span class="product-price__old">${formatPrice(originalPrice)}</span><span class="product-price__current">${formatPrice(product.price)}</span>`
+        : `<span class="product-price__current">${formatPrice(product.price)}</span>`;
+    }
+
     setText(stockEl, isInStock(product) ? "In stock" : "Out of stock");
+
+    if (saleBadgeEl && onSale) {
+      saleBadgeEl.hidden = false;
+      saleBadgeEl.textContent = `-${discountPercent}%`;
+    } else if (saleBadgeEl) {
+      saleBadgeEl.hidden = true;
+      saleBadgeEl.textContent = "";
+    }
 
     if (badgeEl && product.badge) {
       badgeEl.hidden = false;
