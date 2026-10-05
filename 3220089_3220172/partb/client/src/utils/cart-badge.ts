@@ -1,7 +1,7 @@
 /* 3220089_3220172 */
 
 import { getCart } from "../services/cart";
-import { isLoggedIn } from "../services/auth";
+import { isLoggedIn, waitForAuthReady } from "../services/auth";
 
 export function getCartCount(cart: {
   totalItems?: number;
@@ -58,6 +58,8 @@ export async function updateCartBadge(): Promise<void> {
   if (!cartLink) return;
 
   try {
+    await waitForAuthReady();
+
     if (!isLoggedIn()) {
       cartLink.textContent = "Cart";
       return;

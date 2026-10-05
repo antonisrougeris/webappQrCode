@@ -127,7 +127,7 @@ function productJsonLd(product) {
    GENERATE DYNAMIC SEO HTML
 ========================================================= */
 
-async function renderFullProductPage(product) {
+async function renderFullProductPage(product, nonce) {
   // Load the real frontend HTML.
   let html = await fs.readFile(
     productDetailsHtmlPath,
@@ -276,6 +276,11 @@ async function renderFullProductPage(product) {
     `${metadata}\n</head>`
   );
 
+  html = html.replace(
+    /<script(?![^>]*\bsrc=)(?![^>]*\bnonce=)([^>]*)>/gi,
+    `<script nonce="${escapeHtml(nonce)}"$1>`
+  );
+
   return html;
 }
 
@@ -322,7 +327,10 @@ router.get("/product/:slug", async (req, res, next) => {
        GENERATE HTML WITH CORRECT SEO
     ----------------------------------------------------- */
 
-    const html = await renderFullProductPage(product);
+    const html = await renderFullProductPage(
+      product,
+      res.locals.cspNonce
+    );
 
     /* -----------------------------------------------------
        RESPONSE

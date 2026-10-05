@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import lusca from "lusca";
+import crypto from "node:crypto";
 
 import { connectDB, closeDB } from "./config/db.js";
 import { corsOptions } from "./config/security.js";
@@ -47,6 +48,11 @@ app.set("trust proxy", 1);
 
 app.use(requestContext);
 
+app.use((req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString("base64");
+  next();
+});
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -54,7 +60,7 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "'unsafe-inline'",
+          (_req, res) => `'nonce-${res.locals.cspNonce}'`,
           "https://client.crisp.chat",
           "https://apis.google.com",
           "https://www.gstatic.com",

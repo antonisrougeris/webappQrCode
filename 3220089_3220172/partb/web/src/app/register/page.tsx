@@ -10,7 +10,6 @@ import {
 } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
 import { register, sendVerificationCode } from "@/lib/api";
-import { saveToken } from "@/lib/auth";
 
 export default function RegisterPage() {
   const searchParams = useSearchParams();
@@ -58,7 +57,6 @@ export default function RegisterPage() {
       );
 
       const token = await credentials.user.getIdToken();
-      saveToken(token);
 
       await register({
         firstName,
@@ -90,7 +88,6 @@ export default function RegisterPage() {
       const result = await signInWithPopup(firebaseAuth, provider);
 
       const token = await result.user.getIdToken();
-      saveToken(token);
 
       await register({
         firstName: result.user.displayName?.split(" ")[0] || "",

@@ -11,7 +11,6 @@ import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
 import { initPasswordVisibility } from "../../utils/password-visibility";
 import { firebaseAuth } from "../../services/firebase";
-import { saveToken } from "../../services/auth";
 import { register, sendVerificationCode } from "../../services/api";
 import { normalizeSameOriginPath } from "../../utils/redirect";
 
@@ -116,7 +115,6 @@ try {
   );
 
   const token = await credentials.user.getIdToken();
-  saveToken(token);
 
   await register({
     firstName,
@@ -156,7 +154,6 @@ googleBtn?.addEventListener("click", async () => {
     const result = await signInWithPopup(firebaseAuth, provider);
 
     const token = await result.user.getIdToken();
-    saveToken(token);
 
     await register({
       firstName: result.user.displayName?.split(" ")[0] || "",

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { firebaseAuth } from "@/lib/firebase";
-import { saveToken } from "@/lib/auth";
 import { getOrderById, getOrderByVivaCode, type Order } from "@/lib/api";
 
 export default function PaymentSuccessPage() {
@@ -30,11 +29,6 @@ export default function PaymentSuccessPage() {
         if (resolved) return;
         resolved = true;
         window.clearTimeout(timer);
-
-        if (user) {
-          const token = await user.getIdToken(true);
-          saveToken(token);
-        }
 
         unsubscribe();
         resolve();

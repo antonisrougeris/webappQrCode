@@ -11,7 +11,6 @@ import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
 import { initPasswordVisibility } from "../../utils/password-visibility";
 import { firebaseAuth } from "../../services/firebase";
-import { removeToken, saveToken } from "../../services/auth";
 import { login, register } from "../../services/api";
 
 
@@ -170,7 +169,6 @@ if (form) {
       );
 
       const token = await credentials.user.getIdToken();
-      saveToken(token);
 
       // 2. Backend login (Firestore user fetch)
       const res = await login({
@@ -187,7 +185,6 @@ if (form) {
       // 3. Firestore verification check (SOURCE OF TRUTH)
       if (!user.emailVerified) {
         await firebaseAuth.signOut();
-        removeToken();
 
         if (statusEl) {
           statusEl.textContent = "Please verify your email before continuing.";
@@ -216,7 +213,6 @@ googleBtn?.addEventListener("click", async () => {
     const result = await signInWithPopup(firebaseAuth, provider);
 
     const token = await result.user.getIdToken();
-    saveToken(token);
 
     await register({
       firstName: result.user.displayName?.split(" ")[0] || "",

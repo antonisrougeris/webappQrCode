@@ -2,7 +2,6 @@
 
 import { signOut } from "firebase/auth";
 import { firebaseAuth } from "../services/firebase";
-import { removeToken } from "../services/auth";
 import { transferCartToGuest } from "../services/cart";
 
 export function initNav() {
@@ -129,7 +128,6 @@ export function initNav() {
       try {
         await transferCartToGuest();
         await signOut(firebaseAuth);
-        removeToken();
 
         window.location.href = "/index.html";
       } catch (error) {

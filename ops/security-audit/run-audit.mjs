@@ -34,6 +34,8 @@ const paths = {
     "3220089_3220172/partb/server/src/app.js",
   clientAuth:
     "3220089_3220172/partb/client/src/services/auth.ts",
+  webAuth:
+    "3220089_3220172/partb/web/src/lib/auth.ts",
 };
 
 const files = Object.fromEntries(
@@ -171,22 +173,23 @@ add(
   "SKN-W01",
   "CSP still permits unsafe-inline scripts",
   "medium",
-  files.app.includes('"unsafe-inline"') ||
-    files.app.includes("'unsafe-inline'")
-    ? "warn"
-    : "pass",
+  /scriptSrc:\s*\[[\s\S]*?\]/.test(files.app) &&
+  !/scriptSrc:\s*\[[\s\S]*?unsafe-inline[\s\S]*?\]/.test(files.app)
+    ? "pass"
+    : "warn",
   paths.app,
-  "Longer-term hardening: remove unsafe-inline and use nonces/hashes for required inline scripts."
+  "Use per-request nonces or hashes for any required inline executable scripts."
 );
 
 add(
   "SKN-W02",
   "Bearer token is persisted in localStorage",
   "medium",
-  files.clientAuth.includes("localStorage.setItem")
+  files.clientAuth.includes("localStorage.setItem") ||
+    files.webAuth.includes("localStorage.setItem")
     ? "warn"
     : "pass",
-  paths.clientAuth,
+  `${paths.clientAuth}; ${paths.webAuth}`,
   "Longer-term hardening: reduce token persistence/exposure to XSS, ideally via an HttpOnly server session if architecture permits."
 );
 

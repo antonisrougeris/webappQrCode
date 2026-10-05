@@ -137,10 +137,11 @@ export function renderBookCard(book: any, ownedBookIds?: Set<string>): HTMLEleme
       if (addBtn.disabled && addBtn.textContent === "Owned") return;
       
       // Import API function dynamically to avoid circular dependencies
-      const { isLoggedIn } = await import("../services/auth");
+      const { isLoggedIn, waitForAuthReady } = await import("../services/auth");
       const { updateCartBadge } = await import("../utils/cart-badge");
 
-      // Check if user is logged in
+      // Check if user is logged in after Firebase restores its auth state
+      await waitForAuthReady();
       if (!isLoggedIn()) {
         alert("Please login to add items to cart");
         window.location.href = new URL("../pages/login/login.html", import.meta.url).toString();

@@ -1,19 +1,16 @@
 /* 3220089_3220172 */
 
-const TOKEN_KEY = "skanare_token";
+import { firebaseAuth } from "./firebase";
 
-export function saveToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function removeToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
+/**
+ * Firebase owns authentication persistence. We deliberately do not copy
+ * Firebase ID tokens into localStorage, where any successful XSS could read
+ * them directly.
+ */
 export function isLoggedIn(): boolean {
-  return !!getToken();
+  return Boolean(firebaseAuth.currentUser);
+}
+
+export async function waitForAuthReady(): Promise<void> {
+  await firebaseAuth.authStateReady();
 }

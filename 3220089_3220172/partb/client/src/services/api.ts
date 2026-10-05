@@ -2,7 +2,6 @@
 
 
 import { firebaseAuth } from "./firebase";
-import { getToken, saveToken } from "./auth";
 import type { ProductVariant } from "./products";
 import { addCartItem } from "./cart";
 
@@ -43,19 +42,12 @@ async function buildHeaders(init?: HeadersInit): Promise<Headers> {
     headers.set("X-CSRF-Token", csrfToken);
   }
 
+  await firebaseAuth.authStateReady();
   const user = firebaseAuth.currentUser;
 
   if (user) {
     const freshToken = await user.getIdToken();
-    saveToken(freshToken);
     headers.set("Authorization", `Bearer ${freshToken}`);
-    return headers;
-  }
-
-  const token = getToken();
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
   }
 
   return headers;

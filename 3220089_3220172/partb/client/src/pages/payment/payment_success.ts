@@ -1,5 +1,4 @@
 import { firebaseAuth } from "../../services/firebase";
-import { saveToken } from "../../services/auth";
 import { apiRequest } from "../../services/api";
 
 interface Order {
@@ -60,11 +59,6 @@ function waitForAuthReady(timeoutMs = 4000): Promise<boolean> {
       if (resolved) return;
       resolved = true;
       window.clearTimeout(timer);
-
-      if (user) {
-        const token = await user.getIdToken(true);
-        saveToken(token);
-      }
 
       unsubscribe();
       resolve(Boolean(user));
