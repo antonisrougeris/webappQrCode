@@ -5,6 +5,7 @@ import {
   deleteCartItem,
   getCart,
   patchCartItem,
+  patchCartGiftOptions,
   transferCartToGuest,
 } from "../controllers/cart.controller.js";
 
@@ -17,6 +18,7 @@ router.use(optionalAuth);
 router.get("/", getCart);
 router.post("/items", addToCart);
 router.post("/transfer-to-guest", requireAuth, transferCartToGuest);
+router.patch("/gift-options", patchCartGiftOptions);
 router.patch("/items/:itemId", patchCartItem);
 router.delete("/items/:itemId", deleteCartItem);
 
