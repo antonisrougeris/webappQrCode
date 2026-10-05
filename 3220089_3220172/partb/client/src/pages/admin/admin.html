@@ -231,6 +231,7 @@
         <button class="admin-nav__item" data-view="fulfillment" type="button"><span class="admin-nav__icon">▣</span><span>Fulfillment</span><span id="fulfillmentBadge" class="nav-badge" hidden></span></button>
         <button class="admin-nav__item" data-view="orders" type="button"><span class="admin-nav__icon">▤</span>Orders</button>
         <button class="admin-nav__item" data-view="returns" type="button"><span class="admin-nav__icon">↩</span>Returns</button>
+        <button class="admin-nav__item" data-view="messages" type="button"><span class="admin-nav__icon">✉</span><span>Messages</span><span id="messagesBadge" class="nav-badge" hidden></span></button>
         <button class="admin-nav__item" data-view="products" type="button"><span class="admin-nav__icon">□</span>Products</button>
         <button class="admin-nav__item" data-view="customers" type="button"><span class="admin-nav__icon">♙</span>Customers</button>
         <button class="admin-nav__item" data-view="qr" type="button"><span class="admin-nav__icon">⌗</span>QR Codes</button>
@@ -290,6 +291,7 @@
           <article class="admin-stat"><span>Preparing</span><strong id="fulfillmentPreparing">0</strong><small>In warehouse</small></article>
           <article class="admin-stat"><span>Ready</span><strong id="fulfillmentReady">0</strong><small>Waiting to ship</small></article>
           <article class="admin-stat"><span>Shipped</span><strong id="fulfillmentShipped">0</strong><small>Dispatched</small></article>
+          <article class="admin-stat"><span>Completed</span><strong id="fulfillmentCompleted">0</strong><small>Delivered by BOX NOW</small></article>
         </div>
 
         <div id="fulfillmentList" class="fulfillment-list"></div>
@@ -327,6 +329,19 @@
           <button id="refreshReturns" class="admin-text-button" type="button">Refresh ↻</button>
         </div>
         <div id="adminReturnsList" class="fulfillment-list"></div>
+      </section>
+
+      <!-- CONTACT MESSAGES -->
+      <section id="view-messages" class="admin-view hidden">
+        <div class="admin-section__header">
+          <div>
+            <span class="admin-eyebrow">Customer support</span>
+            <h2>Contact messages</h2>
+            <p>Read and reply to messages submitted from the Skanare contact form.</p>
+          </div>
+          <button id="refreshMessages" class="admin-text-button" type="button">Refresh ↻</button>
+        </div>
+        <div id="adminMessagesList" class="admin-messages-list"></div>
       </section>
 
       <!-- PRODUCTS -->
