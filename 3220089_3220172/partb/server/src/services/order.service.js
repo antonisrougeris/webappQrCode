@@ -151,12 +151,23 @@ export async function checkoutCartForOwner({
               ""
             ).trim();
 
+          const requestedGiftFee =
+            giftOptions?.giftBox
+              ? GIFT_BOX_PRICE
+              : 0;
+
+          const existingGiftFee =
+            Number(existingOrder.giftFee || 0);
+
           if (
-            delivery !== "boxnow" ||
             (
-              requestedLocker &&
-              existingLocker === requestedLocker
-            )
+              delivery !== "boxnow" ||
+              (
+                requestedLocker &&
+                existingLocker === requestedLocker
+              )
+            ) &&
+            existingGiftFee === requestedGiftFee
           ) {
             const refreshedAt = nowIso();
 
