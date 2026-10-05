@@ -24,6 +24,7 @@ export const checkout = asyncHandler(async (req, res) => {
     delivery: body.delivery,
     locker: body.locker || null,
     notes: body.notes || "",
+    giftOptions: body.giftOptions,
     documentType: body.documentType || "receipt",
     invoiceDetails: body.invoiceDetails || null,
   });
