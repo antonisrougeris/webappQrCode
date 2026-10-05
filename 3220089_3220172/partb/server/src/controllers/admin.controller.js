@@ -1315,6 +1315,25 @@ export const updateOrderFulfillment = asyncHandler(
 
     const previousStatus = fulfillmentStatus(order);
 
+    const nextAllowed = {
+      to_prepare: ["preparing", "cancelled"],
+      preparing: ["ready", "cancelled"],
+      ready: ["cancelled"],
+      shipped: [],
+      completed: [],
+      cancelled: [],
+    };
+
+    if (
+      previousStatus !== status &&
+      !(nextAllowed[previousStatus] || []).includes(status)
+    ) {
+      throw new ApiError(
+        409,
+        `Cannot move fulfillment from ${previousStatus} to ${status}`
+      );
+    }
+
     const update = {
       fulfillmentStatus: status,
       updatedAt: nowIso(),
