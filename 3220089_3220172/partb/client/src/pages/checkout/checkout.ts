@@ -3,13 +3,14 @@
 import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";
 import { checkout } from "../../services/checkout";
-import { apiRequest, getMe } from "../../services/api";
+import { getMe } from "../../services/api";
 import {
   parsePhoneNumberFromString,
   type CountryCode,
 } from "libphonenumber-js";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 import { setFlashToast } from "../../utils/toast.ts";
+import { normalizeSameOriginPath } from "../../utils/redirect";
 
 function saveCheckoutDraft(formEl: HTMLFormElement): void {
   const form = new FormData(formEl)
@@ -573,22 +574,17 @@ function readAndValidateCheckoutForm(
   };
 }
 
-function normalizeRoutePath(value: string | null | undefined, fallback = "/checkout"): string {
-  if (!value) return fallback;
-
-  const cleaned = value.trim();
-
-  if (!cleaned.startsWith("/")) return fallback;
-
-  const legacyMap: Record<string, string> = {
-    "/login": "/login",
-    "/register": "/register",
-    "/forgot-password": "/forgot-password",
-    "/verify-email": "/verify-email",
-    "/checkout": "/checkout",
-  };
-
-  return legacyMap[cleaned] ?? cleaned;
+function normalizeRoutePath(
+  value: string | null | undefined,
+  fallback = "/checkout"
+): string {
+  return (
+    normalizeSameOriginPath(
+      value,
+      fallback
+    ) ||
+    fallback
+  );
 }
 
 function restoreAfterAuth(): void {
@@ -737,25 +733,28 @@ if (!user) {
     return;
   }
 
-  const res = await apiRequest<{ exists: boolean }>("/auth/check-email", {
-    method: "POST",
-    body: JSON.stringify({ email }),
-  });
+  const redirectTarget =
+    normalizeRoutePath(
+      window.location.pathname,
+      "/checkout"
+    );
 
-  const redirectTarget = normalizeRoutePath(window.location.pathname, "/checkout");
+  const payload =
+    new URLSearchParams({
+      redirect:
+        redirectTarget,
+      email,
+      firstName,
+      lastName,
+    });
 
-  const payload = new URLSearchParams({
-    redirect: redirectTarget,
-    email,
-    firstName,
-    lastName,
-  });
-
-  if (res.exists) {
-    window.location.href = `/login?${payload}`;
-  } else {
-    window.location.href = `/register?${payload}`;
-  }
+  /*
+   * Do not reveal whether the email already has an account.
+   * Login keeps the prefilled email and exposes a Register link
+   * carrying the same checkout context for new customers.
+   */
+  window.location.href =
+    `/login?${payload}`;
 
   return;
 }

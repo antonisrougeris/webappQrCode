@@ -7,6 +7,7 @@ import {
 import { showFlashToast } from "../../utils/toast.ts";
 
 import { apiRequest } from "../../services/api";
+import { normalizeSameOriginPath } from "../../utils/redirect";
 
 const form = document.getElementById("verifyEmailForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
@@ -23,30 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-function normalizeRedirectPath(value: string | null | undefined): string | null {
-  if (!value) return null;
-
-  const cleaned = value.trim();
-
-  if (!cleaned || !cleaned.startsWith("/")) return null;
-
-  const legacyMap: Record<string, string> = {
-    "/login": "/login",
-    "/register": "/register",
-    "/forgot-password": "/forgot-password",
-    "/verify-email": "/verify-email",
-    "/checkout": "/checkout",
-  };
-
-  const mapped = legacyMap[cleaned] ?? cleaned;
-
-  if (mapped.startsWith("//")) return null;
-
-  return mapped;
-}
-
 function getRedirectUrl(): string {
-  const redirect = normalizeRedirectPath(
+  const redirect = normalizeSameOriginPath(
     new URLSearchParams(window.location.search).get("redirect")
   );
 
@@ -103,7 +82,7 @@ otpInputs.forEach((input, index) => {
 
 firebaseAuth.onAuthStateChanged((user) => {
   if (!user) {
-    const redirectTarget = normalizeRedirectPath(window.location.pathname + window.location.search) || "/";
+    const redirectTarget = normalizeSameOriginPath(window.location.pathname + window.location.search) || "/";
     window.location.href =
       "/login?redirect=" +
       encodeURIComponent(redirectTarget);

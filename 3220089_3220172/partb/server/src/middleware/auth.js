@@ -1,4 +1,5 @@
-import { getAuthService } from "../config/db.js";
+import { getAuthService, getDB } from "../config/db.js";
+import { COLLECTIONS } from "../constants/collections.js";
 
 export async function requireAuth(req, res, next) {
   try {
@@ -19,6 +20,8 @@ export async function requireAuth(req, res, next) {
       email: decoded.email || null,
       name: decoded.name || null,
       admin: !!decoded.admin,
+      emailVerifiedByProvider:
+        decoded.email_verified === true,
     };
 
     next();
@@ -26,6 +29,49 @@ export async function requireAuth(req, res, next) {
     return res.status(401).json({
       success: false,
       message: "Unauthorized",
+    });
+  }
+}
+
+export async function requireVerifiedEmail(
+  req,
+  res,
+  next
+) {
+  try {
+    if (!req.user?.uid) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    if (req.user.emailVerifiedByProvider) {
+      return next();
+    }
+
+    const snap = await getDB()
+      .collection(COLLECTIONS.USERS)
+      .doc(req.user.uid)
+      .get();
+
+    if (
+      !snap.exists ||
+      snap.data()?.emailVerified !== true
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Please verify your email before checkout",
+      });
+    }
+
+    return next();
+  } catch {
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable to verify email status",
     });
   }
 }
@@ -43,6 +89,8 @@ export async function optionalAuth(req, res, next) {
         email: decoded.email || null,
         name: decoded.name || null,
         admin: !!decoded.admin,
+        emailVerifiedByProvider:
+          decoded.email_verified === true,
       };
     }
   } catch {

@@ -111,11 +111,11 @@ function renderReviews(reviews: ProductReview[]): void {
     .map(
       (review) => `
         <article class="review-card">
-          <strong>${review.name}</strong>
+          <strong>${safeProductText(review.name)}</strong>
           <div class="review-stars">
             ${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}
           </div>
-          <p>${review.comment}</p>
+          <p>${safeProductText(review.comment)}</p>
           ${review.verifiedPurchase ? '<small class="verified-review">Verified purchase</small>' : ""}
         </article>
       `

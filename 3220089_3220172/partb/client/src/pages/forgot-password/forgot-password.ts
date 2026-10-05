@@ -5,6 +5,7 @@ import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
 import { initPasswordVisibility } from "../../utils/password-visibility";
 import { requestPasswordReset, resetPassword } from "../../services/api";
+import { normalizeSameOriginPath } from "../../utils/redirect";
 
 initPasswordVisibility();
 
@@ -36,30 +37,8 @@ const otpHidden = document.getElementById("otpValue") as HTMLInputElement | null
 
 let currentEmail = "";
 
-function normalizeRedirectPath(value: string | null | undefined): string | null {
-  if (!value) return null;
-
-  const cleaned = value.trim();
-
-  if (!cleaned || !cleaned.startsWith("/")) return null;
-
-  const legacyMap: Record<string, string> = {
-    "/login": "/login",
-    "/register": "/register",
-    "/forgot-password": "/forgot-password",
-    "/verify-email": "/verify-email",
-    "/checkout": "/checkout",
-  };
-
-  const mapped = legacyMap[cleaned] ?? cleaned;
-
-  if (mapped.startsWith("//")) return null;
-
-  return mapped;
-}
-
 function getRedirectUrl(): string | null {
-  const redirect = normalizeRedirectPath(
+  const redirect = normalizeSameOriginPath(
     new URLSearchParams(window.location.search).get("redirect")
   );
 

@@ -16,6 +16,7 @@ import { login, register } from "../../services/api";
 
 
 import { showFlashToast } from "../../utils/toast.ts";
+import { normalizeSameOriginPath } from "../../utils/redirect";
 
 initPasswordVisibility();
 
@@ -62,34 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-function normalizeRedirectPath(value: string | null | undefined): string | null {
-  if (!value) return null;
-
-  const cleaned = value.trim();
-
-  if (!cleaned || !cleaned.startsWith("/")) return null;
-
-  const legacyMap: Record<string, string> = {
-    "/login": "/login",
-    "/register": "/register",
-    "/forgot-password": "/forgot-password",
-    "/verify-email": "/verify-email",
-    "/checkout": "/checkout",
-    "/cart": "/cart",
-    "/my-qr": "/my-qr",
-    "/contact": "/contact",
-    "/about": "/about",
-    "/payment-security": "/payment-security",
-    "/products": "/products",
-  };
-
-  const mapped = legacyMap[cleaned] ?? cleaned;
-
-  if (mapped.startsWith("//")) return null;
-
-  return mapped;
-}
-
 function applyForgotPasswordLink(): void {
   if (!forgotPasswordLink) return;
 
@@ -119,7 +92,7 @@ function applyForgotPasswordLink(): void {
 }
 
 function getRedirectUrl(): string {
-  const redirect = normalizeRedirectPath(
+  const redirect = normalizeSameOriginPath(
     new URLSearchParams(window.location.search).get("redirect")
   );
 
