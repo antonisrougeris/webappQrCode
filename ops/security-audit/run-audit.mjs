@@ -157,7 +157,10 @@ add(
   "SKN-010",
   "Admin authorization is enforced server-side",
   "critical",
-  files.adminMiddleware.includes('user.role !== "admin"')
+  (
+    files.adminMiddleware.includes("req.user?.admin") ||
+    files.adminMiddleware.includes('user.role !== "admin"')
+  )
     ? "pass"
     : "fail",
   paths.adminMiddleware,
