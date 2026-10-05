@@ -9,6 +9,17 @@ const API_URL =
   process.env.SKANARE_PRODUCTS_URL ||
   "https://skanare.com/api/products";
 
+const SITE_PAGES = [
+  ["Home", "https://skanare.com/"],
+  ["Products", "https://skanare.com/products"],
+  ["About", "https://skanare.com/about"],
+  ["Shipping policy", "https://skanare.com/shipping-policy"],
+  ["Refund and returns policy", "https://skanare.com/refund-policy"],
+  ["Payment and security", "https://skanare.com/payment-security"],
+  ["Privacy policy", "https://skanare.com/privacy-policy"],
+  ["Terms", "https://skanare.com/terms"],
+];
+
 function money(value, currency = "EUR") {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount)
@@ -42,6 +53,54 @@ function stockSummary(product) {
   return `Available stock: ${Math.max(0, Number(product?.stock || 0))}`;
 }
 
+function decodeHtmlEntities(value) {
+  return String(value)
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function htmlToReadableText(html) {
+  return decodeHtmlEntities(
+    String(html)
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+      .replace(/<svg\b[^>]*>[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<br\s*\/?\s*>/gi, "\n")
+      .replace(/<\/(p|h1|h2|h3|h4|li|section|article|div|details|summary)>/gi, "\n")
+      .replace(/<[^>]+>/g, " ")
+  )
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+async function fetchPageSnapshot(label, url) {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "text/html",
+        "User-Agent": "Skanare-MiroFish-Seed-Builder/1.0",
+      },
+    });
+
+    if (!response.ok) {
+      return `## ${label}\n\nURL: ${url}\n\nSnapshot unavailable (HTTP ${response.status}).`;
+    }
+
+    const text = htmlToReadableText(await response.text());
+
+    return `## ${label}\n\nURL: ${url}\n\n${text.slice(0, 20000)}`;
+  } catch (error) {
+    return `## ${label}\n\nURL: ${url}\n\nSnapshot unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
 async function fetchProducts() {
   const response = await fetch(API_URL, {
     headers: {
@@ -67,7 +126,14 @@ async function fetchProducts() {
   return products.filter((product) => product?.active !== false);
 }
 
-const products = await fetchProducts();
+const [products, pageSnapshots] = await Promise.all([
+  fetchProducts(),
+  Promise.all(
+    SITE_PAGES.map(([label, url]) =>
+      fetchPageSnapshot(label, url)
+    )
+  ),
+]);
 
 const productSections = products
   .map((product, index) => {
@@ -151,6 +217,12 @@ Pressure-test:
 ## Live active catalogue
 
 ${productSections}
+
+## Live storefront copy and policy snapshots
+
+The following text was fetched from the public site during seed generation. It gives the simulation the actual copy customers currently encounter. This is still not browser interaction or usability telemetry.
+
+${pageSnapshots.join("\n\n")}
 
 ## Expected output
 
