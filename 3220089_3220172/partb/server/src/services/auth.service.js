@@ -41,6 +41,16 @@ export async function registerUser({
     firstName: firstName || existing?.firstName || "",
     lastName: lastName || existing?.lastName || "",
     role: existing?.role || "user",
+    emailVerified:
+      existing?.emailVerified === true ||
+      decoded.email_verified === true,
+    emailVerifiedAt:
+      existing?.emailVerifiedAt ||
+      (
+        decoded.email_verified === true
+          ? nowIso()
+          : null
+      ),
     createdAt: existing?.createdAt || nowIso(),
     updatedAt: nowIso(),
   };
@@ -79,6 +89,12 @@ export async function loginUser({ email, idToken }) {
       firstName: "",
       lastName: "",
       role: "user",
+      emailVerified:
+        decoded.email_verified === true,
+      emailVerifiedAt:
+        decoded.email_verified === true
+          ? nowIso()
+          : null,
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };
@@ -88,13 +104,28 @@ export async function loginUser({ email, idToken }) {
   }
 
   const user = snap.data();
+  const providerVerified =
+    decoded.email_verified === true;
+
+  const verificationPatch =
+    providerVerified &&
+    user.emailVerified !== true
+      ? {
+          emailVerified: true,
+          emailVerifiedAt:
+            user.emailVerifiedAt ||
+            nowIso(),
+        }
+      : {};
 
   await userRef.update({
+    ...verificationPatch,
     updatedAt: nowIso(),
   });
 
   return {
     ...user,
+    ...verificationPatch,
     uid: decoded.uid,
   };
 }
