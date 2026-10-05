@@ -7,7 +7,7 @@ import { checkout } from "@/lib/checkout";
 import { getMe } from "@/lib/api";
 
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
-const GIFT_BOX_PRICE = 1.5;
+const PREMIUM_GIFT_PRICE = 1.5;
 
 export default function CheckoutPage() {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -17,7 +17,7 @@ export default function CheckoutPage() {
   const [status, setStatus] = useState("");
   const [payText, setPayText] = useState("Pay with viva.com");
   const [submitting, setSubmitting] = useState(false);
-  const [giftBox, setGiftBox] = useState(false);
+  const [giftTier, setGiftTier] = useState<"none" | "simple" | "premium">("none");
   const [personalNote, setPersonalNote] = useState("");
   const [giftOpen, setGiftOpen] = useState(false);
 
@@ -35,7 +35,14 @@ export default function CheckoutPage() {
   async function loadCart() {
     const cart = await getCart();
     setItems(cart?.items || []);
-    setGiftBox(Boolean(cart?.giftOptions?.giftBox));
+    const nextTier =
+      cart?.giftOptions?.tier === "simple" ||
+      cart?.giftOptions?.tier === "premium"
+        ? cart.giftOptions.tier
+        : cart?.giftOptions?.giftBox
+          ? "premium"
+          : "none";
+    setGiftTier(nextTier);
     setPersonalNote(cart?.giftOptions?.personalNote || "");
   }
 
@@ -47,7 +54,7 @@ export default function CheckoutPage() {
 
   const discountedSubtotal = subtotal * (1 - discount / 100);
   const shipping = calculateShipping(discountedSubtotal, delivery);
-  const giftFee = giftBox ? GIFT_BOX_PRICE : 0;
+  const giftFee = giftTier === "premium" ? PREMIUM_GIFT_PRICE : 0;
   const total = discountedSubtotal + shipping + giftFee;
 
   function applyDiscount(event: React.MouseEvent<HTMLButtonElement>) {
@@ -189,8 +196,12 @@ export default function CheckoutPage() {
         locker: String(form.get("locker") || "").trim(),
         notes: "",
         giftOptions: {
-          giftBox,
-          personalNote: personalNote.trim(),
+          tier: giftTier,
+          giftBox: giftTier === "premium",
+          personalNote:
+            giftTier === "premium"
+              ? personalNote.trim()
+              : "",
         },
       });
 
@@ -292,44 +303,73 @@ export default function CheckoutPage() {
               <span className="checkout-gift-summary__index">04</span>
               <span className="checkout-gift-summary__copy">
                 <strong>Gift options</strong>
-                <small>Add a gift box for +€1.50 and an optional note.</small>
+                <small>Choose gift-ready or premium packaging.</small>
               </span>
               <span className="checkout-gift-summary__action">
-                {giftBox || personalNote.trim() ? "Added" : "Add"}
+                {giftTier === "none" ? "Add" : "Added"}
                 {giftOpen ? " −" : " +"}
               </span>
             </button>
 
             {giftOpen ? (
               <div className="checkout-gift-body">
-                <label className="checkout-gift-option">
-                  <input
-                    type="checkbox"
-                    checked={giftBox}
-                    onChange={(event) => setGiftBox(event.target.checked)}
-                  />
-                  <span className="checkout-gift-option__copy">
-                    <strong>
-                      <span>Add gift box</span>
-                      <em>+€1.50</em>
-                    </strong>
-                    <small>We'll package the order as a gift.</small>
-                  </span>
-                </label>
+                <div className="checkout-gift-tiers" role="radiogroup" aria-label="Gift options">
+                  {[
+                    {
+                      value: "none",
+                      title: "Standard order",
+                      copy: "No gift treatment. Prices remain visible.",
+                      price: "Free",
+                    },
+                    {
+                      value: "simple",
+                      title: "Gift-ready",
+                      copy: "Hide prices and include a gift/returns receipt card.",
+                      price: "Free",
+                    },
+                    {
+                      value: "premium",
+                      title: "Premium gift",
+                      copy: "Gift box, hidden prices, gift/returns receipt and personal note.",
+                      price: "+€1.50",
+                    },
+                  ].map((option) => (
+                    <label className="checkout-gift-tier" key={option.value}>
+                      <input
+                        type="radio"
+                        name="giftTier"
+                        value={option.value}
+                        checked={giftTier === option.value}
+                        onChange={() =>
+                          setGiftTier(
+                            option.value as "none" | "simple" | "premium"
+                          )
+                        }
+                      />
+                      <span className="checkout-gift-tier__copy">
+                        <strong>{option.title}</strong>
+                        <small>{option.copy}</small>
+                      </span>
+                      <span className="checkout-gift-tier__price">{option.price}</span>
+                    </label>
+                  ))}
+                </div>
 
-                <label className="checkout-gift-note">
-                  <span>
-                    Personal note <small>(optional)</small>
-                  </span>
-                  <textarea
-                    rows={5}
-                    maxLength={200}
-                    value={personalNote}
-                    onChange={(event) => setPersonalNote(event.target.value)}
-                    placeholder="Write your message..."
-                  />
-                  <small>{personalNote.length}/200 characters</small>
-                </label>
+                {giftTier === "premium" ? (
+                  <label className="checkout-gift-note">
+                    <span>
+                      Personal note <small>(premium only)</small>
+                    </span>
+                    <textarea
+                      rows={5}
+                      maxLength={200}
+                      value={personalNote}
+                      onChange={(event) => setPersonalNote(event.target.value)}
+                      placeholder="Write your message..."
+                    />
+                    <small>{personalNote.length}/200 characters</small>
+                  </label>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -411,7 +451,7 @@ export default function CheckoutPage() {
 
           {giftFee > 0 ? (
             <div className="checkout-line checkout-gift-fee">
-              <span>Gift box</span>
+              <span>Premium gift</span>
               <span>+{formatPrice(giftFee)}</span>
             </div>
           ) : null}
