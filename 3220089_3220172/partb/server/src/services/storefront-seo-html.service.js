@@ -79,9 +79,7 @@ export function renderProductCard(
   eagerFirstImages = 0
 ) {
   const images = getImages(product);
-  const badge =
-    product?.badge ||
-    (product?.featured ? "Featured" : "");
+  const badge = product?.badge || "";
 
   const imageHtml = images.length
     ? images
