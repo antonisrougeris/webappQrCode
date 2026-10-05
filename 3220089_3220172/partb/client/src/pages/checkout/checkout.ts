@@ -3,7 +3,7 @@
 import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";
 import { checkout } from "../../services/checkout";
-import { apiRequest, getMe } from "../../services/api";
+import { getMe } from "../../services/api";
 import {
   parsePhoneNumberFromString,
   type CountryCode,
@@ -733,25 +733,28 @@ if (!user) {
     return;
   }
 
-  const res = await apiRequest<{ exists: boolean }>("/auth/check-email", {
-    method: "POST",
-    body: JSON.stringify({ email }),
-  });
+  const redirectTarget =
+    normalizeRoutePath(
+      window.location.pathname,
+      "/checkout"
+    );
 
-  const redirectTarget = normalizeRoutePath(window.location.pathname, "/checkout");
+  const payload =
+    new URLSearchParams({
+      redirect:
+        redirectTarget,
+      email,
+      firstName,
+      lastName,
+    });
 
-  const payload = new URLSearchParams({
-    redirect: redirectTarget,
-    email,
-    firstName,
-    lastName,
-  });
-
-  if (res.exists) {
-    window.location.href = `/login?${payload}`;
-  } else {
-    window.location.href = `/register?${payload}`;
-  }
+  /*
+   * Do not reveal whether the email already has an account.
+   * Login keeps the prefilled email and exposes a Register link
+   * carrying the same checkout context for new customers.
+   */
+  window.location.href =
+    `/login?${payload}`;
 
   return;
 }
