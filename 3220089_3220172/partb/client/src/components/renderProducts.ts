@@ -74,9 +74,21 @@ export function renderProducts(
 
     const images = getProductImages(product);
 
-    const badgeText =
-      product.badge ||
-      (product.featured ? "Featured" : "");
+    const badgeText = product.badge || "";
+
+    const discountPercent = Math.max(
+      0,
+      Number(product.discountPercent || 0)
+    );
+
+    const originalPrice = Number(
+      product.originalPrice ?? product.price
+    );
+
+    const onSale =
+      Boolean(product.onSale) &&
+      discountPercent > 0 &&
+      originalPrice > product.price;
 
     const inStock =
       typeof product.stock === "number"
@@ -152,11 +164,12 @@ export function renderProducts(
         >
 
           ${
-            badgeText
+            badgeText || onSale
               ? `
-                <span class="badge">
-                  ${escapeHtml(badgeText)}
-                </span>
+                <div class="product-badge-stack">
+                  ${badgeText ? `<span class="badge">${escapeHtml(badgeText)}</span>` : ""}
+                  ${onSale ? `<span class="badge badge--sale">-${discountPercent}%</span>` : ""}
+                </div>
               `
               : ""
           }
@@ -182,9 +195,12 @@ export function renderProducts(
               ${escapeHtml(product.title)}
             </h3>
 
-            <p class="price">
-              ${formatPrice(product.price)}
-            </p>
+            <div class="product-card-price">
+              ${onSale ? `<span class="price price--old">${formatPrice(originalPrice)}</span>` : ""}
+              <span class="price ${onSale ? "price--sale" : ""}">
+                ${formatPrice(product.price)}
+              </span>
+            </div>
 
           </div>
 
