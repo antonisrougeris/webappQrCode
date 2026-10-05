@@ -479,6 +479,50 @@
       </section>
 
 
+      <!-- GIFT OPTIONS -->
+      <section class="checkout-page__section checkout-gift-section" id="gift-options">
+        <div class="checkout-section-heading">
+          <span>04</span>
+
+          <div>
+            <h2>Gift options</h2>
+            <p>
+              Add gift packaging and an optional personal message.
+            </p>
+          </div>
+        </div>
+
+        <label class="checkout-gift-option">
+          <input
+            type="checkbox"
+            name="giftBox"
+            value="true"
+          />
+
+          <span>
+            <strong>Add gift box</strong>
+            <small>We'll package the order as a gift.</small>
+          </span>
+        </label>
+
+        <label class="checkout-gift-note">
+          <span>
+            Personal note
+            <small>(optional)</small>
+          </span>
+
+          <textarea
+            name="personalNote"
+            rows="5"
+            maxlength="200"
+            placeholder="Write your message..."
+          ></textarea>
+
+          <small>Maximum 200 characters.</small>
+        </label>
+      </section>
+
+
       <button
         type="submit"
         class="checkout-page__btn"
