@@ -174,7 +174,7 @@ export function CartDrawer() {
 
       <aside className={`cart-drawer ${open ? "open" : "hidden"}`}>
         <header className="cart-header">
-          <h2>Your Cart</h2>
+          <h2>YOUR CART ({getCartCount(cart)})</h2>
           <button type="button" onClick={closeDrawer}>
             ✕
           </button>
@@ -210,6 +210,10 @@ export function CartDrawer() {
                       <img src={image} alt={title} />
 
                       <div className="drawer-cart-info">
+                        <p className="cart-stock-status">
+                          <span className="cart-stock-dot" aria-hidden="true" />
+                          In stock, ready to ship
+                        </p>
                         <h3>{title}</h3>
 
                         {variant?.size ? <p>Size: {variant.size}</p> : null}
@@ -270,6 +274,25 @@ export function CartDrawer() {
                   );
                 })}
               </section>
+
+              <div className="cart-gift-row">
+                <span className="cart-gift-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                      d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H8.5A2.5 2.5 0 1 1 11 4.5C11 6 12 7 12 7Zm0 0h3.5A2.5 2.5 0 1 0 13 4.5C13 6 12 7 12 7Z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span className="cart-gift-text">
+                  ADD GIFT BOX &amp; PERSONAL NOTE
+                </span>
+                <span className="cart-gift-arrow" aria-hidden="true">→</span>
+              </div>
 
               <section className="cart-summary">
                 <div>
@@ -340,6 +363,9 @@ export function CartDrawer() {
               <div className="checkout-container">
                 <Link className="btn-primary drawer-checkout" href="/checkout">
                   Proceed to Checkout
+                </Link>
+                <Link className="cart-return-note" href="/returns">
+                  14-Day Returns
                 </Link>
               </div>
             </>
