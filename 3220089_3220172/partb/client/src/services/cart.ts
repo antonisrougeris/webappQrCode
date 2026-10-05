@@ -15,8 +15,11 @@ export interface CartItem {
   variant?: ProductVariant | null;
   qrDestination?: string;
 }
+export type GiftTier = "none" | "simple" | "premium";
+
 export interface GiftOptions {
-  giftBox: boolean;
+  tier: GiftTier;
+  giftBox?: boolean;
   personalNote: string;
 }
 
