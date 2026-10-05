@@ -76,8 +76,22 @@ const invoiceDetailsSchema = z.object({
 });
 
 export const giftOptionsSchema = z.object({
-  giftBox: z.boolean().optional().default(false),
+  tier: z.enum(["none", "simple", "premium"]).optional(),
+  giftBox: z.boolean().optional(),
   personalNote: z.string().trim().max(200).optional().default(""),
+}).transform((value) => {
+  const tier =
+    value.tier ||
+    (value.giftBox ? "premium" : "none");
+
+  return {
+    tier,
+    giftBox: tier === "premium",
+    personalNote:
+      tier === "premium"
+        ? value.personalNote
+        : "",
+  };
 });
 
 export const checkoutSchema = z.object({
@@ -114,6 +128,7 @@ export const checkoutSchema = z.object({
   notes: z.string().trim().max(1000).optional().default(""),
 
   giftOptions: giftOptionsSchema.optional().default({
+    tier: "none",
     giftBox: false,
     personalNote: "",
   }),
