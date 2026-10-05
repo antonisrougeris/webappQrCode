@@ -5,12 +5,15 @@ import {
   assertString,
   normalizeVariantInput,
   optionalUrl,
+  giftOptionsSchema,
+  parseOrThrow,
 } from "../utils/validators.js";
 import {
   addCartItem,
   getCartByUserId,
   removeCartItem,
   updateCartItem,
+  updateCartGiftOptions,
   copyUserCartToGuestCart,
 } from "../services/cart.service.js";
 
@@ -85,6 +88,22 @@ const cart = await updateCartItem({
   qrDestination,
 });
 
+
+  return ok(res, { cart });
+});
+
+export const patchCartGiftOptions = asyncHandler(async (req, res) => {
+  const owner = getCartOwner(req, res);
+  const giftOptions = parseOrThrow(
+    giftOptionsSchema,
+    req.body,
+    "Invalid gift options"
+  );
+
+  const cart = await updateCartGiftOptions({
+    userId: owner.id,
+    giftOptions,
+  });
 
   return ok(res, { cart });
 });
