@@ -762,6 +762,57 @@ editCartButton?.addEventListener(
       }
     }
   });
+  checkoutForm?.addEventListener("pointerdown", (event) => {
+    const target = event.target as HTMLElement | null;
+    const option =
+      target?.closest<HTMLElement>("[data-checkout-gift-tier]");
+
+    if (!option) return;
+
+    const input =
+      option.querySelector<HTMLInputElement>(
+        'input[name="giftTier"]'
+      );
+
+    option.dataset.wasChecked =
+      input?.checked ? "true" : "false";
+  });
+
+  checkoutForm?.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement | null;
+    const option =
+      target?.closest<HTMLElement>("[data-checkout-gift-tier]");
+
+    if (!option) return;
+
+    event.preventDefault();
+
+    const input =
+      option.querySelector<HTMLInputElement>(
+        'input[name="giftTier"]'
+      );
+
+    if (!input) return;
+
+    const wasChecked =
+      option.dataset.wasChecked === "true";
+
+    checkoutForm
+      ?.querySelectorAll<HTMLInputElement>(
+        'input[name="giftTier"]'
+      )
+      .forEach((radio) => {
+        radio.checked = false;
+      });
+
+    if (!wasChecked) {
+      input.checked = true;
+    }
+
+    saveCheckoutDraftFromPage();
+    void render();
+  });
+
   checkoutForm?.addEventListener("change", (event) => {
     const target =
       event.target as HTMLInputElement | HTMLTextAreaElement | null;

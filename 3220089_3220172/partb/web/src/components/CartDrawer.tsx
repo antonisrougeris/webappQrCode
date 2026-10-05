@@ -468,12 +468,6 @@ export function CartDrawer() {
             <div className="cart-gift-tiers">
               {[
                 {
-                  value: "none",
-                  title: "No gift / remove gift options",
-                  copy: "Return to a standard order with normal pricing shown.",
-                  price: "Free",
-                },
-                {
                   value: "simple",
                   title: "Gift-ready",
                   copy: "Hide prices in the parcel and include a gift/returns receipt card.",
@@ -486,17 +480,26 @@ export function CartDrawer() {
                   price: "+" + formatPrice(PREMIUM_GIFT_PRICE),
                 },
               ].map((option) => (
-                <label className="cart-gift-tier" key={option.value}>
+                <label
+                  className="cart-gift-tier"
+                  key={option.value}
+                  onClick={(event) => {
+                    event.preventDefault();
+
+                    const value =
+                      option.value as "simple" | "premium";
+
+                    setGiftTier((current) =>
+                      current === value ? "none" : value
+                    );
+                  }}
+                >
                   <input
                     type="radio"
                     name="cartGiftTier"
                     value={option.value}
                     checked={giftTier === option.value}
-                    onChange={() =>
-                      setGiftTier(
-                        option.value as "none" | "simple" | "premium"
-                      )
-                    }
+                    readOnly
                   />
                   <span className="cart-gift-tier__copy">
                     <strong>{option.title}</strong>

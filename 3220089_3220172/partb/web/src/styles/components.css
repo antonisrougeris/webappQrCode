@@ -3225,3 +3225,30 @@ body.cart-open {
     padding: 18px 0 0;
   }
 }
+
+
+/* Final gift selection polish */
+.cart-gift-tier input[type="radio"],
+.checkout-gift-tier input[type="radio"] {
+  appearance: auto;
+  -webkit-appearance: radio;
+  width: 18px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  accent-color: #111;
+}
+
+.checkout-gift-section {
+  margin-bottom: 30px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #dedede;
+}
+
+.checkout-page__btn {
+  margin-top: 0;
+}

@@ -14,6 +14,7 @@ export async function sendEmail({
   subject,
   html,
   from,
+  replyTo,
   attachments = [],
 }) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -34,6 +35,7 @@ export async function sendEmail({
     to,
     subject,
     html,
+    ...(replyTo ? { replyTo } : {}),
     ...(attachments.length ? { attachments } : {}),
   });
 

@@ -316,12 +316,6 @@ export default function CheckoutPage() {
                 <div className="checkout-gift-tiers" role="radiogroup" aria-label="Gift options">
                   {[
                     {
-                      value: "none",
-                      title: "Standard order",
-                      copy: "No gift treatment. Prices remain visible.",
-                      price: "Free",
-                    },
-                    {
                       value: "simple",
                       title: "Gift-ready",
                       copy: "Hide prices and include a gift/returns receipt card.",
@@ -334,17 +328,26 @@ export default function CheckoutPage() {
                       price: "+€1.50",
                     },
                   ].map((option) => (
-                    <label className="checkout-gift-tier" key={option.value}>
+                    <label
+                      className="checkout-gift-tier"
+                      key={option.value}
+                      onClick={(event) => {
+                        event.preventDefault();
+
+                        const value =
+                          option.value as "simple" | "premium";
+
+                        setGiftTier((current) =>
+                          current === value ? "none" : value
+                        );
+                      }}
+                    >
                       <input
                         type="radio"
                         name="giftTier"
                         value={option.value}
                         checked={giftTier === option.value}
-                        onChange={() =>
-                          setGiftTier(
-                            option.value as "none" | "simple" | "premium"
-                          )
-                        }
+                        readOnly
                       />
                       <span className="checkout-gift-tier__copy">
                         <strong>{option.title}</strong>

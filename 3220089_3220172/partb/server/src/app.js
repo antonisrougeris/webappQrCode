@@ -18,6 +18,7 @@ import {
   authLimiter,
   sensitiveAuthLimiter,
   checkoutLimiter,
+  contactLimiter,
   adminLimiter,
   webhookLimiter,
 } from "./middleware/rateLimits.js";
@@ -39,6 +40,7 @@ import seoProductRoutes from "./routes/seo-product.routes.js";
 import boxNowTestRoutes from "./routes/boxnow-test.routes.js";
 import boxNowRoutes from "./routes/boxnow.routes.js";
 import resendRoutes from "./routes/resend.routes.js";
+import contactRoutes from "./routes/contact.routes.js";
 
 dotenv.config();
 
@@ -119,6 +121,7 @@ app.use(cookieParser(cookieSigningSecret));
 app.use("/api/viva", webhookLimiter, vivaRoutes);
 app.use("/api/boxnow", webhookLimiter, boxNowRoutes);
 app.use("/api/resend", webhookLimiter, resendRoutes);
+app.use("/api/contact", contactLimiter, contactRoutes);
 
 /*
  * Lusca requires req.session because it stores the server-side CSRF secret

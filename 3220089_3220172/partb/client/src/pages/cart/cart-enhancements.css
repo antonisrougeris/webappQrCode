@@ -361,3 +361,29 @@ body.gift-dialog-open {
   box-shadow: 0 0 0 1px #111;
   background: #fbfbfb;
 }
+
+
+/* Gift option radio alignment */
+.cart-gift-tier {
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.cart-gift-tier input[type="radio"] {
+  appearance: auto;
+  -webkit-appearance: radio;
+  width: 18px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  accent-color: #111;
+  justify-self: start;
+}
+
+.cart-gift-tier__copy {
+  padding-left: 0;
+}

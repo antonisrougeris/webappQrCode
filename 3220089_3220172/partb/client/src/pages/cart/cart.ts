@@ -481,21 +481,7 @@ async function renderCartFromState(
         </p>
 
         <div class="cart-gift-tiers">
-          <label class="cart-gift-tier">
-            <input
-              type="radio"
-              name="cartGiftTier"
-              value="none"
-              ${giftTier === "none" ? "checked" : ""}
-            />
-            <span class="cart-gift-tier__copy">
-              <strong>No gift / remove gift options</strong>
-              <small>Return to a standard order with normal pricing shown.</small>
-            </span>
-            <span class="cart-gift-tier__price">Free</span>
-          </label>
-
-          <label class="cart-gift-tier">
+          <label class="cart-gift-tier" data-gift-tier-option="simple">
             <input
               type="radio"
               name="cartGiftTier"
@@ -509,7 +495,7 @@ async function renderCartFromState(
             <span class="cart-gift-tier__price">Free</span>
           </label>
 
-          <label class="cart-gift-tier cart-gift-tier--premium">
+          <label class="cart-gift-tier cart-gift-tier--premium" data-gift-tier-option="premium">
             <input
               type="radio"
               name="cartGiftTier"
@@ -737,6 +723,22 @@ async function deleteItem(
 }
 
 function bindCartActions(): void {
+  document.addEventListener("pointerdown", (event) => {
+    const target = event.target as HTMLElement | null;
+    const option =
+      target?.closest<HTMLElement>("[data-gift-tier-option]");
+
+    if (!option) return;
+
+    const input =
+      option.querySelector<HTMLInputElement>(
+        'input[name="cartGiftTier"]'
+      );
+
+    option.dataset.wasChecked =
+      input?.checked ? "true" : "false";
+  });
+
   document.addEventListener("change", (event) => {
     const target = event.target as HTMLInputElement | null;
 
@@ -754,6 +756,49 @@ function bindCartActions(): void {
   document.addEventListener("click", async (event) => {
     const target = event.target as HTMLElement | null;
     if (!target) return;
+
+    const giftTierOption =
+      target.closest<HTMLElement>("[data-gift-tier-option]");
+
+    if (giftTierOption) {
+      event.preventDefault();
+
+      const input =
+        giftTierOption.querySelector<HTMLInputElement>(
+          'input[name="cartGiftTier"]'
+        );
+
+      if (!input) return;
+
+      const wasChecked =
+        giftTierOption.dataset.wasChecked === "true";
+
+      document
+        .querySelectorAll<HTMLInputElement>(
+          'input[name="cartGiftTier"]'
+        )
+        .forEach((radio) => {
+          radio.checked = false;
+        });
+
+      if (!wasChecked) {
+        input.checked = true;
+      }
+
+      const selectedTier =
+        document.querySelector<HTMLInputElement>(
+          'input[name="cartGiftTier"]:checked'
+        )?.value || "none";
+
+      document
+        .querySelector<HTMLElement>("[data-gift-note-wrap]")
+        ?.classList.toggle(
+          "hidden",
+          selectedTier !== "premium"
+        );
+
+      return;
+    }
 
     const giftOpen = target.closest("[data-gift-open]");
     const giftClose = target.closest("[data-gift-close]");
