@@ -10,7 +10,6 @@ import {
 } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
 import { login, register } from "@/lib/api";
-import { removeToken, saveToken } from "@/lib/auth";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -52,13 +51,11 @@ export default function LoginPage() {
 
       if (!credentials.user.emailVerified) {
         await firebaseAuth.signOut();
-        removeToken();
         setStatus("Please verify your email before continuing. Check your inbox.");
         return;
       }
 
       const token = await credentials.user.getIdToken();
-      saveToken(token);
 
       await login({
         email,
@@ -81,7 +78,6 @@ export default function LoginPage() {
       const result = await signInWithPopup(firebaseAuth, provider);
 
       const token = await result.user.getIdToken();
-      saveToken(token);
 
       await register({
         firstName: result.user.displayName?.split(" ")[0] || "",
