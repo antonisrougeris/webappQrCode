@@ -15143,3 +15143,122 @@ body > div iframe[src*="boxnow"] {
   border-color: #111;
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
 }
+
+
+/* Checkout gift accordion polish */
+.checkout-gift-section {
+  padding: 0;
+  border: 1px solid #e7e7e7;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.checkout-gift-summary {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  cursor: pointer;
+}
+
+.checkout-gift-summary::-webkit-details-marker {
+  display: none;
+}
+
+.checkout-gift-summary__index {
+  color: #777;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.checkout-gift-summary__copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.checkout-gift-summary__copy strong {
+  font-size: 1rem;
+}
+
+.checkout-gift-summary__copy small {
+  color: #777;
+  line-height: 1.35;
+}
+
+.checkout-gift-summary__action {
+  min-width: 54px;
+  text-align: right;
+  font-weight: 900;
+  font-size: 0.82rem;
+}
+
+.checkout-gift-summary__action::after {
+  content: " +";
+}
+
+.checkout-gift-section[open] .checkout-gift-summary__action::after {
+  content: " −";
+}
+
+.checkout-gift-body {
+  padding: 0 20px 20px 68px;
+  border-top: 1px solid #eee;
+}
+
+.checkout-gift-option {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.checkout-page__form .checkout-gift-option input[type="checkbox"] {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+}
+
+.checkout-gift-option__copy {
+  min-width: 0;
+  width: 100%;
+}
+
+.checkout-gift-option__copy > strong {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+}
+
+.checkout-gift-option__copy em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.checkout-gift-fee {
+  color: #555;
+}
+
+@media (max-width: 640px) {
+  .checkout-gift-summary {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .checkout-gift-summary__copy small {
+    display: none;
+  }
+
+  .checkout-gift-body {
+    padding: 0 16px 18px 54px;
+  }
+}
