@@ -489,8 +489,8 @@ async function renderCartFromState(
               ${giftTier === "none" ? "checked" : ""}
             />
             <span class="cart-gift-tier__copy">
-              <strong>No gift</strong>
-              <small>Standard order with normal pricing shown.</small>
+              <strong>No gift / remove gift options</strong>
+              <small>Return to a standard order with normal pricing shown.</small>
             </span>
             <span class="cart-gift-tier__price">Free</span>
           </label>
