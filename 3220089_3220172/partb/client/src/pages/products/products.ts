@@ -25,6 +25,10 @@ interface Product {
   price?: number;
   priceEUR?: number;
   compareAtPriceEUR?: number;
+  originalPrice?: number;
+  discountPercent?: number;
+  onSale?: boolean;
+  merchandisingTag?: string;
   image?: string;
   images?: string[];
   badge?: string;
@@ -105,12 +109,26 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
       product.category === "accessory" ? "grey" : ""
     }`;
 
-    const badgeText = product.badge || (product.featured ? "Featured" : "");
-    if (badgeText) {
-      const badge = document.createElement("span");
-      badge.className = "badge";
-      badge.textContent = badgeText;
-      media.appendChild(badge);
+    const badgeText = product.badge || "";
+    const discountPercent = Math.max(0, Number(product.discountPercent || 0));
+    const originalPrice = Number(product.originalPrice ?? productPrice);
+    const onSale = Boolean(product.onSale) && discountPercent > 0 && originalPrice > productPrice;
+    if (badgeText || onSale) {
+      const badgeStack = document.createElement("div");
+      badgeStack.className = "product-badge-stack";
+      if (badgeText) {
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = badgeText;
+        badgeStack.appendChild(badge);
+      }
+      if (onSale) {
+        const saleBadge = document.createElement("span");
+        saleBadge.className = "badge badge--sale";
+        saleBadge.textContent = `-${discountPercent}%`;
+        badgeStack.appendChild(saleBadge);
+      }
+      media.appendChild(badgeStack);
     }
 
     const image = getProductImage(product);
@@ -138,11 +156,20 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
     const title = document.createElement("h3");
     title.textContent = product.title;
 
-    const price = document.createElement("p");
-    price.className = "price";
+    const priceWrap = document.createElement("div");
+    priceWrap.className = "product-card-price";
+    if (onSale) {
+      const oldPrice = document.createElement("span");
+      oldPrice.className = "price price--old";
+      oldPrice.textContent = formatPrice(originalPrice);
+      priceWrap.appendChild(oldPrice);
+    }
+    const price = document.createElement("span");
+    price.className = `price ${onSale ? "price--sale" : ""}`;
     price.textContent = formatPrice(productPrice);
+    priceWrap.appendChild(price);
 
-    row.append(title, price);
+    row.append(title, priceWrap);
 
     const meta = document.createElement("p");
     meta.className = "meta";
