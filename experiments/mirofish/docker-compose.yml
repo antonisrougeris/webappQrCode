@@ -1,0 +1,15 @@
+services:
+  mirofish:
+    # Pinned official upstream image so an experiment is repeatable.
+    # Upgrade intentionally after reviewing upstream changes.
+    image: ghcr.io/666ghj/mirofish:sha-985f89f
+    container_name: skanare-mirofish
+    env_file:
+      - .env
+    ports:
+      # Avoid conflicts with Skanare's own services.
+      - "3100:3000"
+      - "5101:5001"
+    restart: "no"
+    volumes:
+      - ./data/uploads:/app/backend/uploads
