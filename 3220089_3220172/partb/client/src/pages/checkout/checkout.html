@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/assets/css/reset.css" />
   <link rel="stylesheet" href="/assets/css/theme.css" />
   <link rel="stylesheet" href="/assets/css/layout.css" />
-  <link rel="stylesheet" href="/assets/css/components.css?v=5.0-gift-tiers" />
+  <link rel="stylesheet" href="/assets/css/components.css?v=5.1-gift-toggle" />
   <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="5001afeb-b9df-4288-92c2-6febe12a2a03";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
 <meta
   name="description"
@@ -496,21 +496,7 @@
 
         <div class="checkout-gift-body">
           <div class="checkout-gift-tiers" role="radiogroup" aria-label="Gift options">
-            <label class="checkout-gift-tier">
-              <input
-                type="radio"
-                name="giftTier"
-                value="none"
-                checked
-              />
-              <span class="checkout-gift-tier__copy">
-                <strong>Standard order</strong>
-                <small>No gift treatment. Prices remain visible.</small>
-              </span>
-              <span class="checkout-gift-tier__price">Free</span>
-            </label>
-
-            <label class="checkout-gift-tier">
+            <label class="checkout-gift-tier" data-checkout-gift-tier="simple">
               <input
                 type="radio"
                 name="giftTier"
@@ -523,7 +509,7 @@
               <span class="checkout-gift-tier__price">Free</span>
             </label>
 
-            <label class="checkout-gift-tier checkout-gift-tier--premium">
+            <label class="checkout-gift-tier checkout-gift-tier--premium" data-checkout-gift-tier="premium">
               <input
                 type="radio"
                 name="giftTier"
