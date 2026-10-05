@@ -15,6 +15,7 @@ import {
   type CartItem,
 } from "../../services/cart";
 import { getProducts, getColorImages, type Product } from "../../services/products";
+import "./cart-enhancements.css";
 
 initNav();
 initMobileMenu();
@@ -87,6 +88,16 @@ function getCartCount(cart: Cart | null | undefined): number {
     (sum, item) => sum + Number(item.quantity || 0),
     0
   );
+}
+
+function updateCartHeaderCount(cart: Cart | null | undefined): void {
+  const count = getCartCount(cart);
+
+  document
+    .querySelectorAll<HTMLElement>(".cart-header h2")
+    .forEach((title) => {
+      title.textContent = `YOUR CART (${count})`;
+    });
 }
 
 function getCartItemKey(item: CartItem, index: number): string {
@@ -236,6 +247,10 @@ function renderCartItem(item: CartItem, index: number, catalog: Product[] = []):
       <img src="${image}" alt="${title}" />
 
       <div class="drawer-cart-info">
+        <p class="cart-stock-status">
+          <span class="cart-stock-dot" aria-hidden="true"></span>
+          In stock, ready to ship
+        </p>
         <h3>${title}</h3>
         ${sizeText}
         ${colorText}
@@ -360,6 +375,8 @@ async function renderCartFromState(
   const total =
     getCartTotal(cart);
 
+  updateCartHeaderCount(cart);
+
   if (items.length === 0) {
     container.classList.add(
       "cart-empty-state"
@@ -402,6 +419,16 @@ async function renderCartFromState(
         .join("")}
     </section>
 
+    <div class="cart-gift-row">
+      <span class="cart-gift-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H8.5A2.5 2.5 0 1 1 11 4.5C11 6 12 7 12 7Zm0 0h3.5A2.5 2.5 0 1 0 13 4.5C13 6 12 7 12 7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="cart-gift-text">ADD GIFT BOX &amp; PERSONAL NOTE</span>
+      <span class="cart-gift-arrow" aria-hidden="true">→</span>
+    </div>
+
     <section class="cart-summary">
       <div>
         <span>Total</span>
@@ -422,6 +449,7 @@ async function renderCartFromState(
       <button id="checkoutBtn" class="btn-primary drawer-checkout">
         Proceed to Checkout
       </button>
+      <a class="cart-return-note" href="/returns">14-Day Returns</a>
     </div>
   `;
 }
