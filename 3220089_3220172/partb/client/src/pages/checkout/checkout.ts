@@ -10,6 +10,7 @@ import {
 } from "libphonenumber-js";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 import { setFlashToast } from "../../utils/toast.ts";
+import { normalizeSameOriginPath } from "../../utils/redirect";
 
 function saveCheckoutDraft(formEl: HTMLFormElement): void {
   const form = new FormData(formEl)
@@ -573,22 +574,17 @@ function readAndValidateCheckoutForm(
   };
 }
 
-function normalizeRoutePath(value: string | null | undefined, fallback = "/checkout"): string {
-  if (!value) return fallback;
-
-  const cleaned = value.trim();
-
-  if (!cleaned.startsWith("/")) return fallback;
-
-  const legacyMap: Record<string, string> = {
-    "/login": "/login",
-    "/register": "/register",
-    "/forgot-password": "/forgot-password",
-    "/verify-email": "/verify-email",
-    "/checkout": "/checkout",
-  };
-
-  return legacyMap[cleaned] ?? cleaned;
+function normalizeRoutePath(
+  value: string | null | undefined,
+  fallback = "/checkout"
+): string {
+  return (
+    normalizeSameOriginPath(
+      value,
+      fallback
+    ) ||
+    fallback
+  );
 }
 
 function restoreAfterAuth(): void {
