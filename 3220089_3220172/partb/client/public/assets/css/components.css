@@ -15262,3 +15262,128 @@ body > div iframe[src*="boxnow"] {
     padding: 0 16px 18px 54px;
   }
 }
+
+
+/* Tiered checkout gift section — matches steps 01–03 */
+.checkout-gift-section {
+  padding: 28px 0 0;
+  border: 0;
+  border-top: 1px solid #dedede;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.checkout-gift-summary {
+  width: 100%;
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 18px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.checkout-gift-summary .checkout-section-heading {
+  margin-bottom: 0;
+}
+
+.checkout-gift-summary__action {
+  align-self: center;
+  min-width: 64px;
+  color: #111;
+  text-align: right;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.checkout-gift-body {
+  padding: 22px 0 0 50px;
+  border: 0;
+}
+
+.checkout-gift-tiers {
+  display: grid;
+  gap: 10px;
+}
+
+.checkout-gift-tier {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid #deded8;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.checkout-page__form .checkout-gift-tier input[type="radio"] {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  padding: 0;
+  accent-color: #111;
+}
+
+.checkout-gift-tier__copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.checkout-gift-tier__copy strong {
+  font-size: 14px;
+}
+
+.checkout-gift-tier__copy small {
+  color: #777;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.checkout-gift-tier__price {
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.checkout-gift-tier:has(input:checked) {
+  border-color: #111;
+  box-shadow: 0 0 0 1px #111;
+}
+
+.checkout-gift-note {
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .checkout-gift-section {
+    padding-top: 22px;
+  }
+
+  .checkout-gift-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .checkout-gift-summary .checkout-section-heading {
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+  }
+
+  .checkout-gift-summary .checkout-section-heading p {
+    display: none;
+  }
+
+  .checkout-gift-body {
+    padding: 18px 0 0;
+  }
+
+  .checkout-gift-tier {
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+  }
+}
