@@ -530,6 +530,34 @@ function customerOrderDate(
 }
 
 
+function customerReturnWindowOpen(order: any): boolean {
+  const deliveredAt =
+    order?.shipping?.deliveredAt ||
+    order?.completedAt ||
+    (
+      order?.shipping?.status === "delivered"
+        ? order?.shipping?.updatedAt
+        : null
+    );
+
+  if (!deliveredAt) return false;
+
+  const deliveredMs =
+    Date.parse(String(deliveredAt));
+
+  if (!Number.isFinite(deliveredMs)) {
+    return false;
+  }
+
+  const fourteenDaysMs =
+    14 * 24 * 60 * 60 * 1000;
+
+  const age =
+    Date.now() - deliveredMs;
+
+  return age >= 0 && age <= fourteenDaysMs;
+}
+
 function renderCustomerOrders(
   orders: any[]
 ): void {
@@ -881,10 +909,7 @@ function renderCustomerOrders(
 
             ${tracking}
 
-            ${(
-              order?.shipping?.status === "delivered" ||
-              status === "completed"
-            )
+            ${customerReturnWindowOpen(order)
               ? `
                 <div class="account-order__tracking account-order__return">
                   <div class="account-order__tracking-info">
