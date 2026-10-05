@@ -16,6 +16,8 @@ export default function CheckoutPage() {
   const [status, setStatus] = useState("");
   const [payText, setPayText] = useState("Pay with viva.com");
   const [submitting, setSubmitting] = useState(false);
+  const [giftBox, setGiftBox] = useState(false);
+  const [personalNote, setPersonalNote] = useState("");
 
   useEffect(() => {
     restoreDraft();
@@ -31,6 +33,8 @@ export default function CheckoutPage() {
   async function loadCart() {
     const cart = await getCart();
     setItems(cart?.items || []);
+    setGiftBox(Boolean(cart?.giftOptions?.giftBox));
+    setPersonalNote(cart?.giftOptions?.personalNote || "");
   }
 
   const subtotal = useMemo(() => {
@@ -181,6 +185,10 @@ export default function CheckoutPage() {
         delivery: selectedDelivery,
         locker: String(form.get("locker") || "").trim(),
         notes: "",
+        giftOptions: {
+          giftBox,
+          personalNote: personalNote.trim(),
+        },
       });
 
       if (result.checkoutUrl) {
@@ -269,6 +277,39 @@ export default function CheckoutPage() {
               name="locker"
               placeholder="Selected locker will appear here"
             />
+          </div>
+
+          <div className="checkout-page__section checkout-gift-section" id="gift-options">
+            <h3>Gift options</h3>
+            <p className="checkout-gift-intro">
+              Add gift packaging and an optional personal message.
+            </p>
+
+            <label className="checkout-gift-option">
+              <input
+                type="checkbox"
+                checked={giftBox}
+                onChange={(event) => setGiftBox(event.target.checked)}
+              />
+              <span>
+                <strong>Add gift box</strong>
+                <small>We'll package the order as a gift.</small>
+              </span>
+            </label>
+
+            <label className="checkout-gift-note">
+              <span>
+                Personal note <small>(optional)</small>
+              </span>
+              <textarea
+                rows={5}
+                maxLength={200}
+                value={personalNote}
+                onChange={(event) => setPersonalNote(event.target.value)}
+                placeholder="Write your message..."
+              />
+              <small>{personalNote.length}/200 characters</small>
+            </label>
           </div>
 
           <button
