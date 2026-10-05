@@ -15424,3 +15424,126 @@ body > div iframe[src*="boxnow"] {
     padding-bottom: 22px;
   }
 }
+
+
+/* =========================================================
+   PRODUCT MERCHANDISING + SALE PRICING
+   ========================================================= */
+
+.product-badge-stack {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 28px);
+  pointer-events: none;
+}
+
+.product-card .product-badge-stack .badge {
+  position: static;
+  inset: auto;
+}
+
+.product-card .badge--sale,
+.product-badge--sale {
+  background: #d92d20;
+  color: #fff;
+}
+
+.product-card-price {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.product-card .price--old {
+  color: #8a8a84;
+  font-size: 0.76rem;
+  font-weight: 650;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.product-card .price--sale {
+  color: #d92d20;
+}
+
+.product-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  margin-bottom: 14px;
+}
+
+.product-detail-badges:has(.product-badge:not([hidden])) {
+  margin-bottom: 14px;
+}
+
+.product-detail-badges .product-badge {
+  margin: 0;
+}
+
+.product-detail-badges:has(.product-badge[hidden]:only-child),
+.product-detail-badges:empty {
+  margin-bottom: 0;
+}
+
+.product-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.product-price__old {
+  color: #85857f;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.product-price__current {
+  color: #111;
+}
+
+.product-price__old + .product-price__current {
+  color: #d92d20;
+}
+
+.related-product-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.related-product-price__old {
+  color: #8a8a84;
+  font-size: 0.8em;
+  text-decoration: line-through;
+}
+
+@media (max-width: 700px) {
+  .product-badge-stack {
+    top: 9px;
+    left: 9px;
+    gap: 4px;
+  }
+
+  .product-card-price {
+    gap: 4px;
+  }
+
+  .product-card .price--old {
+    font-size: 0.67rem;
+  }
+}
