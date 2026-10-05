@@ -99,7 +99,17 @@ jobs:
             exit 1
           }
 
-          echo "SEO prerendering validation OK"
+          grep -q 'SKANARE_LIVE:GRID:featuredTshirtsGrid:START' dist/index.html || {
+            echo "ERROR: homepage live-refresh markers are missing"
+            exit 1
+          }
+
+          grep -q 'SKANARE_LIVE:GRID:productsGrid:START' dist/src/pages/products/products.html || {
+            echo "ERROR: products-page live-refresh markers are missing"
+            exit 1
+          }
+
+          echo "SEO prerendering + live refresh markers OK"
 
       - name: Guard production bundle against development URLs
         run: |
