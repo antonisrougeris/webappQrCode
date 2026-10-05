@@ -1,4 +1,7 @@
 import { getDB } from "../config/db.js";
+import {
+  getEffectiveUnitPrice,
+} from "./product-pricing.service.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
@@ -303,7 +306,7 @@ export async function checkoutCartForOwner({
         findVariant(product, item.variant);
 
 
-const unitPrice = toNumber(variant?.price ?? product.price, 0);
+const unitPrice = getEffectiveUnitPrice(product, variant);
 const lineTotal = unitPrice * quantity;
 subtotal += lineTotal;
 
@@ -360,6 +363,8 @@ orderItems.push({
 
   quantity,
   unitPrice,
+  originalUnitPrice: toNumber(variant?.price ?? product.price, 0),
+  discountPercent: Number(product.discountPercent || 0),
   currency: product.currency || "EUR",
   lineTotal,
 

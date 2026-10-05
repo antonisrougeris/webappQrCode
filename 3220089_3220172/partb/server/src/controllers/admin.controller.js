@@ -319,6 +319,22 @@ export const seedProducts = asyncHandler(
           featured:
             product.featured ?? false,
 
+          discountPercent:
+            Math.min(
+              90,
+              Math.max(
+                0,
+                Number(
+                  product.discountPercent || 0
+                )
+              )
+            ),
+
+          merchandisingTag:
+            String(
+              product.merchandisingTag || "none"
+            ),
+
           customQr:
             product.customQr ?? false,
 
@@ -1634,6 +1650,39 @@ export const createAdminProduct =
         );
       }
 
+      const discountPercent =
+        Math.min(
+          90,
+          Math.max(
+            0,
+            cleanInteger(
+              req.body?.discountPercent,
+              0
+            )
+          )
+        );
+
+      const merchandisingTagRaw =
+        cleanString(
+          req.body?.merchandisingTag,
+          40
+        )
+          .toLowerCase()
+          .replace(/[\s-]+/g, "_");
+
+      const merchandisingTag =
+        [
+          "none",
+          "new",
+          "featured",
+          "best_seller",
+          "limited",
+        ].includes(
+          merchandisingTagRaw
+        )
+          ? merchandisingTagRaw
+          : "none";
+
 
       const images =
         cleanImages(
@@ -1712,6 +1761,10 @@ export const createAdminProduct =
           "General",
 
         price,
+
+        discountPercent,
+
+        merchandisingTag,
 
         currency:
           cleanString(
@@ -1930,6 +1983,65 @@ export const updateAdminProduct =
 
         update.price =
           price;
+      }
+
+
+      if (
+        req.body?.discountPercent !==
+        undefined
+      ) {
+        const discountPercent =
+          cleanInteger(
+            req.body.discountPercent,
+            0
+          );
+
+        if (
+          discountPercent < 0 ||
+          discountPercent > 90
+        ) {
+          throw new ApiError(
+            400,
+            "Discount must be between 0 and 90 percent"
+          );
+        }
+
+        update.discountPercent =
+          discountPercent;
+      }
+
+
+      if (
+        req.body?.merchandisingTag !==
+        undefined
+      ) {
+        const merchandisingTag =
+          cleanString(
+            req.body.merchandisingTag,
+            40
+          )
+            .toLowerCase()
+            .replace(/[\s-]+/g, "_");
+
+        if (
+          ![
+            "none",
+            "new",
+            "featured",
+            "best_seller",
+            "limited",
+          ].includes(
+            merchandisingTag
+          )
+        ) {
+          throw new ApiError(
+            400,
+            "Invalid merchandising tag"
+          );
+        }
+
+        update.merchandisingTag =
+          merchandisingTag;
       }
 
 

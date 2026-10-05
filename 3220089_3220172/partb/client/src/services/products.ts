@@ -30,6 +30,9 @@ export interface Product {
   category: string;
   price: number;
   priceEUR?: number;
+  originalPrice?: number;
+  discountPercent?: number;
+  onSale?: boolean;
   image?: string;
   images?: string[];
   defaultColor?: string;
@@ -37,6 +40,7 @@ export interface Product {
   stock?: number;
   featured?: boolean;
   active?: boolean;
+  merchandisingTag?: "none" | "new" | "featured" | "best_seller" | "limited" | string;
   badge?: string;
   customQr?: boolean;
   createdAt?: string;
@@ -89,13 +93,17 @@ export function normalizeProduct(raw: any): Product {
     category: raw?.category || "",
     price,
     priceEUR: typeof raw?.priceEUR === "number" ? raw.priceEUR : price,
+    originalPrice: typeof raw?.originalPrice === "number" ? raw.originalPrice : price,
+    discountPercent: typeof raw?.discountPercent === "number" ? raw.discountPercent : 0,
+    onSale: Boolean(raw?.onSale),
     image: cover,
     images: rawImages,
     defaultColor: preferred?.name || raw?.defaultColor || "",
     colorOptions: colors,
     stock: typeof raw?.stock === "number" ? raw.stock : 0,
-    featured: raw?.featured !== false,
+    featured: raw?.featured === true,
     active: raw?.active !== false,
+    merchandisingTag: raw?.merchandisingTag || "none",
     badge: raw?.badge || "",
     customQr: Boolean(raw?.customQr),
     createdAt: raw?.createdAt || "",

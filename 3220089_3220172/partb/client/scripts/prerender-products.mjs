@@ -56,55 +56,56 @@ function productUrl(product) {
     : "#";
 }
 
-function renderProductCard(product, index = 0, eagerFirstImages = 0) {
+function renderProductCard(
+  product,
+  index = 0,
+  eagerFirstImages = 0
+) {
   const images = getImages(product);
-  const badge =
-    product?.badge ||
-    (product?.featured ? "Featured" : "");
+  const badge = product?.badge || "";
+  const discountPercent = Math.max(0, Number(product?.discountPercent || 0));
+  const currentPrice = Number(product?.price ?? product?.priceEUR ?? 0);
+  const originalPrice = Number(product?.originalPrice ?? currentPrice);
+  const onSale = Boolean(product?.onSale) && discountPercent > 0 && originalPrice > currentPrice;
 
   const imageHtml = images.length
-    ? images
-        .map((image, imageIndex) => {
-          const primary = imageIndex === 0;
-          const priority = primary && index < eagerFirstImages;
+    ? images.map((image, imageIndex) => {
+        const primary = imageIndex === 0;
+        const priority = primary && index < eagerFirstImages;
+        return `
+          <img
+            class="product-image ${primary ? "is-active" : ""}"
+            src="${escapeHtml(image)}"
+            alt="${primary ? escapeHtml(product?.title || "") : ""}"
+            loading="${priority ? "eager" : "lazy"}"
+            fetchpriority="${priority ? "high" : "low"}"
+            decoding="async"
+            data-image-index="${imageIndex}"
+            ${primary ? "" : 'aria-hidden="true"'}
+          />`;
+      }).join("")
+    : `<div class="mini-shirt product-image-fallback" aria-hidden="true"></div>`;
 
-          return `
-            <img
-              class="product-image ${primary ? "is-active" : ""}"
-              src="${escapeHtml(image)}"
-              alt="${primary ? escapeHtml(product?.title || "") : ""}"
-              loading="${priority ? "eager" : "lazy"}"
-              fetchpriority="${priority ? "high" : "low"}"
-              decoding="async"
-              data-image-index="${imageIndex}"
-              ${primary ? "" : 'aria-hidden="true"'}
-            />`;
-        })
-        .join("")
-    : `
-        <div
-          class="mini-shirt product-image-fallback"
-          aria-hidden="true"
-        ></div>`;
+  const badgeHtml = badge || onSale
+    ? `<div class="product-badge-stack">${badge ? `<span class="badge">${escapeHtml(badge)}</span>` : ""}${onSale ? `<span class="badge badge--sale">-${discountPercent}%</span>` : ""}</div>`
+    : "";
+
+  const priceHtml = onSale
+    ? `<div class="product-card-price"><span class="price price--old">${formatPrice(originalPrice)}</span><span class="price price--sale">${formatPrice(currentPrice)}</span></div>`
+    : `<div class="product-card-price"><span class="price">${formatPrice(currentPrice)}</span></div>`;
 
   return `
     <article class="product-card" data-prerendered-product="true">
-      <a
-        href="${escapeHtml(productUrl(product))}"
-        class="product-card-anchor"
-        aria-label="View ${escapeHtml(product?.title || "")}"
-      >
+      <a href="${escapeHtml(productUrl(product))}" class="product-card-anchor" aria-label="View ${escapeHtml(product?.title || "")}">
         <div class="product-media ${product?.category === "accessory" ? "grey" : ""}">
-          ${badge ? `<span class="badge">${escapeHtml(badge)}</span>` : ""}
+          ${badgeHtml}
           ${imageHtml}
         </div>
-
         <div class="product-body">
           <div class="product-row">
             <h3 class="product-title">${escapeHtml(product?.title || "")}</h3>
-            <p class="price">${formatPrice(product?.price ?? product?.priceEUR ?? 0)}</p>
+            ${priceHtml}
           </div>
-
           <p class="product-stock ${isInStock(product) ? "is-in-stock" : "is-out-of-stock"}">
             ${isInStock(product) ? "In stock" : "Out of stock"}
           </p>

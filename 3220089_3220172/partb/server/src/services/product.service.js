@@ -8,18 +8,18 @@ import {
   getInventoryKey,
   readActiveReservationCounts,
 } from './inventory-reservation.service.js';
+import {
+  decorateProductPricing,
+} from './product-pricing.service.js';
 
 function withDefaultGallery(product) {
   const images = chooseProductImages(product, product.defaultColor);
-  const resolvedPrice = Number(product.price ?? product.priceEUR ?? 0);
-  return {
+  return decorateProductPricing({
     ...product,
-    price: Number.isFinite(resolvedPrice) ? resolvedPrice : 0,
-    priceEUR: Number.isFinite(resolvedPrice) ? resolvedPrice : 0,
     currency: product.currency || 'EUR',
     images: images.length ? images : product.images || [],
     image: images[0] || product.image || '',
-  };
+  });
 }
 
 function matchVariant(product, selected) {
