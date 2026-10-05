@@ -7,6 +7,7 @@ import {
   getCart,
   removeCartItem,
   updateCartItem,
+  updateCartGiftOptions,
   type Cart,
   type CartItem,
 } from "@/lib/cart";
@@ -21,12 +22,17 @@ export function CartDrawer() {
   const [error, setError] = useState("");
   const [crossSell, setCrossSell] = useState<Product[]>([]);
   const [toast, setToast] = useState("");
+  const [giftOpen, setGiftOpen] = useState(false);
+  const [giftBox, setGiftBox] = useState(false);
+  const [personalNote, setPersonalNote] = useState("");
 
   async function loadCart() {
     try {
       setError("");
       const nextCart = await getCart();
       setCart(nextCart);
+      setGiftBox(Boolean(nextCart.giftOptions?.giftBox));
+      setPersonalNote(nextCart.giftOptions?.personalNote || "");
       await loadCrossSell(nextCart);
     } catch (err: any) {
       setError(err?.message || "Failed to load cart.");
@@ -165,6 +171,21 @@ export function CartDrawer() {
     row?.scrollBy({ left: amount, behavior: "smooth" });
   }
 
+  async function saveGiftOptions() {
+    try {
+      const nextCart = await updateCartGiftOptions({
+        giftBox,
+        personalNote: personalNote.trim(),
+      });
+
+      setCart(nextCart);
+      setGiftOpen(false);
+      showToast("Gift options saved.");
+    } catch (err: any) {
+      showToast(err?.message || "Failed to save gift options.");
+    }
+  }
+
   return (
     <>
       <div
@@ -275,7 +296,12 @@ export function CartDrawer() {
                 })}
               </section>
 
-              <div className="cart-gift-row">
+              <button
+                type="button"
+                className="cart-gift-row"
+                onClick={() => setGiftOpen(true)}
+                aria-haspopup="dialog"
+              >
                 <span className="cart-gift-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="20" height="20">
                     <path
@@ -289,10 +315,12 @@ export function CartDrawer() {
                   </svg>
                 </span>
                 <span className="cart-gift-text">
-                  ADD GIFT BOX &amp; PERSONAL NOTE
+                  {cart?.giftOptions?.giftBox || cart?.giftOptions?.personalNote
+                    ? "GIFT OPTIONS ADDED"
+                    : "ADD GIFT BOX & PERSONAL NOTE"}
                 </span>
                 <span className="cart-gift-arrow" aria-hidden="true">→</span>
-              </div>
+              </button>
 
               <section className="cart-summary">
                 <div>
@@ -372,6 +400,74 @@ export function CartDrawer() {
           )}
         </div>
       </aside>
+
+      {giftOpen ? (
+        <div className="cart-gift-dialog" role="dialog" aria-modal="true" aria-labelledby="cartGiftTitle">
+          <div
+            className="cart-gift-dialog__backdrop"
+            onClick={() => setGiftOpen(false)}
+          />
+          <div className="cart-gift-dialog__panel">
+            <button
+              type="button"
+              className="cart-gift-dialog__close"
+              onClick={() => setGiftOpen(false)}
+              aria-label="Close gift options"
+            >
+              ×
+            </button>
+
+            <span className="cart-gift-dialog__eyebrow">Make it a gift</span>
+            <h3 id="cartGiftTitle">Gift box & personal note</h3>
+            <p className="cart-gift-dialog__copy">
+              Add gift packaging and an optional message. You can review or edit these options again at checkout.
+            </p>
+
+            <label className="cart-gift-check">
+              <input
+                type="checkbox"
+                checked={giftBox}
+                onChange={(event) => setGiftBox(event.target.checked)}
+              />
+              <span>
+                <strong>Add gift box</strong>
+                <small>We'll package the order as a gift.</small>
+              </span>
+            </label>
+
+            <label className="cart-gift-note">
+              <span>
+                Personal note <small>(optional)</small>
+              </span>
+              <textarea
+                rows={5}
+                maxLength={200}
+                value={personalNote}
+                onChange={(event) => setPersonalNote(event.target.value)}
+                placeholder="Write your message..."
+              />
+              <small>{personalNote.length}/200 characters</small>
+            </label>
+
+            <div className="cart-gift-dialog__actions">
+              <button
+                type="button"
+                className="cart-gift-cancel"
+                onClick={() => setGiftOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="cart-gift-save"
+                onClick={() => void saveGiftOptions()}
+              >
+                Save gift options
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {toast ? (
         <div id="toastStack" className="toast-stack">

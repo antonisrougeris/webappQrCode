@@ -80,6 +80,10 @@ export async function checkoutCartForOwner({
   delivery,
   locker,
   notes,
+  giftOptions = {
+    giftBox: false,
+    personalNote: "",
+  },
   documentType = "receipt",
   invoiceDetails = null,
 }) {
@@ -179,6 +183,13 @@ export async function checkoutCartForOwner({
 
               notes:
                 notes || "",
+
+              giftOptions: {
+                giftBox: Boolean(giftOptions?.giftBox),
+                personalNote: String(
+                  giftOptions?.personalNote || ""
+                ).trim(),
+              },
 
               updatedAt:
                 refreshedAt,
@@ -358,6 +369,13 @@ orderItems.push({
   delivery: delivery || "home",
 locker: locker || null,
 notes: notes || "",
+
+giftOptions: {
+  giftBox: Boolean(giftOptions?.giftBox),
+  personalNote: String(
+    giftOptions?.personalNote || ""
+  ).trim(),
+},
 
 billing: {
   documentType:

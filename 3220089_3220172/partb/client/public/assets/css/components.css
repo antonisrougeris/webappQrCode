@@ -15074,3 +15074,72 @@ body > div iframe[src*="boxnow"] {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* =========================
+   CHECKOUT GIFT OPTIONS
+========================= */
+.checkout-gift-section {
+  scroll-margin-top: 96px;
+}
+
+.checkout-gift-option {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 15px;
+  border: 1px solid #e7e7e7;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.checkout-page__form .checkout-gift-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: #111;
+}
+
+.checkout-gift-option span {
+  display: grid;
+  gap: 3px;
+}
+
+.checkout-gift-option small,
+.checkout-gift-note > small {
+  color: #777;
+  font-size: 0.78rem;
+}
+
+.checkout-gift-note {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.checkout-gift-note > span small {
+  color: #777;
+  font-weight: 600;
+}
+
+.checkout-page__form .checkout-gift-note textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font: inherit;
+  line-height: 1.45;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.checkout-page__form .checkout-gift-note textarea:focus {
+  outline: none;
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}

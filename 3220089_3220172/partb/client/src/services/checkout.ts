@@ -36,6 +36,10 @@ export interface CheckoutPayload {
   delivery?: "home" | "boxnow";
   locker?: string;
   notes?: string;
+  giftOptions?: {
+    giftBox: boolean;
+    personalNote: string;
+  };
   documentType?: "receipt" | "invoice";
   invoiceDetails?: CheckoutInvoiceDetails | null;
 }
