@@ -76,3 +76,33 @@ test("invoice checkout accepts complete business details", () => {
   assert.equal(result.success, true);
   assert.equal(result.data.invoiceDetails.vatNumber, "123456789");
 });
+
+
+test("checkout accepts gift box and a personal note", () => {
+  const payload = baseCheckout();
+  payload.giftOptions = {
+    giftBox: true,
+    personalNote: "Happy birthday! Enjoy your gift.",
+  };
+
+  const result = checkoutSchema.safeParse(payload);
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.giftOptions.giftBox, true);
+  assert.equal(
+    result.data.giftOptions.personalNote,
+    "Happy birthday! Enjoy your gift."
+  );
+});
+
+test("checkout rejects gift notes longer than 200 characters", () => {
+  const payload = baseCheckout();
+  payload.giftOptions = {
+    giftBox: true,
+    personalNote: "x".repeat(201),
+  };
+
+  const result = checkoutSchema.safeParse(payload);
+
+  assert.equal(result.success, false);
+});
