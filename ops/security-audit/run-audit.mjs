@@ -171,12 +171,12 @@ add(
   "SKN-W01",
   "CSP still permits unsafe-inline scripts",
   "medium",
-  files.app.includes('"unsafe-inline"') ||
-    files.app.includes("'unsafe-inline'")
-    ? "warn"
-    : "pass",
+  /scriptSrc:\s*\[[\s\S]*?\]/.test(files.app) &&
+  !/scriptSrc:\s*\[[\s\S]*?unsafe-inline[\s\S]*?\]/.test(files.app)
+    ? "pass"
+    : "warn",
   paths.app,
-  "Longer-term hardening: remove unsafe-inline and use nonces/hashes for required inline scripts."
+  "Use per-request nonces or hashes for any required inline executable scripts."
 );
 
 add(
