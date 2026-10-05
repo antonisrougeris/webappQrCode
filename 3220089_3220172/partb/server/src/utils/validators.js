@@ -75,6 +75,11 @@ const invoiceDetailsSchema = z.object({
   postalCode: z.string().trim().min(1).max(20),
 });
 
+export const giftOptionsSchema = z.object({
+  giftBox: z.boolean().optional().default(false),
+  personalNote: z.string().trim().max(200).optional().default(""),
+});
+
 export const checkoutSchema = z.object({
   phoneCountryCode: countrySchema.default("GR"),
 
@@ -107,6 +112,11 @@ export const checkoutSchema = z.object({
   invoiceDetails: invoiceDetailsSchema.optional().nullable(),
 
   notes: z.string().trim().max(1000).optional().default(""),
+
+  giftOptions: giftOptionsSchema.optional().default({
+    giftBox: false,
+    personalNote: "",
+  }),
 }).superRefine((checkout, context) => {
   const countryCode = checkout.phoneCountryCode;
 
