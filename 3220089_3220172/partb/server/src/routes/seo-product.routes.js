@@ -276,7 +276,13 @@ async function renderFullProductPage(product, nonce) {
     `${metadata}\n</head>`
   );
 
-  html = html.replace(\n    /<script(?![^>]*\\bsrc=)(?![^>]*\\bnonce=)([^>]*)>/gi,\n    `<script nonce="${escapeHtml(nonce)}"$1>`\n  );\n\n  return html;\n}
+  html = html.replace(
+    /<script(?![^>]*\bsrc=)(?![^>]*\bnonce=)([^>]*)>/gi,
+    `<script nonce="${escapeHtml(nonce)}"$1>`
+  );
+
+  return html;
+}
 
 /* =========================================================
    PRODUCT SEO ROUTE
@@ -321,7 +327,10 @@ router.get("/product/:slug", async (req, res, next) => {
        GENERATE HTML WITH CORRECT SEO
     ----------------------------------------------------- */
 
-    const html = await renderFullProductPage(\n      product,\n      res.locals.cspNonce\n    );
+    const html = await renderFullProductPage(
+      product,
+      res.locals.cspNonce
+    );
 
     /* -----------------------------------------------------
        RESPONSE
