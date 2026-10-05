@@ -15,6 +15,7 @@ import { getProducts, type Product } from "@/lib/products";
 
 const FREE_SHIPPING_TARGET = 50;
 const FREE_STICKERS_TARGET = 80;
+const GIFT_BOX_PRICE = 1.5;
 
 export function CartDrawer() {
   const [open, setOpen] = useState(false);
@@ -101,7 +102,7 @@ export function CartDrawer() {
 
   const items = cart?.items || [];
 
-  const total = useMemo(() => {
+  const merchandiseTotal = useMemo(() => {
     if (typeof cart?.subtotal === "number") return cart.subtotal;
 
     return items.reduce((sum, item) => {
@@ -109,6 +110,14 @@ export function CartDrawer() {
       return sum + price * Number(item.quantity || 0);
     }, 0);
   }, [cart, items]);
+
+  const giftFee =
+    cart?.giftOptions?.giftBox
+      ? GIFT_BOX_PRICE
+      : 0;
+
+  const total =
+    merchandiseTotal + giftFee;
 
   async function changeQuantity(item: CartItem, nextQuantity: number) {
     try {
@@ -217,7 +226,7 @@ export function CartDrawer() {
             </section>
           ) : (
             <>
-              <CartProgress total={total} />
+              <CartProgress total={merchandiseTotal} />
 
               <section className="drawer-cart-list">
                 {items.map((item) => {
@@ -323,6 +332,13 @@ export function CartDrawer() {
               </button>
 
               <section className="cart-summary">
+                {giftFee > 0 ? (
+                  <div className="cart-summary-gift">
+                    <span>Gift box</span>
+                    <strong>+{formatPrice(giftFee)}</strong>
+                  </div>
+                ) : null}
+
                 <div>
                   <span>Total</span>
                   <strong>{formatPrice(total)}</strong>
@@ -429,8 +445,11 @@ export function CartDrawer() {
                 checked={giftBox}
                 onChange={(event) => setGiftBox(event.target.checked)}
               />
-              <span>
-                <strong>Add gift box</strong>
+              <span className="cart-gift-check__copy">
+                <strong>
+                  <span>Add gift box</span>
+                  <em>+{formatPrice(GIFT_BOX_PRICE)}</em>
+                </strong>
                 <small>We'll package the order as a gift.</small>
               </span>
             </label>
