@@ -34,6 +34,8 @@ const paths = {
     "3220089_3220172/partb/server/src/app.js",
   clientAuth:
     "3220089_3220172/partb/client/src/services/auth.ts",
+  webAuth:
+    "3220089_3220172/partb/web/src/lib/auth.ts",
 };
 
 const files = Object.fromEntries(
@@ -183,10 +185,11 @@ add(
   "SKN-W02",
   "Bearer token is persisted in localStorage",
   "medium",
-  files.clientAuth.includes("localStorage.setItem")
+  files.clientAuth.includes("localStorage.setItem") ||
+    files.webAuth.includes("localStorage.setItem")
     ? "warn"
     : "pass",
-  paths.clientAuth,
+  `${paths.clientAuth}; ${paths.webAuth}`,
   "Longer-term hardening: reduce token persistence/exposure to XSS, ideally via an HttpOnly server session if architecture permits."
 );
 
