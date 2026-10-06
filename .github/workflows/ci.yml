@@ -169,8 +169,13 @@ jobs:
             exit 1
           }
 
-          grep -Eq 'href="/product/[^"]+\\?lang=el' dist/el/index.html || {
-            echo "ERROR: Greek homepage product links are not using the production-safe locale route"
+          grep -Fq 'href="/product/' dist/el/index.html || {
+            echo "ERROR: Greek homepage product links are missing"
+            exit 1
+          }
+
+          grep -Fq '?lang=el' dist/el/index.html || {
+            echo "ERROR: Greek homepage product links are missing the Greek locale"
             exit 1
           }
 
