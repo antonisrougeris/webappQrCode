@@ -15547,3 +15547,48 @@ body > div iframe[src*="boxnow"] {
     font-size: 0.67rem;
   }
 }
+
+
+/* =========================================================
+   LANGUAGE SWITCHER
+   Curated locale selector (EN / ΕΛ)
+   ========================================================= */
+
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.language-switcher a {
+  color: #7b7b75;
+  text-decoration: none;
+  transition: color 0.18s ease, opacity 0.18s ease;
+}
+
+.language-switcher a:hover,
+.language-switcher a:focus-visible {
+  color: #111;
+}
+
+.language-switcher a.is-active {
+  color: #111;
+}
+
+.language-switcher span {
+  color: #c8c8c2;
+  font-weight: 500;
+}
+
+@media (max-width: 700px) {
+  .language-switcher {
+    margin-right: 2px;
+    font-size: 0.62rem;
+    gap: 4px;
+  }
+}
