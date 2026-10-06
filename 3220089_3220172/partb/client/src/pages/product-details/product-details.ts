@@ -18,7 +18,7 @@ import { getOrders } from "../../services/orders";
 import { createProductReview, getProductReviews } from "../../services/reviews";
 
 import { showToast } from "../../utils/toast.ts";
-import { productPath, t } from "../../i18n/locale";
+import { locale, productPath, t } from "../../i18n/locale";
 
 
 initNav();
@@ -643,9 +643,10 @@ const description =
 
 
 const productIdentifier = product.slug || product.id;
-const productUrl = `https://skanare.com/product/${encodeURIComponent(
-  productIdentifier
-)}`;
+const productUrl = new URL(
+  productPath(productIdentifier),
+  window.location.origin
+).href;
 
 let canonical = document.querySelector<HTMLLinkElement>(
   'link[rel="canonical"]'
