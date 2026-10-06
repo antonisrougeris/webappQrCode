@@ -3,6 +3,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { initLayout } from "../../components/initLayout";
 import { apiRequest, API_BASE_URL } from "../../services/api";
 import { firebaseAuth } from "../../services/firebase";
+import { locale, t } from "../../i18n/locale";
 
 initLayout();
 
@@ -69,13 +70,13 @@ let returns: ReturnRequest[] = [];
 let selectedOrder: EligibleOrder | null = null;
 
 const reasons = [
-  ["changed_mind", "Changed my mind"],
-  ["wrong_size", "Wrong size"],
-  ["wrong_item", "Wrong item received"],
-  ["damaged", "Arrived damaged"],
-  ["defective", "Defective product"],
-  ["not_as_described", "Not as described"],
-  ["other", "Other"],
+  ["changed_mind", t("returns.changed_mind", "Changed my mind")],
+  ["wrong_size", t("returns.wrong_size", "Wrong size")],
+  ["wrong_item", t("returns.wrong_item", "Wrong item received")],
+  ["damaged", t("returns.damaged", "Arrived damaged")],
+  ["defective", t("returns.defective", "Defective product")],
+  ["not_as_described", t("returns.not_as_described", "Not as described")],
+  ["other", t("returns.other", "Other")],
 ];
 
 const statusSteps = [
@@ -97,27 +98,45 @@ function esc(value: unknown): string {
 }
 
 function money(value: unknown, currency = "EUR"): string {
-  return new Intl.NumberFormat("en-IE", {
+  return new Intl.NumberFormat(
+    locale === "el" ? "el-GR" : "en-IE",
+    {
     style: "currency",
-    currency,
-  }).format(Number(value || 0));
+      currency,
+    }
+  ).format(Number(value || 0));
 }
 
 function date(value: unknown): string {
   const parsed = new Date(String(value || ""));
   return Number.isNaN(parsed.getTime())
     ? ""
-    : new Intl.DateTimeFormat("en-GB", {
+    : new Intl.DateTimeFormat(
+        locale === "el" ? "el-GR" : "en-GB",
+        {
         day: "2-digit",
         month: "short",
-        year: "numeric",
-      }).format(parsed);
+          year: "numeric",
+        }
+      ).format(parsed);
 }
 
 function statusLabel(value: unknown): string {
-  return String(value || "requested")
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const status =
+    String(
+      value || "requested"
+    );
+
+  return t(
+    `status.${status}`,
+    status
+      .replaceAll("_", " ")
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase()
+      )
+  );
 }
 
 async function loadData(): Promise<void> {
