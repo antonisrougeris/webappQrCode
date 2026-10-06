@@ -552,6 +552,7 @@
       "product.noRelated": "Δεν βρέθηκαν σχετικά προϊόντα.",
       "contact.sending": "Αποστολή...",
       "contact.sent": "Το μήνυμά σου στάλθηκε επιτυχώς!",
+      "contact.send": "Αποστολή μηνύματος",
       "contact.failed": "Η αποστολή του μηνύματος απέτυχε.",
       "payment.orderNumber": "Αριθμός παραγγελίας",
       "payment.amountPaid": "Ποσό πληρωμής",
