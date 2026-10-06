@@ -1,4 +1,5 @@
 import "../../i18n/auto";
+import { localizedPath, productPath, locale } from "../../i18n/locale";
 /* 3220089_3220172 */
 
 import { initNav } from "../../components/initNav";
@@ -863,7 +864,7 @@ function bindCartActions(): void {
 const identifier = card.dataset.slug || card.dataset.id;
 if (!identifier) return;
 
-window.location.href = `/product/${encodeURIComponent(identifier)}`;
+window.location.href = productPath(identifier);
 
 return;
     }
@@ -886,7 +887,7 @@ return;
         }
 
         if (new Set((product.variants || []).map(v => String(v.color || "").toLowerCase())).size > 1) {
-          window.location.href = `/product/${encodeURIComponent(product.slug || product.id)}`;
+          window.location.href = productPath(product.slug || product.id);
           return;
         }
         const selectedVariant =
@@ -1025,7 +1026,7 @@ return;
     }
 
     if (checkout) {
-      window.location.href = "/checkout";
+      window.location.href = localizedPath("/checkout", locale);
     }
   });
 }
