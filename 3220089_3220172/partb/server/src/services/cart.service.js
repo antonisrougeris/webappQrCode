@@ -9,6 +9,7 @@ import {
 } from "./product.service.js";
 
 import {
+  getCartReservationMs,
   getInventoryKey,
   releaseInventoryHold,
   reserveInventoryHold,
@@ -81,6 +82,7 @@ export async function addCartItem({
   quantity,
   selectedVariant,
   qrDestination,
+  ownerType = "guest",
 }) {
   const db = getDB();
 
@@ -128,6 +130,7 @@ export async function addCartItem({
       selectedVariant: variant,
       quantity: nextQty,
       phase: "cart",
+      ttlMs: getCartReservationMs(ownerType),
     });
 
     cart.items[existingIndex] = {
@@ -146,6 +149,7 @@ export async function addCartItem({
       selectedVariant: variant,
       quantity,
       phase: "cart",
+      ttlMs: getCartReservationMs(ownerType),
     });
 
     cart.items.push({
@@ -218,6 +222,7 @@ export async function updateCartItem({
   itemId,
   quantity,
   qrDestination,
+  ownerType = "guest",
 }) {
   const db = getDB();
   const cart = await getCartByUserId(userId);
@@ -246,6 +251,7 @@ export async function updateCartItem({
     selectedVariant: resolvedVariant,
     quantity,
     phase: "cart",
+    ttlMs: getCartReservationMs(ownerType),
   });
 
   let nextQrDestination = null;
