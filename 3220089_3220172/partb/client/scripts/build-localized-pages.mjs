@@ -114,11 +114,17 @@ function cleanEnglishRoute(rawPath) {
 }
 
 function localizeLinks(html) {
+  /*
+   * Only localize actual navigation anchors.
+   * Never rewrite stylesheet/preload/icon hrefs such as /assets/...,
+   * otherwise the generated Greek pages lose their CSS.
+   */
   return html.replace(
-    /href=(["'])(\/[^"'#?]*)([^"']*)\1/gi,
-    (match, quote, pathname, suffix) => {
+    /(<a\b[^>]*\shref=)(["'])(\/[^"'#?]*)([^"']*)\2/gi,
+    (match, prefix, quote, pathname, suffix) => {
       if (
         pathname.startsWith("/api/") ||
+        pathname.startsWith("/assets/") ||
         pathname.startsWith("/el/")
       ) {
         return match;
@@ -130,7 +136,7 @@ function localizeLinks(html) {
           ? "/el/"
           : `/el${englishPath}`;
 
-      return `href=${quote}${greekPath}${suffix}${quote}`;
+      return `${prefix}${quote}${greekPath}${suffix}${quote}`;
     }
   );
 }
@@ -190,6 +196,30 @@ for (const page of pages) {
 
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, html, "utf8");
+
+  /*
+   * Development/preview compatibility.
+   * Production uses clean /el/... routes, but these aliases make the
+   * old source-style URLs work as well when somebody tests the Vite build.
+   */
+  if (page.source.startsWith("src/pages/")) {
+    const legacyTarget = path.join(
+      distDir,
+      "el",
+      page.source
+    );
+
+    await fs.mkdir(
+      path.dirname(legacyTarget),
+      { recursive: true }
+    );
+
+    await fs.writeFile(
+      legacyTarget,
+      html,
+      "utf8"
+    );
+  }
 }
 
-console.log(`Built ${pages.length} curated Greek storefront pages.`);
+console.log(`Built ${pages.length} curated Greek storefront pages plus legacy preview aliases.`);
