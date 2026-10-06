@@ -169,7 +169,22 @@ jobs:
             exit 1
           }
 
-          echo "SEO prerendering + English/Greek localization markers and asset paths OK"
+          grep -Eq 'href="/product/[^"]+\\?lang=el' dist/el/index.html || {
+            echo "ERROR: Greek homepage product links are not using the production-safe locale route"
+            exit 1
+          }
+
+          if grep -R 'href="/el/product/' dist/el --include='*.html'; then
+            echo "ERROR: broken /el/product links were generated"
+            exit 1
+          fi
+
+          grep -q 'components.css?v=2.9-i18n-fixes' dist/el/index.html || {
+            echo "ERROR: shared CSS cache-buster was not refreshed"
+            exit 1
+          }
+
+          echo "SEO prerendering + English/Greek localization markers, routing and asset paths OK"
 
       - name: Guard production bundle against development URLs
         run: |
