@@ -18,6 +18,7 @@ import { getOrders } from "../../services/orders";
 import { createProductReview, getProductReviews } from "../../services/reviews";
 
 import { showToast } from "../../utils/toast.ts";
+import { productPath, t } from "../../i18n/locale";
 
 
 initNav();
@@ -73,7 +74,7 @@ function unique(values: Array<string | undefined>): string[] {
 
 function productUrl(product: Product): string {
   const identifier = product.slug || product.id;
-  return `/product/${encodeURIComponent(identifier)}`;
+  return productPath(identifier);
 }
 
 function getFallbackReviews(_product: Product): ProductReview[] {
@@ -1144,7 +1145,7 @@ if (imageStage) {
             "Add to cart";
 
           addBtn.textContent =
-            "Choose a size";
+            t("product.chooseSize", "Choose a size");
 
           document
             .getElementById(
@@ -1213,7 +1214,7 @@ if (imageStage) {
 
         try {
           addBtn.disabled = true;
-          addBtn.textContent = "Adding...";
+          addBtn.textContent = t("product.adding", "Adding...");
 
           await addCartItem({
             productId: product.id,
@@ -1235,7 +1236,7 @@ if (imageStage) {
           }
 
           addBtn.textContent =
-            "Added to cart!";
+            t("product.added", "Added to cart!");
 
           setTimeout(() => {
             addBtn.disabled =
@@ -1245,7 +1246,7 @@ if (imageStage) {
               );
 
             addBtn.textContent =
-              "Add to cart";
+              t("product.addToCart", "Add to cart");
           }, 900);
 
           openExistingCartDrawer();
