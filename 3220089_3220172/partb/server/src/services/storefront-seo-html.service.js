@@ -73,7 +73,7 @@ function productUrl(product, locale = "en") {
     : "#";
 
   return locale === "el" && base !== "#"
-    ? `/el${base}`
+    ? `${base}?lang=el`
     : base;
 }
 
