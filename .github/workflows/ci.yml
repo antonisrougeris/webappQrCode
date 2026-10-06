@@ -189,7 +189,28 @@ jobs:
             exit 1
           }
 
-          echo "SEO prerendering + English/Greek localization markers, routing and asset paths OK"
+          grep -q 'registerLink.href = localizedPath' src/pages/login/login.ts || {
+            echo "ERROR: login -> register can drop the active locale"
+            exit 1
+          }
+
+          grep -q 'forgotPasswordLink.href =' src/pages/login/login.ts &&
+          grep -q 'localizedPath(' src/pages/login/login.ts || {
+            echo "ERROR: login -> forgot-password can drop the active locale"
+            exit 1
+          }
+
+          grep -q 'window.location.href = localizedPath' src/pages/register/register.ts || {
+            echo "ERROR: register flow can drop the active locale"
+            exit 1
+          }
+
+          grep -q 'window.location.href = localizedPath' src/pages/verify-email/verify-email.ts || {
+            echo "ERROR: verify-email flow can drop the active locale"
+            exit 1
+          }
+
+          echo "SEO prerendering + English/Greek localization markers, routing, auth flow and asset paths OK"
 
       - name: Guard production bundle against development URLs
         run: |
