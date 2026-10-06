@@ -1,3 +1,4 @@
+import "../../i18n/auto";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 
 const CHECKOUT_URL =
