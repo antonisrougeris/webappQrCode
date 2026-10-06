@@ -113,11 +113,39 @@ function cleanEnglishRoute(rawPath) {
   return legacy[rawPath] || rawPath;
 }
 
+function withGreekProductLocale(pathname, suffix = "") {
+  const hashIndex = suffix.indexOf("#");
+  const queryPart =
+    hashIndex >= 0
+      ? suffix.slice(0, hashIndex)
+      : suffix;
+  const hash =
+    hashIndex >= 0
+      ? suffix.slice(hashIndex)
+      : "";
+
+  const params = new URLSearchParams(
+    queryPart.startsWith("?")
+      ? queryPart.slice(1)
+      : queryPart
+  );
+
+  params.set("lang", "el");
+
+  const query = params.toString();
+
+  return (
+    pathname +
+    (query ? `?${query}` : "") +
+    hash
+  );
+}
+
 function localizeLinks(html) {
   /*
    * Only localize actual navigation anchors.
-   * Never rewrite stylesheet/preload/icon hrefs such as /assets/...,
-   * otherwise the generated Greek pages lose their CSS.
+   * Product detail pages stay on /product/:slug because that is the
+   * production route proxied to Express; Greek is carried as ?lang=el.
    */
   return html.replace(
     /(<a\b[^>]*\shref=)(["'])(\/[^"'#?]*)([^"']*)\2/gi,
@@ -131,6 +159,22 @@ function localizeLinks(html) {
       }
 
       const englishPath = cleanEnglishRoute(pathname);
+
+      if (
+        /^\/product\/[^/]+\/?$/.test(
+          englishPath
+        )
+      ) {
+        return (
+          `${prefix}${quote}` +
+          withGreekProductLocale(
+            englishPath,
+            suffix
+          ) +
+          quote
+        );
+      }
+
       const greekPath =
         englishPath === "/"
           ? "/el/"
@@ -138,6 +182,16 @@ function localizeLinks(html) {
 
       return `${prefix}${quote}${greekPath}${suffix}${quote}`;
     }
+  );
+}
+
+const SHARED_CSS_VERSION =
+  "2.9-i18n-fixes";
+
+function refreshSharedCssVersion(html) {
+  return html.replace(
+    /\/assets\/css\/components\.css(?:\?[^"'\s>]*)?/gi,
+    `/assets/css/components.css?v=${SHARED_CSS_VERSION}`
   );
 }
 
@@ -188,6 +242,13 @@ for (const page of pages) {
   const target = path.join(distDir, page.target);
 
   let html = await fs.readFile(source, "utf8");
+
+  /*
+   * /assets is long-cached in production. Refresh the stylesheet query
+   * on every generated page so this release is visible immediately.
+   */
+  html = refreshSharedCssVersion(html);
+  await fs.writeFile(source, html, "utf8");
 
   html = translateText(html);
   html = translateAttributes(html);
