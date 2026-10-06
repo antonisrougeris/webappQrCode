@@ -569,12 +569,18 @@ function ensureLanguageSelector(): void {
     return;
   }
 
+  /*
+   * Keep language choice away from account/cart icons.
+   * Desktop: left navigation group.
+   * Mobile: the same group lives inside the hamburger menu, so the
+   * selector no longer crowds the logo or header icons.
+   */
   const target =
     document.querySelector(
-      ".header-actions"
+      ".nav-left"
     ) ||
     document.querySelector(
-      ".header-content"
+      ".main-nav"
     );
 
   if (!target) return;
