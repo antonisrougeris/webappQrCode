@@ -1,5 +1,5 @@
 import "../../i18n/auto";
-import { localizedPath, productPath, locale } from "../../i18n/locale";
+import { localizedPath, productPath, locale, t } from "../../i18n/locale";
 /* 3220089_3220172 */
 
 import { initNav } from "../../components/initNav";
@@ -60,7 +60,7 @@ function showToast(message: string): void {
 }
 
 function formatPrice(value: number): string {
-  return new Intl.NumberFormat("el-GR", {
+  return new Intl.NumberFormat(locale === "el" ? "el-GR" : "en-IE", {
     style: "currency",
     currency: "EUR",
   }).format(value || 0);
@@ -117,7 +117,7 @@ function updateCartHeaderCount(cart: Cart | null | undefined): void {
   document
     .querySelectorAll<HTMLElement>(".cart-header h2")
     .forEach((title) => {
-      title.textContent = `YOUR CART (${count})`;
+      title.textContent = `${t("cart.title", "YOUR CART")} (${count})`;
     });
 }
 
@@ -204,15 +204,15 @@ function updateProgress(total: number): string {
   let message = "";
 
   if (total < FREE_SHIPPING_TARGET) {
-    message = `Only ${formatPrice(
+    message = `${t("cart.only", "Only")} ${formatPrice(
       FREE_SHIPPING_TARGET - total
-    )} away from free shipping`;
+    )} ${t("cart.awayFreeShipping", "away from free shipping")}`;
   } else if (total < FREE_STICKERS_TARGET) {
-    message = `Add ${formatPrice(
+    message = `${t("cart.add", "Add")} ${formatPrice(
       FREE_STICKERS_TARGET - total
-    )} more and get a Sticker Set for free`;
+    )} ${t("cart.moreFreeStickers", "more and get a Sticker Set for free")}`;
   } else {
-    message = "You unlocked all rewards";
+    message = t("cart.rewardsUnlocked", "You unlocked all rewards");
   }
 
   return `
@@ -230,8 +230,8 @@ function updateProgress(total: number): string {
             </svg>
           </div>
           <span>
-            <small>FREE</small>
-            SHIPPING
+            <small>${t("cart.free", "FREE")}</small>
+            ${t("cart.shipping", "SHIPPING")}
           </span>
         </div>
 
@@ -242,8 +242,8 @@ function updateProgress(total: number): string {
             </svg>
           </div>
           <span>
-            <small>FREE</small>
-            STICKER SET
+            <small>${t("cart.free", "FREE")}</small>
+            ${t("cart.stickerSet", "STICKER SET")}
           </span>
         </div>
       </div>
@@ -259,8 +259,8 @@ function renderCartItem(item: CartItem, index: number, catalog: Product[] = []):
   const qr = getCartItemQr(item);
   const itemKey = getCartItemKey(item, index);
 
-  const sizeText = variant?.size ? `<p>Size: ${variant.size}</p>` : "";
-  const colorText = variant?.color ? `<p>Color: ${variant.color}</p>` : "";
+  const sizeText = variant?.size ? `<p>${t("cart.size", "Size")}: ${variant.size}</p>` : "";
+  const colorText = variant?.color ? `<p>${t("cart.color", "Color")}: ${variant.color}</p>` : "";
   const qrText = qr ? `<p>QR-Code: ${qr}</p>` : "";
 
   return `
@@ -270,7 +270,7 @@ function renderCartItem(item: CartItem, index: number, catalog: Product[] = []):
       <div class="drawer-cart-info">
         <p class="cart-stock-status">
           <span class="cart-stock-dot" aria-hidden="true"></span>
-          In stock, ready to ship
+          ${t("cart.inStockReady", "In stock, ready to ship")}
         </p>
         <h3>${title}</h3>
         ${sizeText}
@@ -322,7 +322,7 @@ async function renderCrossSell(cartItems: CartItem[], products: Product[]): Prom
     return `
       <section class="cart-cross-sell">
         <h3 class="cross-header">
-          Others also bought:
+          ${t("cart.othersBought", "Others also bought:")}
           <div class="cross-arrows">
             <button type="button" class="cross-prev">‹</button>
             <button type="button" class="cross-next">›</button>
@@ -346,7 +346,7 @@ async function renderCrossSell(cartItems: CartItem[], products: Product[]): Prom
                   <p>${formatPrice(product.price)}</p>
 
                   <button class="cross-add" data-id="${product.id}">
-                    Add
+                    ${t("cart.addButton", "Add")}
                   </button>
                 </article>
               `;
@@ -416,9 +416,9 @@ async function renderCartFromState(
 
     container.innerHTML = `
       <section class="cart-empty">
-        <h2>Your cart is empty</h2>
-        <a class="btn-primary cart-empty-btn" href="/products">
-          SHOP PRODUCTS
+        <h2>${t("cart.empty", "Your cart is empty")}</h2>
+        <a class="btn-primary cart-empty-btn" href="${localizedPath("/products", locale)}">
+          ${t("cart.shopProducts", "SHOP PRODUCTS")}
         </a>
       </section>
     `;
@@ -465,9 +465,9 @@ async function renderCartFromState(
       <span class="cart-gift-text">
         ${giftTier !== "none"
           ? giftTier === "premium"
-            ? "PREMIUM GIFT ADDED"
-            : "GIFT-READY OPTION ADDED"
-          : "MAKE THIS A GIFT"}
+            ? t("cart.premiumGiftAdded", "PREMIUM GIFT ADDED")
+            : t("cart.giftReadyAdded", "GIFT-READY OPTION ADDED")
+          : t("cart.makeGift", "MAKE THIS A GIFT")}
       </span>
       <span class="cart-gift-arrow" aria-hidden="true">→</span>
     </button>
@@ -475,11 +475,11 @@ async function renderCartFromState(
     <div class="cart-gift-dialog hidden" data-gift-dialog role="dialog" aria-modal="true" aria-labelledby="cartGiftTitle">
       <div class="cart-gift-dialog__backdrop" data-gift-close></div>
       <div class="cart-gift-dialog__panel">
-        <button type="button" class="cart-gift-dialog__close" data-gift-close aria-label="Close gift options">×</button>
-        <span class="cart-gift-dialog__eyebrow">Make it a gift</span>
-        <h3 id="cartGiftTitle">Choose your gift experience</h3>
+        <button type="button" class="cart-gift-dialog__close" data-gift-close aria-label="${t("cart.closeGift", "Close gift options")}">×</button>
+        <span class="cart-gift-dialog__eyebrow">${t("cart.makeItGift", "Make it a gift")}</span>
+        <h3 id="cartGiftTitle">${t("cart.chooseGift", "Choose your gift experience")}</h3>
         <p class="cart-gift-dialog__copy">
-          Choose a simple gift-ready order or upgrade to premium packaging with a personal message.
+          ${t("cart.giftCopy", "Choose a simple gift-ready order or upgrade to premium packaging with a personal message.")}
         </p>
 
         <div class="cart-gift-tiers">
@@ -491,10 +491,10 @@ async function renderCartFromState(
               ${giftTier === "simple" ? "checked" : ""}
             />
             <span class="cart-gift-tier__copy">
-              <strong>Gift-ready</strong>
-              <small>Hide prices in the parcel and include a gift/returns receipt card.</small>
+              <strong>${t("cart.giftReady", "Gift-ready")}</strong>
+              <small>${t("cart.giftReadyCopy", "Hide prices in the parcel and include a gift/returns receipt card.")}</small>
             </span>
-            <span class="cart-gift-tier__price">Free</span>
+            <span class="cart-gift-tier__price">${t("cart.freeWord", "Free")}</span>
           </label>
 
           <label class="cart-gift-tier cart-gift-tier--premium" data-gift-tier-option="premium">
@@ -505,24 +505,24 @@ async function renderCartFromState(
               ${giftTier === "premium" ? "checked" : ""}
             />
             <span class="cart-gift-tier__copy">
-              <strong>Premium gift</strong>
-              <small>Premium gift box, hidden prices, gift/returns receipt and personal note.</small>
+              <strong>${t("cart.premiumGift", "Premium gift")}</strong>
+              <small>${t("cart.premiumGiftCopy", "Premium gift box, hidden prices, gift/returns receipt and personal note.")}</small>
             </span>
             <span class="cart-gift-tier__price">+${formatPrice(PREMIUM_GIFT_PRICE)}</span>
           </label>
         </div>
 
         <label class="cart-gift-note ${giftTier === "premium" ? "" : "hidden"}" data-gift-note-wrap>
-          <span>Personal note <small>(premium only)</small></span>
-          <textarea id="cartGiftNote" maxlength="200" rows="5" placeholder="Write your message...">${escapeHtml(
+          <span>${t("cart.personalNote", "Personal note")} <small>${t("cart.premiumOnly", "(premium only)")}</small></span>
+          <textarea id="cartGiftNote" maxlength="200" rows="5" placeholder="${t("cart.writeMessage", "Write your message...")}">${escapeHtml(
             cart.giftOptions?.personalNote || ""
           )}</textarea>
-          <small>Maximum 200 characters.</small>
+          <small>${t("cart.max200", "Maximum 200 characters.")}</small>
         </label>
 
         <div class="cart-gift-dialog__actions">
-          <button type="button" class="cart-gift-cancel" data-gift-close>Cancel</button>
-          <button type="button" class="cart-gift-save" data-gift-save>Save gift options</button>
+          <button type="button" class="cart-gift-cancel" data-gift-close>${t("cart.cancel", "Cancel")}</button>
+          <button type="button" class="cart-gift-save" data-gift-save>${t("cart.saveGift", "Save gift options")}</button>
         </div>
       </div>
     </div>
@@ -530,15 +530,15 @@ async function renderCartFromState(
     <section class="cart-summary">
       ${giftTier !== "none" ? `
       <div class="cart-summary-gift">
-        <span>${giftTier === "premium" ? "Premium gift" : "Gift-ready"}</span>
-        <strong>${giftTier === "premium" ? "+" + formatPrice(giftFee) : "Free"}</strong>
+        <span>${giftTier === "premium" ? t("cart.premiumGift", "Premium gift") : t("cart.giftReady", "Gift-ready")}</span>
+        <strong>${giftTier === "premium" ? "+" + formatPrice(giftFee) : t("cart.freeWord", "Free")}</strong>
       </div>` : ""}
       <div>
-        <span>Total</span>
+        <span>${t("cart.total", "Total")}</span>
         <strong>${formatPrice(total)}</strong>
       </div>
       <div class="cart-summary-meta">
-        <small>${getCartCount(cart)} item${
+        <small>${getCartCount(cart)} ${t("cart.item", "item")}${
           getCartCount(cart) === 1
             ? ""
             : "s"
@@ -550,9 +550,9 @@ async function renderCartFromState(
 
     <div class="checkout-container">
       <button id="checkoutBtn" class="btn-primary drawer-checkout">
-        Proceed to Checkout
+        ${t("cart.checkout", "Proceed to Checkout")}
       </button>
-      <a class="cart-return-note" href="/returns">14-Day Returns</a>
+      <a class="cart-return-note" href="${localizedPath("/returns", locale)}">${t("cart.returns14", "14-Day Returns")}</a>
     </div>
   `;
 }
@@ -687,7 +687,7 @@ async function changeItemQuantity(
 
   if (nextQuantity > maxStock) {
     showToast(
-      "We don't have more items in this size."
+      t("cart.noMoreSize", "We don't have more items in this size.")
     );
 
     return;
@@ -838,7 +838,7 @@ function bindCartActions(): void {
 
       try {
         giftSave.disabled = true;
-        giftSave.textContent = "Saving...";
+        giftSave.textContent = t("cart.saving", "Saving...");
 
         const nextCart = await updateCartGiftOptions({
           tier,
@@ -848,11 +848,11 @@ function bindCartActions(): void {
 
         await refreshAllCartViews(nextCart);
         document.body.classList.remove("gift-dialog-open");
-        showToast("Gift options saved.");
+        showToast(t("cart.giftSaved", "Gift options saved."));
       } catch (error: any) {
         giftSave.disabled = false;
-        giftSave.textContent = "Save gift options";
-        showToast(error?.message || "Failed to save gift options.");
+        giftSave.textContent = t("cart.saveGift", "Save gift options");
+        showToast(error?.message || t("cart.giftFailed", "Failed to save gift options."));
       }
 
       return;
@@ -882,7 +882,7 @@ return;
         );
 
         if (!product) {
-          showToast("Product not found.");
+          showToast(t("cart.productNotFound", "Product not found."));
           return;
         }
 
@@ -918,7 +918,7 @@ return;
         addBtn.textContent = "✓";
         setTimeout(() => {
           addBtn.disabled = false;
-          addBtn.textContent = "Add";
+          addBtn.textContent = t("cart.addButton", "Add");
         }, 800);
       } catch (error: any) {
         console.error("Cross-sell add failed:", error);
