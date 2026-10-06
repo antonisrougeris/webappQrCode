@@ -1,6 +1,7 @@
 import "../../i18n/auto";
 import { firebaseAuth } from "../../services/firebase";
 import { apiRequest } from "../../services/api";
+import { locale, t } from "../../i18n/locale";
 
 interface Order {
   id: string;
@@ -18,19 +19,25 @@ interface Order {
 }
 
 function formatPrice(value: number, currency = "EUR"): string {
-  return new Intl.NumberFormat("el-GR", {
+  return new Intl.NumberFormat(
+    locale === "el" ? "el-GR" : "en-IE",
+    {
     style: "currency",
-    currency,
-  }).format(value || 0);
+      currency,
+    }
+  ).format(value || 0);
 }
 
 function formatDate(value?: string): string {
   if (!value) return "-";
 
-  return new Intl.DateTimeFormat("el-GR", {
+  return new Intl.DateTimeFormat(
+    locale === "el" ? "el-GR" : "en-GB",
+    {
     dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+      timeStyle: "short",
+    }
+  ).format(new Date(value));
 }
 
 function getOrderLookup(): { type: "id" | "viva"; value: string } | null {
@@ -124,27 +131,27 @@ async function loadOrder(): Promise<void> {
 
     container.innerHTML = `
       <div class="payment-summary-row">
-        <span>Order Number</span>
+        <span>${t("payment.orderNumber", "Order Number")}</span>
         <strong>${order.orderNumber || order.id}</strong>
       </div>
 
       <div class="payment-summary-row">
-        <span>Amount Paid</span>
+        <span>${t("payment.amountPaid", "Amount Paid")}</span>
         <strong>${formatPrice(order.total || 0, order.currency || "EUR")}</strong>
       </div>
 
       <div class="payment-summary-row">
-        <span>Payment Status</span>
+        <span>${t("payment.status", "Payment Status")}</span>
         <strong>${order.paymentStatus || order.status || "paid"}</strong>
       </div>
 
       <div class="payment-summary-row">
-        <span>QR Products Created</span>
+        <span>${t("payment.qrCreated", "QR Products Created")}</span>
         <strong>${order.qrCodesCreated || 0}</strong>
       </div>
 
       <div class="payment-summary-row">
-        <span>Date</span>
+        <span>${t("payment.date", "Date")}</span>
         <strong>${formatDate(order.payment?.paidAt || order.createdAt)}</strong>
       </div>
     `;
@@ -152,9 +159,9 @@ async function loadOrder(): Promise<void> {
     console.error("Failed to load order:", error);
 
     container.innerHTML = `
-      <p>Your payment was successful.</p>
-      <p>We are finalizing your order details. Please refresh in a few seconds.</p>
-      <p>Order reference: <strong>${lookup.value}</strong></p>
+      <p>${t("payment.successFallback", "Your payment was successful.")}</p>
+      <p>${t("payment.finalizing", "We are finalizing your order details. Please refresh in a few seconds.")}</p>
+      <p>${t("payment.orderReference", "Order reference")}: <strong>${lookup.value}</strong></p>
     `;
   }
 }
