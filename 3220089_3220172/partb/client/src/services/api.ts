@@ -140,6 +140,19 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
   });
 }
 
+export async function accountExists(email: string): Promise<boolean> {
+  const response = await apiRequest<{
+    success?: boolean;
+    exists?: boolean;
+    data?: { exists?: boolean };
+  }>("/auth/account-status", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+
+  return response?.exists === true || response?.data?.exists === true;
+}
+
 export async function getMe(): Promise<AuthUser | null> {
   const response = await apiRequest<
     | AuthUser
