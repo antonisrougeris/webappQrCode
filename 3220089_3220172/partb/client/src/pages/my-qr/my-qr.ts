@@ -1,3 +1,4 @@
+import "../../i18n/auto";
 import {
   firebaseAuth,
 } from "../../services/firebase";
