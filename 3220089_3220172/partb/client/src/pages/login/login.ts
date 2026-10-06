@@ -17,6 +17,10 @@ import { login, register } from "../../services/api";
 
 import { showFlashToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
+import {
+  locale,
+  localizedPath,
+} from "../../i18n/locale";
 
 initPasswordVisibility();
 
@@ -87,8 +91,11 @@ function applyForgotPasswordLink(): void {
   const query = params.toString();
 
   forgotPasswordLink.href =
-    "/forgot-password" +
-    (query ? `?${query}` : "");
+    localizedPath(
+      "/forgot-password" +
+        (query ? `?${query}` : ""),
+      locale
+    );
 }
 
 function getRedirectUrl(): string {
@@ -115,7 +122,10 @@ function applyRegisterRedirect(): void {
     lastName,
   });
 
-  registerLink.href = `/register${query}`;
+  registerLink.href = localizedPath(
+    `/register${query}`,
+    locale
+  );
 }
 
 function goToRedirect(delay = 800): void {
@@ -125,7 +135,10 @@ function goToRedirect(delay = 800): void {
     // 🔥 optional safety: restore checkout flag
     localStorage.setItem("skanare_returning_from_auth", "1");
 
-    window.location.href = redirect;
+    window.location.href = localizedPath(
+      redirect,
+      locale
+    );
   }, delay);
 }
 
