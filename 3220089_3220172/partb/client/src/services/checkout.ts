@@ -30,6 +30,7 @@ export interface CheckoutInvoiceDetails {
 }
 
 export interface CheckoutPayload {
+  locale?: "en" | "el";
   customer: CheckoutCustomer;
   shippingAddress: CheckoutShippingAddress;
   phoneCountryCode: string;
