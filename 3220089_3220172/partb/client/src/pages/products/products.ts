@@ -1,8 +1,10 @@
+import "../../i18n/auto";
 /* 3220089_3220172  2025 */
 
 import { initNav } from "../../components/initNav";
 import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
+import { locale, productPath, t } from "../../i18n/locale";
 
 initNav();
 initMobileMenu();
@@ -52,6 +54,7 @@ async function getProducts(
   if (params.q && params.q.trim()) url.searchParams.set("q", params.q.trim());
   if (params.category && params.category !== "All")
     url.searchParams.set("category", params.category);
+  url.searchParams.set("locale", locale);
 
   const response = await fetch(url.toString());
 
@@ -90,7 +93,7 @@ function isInStock(product: Product): boolean {
 
 function productUrl(product: Product): string {
   const identifier = product.slug || product.id;
-  return `/product/${encodeURIComponent(identifier)}`;
+  return productPath(identifier);
 }
 
 function renderProducts(container: HTMLElement, products: Product[]): void {
@@ -177,7 +180,9 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
 
     const stock = document.createElement("p");
     stock.className = "meta";
-    stock.textContent = isInStock(product) ? "In stock" : "Out of stock";
+    stock.textContent = isInStock(product)
+      ? t("product.inStock", "In stock")
+      : t("product.outOfStock", "Out of stock");
 
     body.append(row, meta, stock);
     link.append(media, body);

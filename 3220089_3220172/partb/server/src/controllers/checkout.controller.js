@@ -16,6 +16,7 @@ export const checkout = asyncHandler(async (req, res) => {
   const body = parseOrThrow(checkoutSchema, req.body, "Invalid checkout data");
 
   const result = await checkoutCartForOwner({
+    locale: body.locale || "en",
     ownerId: owner.id,
     ownerType: owner.type,
     customer: body.customer,

@@ -13,6 +13,11 @@ const productDetailsHtmlPath = path.resolve(
   "../../../client/dist/src/pages/product-details/product-details.html"
 );
 
+const greekProductDetailsHtmlPath = path.resolve(
+  __dirname,
+  "../../../client/dist/el/_templates/product-details.html"
+);
+
 const router = Router();
 
 /* =========================================================
@@ -34,10 +39,11 @@ function cleanBaseUrl() {
   ).replace(/\/+$/, "");
 }
 
-function productUrl(product) {
+function productUrl(product, locale = "en") {
   const slug = product.slug || product.id;
+  const prefix = locale === "el" ? "/el" : "";
 
-  return `${cleanBaseUrl()}/product/${encodeURIComponent(slug)}`;
+  return `${cleanBaseUrl()}${prefix}/product/${encodeURIComponent(slug)}`;
 }
 
 function productImage(product) {
@@ -55,11 +61,15 @@ function productImage(product) {
   }`;
 }
 
-function productDescription(product) {
+function productDescription(product, locale = "en") {
   return (
     product.shortDescription ||
     product.description ||
-    "QR clothing and accessories by Skanare."
+    (
+      locale === "el"
+        ? "Ρούχα και αξεσουάρ QR από το Skanare."
+        : "QR clothing and accessories by Skanare."
+    )
   );
 }
 
@@ -84,14 +94,14 @@ function isInStock(product) {
    PRODUCT STRUCTURED DATA
 ========================================================= */
 
-function productJsonLd(product) {
+function productJsonLd(product, locale = "en") {
   return JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Product",
 
     name: product.title,
 
-    description: productDescription(product),
+    description: productDescription(product, locale),
 
     image: productImage(product),
 
@@ -103,7 +113,7 @@ function productJsonLd(product) {
     offers: {
       "@type": "Offer",
 
-      url: productUrl(product),
+      url: productUrl(product, locale),
 
       price: String(
         product.price ?? product.priceEUR ?? 0
@@ -127,18 +137,33 @@ function productJsonLd(product) {
    GENERATE DYNAMIC SEO HTML
 ========================================================= */
 
-async function renderFullProductPage(product, nonce) {
-  // Load the real frontend HTML.
+async function renderFullProductPage(
+  product,
+  nonce,
+  locale = "en"
+) {
+  const templatePath =
+    locale === "el"
+      ? greekProductDetailsHtmlPath
+      : productDetailsHtmlPath;
+
   let html = await fs.readFile(
-    productDetailsHtmlPath,
+    templatePath,
     "utf8"
   );
 
-  const url = productUrl(product);
+  const url = productUrl(
+    product,
+    locale
+  );
 
   const title = `${product.title} | Skanare`;
 
-  const description = productDescription(product);
+  const description =
+    productDescription(
+      product,
+      locale
+    );
 
   const image = productImage(product);
 
@@ -247,7 +272,7 @@ async function renderFullProductPage(product, nonce) {
 
   html = html.replace(
     /(<div\b[^>]*id=["']productStock["'][^>]*>)[\s\S]*?(<\/div>)/i,
-    `$1${inStock ? "In stock" : "Out of stock"}$2`
+    `$1${inStock ? (locale === "el" ? "Άμεσα διαθέσιμο" : "In stock") : (locale === "el" ? "Εξαντλημένο" : "Out of stock")}$2`
   );
 
   html = html.replace(
@@ -287,6 +312,24 @@ async function renderFullProductPage(product, nonce) {
     <link
       rel="canonical"
       href="${escapeHtml(url)}"
+    />
+
+    <link
+      rel="alternate"
+      hreflang="en"
+      href="${escapeHtml(productUrl(product, "en"))}"
+    />
+
+    <link
+      rel="alternate"
+      hreflang="el"
+      href="${escapeHtml(productUrl(product, "el"))}"
+    />
+
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="${escapeHtml(productUrl(product, "en"))}"
     />
 
     <!-- Open Graph -->
@@ -345,7 +388,7 @@ async function renderFullProductPage(product, nonce) {
 
     <!-- Product Structured Data -->
 
-    <script type="application/ld+json">${productJsonLd(product)}</script>
+    <script type="application/ld+json">${productJsonLd(product, locale)}</script>
   `;
 
   /* -------------------------------------------------------
@@ -375,71 +418,103 @@ async function renderFullProductPage(product, nonce) {
    PRODUCT SEO ROUTE
 ========================================================= */
 
-router.get("/product/:slug", async (req, res, next) => {
+async function handleProductPage(
+  req,
+  res,
+  next,
+  locale = "en"
+) {
   try {
-    const requestedSlug = req.params.slug;
+    const requestedSlug =
+      req.params.slug;
 
-    /* -----------------------------------------------------
-       FETCH PRODUCT
-    ----------------------------------------------------- */
+    const product =
+      await getProductByIdOrSlug(
+        requestedSlug,
+        { locale }
+      );
 
-    const product = await getProductByIdOrSlug(
-      requestedSlug
-    );
-
-    /* -----------------------------------------------------
-       PRODUCT NOT FOUND
-    ----------------------------------------------------- */
-
-    if (!product || product.active === false) {
-      return res.status(404).send("Product not found");
+    if (
+      !product ||
+      product.active === false
+    ) {
+      return res
+        .status(404)
+        .send(
+          locale === "el"
+            ? "Το προϊόν δεν βρέθηκε"
+            : "Product not found"
+        );
     }
 
-    /* -----------------------------------------------------
-       CANONICAL URL REDIRECT
-    ----------------------------------------------------- */
+    const canonicalSlug =
+      String(
+        product.slug ||
+        product.id
+      );
 
-    const canonicalSlug = String(
-      product.slug || product.id
-    );
+    if (
+      requestedSlug !==
+      canonicalSlug
+    ) {
+      const prefix =
+        locale === "el"
+          ? "/el"
+          : "";
 
-    if (requestedSlug !== canonicalSlug) {
       return res.redirect(
         301,
-        `/product/${encodeURIComponent(canonicalSlug)}`
+        `${prefix}/product/${encodeURIComponent(canonicalSlug)}`
       );
     }
 
-    /* -----------------------------------------------------
-       GENERATE HTML WITH CORRECT SEO
-    ----------------------------------------------------- */
-
-    const html = await renderFullProductPage(
-      product,
-      res.locals.cspNonce
-    );
-
-    /* -----------------------------------------------------
-       RESPONSE
-    ----------------------------------------------------- */
+    const html =
+      await renderFullProductPage(
+        product,
+        res.locals.cspNonce,
+        locale
+      );
 
     res.status(200);
-
     res.setHeader(
       "Content-Type",
       "text/html; charset=utf-8"
     );
-
+    res.setHeader(
+      "Content-Language",
+      locale
+    );
     res.setHeader(
       "Cache-Control",
       "no-cache"
     );
 
     return res.send(html);
-
   } catch (error) {
     next(error);
   }
-});
+}
+
+router.get(
+  "/product/:slug",
+  (req, res, next) =>
+    handleProductPage(
+      req,
+      res,
+      next,
+      "en"
+    )
+);
+
+router.get(
+  "/el/product/:slug",
+  (req, res, next) =>
+    handleProductPage(
+      req,
+      res,
+      next,
+      "el"
+    )
+);
 
 export default router;

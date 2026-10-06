@@ -62,21 +62,26 @@ function isInStock(product) {
   return true;
 }
 
-function productUrl(product) {
+function productUrl(product, locale = "en") {
   const identifier =
     product?.slug ||
     product?.id ||
     product?._id;
 
-  return identifier
+  const base = identifier
     ? `/product/${encodeURIComponent(identifier)}`
     : "#";
+
+  return locale === "el" && base !== "#"
+    ? `/el${base}`
+    : base;
 }
 
 export function renderProductCard(
   product,
   index = 0,
-  eagerFirstImages = 0
+  eagerFirstImages = 0,
+  locale = "en"
 ) {
   const images = getImages(product);
   const badge = product?.badge || "";
@@ -113,7 +118,7 @@ export function renderProductCard(
 
   return `
     <article class="product-card" data-prerendered-product="true">
-      <a href="${escapeHtml(productUrl(product))}" class="product-card-anchor" aria-label="View ${escapeHtml(product?.title || "")}">
+      <a href="${escapeHtml(productUrl(product, locale))}" class="product-card-anchor" aria-label="${locale === "el" ? "Προβολή" : "View"} ${escapeHtml(product?.title || "")}">
         <div class="product-media ${product?.category === "accessory" ? "grey" : ""}">
           ${badgeHtml}
           ${imageHtml}
@@ -124,14 +129,14 @@ export function renderProductCard(
             ${priceHtml}
           </div>
           <p class="product-stock ${isInStock(product) ? "is-in-stock" : "is-out-of-stock"}">
-            ${isInStock(product) ? "In stock" : "Out of stock"}
+            ${isInStock(product) ? (locale === "el" ? "Άμεσα διαθέσιμο" : "In stock") : (locale === "el" ? "Εξαντλημένο" : "Out of stock")}
           </p>
         </div>
       </a>
     </article>`;
 }
 
-export function itemListJsonLd(products, name) {
+export function itemListJsonLd(products, name, locale = "en") {
   return JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -140,7 +145,7 @@ export function itemListJsonLd(products, name) {
       (product, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: `https://skanare.com${productUrl(product)}`,
+        url: `https://skanare.com${productUrl(product, locale)}`,
         item: {
           "@type": "Product",
           name: product?.title || "",
@@ -219,9 +224,15 @@ async function atomicWrite(file, content) {
   );
 }
 
-async function refreshOnce(reason) {
+async function refreshLocale({
+  locale = "en",
+  homepageFile,
+  productsFile,
+}) {
   const products =
-    await listProductsService();
+    await listProductsService({
+      locale,
+    });
 
   const featured =
     products.filter(
@@ -249,18 +260,6 @@ async function refreshOnce(reason) {
     )
     .slice(0, 4);
 
-  const homepageFile =
-    path.join(
-      distDir,
-      "index.html"
-    );
-
-  const productsFile =
-    path.join(
-      distDir,
-      "src/pages/products/products.html"
-    );
-
   let [
     homepageHtml,
     productsHtml,
@@ -277,7 +276,8 @@ async function refreshOnce(reason) {
         renderProductCard(
           product,
           index,
-          4
+          4,
+          locale
         )
       )
       .join("\n")
@@ -291,7 +291,8 @@ async function refreshOnce(reason) {
         renderProductCard(
           product,
           index,
-          0
+          0,
+          locale
         )
       )
       .join("\n")
@@ -303,7 +304,10 @@ async function refreshOnce(reason) {
     `<script type="application/ld+json" data-prerender="homepage-products">
 ${itemListJsonLd(
   [...tshirts, ...accessories],
-  "Featured Skanare products"
+  locale === "el"
+    ? "Προτεινόμενα προϊόντα Skanare"
+    : "Featured Skanare products",
+  locale
 )}
 </script>`
   );
@@ -313,7 +317,12 @@ ${itemListJsonLd(
     "GRID:productsGrid",
     products
       .map((product) =>
-        renderProductCard(product)
+        renderProductCard(
+          product,
+          0,
+          0,
+          locale
+        )
       )
       .join("\n")
   );
@@ -324,7 +333,10 @@ ${itemListJsonLd(
     `<script type="application/ld+json" data-prerender="products-page">
 ${itemListJsonLd(
   products,
-  "Skanare products"
+  locale === "el"
+    ? "Προϊόντα Skanare"
+    : "Skanare products",
+  locale
 )}
 </script>`
   );
@@ -340,19 +352,6 @@ ${itemListJsonLd(
     ),
   ]);
 
-  console.info(
-    "storefront_seo_html_refreshed",
-    {
-      reason,
-      products:
-        products.length,
-      featuredTshirts:
-        tshirts.length,
-      featuredAccessories:
-        accessories.length,
-    }
-  );
-
   return {
     products:
       products.length,
@@ -360,6 +359,58 @@ ${itemListJsonLd(
       tshirts.length,
     featuredAccessories:
       accessories.length,
+  };
+}
+
+async function refreshOnce(reason) {
+  const english =
+    await refreshLocale({
+      locale: "en",
+      homepageFile:
+        path.join(
+          distDir,
+          "index.html"
+        ),
+      productsFile:
+        path.join(
+          distDir,
+          "src/pages/products/products.html"
+        ),
+    });
+
+  const greek =
+    await refreshLocale({
+      locale: "el",
+      homepageFile:
+        path.join(
+          distDir,
+          "el/index.html"
+        ),
+      productsFile:
+        path.join(
+          distDir,
+          "el/products/index.html"
+        ),
+    });
+
+  console.info(
+    "storefront_seo_html_refreshed",
+    {
+      reason,
+      english,
+      greek,
+    }
+  );
+
+  return {
+    products:
+      english.products,
+    featuredTshirts:
+      english.featuredTshirts,
+    featuredAccessories:
+      english.featuredAccessories,
+    greekProducts:
+      greek.products,
   };
 }
 

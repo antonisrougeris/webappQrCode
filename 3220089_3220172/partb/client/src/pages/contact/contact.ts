@@ -1,4 +1,6 @@
+import "../../i18n/auto";
 import { apiRequest } from "../../services/api";
+import { t } from "../../i18n/locale";
 
 const form =
   document.getElementById("contactForm") as HTMLFormElement | null;
@@ -24,15 +26,21 @@ form?.addEventListener("submit", async (event) => {
 
   try {
     submitButton.disabled = true;
-    submitButton.textContent = "Sending...";
-    status.textContent = "Sending...";
+    submitButton.textContent =
+      t("contact.sending", "Sending...");
+    status.textContent =
+      t("contact.sending", "Sending...");
 
     await apiRequest("/contact", {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
-    status.textContent = "Message sent successfully!";
+    status.textContent =
+      t(
+        "contact.sent",
+        "Message sent successfully!"
+      );
     status.classList.add("is-success");
     form.reset();
   } catch (error) {
@@ -41,9 +49,16 @@ form?.addEventListener("submit", async (event) => {
     status.textContent =
       error instanceof Error
         ? error.message
-        : "Failed to send message.";
+        : t(
+            "contact.failed",
+            "Failed to send message."
+          );
   } finally {
     submitButton.disabled = false;
-    submitButton.textContent = "Send message";
+    submitButton.textContent =
+      t(
+        "contact.send",
+        "Send message"
+      );
   }
 });

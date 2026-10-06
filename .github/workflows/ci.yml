@@ -109,7 +109,67 @@ jobs:
             exit 1
           }
 
-          echo "SEO prerendering + live refresh markers OK"
+          test -f dist/el/index.html || {
+            echo "ERROR: Greek homepage was not built"
+            exit 1
+          }
+
+          test -f dist/el/products/index.html || {
+            echo "ERROR: Greek products page was not built"
+            exit 1
+          }
+
+          test -f dist/el/_templates/product-details.html || {
+            echo "ERROR: Greek product detail template was not built"
+            exit 1
+          }
+
+          grep -q 'lang="el"' dist/el/index.html || {
+            echo "ERROR: Greek homepage language metadata is missing"
+            exit 1
+          }
+
+          grep -q 'hreflang="el"' dist/el/index.html || {
+            echo "ERROR: Greek homepage hreflang is missing"
+            exit 1
+          }
+
+          grep -q 'SKANARE_LIVE:GRID:featuredTshirtsGrid:START' dist/el/index.html || {
+            echo "ERROR: Greek homepage live-refresh markers are missing"
+            exit 1
+          }
+
+          grep -q 'SKANARE_LIVE:GRID:productsGrid:START' dist/el/products/index.html || {
+            echo "ERROR: Greek products live-refresh markers are missing"
+            exit 1
+          }
+
+          grep -q 'Ανακάλυψε προϊόντα QR' dist/el/products/index.html || {
+            echo "ERROR: curated Greek product-page copy is missing"
+            exit 1
+          }
+
+          test -f dist/el/src/pages/checkout/checkout.html || {
+            echo "ERROR: legacy Greek preview alias for checkout is missing"
+            exit 1
+          }
+
+          test -f dist/el/src/pages/shipping-policy/shipping-policy.html || {
+            echo "ERROR: legacy Greek preview alias for shipping policy is missing"
+            exit 1
+          }
+
+          if grep -R 'href="/el/assets' dist/el --include='*.html' || grep -R "href='/el/assets" dist/el --include='*.html'; then
+            echo "ERROR: Greek pages contain broken localized asset URLs"
+            exit 1
+          fi
+
+          grep -q 'href="/assets/' dist/el/index.html || {
+            echo "ERROR: Greek homepage is not referencing shared root assets"
+            exit 1
+          }
+
+          echo "SEO prerendering + English/Greek localization markers and asset paths OK"
 
       - name: Guard production bundle against development URLs
         run: |

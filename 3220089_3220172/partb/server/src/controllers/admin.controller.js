@@ -1753,6 +1753,28 @@ export const createAdminProduct =
             10000
           ),
 
+        translations: {
+          el: {
+            title:
+              cleanString(
+                req.body?.translations?.el?.title,
+                200
+              ),
+
+            shortDescription:
+              cleanString(
+                req.body?.translations?.el?.shortDescription,
+                500
+              ),
+
+            description:
+              cleanString(
+                req.body?.translations?.el?.description,
+                10000
+              ),
+          },
+        },
+
         category:
           cleanString(
             req.body?.category,
@@ -1961,6 +1983,47 @@ export const updateAdminProduct =
                 : 500
             );
         }
+      }
+
+
+      if (
+        req.body?.translations !==
+        undefined
+      ) {
+        const submitted =
+          req.body.translations &&
+          typeof req.body.translations === "object"
+            ? req.body.translations
+            : {};
+
+        const greek =
+          submitted.el &&
+          typeof submitted.el === "object"
+            ? submitted.el
+            : {};
+
+        update.translations = {
+          ...(previous.translations || {}),
+          el: {
+            title:
+              cleanString(
+                greek.title,
+                200
+              ),
+
+            shortDescription:
+              cleanString(
+                greek.shortDescription,
+                500
+              ),
+
+            description:
+              cleanString(
+                greek.description,
+                10000
+              ),
+          },
+        };
       }
 
 

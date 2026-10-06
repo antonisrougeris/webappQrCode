@@ -1,4 +1,5 @@
 import type { Product } from "../services/products";
+import { productPath, t } from "../i18n/locale";
 
 function formatPrice(value: number): string {
   return new Intl.NumberFormat("el-GR", {
@@ -69,8 +70,7 @@ export function renderProducts(
 
     if (!identifier) return;
 
-    const href =
-      `/product/${encodeURIComponent(identifier)}`;
+    const href = productPath(identifier);
 
     const images = getProductImages(product);
 
@@ -210,7 +210,7 @@ export function renderProducts(
               ${inStock ? "is-in-stock" : "is-out-of-stock"}
             "
           >
-            ${inStock ? "In stock" : "Out of stock"}
+            ${inStock ? t("product.inStock", "In stock") : t("product.outOfStock", "Out of stock")}
           </p>
 
         </div>

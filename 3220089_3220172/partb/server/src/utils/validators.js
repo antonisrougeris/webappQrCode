@@ -101,6 +101,7 @@ export const giftOptionsSchema = z.object({
 });
 
 export const checkoutSchema = z.object({
+  locale: z.enum(["en", "el"]).optional().default("en"),
   phoneCountryCode: countrySchema.default("GR"),
 
   customer: z.object({

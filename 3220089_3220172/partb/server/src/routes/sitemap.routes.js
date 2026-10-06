@@ -64,11 +64,26 @@ router.get("/sitemap.xml", async (_req, res) => {
     ];
 
     const staticUrls = staticPages
-      .map((path) =>
-        urlEntry({
-          loc: `${baseUrl}${path}`
-        })
-      )
+      .flatMap((pagePath) => {
+        const english =
+          pagePath === "/"
+            ? `${baseUrl}/`
+            : `${baseUrl}${pagePath}`;
+
+        const greek =
+          pagePath === "/"
+            ? `${baseUrl}/el/`
+            : `${baseUrl}/el${pagePath}`;
+
+        return [
+          urlEntry({
+            loc: english,
+          }),
+          urlEntry({
+            loc: greek,
+          }),
+        ];
+      })
       .join("");
 
     // Products from Firestore
@@ -94,10 +109,23 @@ router.get("/sitemap.xml", async (_req, res) => {
           product.updatedAt || product.createdAt
         );
 
-        return urlEntry({
-          loc: `${baseUrl}/product/${encodeURIComponent(identifier)}`,
-          lastmod
-        });
+        const slug =
+          encodeURIComponent(
+            identifier
+          );
+
+        return [
+          urlEntry({
+            loc:
+              `${baseUrl}/product/${slug}`,
+            lastmod,
+          }),
+          urlEntry({
+            loc:
+              `${baseUrl}/el/product/${slug}`,
+            lastmod,
+          }),
+        ].join("");
       })
       .filter(Boolean)
       .join("");

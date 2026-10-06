@@ -11,6 +11,12 @@ export const listProducts = asyncHandler(async (req, res) => {
 });
 
 export const getProduct = asyncHandler(async (req, res) => {
-  const product = await getProductByIdOrSlug(req.params.id);
+  const product = await getProductByIdOrSlug(
+    req.params.id,
+    {
+      locale:
+        req.query?.locale || "en",
+    }
+  );
   return ok(res, { product });
 });

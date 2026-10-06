@@ -13,11 +13,11 @@ import { generatePrintSheet } from "../utils/generatePrintSheet.js";
 import { getBoxNowOrderLabel } from "./boxnow.service.js";
 
 
-function money(value, currency = "EUR") {
-  return new Intl.NumberFormat("el-GR", {
-    style: "currency",
-    currency,
-  }).format(Number(value || 0));
+function money(value, currency = "EUR", locale = "en") {
+  return new Intl.NumberFormat(
+    locale === "el" ? "el-GR" : "en-IE",
+    { style: "currency", currency }
+  ).format(Number(value || 0));
 }
 
 function escapeHtml(value = "") {
@@ -29,13 +29,13 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#039;");
 }
 
-function orderItemsHtml(order) {
+function orderItemsHtml(order, locale = "en") {
   return (order.items || [])
     .map((item) => {
       const variantParts = [];
 
-      if (item.variant?.size) variantParts.push(`Size: ${item.variant.size}`);
-      if (item.variant?.color) variantParts.push(`Color: ${item.variant.color}`);
+      if (item.variant?.size) variantParts.push(`${locale === "el" ? "Μέγεθος" : "Size"}: ${item.variant.size}`);
+      if (item.variant?.color) variantParts.push(`${locale === "el" ? "Χρώμα" : "Color"}: ${item.variant.color}`);
 
       const variant = variantParts.length
         ? `<br/><span style="color:#777;font-size:13px;">${escapeHtml(
@@ -60,7 +60,7 @@ function orderItemsHtml(order) {
             ${Number(item.quantity || 0)}
           </td>
           <td style="padding:14px 0;border-bottom:1px solid #eee;text-align:right;">
-            ${money(item.lineTotal, item.currency || order.currency || "EUR")}
+            ${money(item.lineTotal, item.currency || order.currency || "EUR", locale)}
           </td>
         </tr>
       `;
@@ -80,7 +80,7 @@ function customerName(order) {
   }`.trim();
 }
 
-function shippingHtml(order) {
+function shippingHtml(order, locale = "en") {
   const address = order.shippingAddress || {};
 
   return `
@@ -96,11 +96,11 @@ function shippingHtml(order) {
       ${escapeHtml(address.city || "")}
       ${address.postalCode ? `, ${escapeHtml(address.postalCode)}` : ""}<br/>
       ${escapeHtml(address.country || "Greece")}<br/>
-      ${address.phone ? `Phone: ${escapeHtml(address.phone)}<br/>` : ""}
+      ${address.phone ? `${locale === "el" ? "Τηλέφωνο" : "Phone"}: ${escapeHtml(address.phone)}<br/>` : ""}
     </p>
 
     <p style="line-height:1.7;color:#555;margin-top:14px;">
-      <strong>Delivery:</strong> ${escapeHtml(order.delivery || "home")}
+      <strong>${locale === "el" ? "Παράδοση" : "Delivery"}:</strong> ${escapeHtml(order.delivery || "home")}
       ${
         order.locker
           ? `<br/><strong>Locker:</strong> ${escapeHtml(order.locker)}`
@@ -152,67 +152,66 @@ function baseTemplate({ title, intro, body }) {
 
 function customerOrderHtml(order) {
   const name = customerName(order);
+  const locale = order.locale === "el" ? "el" : "en";
+
+  if (locale === "el") {
+    return baseTemplate({
+      title: "Η παραγγελία επιβεβαιώθηκε",
+      intro: `Γεια σου ${name || ""}, η πληρωμή ολοκληρώθηκε επιτυχώς και η παραγγελία σου στο Skanare επιβεβαιώθηκε.`,
+      body: `
+        <div style="background:#f7f7f7;border-radius:16px;padding:18px;margin:22px 0;">
+          <p style="margin:0 0 8px;"><strong>Αριθμός παραγγελίας:</strong> ${escapeHtml(order.orderNumber || order.id)}</p>
+          <p style="margin:0;"><strong>Σύνολο πληρωμής:</strong> ${money(order.total, order.currency || "EUR", locale)}</p>
+        </div>
+        <h2 style="font-size:18px;margin:26px 0 10px;color:#111;">Προϊόντα παραγγελίας</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead><tr>
+            <th style="text-align:left;padding-bottom:10px;color:#555;">Προϊόν</th>
+            <th style="text-align:center;padding-bottom:10px;color:#555;">Ποσ.</th>
+            <th style="text-align:right;padding-bottom:10px;color:#555;">Σύνολο</th>
+          </tr></thead>
+          <tbody>${orderItemsHtml(order, locale)}</tbody>
+        </table>
+        <div style="margin-top:24px;background:#fafafa;border-radius:16px;padding:18px;">
+          <p style="margin:0 0 8px;"><strong>Μερικό σύνολο:</strong> ${money(order.subtotal, order.currency || "EUR", locale)}</p>
+          <p style="margin:0 0 8px;"><strong>Μεταφορικά:</strong> ${money(order.shippingCost, order.currency || "EUR", locale)}</p>
+          <p style="margin:0;font-size:17px;"><strong>Σύνολο:</strong> ${money(order.total, order.currency || "EUR", locale)}</p>
+        </div>
+        <h2 style="font-size:18px;margin:26px 0 10px;color:#111;">Στοιχεία παράδοσης</h2>
+        ${shippingHtml(order, locale)}
+        ${Number(order.qrCodesCreated || 0) > 0 ? `<div style="margin-top:24px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:16px;padding:18px;color:#14532d;">Το προϊόν QR σου είναι ενεργό. Μπορείς να διαχειριστείς τα QR από τον λογαριασμό σου στο Skanare.</div>` : ""}
+      `,
+    });
+  }
 
   return baseTemplate({
     title: "Order confirmed",
     intro: `Hi ${name || "there"}, your payment was successful and your Skanare order is confirmed.`,
     body: `
       <div style="background:#f7f7f7;border-radius:16px;padding:18px;margin:22px 0;">
-        <p style="margin:0 0 8px;"><strong>Order number:</strong> ${escapeHtml(
-          order.orderNumber || order.id
-        )}</p>
-        <p style="margin:0;"><strong>Total paid:</strong> ${money(
-          order.total,
-          order.currency || "EUR"
-        )}</p>
+        <p style="margin:0 0 8px;"><strong>Order number:</strong> ${escapeHtml(order.orderNumber || order.id)}</p>
+        <p style="margin:0;"><strong>Total paid:</strong> ${money(order.total, order.currency || "EUR", locale)}</p>
       </div>
-
       <h2 style="font-size:18px;margin:26px 0 10px;color:#111;">Order items</h2>
-
       <table style="width:100%;border-collapse:collapse;font-size:14px;">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding-bottom:10px;color:#555;">Product</th>
-            <th style="text-align:center;padding-bottom:10px;color:#555;">Qty</th>
-            <th style="text-align:right;padding-bottom:10px;color:#555;">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${orderItemsHtml(order)}
-        </tbody>
+        <thead><tr>
+          <th style="text-align:left;padding-bottom:10px;color:#555;">Product</th>
+          <th style="text-align:center;padding-bottom:10px;color:#555;">Qty</th>
+          <th style="text-align:right;padding-bottom:10px;color:#555;">Total</th>
+        </tr></thead>
+        <tbody>${orderItemsHtml(order, locale)}</tbody>
       </table>
-
       <div style="margin-top:24px;background:#fafafa;border-radius:16px;padding:18px;">
-        <p style="margin:0 0 8px;"><strong>Subtotal:</strong> ${money(
-          order.subtotal,
-          order.currency || "EUR"
-        )}</p>
-        <p style="margin:0 0 8px;"><strong>Shipping:</strong> ${money(
-          order.shippingCost,
-          order.currency || "EUR"
-        )}</p>
-        <p style="margin:0;font-size:17px;"><strong>Total:</strong> ${money(
-          order.total,
-          order.currency || "EUR"
-        )}</p>
+        <p style="margin:0 0 8px;"><strong>Subtotal:</strong> ${money(order.subtotal, order.currency || "EUR", locale)}</p>
+        <p style="margin:0 0 8px;"><strong>Shipping:</strong> ${money(order.shippingCost, order.currency || "EUR", locale)}</p>
+        <p style="margin:0;font-size:17px;"><strong>Total:</strong> ${money(order.total, order.currency || "EUR", locale)}</p>
       </div>
-
       <h2 style="font-size:18px;margin:26px 0 10px;color:#111;">Shipping details</h2>
-      ${shippingHtml(order)}
-
-      ${
-        Number(order.qrCodesCreated || 0) > 0
-          ? `
-            <div style="margin-top:24px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:16px;padding:18px;color:#14532d;">
-              Your QR product is active. You can manage your QR codes from your Skanare account.
-            </div>
-          `
-          : ""
-      }
+      ${shippingHtml(order, locale)}
+      ${Number(order.qrCodesCreated || 0) > 0 ? `<div style="margin-top:24px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:16px;padding:18px;color:#14532d;">Your QR product is active. You can manage your QR codes from your Skanare account.</div>` : ""}
     `,
   });
 }
-
 function adminOrderHtml(order) {
   const customer = order.customer || {};
 
@@ -283,7 +282,9 @@ export async function sendPaidOrderEmails(order) {
     await sendEmail({
       from,
       to: freshOrder.customer.email,
-      subject: `Order ${freshOrder.orderNumber} confirmed`,
+      subject: freshOrder.locale === "el"
+        ? `Η παραγγελία ${freshOrder.orderNumber} επιβεβαιώθηκε`
+        : `Order ${freshOrder.orderNumber} confirmed`,
       html: customerOrderHtml(freshOrder),
     });
 

@@ -136,3 +136,30 @@ test("checkout rejects premium notes longer than 200 characters", () => {
 
   assert.equal(result.success, false);
 });
+
+
+test("checkout defaults to English locale", () => {
+  const result = checkoutSchema.safeParse(baseCheckout());
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.locale, "en");
+});
+
+test("checkout accepts Greek locale", () => {
+  const payload = baseCheckout();
+  payload.locale = "el";
+
+  const result = checkoutSchema.safeParse(payload);
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.locale, "el");
+});
+
+test("checkout rejects unsupported locale", () => {
+  const payload = baseCheckout();
+  payload.locale = "fr";
+
+  const result = checkoutSchema.safeParse(payload);
+
+  assert.equal(result.success, false);
+});

@@ -15547,3 +15547,94 @@ body > div iframe[src*="boxnow"] {
     font-size: 0.67rem;
   }
 }
+
+
+/* =========================================================
+   LANGUAGE SWITCHER
+   Curated locale selector (EN / ΕΛ)
+   ========================================================= */
+
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.language-switcher a {
+  color: #7b7b75;
+  text-decoration: none;
+  transition: color 0.18s ease, opacity 0.18s ease;
+}
+
+.language-switcher a:hover,
+.language-switcher a:focus-visible {
+  color: #111;
+}
+
+.language-switcher a.is-active {
+  color: #111;
+}
+
+.language-switcher span {
+  color: #c8c8c2;
+  font-weight: 500;
+}
+
+@media (max-width: 700px) {
+  .language-switcher {
+    margin-right: 2px;
+    font-size: 0.62rem;
+    gap: 4px;
+  }
+}
+
+
+/* Language selector placement refinement */
+.nav-left .language-switcher {
+  flex: 0 0 auto;
+  margin: 0 2px 0 0;
+  padding-right: 14px;
+  border-right: 1px solid rgba(17, 17, 17, 0.14);
+}
+
+.nav-left .language-switcher a {
+  min-width: 0;
+  padding: 5px 3px;
+  border-radius: 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.nav-left .language-switcher a:hover,
+.nav-left .language-switcher a:focus-visible {
+  background: transparent;
+  color: #111;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  html.nav-open .language-switcher {
+    order: -10;
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    justify-content: center;
+    margin: 0 0 10px;
+    padding: 0 0 10px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.12);
+  }
+
+  html.nav-open .main-nav .language-switcher a {
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    padding: 8px 6px;
+  }
+}

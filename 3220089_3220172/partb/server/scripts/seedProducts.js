@@ -98,6 +98,16 @@ return {
   title: product.title || "",
   shortDescription: product.shortDescription || "",
   description: product.description || "",
+  translations: {
+    el: {
+      title:
+        String(product?.translations?.el?.title || "").trim(),
+      shortDescription:
+        String(product?.translations?.el?.shortDescription || "").trim(),
+      description:
+        String(product?.translations?.el?.description || "").trim(),
+    },
+  },
   category: product.category || "general",
   price,
   priceEUR: typeof product.priceEUR === "number" ? product.priceEUR : price,

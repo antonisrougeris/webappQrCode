@@ -1,3 +1,5 @@
+import "../../i18n/auto";
+import { locale, localizedPath } from "../../i18n/locale";
 import { firebaseAuth } from "../../services/firebase";
 import {
   sendVerificationCode,
@@ -83,9 +85,10 @@ otpInputs.forEach((input, index) => {
 firebaseAuth.onAuthStateChanged((user) => {
   if (!user) {
     const redirectTarget = normalizeSameOriginPath(window.location.pathname + window.location.search) || "/";
-    window.location.href =
-      "/login?redirect=" +
-      encodeURIComponent(redirectTarget);
+    window.location.href = localizedPath(
+      "/login?redirect=" + encodeURIComponent(redirectTarget),
+      locale
+    );
   }
 });
 

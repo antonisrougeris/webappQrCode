@@ -2,6 +2,9 @@ import { getDB } from "../config/db.js";
 import {
   getEffectiveUnitPrice,
 } from "./product-pricing.service.js";
+import {
+  localizeProduct,
+} from "./localization.service.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
@@ -106,6 +109,7 @@ function assertAndDecrementStock(product, variant, variantIndex, quantity) {
 }
 
 export async function checkoutCartForOwner({
+  locale = "en",
   ownerId,
   ownerType,
   customer,
@@ -203,6 +207,11 @@ export async function checkoutCartForOwner({
             const refreshedAt = nowIso();
 
             const checkoutRefresh = {
+              locale:
+                locale === "el"
+                  ? "el"
+                  : "en",
+
               customer: {
                 ...existingOrder.customer,
                 firstName: customer.firstName,
@@ -286,6 +295,12 @@ export async function checkoutCartForOwner({
         throw new ApiError(400, "Product is unavailable");
 
       const product = { id: productSnap.id, ...productSnap.data() };
+      const localizedProduct =
+        localizeProduct(
+          product,
+          locale
+        );
+
       if (product.active === false)
         throw new ApiError(400, `Product "${product.title}" is unavailable`);
 
@@ -355,7 +370,7 @@ orderItems.push({
 
   productId: product.id,
   slug: product.slug || product.id,
-  title: product.title,
+  title: localizedProduct.title,
 
   image: Array.isArray(product.images)
     ? product.images[0] || null
@@ -394,6 +409,10 @@ orderItems.push({
     const order = {
   id: orderId,
   orderNumber,
+  locale:
+    locale === "el"
+      ? "el"
+      : "en",
   ownerId,
   ownerType,
 

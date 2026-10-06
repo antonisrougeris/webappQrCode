@@ -1,5 +1,6 @@
 /* 3220089_3220172 — color-ready client model. Backend persistence is a separate stage. */
 import { apiFetch } from "./api";
+import { locale } from "../i18n/locale";
 
 export interface ProductVariant {
   size?: string;
@@ -125,6 +126,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Pro
   if (typeof options.featured === "boolean") params.set("featured", String(options.featured));
   if (typeof options.active === "boolean") params.set("active", String(options.active));
   if (typeof options.limit === "number") params.set("limit", String(options.limit));
+  params.set("locale", locale);
   const query = params.toString();
   const payload = await apiFetch<ProductsResponse>(`/products${query ? `?${query}` : ""}`);
   let products = extractProducts(payload);
@@ -137,7 +139,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Pro
 export async function getFeaturedProducts(): Promise<Product[]> { return getProducts({ featured:true, active:true }); }
 export async function getProductsByCategory(category:string): Promise<Product[]> { return getProducts({category, active:true}); }
 export async function getProductById(idOrSlug:string): Promise<Product|null> {
-  const payload = await apiFetch<ProductResponse>(`/products/${encodeURIComponent(idOrSlug)}`);
+  const payload = await apiFetch<ProductResponse>(`/products/${encodeURIComponent(idOrSlug)}?locale=${encodeURIComponent(locale)}`);
   const raw = payload?.product || payload?.data || payload;
   if (!raw || typeof raw !== "object") return null;
   return normalizeProduct(raw);
