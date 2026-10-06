@@ -11,6 +11,10 @@ import {
 import {
   decorateProductPricing,
 } from './product-pricing.service.js';
+import {
+  localizeProduct,
+  normalizeLocale,
+} from './localization.service.js';
 
 function withDefaultGallery(product) {
   const images = chooseProductImages(product, product.defaultColor);
@@ -109,7 +113,7 @@ function applyActiveReservations(product, reservedCounts) {
   };
 }
 
-export async function listProductsService({category, q, featured, limit} = {}) {
+export async function listProductsService({category, q, featured, limit, locale = "en"} = {}) {
   const db = getDB();
   const snap = await db.collection(COLLECTIONS.PRODUCTS).get();
   let products = toPlainDocs(snap).filter(p => p.active !== false);
@@ -120,29 +124,56 @@ export async function listProductsService({category, q, featured, limit} = {}) {
   }
   if (q) {
     const needle = normalizeText(q);
-    products = products.filter(p => [p.title, p.shortDescription, p.description, p.category, p.slug]
-      .some(field => normalizeText(field).includes(needle)));
+    products = products.filter((p) => {
+      const localized = localizeProduct(
+        p,
+        normalizeLocale(locale)
+      );
+
+      return [
+        localized.title,
+        localized.shortDescription,
+        localized.description,
+        p.title,
+        p.shortDescription,
+        p.description,
+        p.category,
+        p.slug,
+      ].some((field) =>
+        normalizeText(field).includes(needle)
+      );
+    });
   }
   products.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   const n = Number(limit);
   if (Number.isSafeInteger(n) && n > 0) products = products.slice(0, n);
-  if (!products.some(p => p.customQr && p.variants?.length)) return products.map(withDefaultGallery);
+  if (!products.some(p => p.customQr && p.variants?.length)) {
+    return products.map((product) =>
+      localizeProduct(
+        withDefaultGallery(product),
+        locale
+      )
+    );
+  }
   const [ready, reserved] = await Promise.all([
     readReadyCounts(db),
     readActiveReservationCounts(db),
   ]);
 
   return products.map((product) =>
-    withDefaultGallery(
-      applyActiveReservations(
-        availabilityForProduct(product, ready),
-        reserved
-      )
+    localizeProduct(
+      withDefaultGallery(
+        applyActiveReservations(
+          availabilityForProduct(product, ready),
+          reserved
+        )
+      ),
+      locale
     )
   );
 }
 
-export async function getProductByIdOrSlug(idOrSlug) {
+export async function getProductByIdOrSlug(idOrSlug, { locale = "en" } = {}) {
   const db = getDB();
   const identifier = String(idOrSlug || '');
   let product;
@@ -155,16 +186,24 @@ export async function getProductByIdOrSlug(idOrSlug) {
     product = { id: query.docs[0].id, ...query.docs[0].data() };
   }
   if (product.active === false) throw new ApiError(404, 'Product not found');
-  if (!product.customQr || !product.variants?.length) return withDefaultGallery(product);
+  if (!product.customQr || !product.variants?.length) {
+    return localizeProduct(
+      withDefaultGallery(product),
+      locale
+    );
+  }
   const [ready, reserved] = await Promise.all([
     readReadyCounts(db),
     readActiveReservationCounts(db),
   ]);
 
-  return withDefaultGallery(
-    applyActiveReservations(
-      availabilityForProduct(product, ready),
-      reserved
-    )
+  return localizeProduct(
+    withDefaultGallery(
+      applyActiveReservations(
+        availabilityForProduct(product, ready),
+        reserved
+      )
+    ),
+    locale
   );
 }
