@@ -3,6 +3,10 @@
 import { signOut } from "firebase/auth";
 import { firebaseAuth } from "../services/firebase";
 import { transferCartToGuest } from "../services/cart";
+import {
+  localizedPath,
+  t,
+} from "../i18n/locale";
 
 export function initNav() {
   const btnElement =
@@ -62,7 +66,13 @@ export function initNav() {
     event.stopPropagation();
 
     if (!isLoggedIn) {
-      window.location.href = "/login";
+      window.location.href =
+        localizedPath(
+          "/login",
+          document.documentElement.lang === "el"
+            ? "el"
+            : "en"
+        );
       return;
     }
 
@@ -111,7 +121,7 @@ export function initNav() {
 
     dropdown.innerHTML = `
       <button id="logoutBtn" type="button">
-        Sign out
+${t("account.signOut", "Sign out")}
       </button>
     `;
 
@@ -123,18 +133,32 @@ export function initNav() {
       event.stopPropagation();
 
       logoutBtn.disabled = true;
-      logoutBtn.textContent = "Signing out...";
+      logoutBtn.textContent =
+        t(
+          "account.signingOut",
+          "Signing out..."
+        );
 
       try {
         await transferCartToGuest();
         await signOut(firebaseAuth);
 
-        window.location.href = "/index.html";
+        window.location.href =
+          localizedPath(
+            "/",
+            document.documentElement.lang === "el"
+              ? "el"
+              : "en"
+          );
       } catch (error) {
         console.error("Logout failed:", error);
 
         logoutBtn.disabled = false;
-        logoutBtn.textContent = "Sign out";
+        logoutBtn.textContent =
+          t(
+            "account.signOut",
+            "Sign out"
+          );
       }
     });
   });
