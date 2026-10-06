@@ -39,11 +39,22 @@ function cleanBaseUrl() {
   ).replace(/\/+$/, "");
 }
 
+function productPath(identifier, locale = "en") {
+  const base =
+    `/product/${encodeURIComponent(identifier)}`;
+
+  return locale === "el"
+    ? `${base}?lang=el`
+    : base;
+}
+
 function productUrl(product, locale = "en") {
   const slug = product.slug || product.id;
-  const prefix = locale === "el" ? "/el" : "";
 
-  return `${cleanBaseUrl()}${prefix}/product/${encodeURIComponent(slug)}`;
+  return (
+    cleanBaseUrl() +
+    productPath(slug, locale)
+  );
 }
 
 function productImage(product) {
@@ -457,14 +468,12 @@ async function handleProductPage(
       requestedSlug !==
       canonicalSlug
     ) {
-      const prefix =
-        locale === "el"
-          ? "/el"
-          : "";
-
       return res.redirect(
         301,
-        `${prefix}/product/${encodeURIComponent(canonicalSlug)}`
+        productPath(
+          canonicalSlug,
+          locale
+        )
       );
     }
 
@@ -502,7 +511,11 @@ router.get(
       req,
       res,
       next,
-      "en"
+      String(
+        req.query?.lang || ""
+      ).toLowerCase() === "el"
+        ? "el"
+        : "en"
     )
 );
 
