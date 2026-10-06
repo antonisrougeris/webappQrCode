@@ -68,6 +68,7 @@ export const addToCart = asyncHandler(async (req, res) => {
     quantity,
     selectedVariant: variant,
     qrDestination,
+    ownerType: owner.type,
   });
   
 
@@ -86,6 +87,7 @@ const cart = await updateCartItem({
   itemId,
   quantity,
   qrDestination,
+  ownerType: owner.type,
 });
 
 
