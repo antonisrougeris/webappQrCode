@@ -122,7 +122,7 @@ router.get("/sitemap.xml", async (_req, res) => {
           }),
           urlEntry({
             loc:
-              `${baseUrl}/el/product/${slug}`,
+              `${baseUrl}/product/${slug}?lang=el`,
             lastmod,
           }),
         ].join("");
