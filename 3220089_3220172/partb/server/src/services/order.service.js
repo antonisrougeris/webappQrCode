@@ -106,6 +106,7 @@ function assertAndDecrementStock(product, variant, variantIndex, quantity) {
 }
 
 export async function checkoutCartForOwner({
+  locale = "en",
   ownerId,
   ownerType,
   customer,
@@ -203,6 +204,11 @@ export async function checkoutCartForOwner({
             const refreshedAt = nowIso();
 
             const checkoutRefresh = {
+              locale:
+                locale === "el"
+                  ? "el"
+                  : "en",
+
               customer: {
                 ...existingOrder.customer,
                 firstName: customer.firstName,
@@ -394,6 +400,10 @@ orderItems.push({
     const order = {
   id: orderId,
   orderNumber,
+  locale:
+    locale === "el"
+      ? "el"
+      : "en",
   ownerId,
   ownerType,
 
