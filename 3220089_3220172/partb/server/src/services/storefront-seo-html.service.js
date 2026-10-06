@@ -146,25 +146,7 @@ export function itemListJsonLd(products, name, locale = "en") {
         "@type": "ListItem",
         position: index + 1,
         url: `https://skanare.com${productUrl(product, locale)}`,
-        item: {
-          "@type": "Product",
-          name: product?.title || "",
-          image:
-            getImages(product)[0] ||
-            undefined,
-          offers: {
-            "@type": "Offer",
-            priceCurrency: "EUR",
-            price: String(
-              product?.price ??
-                product?.priceEUR ??
-                0
-            ),
-            availability: isInStock(product)
-              ? "https://schema.org/InStock"
-              : "https://schema.org/OutOfStock",
-          },
-        },
+        name: product?.title || "",
       })
     ),
   }).replace(/</g, "\\u003c");

@@ -109,8 +109,15 @@ function productJsonLd(product, locale = "en") {
   return JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${productUrl(product, locale)}#product`,
 
     name: product.title,
+
+    sku: String(
+      product.sku ||
+      product.slug ||
+      product.id
+    ),
 
     description: productDescription(product, locale),
 
@@ -135,6 +142,9 @@ function productJsonLd(product, locale = "en") {
       availability: isInStock(product)
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
+
+      itemCondition:
+        "https://schema.org/NewCondition",
 
       seller: {
         "@type": "Organization",
@@ -521,13 +531,17 @@ router.get(
 
 router.get(
   "/el/product/:slug",
-  (req, res, next) =>
-    handleProductPage(
-      req,
-      res,
-      next,
-      "el"
-    )
+  (req, res) => {
+    const slug =
+      encodeURIComponent(
+        req.params.slug
+      );
+
+    return res.redirect(
+      301,
+      `/product/${slug}?lang=el`
+    );
+  }
 );
 
 export default router;
