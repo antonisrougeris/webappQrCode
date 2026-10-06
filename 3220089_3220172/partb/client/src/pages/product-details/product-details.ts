@@ -1,3 +1,4 @@
+import "../../i18n/auto";
 /* 3220089_3220172 */
 
 import { initNav } from "../../components/initNav";
