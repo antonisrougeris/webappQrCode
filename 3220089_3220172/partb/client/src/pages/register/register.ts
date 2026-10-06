@@ -1,4 +1,5 @@
 import "../../i18n/auto";
+import { locale, localizedPath } from "../../i18n/locale";
 /* 3220089_3220172  2025 */
 
 import {
@@ -62,12 +63,12 @@ function applyLoginRedirect(): void {
   const firstName = params.get("firstName")?.trim() || "";
   const lastName = params.get("lastName")?.trim() || "";
 
-  loginLink.href = `/login${buildAuthQuery({
+  loginLink.href = localizedPath(`/login${buildAuthQuery({
     redirect,
     email,
     firstName,
     lastName,
-  })}`;
+  })}`, locale);
 }
 
 function goToRedirect(delay = 800): void {
@@ -132,9 +133,10 @@ try {
       "Registration successful. Please check your email to verify your account.";
   }
 
-  window.location.href =
-    "/verify-email?redirect=" +
-    encodeURIComponent(getRedirectUrl());
+  window.location.href = localizedPath(
+    "/verify-email?redirect=" + encodeURIComponent(getRedirectUrl()),
+    locale
+  );
 
   return;
 } catch (err: any) {
