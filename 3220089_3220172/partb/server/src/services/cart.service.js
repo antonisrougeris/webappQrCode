@@ -9,6 +9,7 @@ import {
 } from "./product.service.js";
 
 import {
+  getCartReservationMs,
   getInventoryKey,
   releaseInventoryHold,
   reserveInventoryHold,
@@ -20,6 +21,39 @@ import {
 import {
   calculateDiscountedPrice,
 } from "./product-pricing.service.js";
+
+async function refreshCartReservations({
+  items,
+  ownerId,
+  ownerType,
+}) {
+  const refreshed = [];
+
+  for (const item of Array.isArray(items) ? items : []) {
+    const product = await getProductByIdOrSlug(item.productId);
+    const variant = item.variant
+      ? resolveVariantOrThrow(product, item.variant)
+      : null;
+
+    const hold = await reserveInventoryHold({
+      holdId: item.id,
+      ownerId,
+      productId: product.id,
+      selectedVariant: variant,
+      quantity: Number(item.quantity || 0),
+      phase: "cart",
+      ttlMs: getCartReservationMs(ownerType),
+    });
+
+    refreshed.push({
+      ...item,
+      reservationExpiresAt: hold.expiresAt,
+      updatedAt: nowIso(),
+    });
+  }
+
+  return refreshed;
+}
 
 function normalizeGiftOptions(value = {}) {
   const legacyPremium = Boolean(value?.giftBox);
@@ -81,6 +115,7 @@ export async function addCartItem({
   quantity,
   selectedVariant,
   qrDestination,
+  ownerType = "guest",
 }) {
   const db = getDB();
 
@@ -128,6 +163,7 @@ export async function addCartItem({
       selectedVariant: variant,
       quantity: nextQty,
       phase: "cart",
+      ttlMs: getCartReservationMs(ownerType),
     });
 
     cart.items[existingIndex] = {
@@ -146,6 +182,7 @@ export async function addCartItem({
       selectedVariant: variant,
       quantity,
       phase: "cart",
+      ttlMs: getCartReservationMs(ownerType),
     });
 
     cart.items.push({
@@ -218,6 +255,7 @@ export async function updateCartItem({
   itemId,
   quantity,
   qrDestination,
+  ownerType = "guest",
 }) {
   const db = getDB();
   const cart = await getCartByUserId(userId);
@@ -246,6 +284,7 @@ export async function updateCartItem({
     selectedVariant: resolvedVariant,
     quantity,
     phase: "cart",
+    ttlMs: getCartReservationMs(ownerType),
   });
 
   let nextQrDestination = null;
@@ -426,12 +465,11 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
 
   const nextUserCart = {
     userId,
-    items: Array.isArray(guestCart.items)
-      ? guestCart.items.map((item) => ({
-          ...item,
-          updatedAt: now,
-        }))
-      : [],
+    items: await refreshCartReservations({
+      items: guestCart.items,
+      ownerId: userId,
+      ownerType: "user",
+    }),
     giftOptions: normalizeGiftOptions(
       guestCart.giftOptions || userCart.giftOptions
     ),
@@ -473,9 +511,33 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
     }
   }
 
+  const refreshedMergedItems = await refreshCartReservations({
+    items: mergedItems,
+    ownerId: userId,
+    ownerType: "user",
+  });
+
+  const retainedHoldIds = new Set(
+    refreshedMergedItems.map((item) => String(item.id))
+  );
+
+  await Promise.allSettled(
+    (guestCart.items || [])
+      .filter((item) => !retainedHoldIds.has(String(item.id)))
+      .map((item) =>
+        releaseInventoryHold({
+          holdId: item.id,
+          inventoryKey: getInventoryKey(
+            item.productId,
+            item.variant
+          ),
+        })
+      )
+  );
+
   const nextUserCart = {
     userId,
-    items: mergedItems,
+    items: refreshedMergedItems,
     giftOptions: normalizeGiftOptions(
       guestCart.giftOptions || userCart.giftOptions
     ),
@@ -506,13 +568,16 @@ export async function copyUserCartToGuestCart({ userId, guestId }) {
     userId: guestId,
     sourceUserId: userId,
     copiedFromUserCart: true,
-    items: Array.isArray(userCart.items)
-      ? userCart.items.map((item) => ({
-          ...item,
-          id: item.id || createId("cartitem"),
-          updatedAt: now,
-        }))
-      : [],
+    items: await refreshCartReservations({
+      items: Array.isArray(userCart.items)
+        ? userCart.items.map((item) => ({
+            ...item,
+            id: item.id || createId("cartitem"),
+          }))
+        : [],
+      ownerId: guestId,
+      ownerType: "guest",
+    }),
     giftOptions: normalizeGiftOptions(userCart.giftOptions),
     checkoutOrderId: null,
     checkoutStartedAt: null,

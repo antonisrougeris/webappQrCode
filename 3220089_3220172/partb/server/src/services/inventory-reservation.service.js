@@ -9,32 +9,50 @@ import {
   isReadyQr,
 } from "./stock-availability.service.js";
 
-const DEFAULT_CART_RESERVATION_MINUTES = 30;
-const DEFAULT_CHECKOUT_RESERVATION_DAYS = 5;
+const DEFAULT_GUEST_CART_RESERVATION_MINUTES = 30;
+const DEFAULT_SIGNED_IN_CART_RESERVATION_HOURS = 2;
+const DEFAULT_CHECKOUT_RESERVATION_HOURS = 5;
 
 function safePositiveNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-export function getCartReservationMs() {
+export function getGuestCartReservationMs() {
   return (
     safePositiveNumber(
-      process.env.CART_RESERVATION_MINUTES,
-      DEFAULT_CART_RESERVATION_MINUTES
+      process.env.GUEST_CART_RESERVATION_MINUTES,
+      DEFAULT_GUEST_CART_RESERVATION_MINUTES
     ) *
     60 *
     1000
   );
 }
 
+export function getSignedInCartReservationMs() {
+  return (
+    safePositiveNumber(
+      process.env.SIGNED_IN_CART_RESERVATION_HOURS,
+      DEFAULT_SIGNED_IN_CART_RESERVATION_HOURS
+    ) *
+    60 *
+    60 *
+    1000
+  );
+}
+
+export function getCartReservationMs(ownerType = "guest") {
+  return ownerType === "user"
+    ? getSignedInCartReservationMs()
+    : getGuestCartReservationMs();
+}
+
 export function getCheckoutReservationMs() {
   return (
     safePositiveNumber(
-      process.env.CHECKOUT_RESERVATION_DAYS,
-      DEFAULT_CHECKOUT_RESERVATION_DAYS
+      process.env.CHECKOUT_RESERVATION_HOURS,
+      DEFAULT_CHECKOUT_RESERVATION_HOURS
     ) *
-    24 *
     60 *
     60 *
     1000
@@ -134,7 +152,7 @@ export async function reserveInventoryHold({
   orderId = null,
   ttlMs = phase === "checkout"
     ? getCheckoutReservationMs()
-    : getCartReservationMs(),
+    : getGuestCartReservationMs(),
 }) {
   const qty = Number(quantity);
 
