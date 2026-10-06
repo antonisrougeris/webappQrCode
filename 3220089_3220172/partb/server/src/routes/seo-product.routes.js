@@ -101,13 +101,130 @@ function isInStock(product) {
   return true;
 }
 
+function productReviews(product) {
+  const reviews =
+    Array.isArray(product.reviews)
+      ? product.reviews
+      : [];
+
+  return reviews.filter((review) => {
+    const rating = Number(review?.rating);
+
+    return (
+      Number.isFinite(rating) &&
+      rating >= 1 &&
+      rating <= 5 &&
+      String(review?.name || "").trim() &&
+      String(review?.comment || "").trim()
+    );
+  });
+}
+
+function reviewJsonLd(review) {
+  return {
+    "@type": "Review",
+    reviewRating: {
+      "@type": "Rating",
+      ratingValue: Number(review.rating),
+      bestRating: 5,
+      worstRating: 1,
+    },
+    author: {
+      "@type": "Person",
+      name: String(review.name),
+    },
+    reviewBody: String(review.comment),
+  };
+}
+
+function merchantPolicyNodes() {
+  const baseUrl = cleanBaseUrl();
+  const storeId = `${baseUrl}/#store`;
+  const shippingId = `${baseUrl}/#standard-shipping`;
+  const returnPolicyId = `${baseUrl}/#return-policy`;
+
+  return {
+    storeId,
+    shippingId,
+    returnPolicyId,
+    nodes: [
+      {
+        "@type": "OnlineStore",
+        "@id": storeId,
+        name: "Skanare",
+        url: `${baseUrl}/`,
+        logo: `${baseUrl}/assets/img/logo_Image.png`,
+        email: "hello@skanare.com",
+        hasShippingService: {
+          "@id": shippingId,
+        },
+        hasMerchantReturnPolicy: {
+          "@id": returnPolicyId,
+        },
+      },
+      {
+        "@type": "ShippingService",
+        "@id": shippingId,
+        name: "Skanare standard shipping",
+        description:
+          "Standard shipping in Greece costs EUR 2. Orders of EUR 50 or more qualify for free standard shipping.",
+        shippingConditions: [
+          {
+            "@type": "ShippingConditions",
+            shippingDestination: {
+              "@type": "DefinedRegion",
+              addressCountry: "GR",
+            },
+            orderValue: {
+              "@type": "MonetaryAmount",
+              minValue: 0,
+              maxValue: 49.99,
+              currency: "EUR",
+            },
+            shippingRate: {
+              "@type": "MonetaryAmount",
+              value: 2,
+              currency: "EUR",
+            },
+          },
+          {
+            "@type": "ShippingConditions",
+            shippingDestination: {
+              "@type": "DefinedRegion",
+              addressCountry: "GR",
+            },
+            orderValue: {
+              "@type": "MonetaryAmount",
+              minValue: 50,
+              currency: "EUR",
+            },
+            shippingRate: {
+              "@type": "MonetaryAmount",
+              value: 0,
+              currency: "EUR",
+            },
+          },
+        ],
+      },
+      {
+        "@type": "MerchantReturnPolicy",
+        "@id": returnPolicyId,
+        merchantReturnLink:
+          `${baseUrl}/refund-policy`,
+      },
+    ],
+  };
+}
+
 /* =========================================================
    PRODUCT STRUCTURED DATA
 ========================================================= */
 
 function productJsonLd(product, locale = "en") {
-  return JSON.stringify({
-    "@context": "https://schema.org",
+  const reviews = productReviews(product);
+  const policy = merchantPolicyNodes();
+
+  const productNode = {
     "@type": "Product",
     "@id": `${productUrl(product, locale)}#product`,
 
@@ -128,6 +245,27 @@ function productJsonLd(product, locale = "en") {
       name: "Skanare",
     },
 
+    ...(reviews.length
+      ? {
+          review:
+            reviews
+              .slice(0, 5)
+              .map(reviewJsonLd),
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue:
+              reviews.reduce(
+                (sum, review) =>
+                  sum + Number(review.rating),
+                0
+              ) / reviews.length,
+            reviewCount: reviews.length,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+
     offers: {
       "@type": "Offer",
 
@@ -146,11 +284,29 @@ function productJsonLd(product, locale = "en") {
       itemCondition:
         "https://schema.org/NewCondition",
 
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        hasShippingService: {
+          "@id": policy.shippingId,
+        },
+      },
+
+      hasMerchantReturnPolicy: {
+        "@id": policy.returnPolicyId,
+      },
+
       seller: {
-        "@type": "Organization",
-        name: "Skanare",
+        "@id": policy.storeId,
       },
     },
+  };
+
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      productNode,
+      ...policy.nodes,
+    ],
   }).replace(/</g, "\\u003c");
 }
 

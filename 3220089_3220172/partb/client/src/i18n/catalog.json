@@ -445,8 +445,6 @@
     "Orders begin processing after successful payment confirmation.": "Η επεξεργασία της παραγγελίας ξεκινά μετά την επιτυχή επιβεβαίωση της πληρωμής.",
     "Some products may already be prepared and available in stock, while others may require additional production time.": "Ορισμένα προϊόντα μπορεί να είναι ήδη έτοιμα και διαθέσιμα, ενώ άλλα μπορεί να χρειάζονται επιπλέον χρόνο παραγωγής.",
     "Shipping costs": "Κόστος αποστολής",
-    "Any applicable shipping charge is shown during checkout before payment.": "Το κόστος αποστολής εμφανίζεται στο checkout πριν από την πληρωμή.",
-    "Shipping costs may vary depending on destination, delivery method and other fulfilment factors.": "Τα μεταφορικά μπορεί να διαφέρουν ανάλογα με τον προορισμό, τον τρόπο παράδοσης και άλλους παράγοντες εκπλήρωσης της παραγγελίας.",
     "Delivery times": "Χρόνοι παράδοσης",
     "Any delivery estimate provided by Skanare should be considered an estimate rather than a guaranteed delivery date unless explicitly stated otherwise.": "Κάθε εκτίμηση παράδοσης που παρέχει το Skanare είναι ενδεικτική και όχι εγγυημένη ημερομηνία παράδοσης, εκτός αν αναφέρεται ρητά διαφορετικά.",
     "Courier delays, holidays, weather conditions and other circumstances outside our reasonable control may affect delivery.": "Καθυστερήσεις μεταφορέων, αργίες, καιρικές συνθήκες και άλλες περιστάσεις εκτός του εύλογου ελέγχου μας μπορεί να επηρεάσουν την παράδοση.",
@@ -686,7 +684,9 @@
     "Accepted": "Αποδοχή",
     "Reject": "Απόρριψη",
     "Your cart is empty": "Το καλάθι σου είναι άδειο",
-    "Add a product before continuing to payment.": "Πρόσθεσε προϊόν στο καλάθι πριν συνεχίσεις στην πληρωμή."
+    "Add a product before continuing to payment.": "Πρόσθεσε προϊόν στο καλάθι πριν συνεχίσεις στην πληρωμή.",
+    "For orders delivered in Greece, standard shipping costs €2. Orders of €50 or more qualify for free standard shipping.": "Για παραγγελίες που παραδίδονται στην Ελλάδα, τα βασικά μεταφορικά κοστίζουν 2€. Οι παραγγελίες αξίας 50€ ή περισσότερο έχουν δωρεάν βασικά μεταφορικά.",
+    "The final shipping charge is shown during checkout before payment.": "Το τελικό κόστος αποστολής εμφανίζεται στο checkout πριν από την πληρωμή."
   },
   "messages": {
     "el": {

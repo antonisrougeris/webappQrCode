@@ -19,11 +19,25 @@ function cleanBaseUrl() {
   ).replace(/\/+$/, "");
 }
 
-function urlEntry({ loc, lastmod }) {
+function urlEntry({
+  loc,
+  lastmod,
+  english,
+  greek,
+}) {
+  const alternates =
+    english && greek
+      ? `
+    <xhtml:link rel="alternate" hreflang="en" href="${escapeXml(english)}" />
+    <xhtml:link rel="alternate" hreflang="el" href="${escapeXml(greek)}" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(english)}" />`
+      : "";
+
   return `
   <url>
     <loc>${escapeXml(loc)}</loc>
     ${lastmod ? `<lastmod>${escapeXml(lastmod)}</lastmod>` : ""}
+    ${alternates}
   </url>`;
 }
 
@@ -78,9 +92,13 @@ router.get("/sitemap.xml", async (_req, res) => {
         return [
           urlEntry({
             loc: english,
+            english,
+            greek,
           }),
           urlEntry({
             loc: greek,
+            english,
+            greek,
           }),
         ];
       })
@@ -114,16 +132,23 @@ router.get("/sitemap.xml", async (_req, res) => {
             identifier
           );
 
+        const english =
+          `${baseUrl}/product/${slug}`;
+        const greek =
+          `${baseUrl}/product/${slug}?lang=el`;
+
         return [
           urlEntry({
-            loc:
-              `${baseUrl}/product/${slug}`,
+            loc: english,
             lastmod,
+            english,
+            greek,
           }),
           urlEntry({
-            loc:
-              `${baseUrl}/product/${slug}?lang=el`,
+            loc: greek,
             lastmod,
+            english,
+            greek,
           }),
         ].join("");
       })
@@ -131,7 +156,8 @@ router.get("/sitemap.xml", async (_req, res) => {
       .join("");
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${staticUrls}
 ${productUrls}
 </urlset>`;

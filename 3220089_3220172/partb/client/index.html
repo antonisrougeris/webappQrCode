@@ -45,11 +45,60 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": "OnlineStore",
+  "@id": "https://skanare.com/#store",
   "name": "Skanare",
-  "url": "https://skanare.com",
+  "url": "https://skanare.com/",
   "logo": "https://skanare.com/assets/img/logo_Image.png",
-  "email": "hello@skanare.com"
+  "email": "hello@skanare.com",
+  "hasShippingService": {
+    "@type": "ShippingService",
+    "@id": "https://skanare.com/#standard-shipping",
+    "name": "Skanare standard shipping",
+    "description": "Standard shipping in Greece costs EUR 2. Orders of EUR 50 or more qualify for free standard shipping.",
+    "shippingConditions": [
+      {
+        "@type": "ShippingConditions",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "GR"
+        },
+        "orderValue": {
+          "@type": "MonetaryAmount",
+          "minValue": 0,
+          "maxValue": 49.99,
+          "currency": "EUR"
+        },
+        "shippingRate": {
+          "@type": "MonetaryAmount",
+          "value": 2,
+          "currency": "EUR"
+        }
+      },
+      {
+        "@type": "ShippingConditions",
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "GR"
+        },
+        "orderValue": {
+          "@type": "MonetaryAmount",
+          "minValue": 50,
+          "currency": "EUR"
+        },
+        "shippingRate": {
+          "@type": "MonetaryAmount",
+          "value": 0,
+          "currency": "EUR"
+        }
+      }
+    ]
+  },
+  "hasMerchantReturnPolicy": {
+    "@type": "MerchantReturnPolicy",
+    "@id": "https://skanare.com/#return-policy",
+    "merchantReturnLink": "https://skanare.com/refund-policy"
+  }
 }
 </script>
 </head>

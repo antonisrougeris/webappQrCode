@@ -99,6 +99,21 @@ jobs:
             exit 1
           }
 
+          grep -q '"@type": "OnlineStore"' dist/index.html || {
+            echo "ERROR: homepage OnlineStore structured data is missing"
+            exit 1
+          }
+
+          grep -q '"@type": "ShippingService"' dist/index.html || {
+            echo "ERROR: homepage shipping structured data is missing"
+            exit 1
+          }
+
+          grep -q '"@type": "MerchantReturnPolicy"' dist/index.html || {
+            echo "ERROR: homepage return-policy structured data is missing"
+            exit 1
+          }
+
           grep -q 'SKANARE_LIVE:GRID:featuredTshirtsGrid:START' dist/index.html || {
             echo "ERROR: homepage live-refresh markers are missing"
             exit 1
