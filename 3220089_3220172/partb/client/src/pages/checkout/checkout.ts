@@ -4,7 +4,7 @@ import "../../i18n/auto";
 import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";
 import { checkout } from "../../services/checkout";
-import { getMe } from "../../services/api";
+import { accountExists, getMe } from "../../services/api";
 import {
   parsePhoneNumberFromString,
   type CountryCode,
@@ -937,14 +937,18 @@ if (!user) {
       lastName,
     });
 
-  /*
-   * Do not reveal whether the email already has an account.
-   * Login keeps the prefilled email and exposes a Register link
-   * carrying the same checkout context for new customers.
-   */
+  let authPath = "/login";
+
+  try {
+    const existingCustomer = await accountExists(email);
+    authPath = existingCustomer ? "/login" : "/register";
+  } catch (error) {
+    console.error("Account lookup failed; falling back to login:", error);
+  }
+
   window.location.href =
     localizedPath(
-      `/login?${payload}`,
+      `${authPath}?${payload}`,
       locale
     );
 

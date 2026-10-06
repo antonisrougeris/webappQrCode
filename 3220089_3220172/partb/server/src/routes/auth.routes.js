@@ -1,5 +1,10 @@
 import express from "express";
-import { register, login, me } from "../controllers/auth.controller.js";
+import {
+  register,
+  login,
+  me,
+  accountStatus,
+} from "../controllers/auth.controller.js";
 import {
   sendEmailVerificationOtp,
   verifyEmailCode,
@@ -14,6 +19,7 @@ const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
+router.post("/account-status", accountStatus);
 router.get("/me", requireAuth, me);
 
 router.post("/send-verification", requireAuth, sendEmailVerificationOtp);
