@@ -15592,3 +15592,49 @@ body > div iframe[src*="boxnow"] {
     gap: 4px;
   }
 }
+
+
+/* Language selector placement refinement */
+.nav-left .language-switcher {
+  flex: 0 0 auto;
+  margin: 0 2px 0 0;
+  padding-right: 14px;
+  border-right: 1px solid rgba(17, 17, 17, 0.14);
+}
+
+.nav-left .language-switcher a {
+  min-width: 0;
+  padding: 5px 3px;
+  border-radius: 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.nav-left .language-switcher a:hover,
+.nav-left .language-switcher a:focus-visible {
+  background: transparent;
+  color: #111;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  html.nav-open .language-switcher {
+    order: -10;
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    justify-content: center;
+    margin: 0 0 10px;
+    padding: 0 0 10px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.12);
+  }
+
+  html.nav-open .main-nav .language-switcher a {
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    padding: 8px 6px;
+  }
+}
