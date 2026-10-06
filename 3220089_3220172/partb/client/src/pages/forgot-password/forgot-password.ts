@@ -1,4 +1,5 @@
 import "../../i18n/auto";
+import { locale, localizedPath } from "../../i18n/locale";
 /* 3220089_3220172 2025 */
 
 import { initNav } from "../../components/initNav";
@@ -93,9 +94,10 @@ function updateBackToLoginLink(): void {
   const query =
     params.toString();
 
-  backToLoginLink.href =
-    "/login" +
-    (query ? `?${query}` : "");
+  backToLoginLink.href = localizedPath(
+    "/login" + (query ? `?${query}` : ""),
+    locale
+  );
 }
 
 initNav();
@@ -276,9 +278,10 @@ resetForm?.addEventListener("submit", async (event) => {
     );
   }
 
-  window.location.href =
-    "/login?" +
-    params.toString();
+  window.location.href = localizedPath(
+    "/login?" + params.toString(),
+    locale
+  );
 }, 1200);
 
   } catch (err: any) {
