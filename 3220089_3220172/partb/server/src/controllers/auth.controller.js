@@ -4,6 +4,7 @@ import {
   registerUser,
   loginUser,
   getCurrentUser,
+  accountExistsByEmail,
 } from "../services/auth.service.js";
 import { mergeGuestCartIntoUserCart } from "../services/cart.service.js";
 
@@ -46,6 +47,13 @@ export const login = asyncHandler(async (req, res) => {
     user,
     cart,
   });
+});
+
+export const accountStatus = asyncHandler(async (req, res) => {
+  const email = String(req.body?.email || "").trim();
+  const exists = await accountExistsByEmail(email);
+
+  return ok(res, { exists });
 });
 
 export const me = asyncHandler(async (req, res) => {
