@@ -73,7 +73,10 @@ function applyLoginRedirect(): void {
 
 function goToRedirect(delay = 800): void {
   setTimeout(() => {
-    window.location.href = getRedirectUrl();
+    window.location.href = localizedPath(
+      getRedirectUrl(),
+      locale
+    );
   }, delay);
 }
 
