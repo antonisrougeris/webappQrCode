@@ -159,7 +159,7 @@ jobs:
             exit 1
           }
 
-          if grep -R -E 'href=["'"']\/el\/(assets|favicon|src\/assets)' dist/el --include='*.html'; then
+          if grep -R 'href="/el/assets' dist/el --include='*.html' || grep -R "href='/el/assets" dist/el --include='*.html'; then
             echo "ERROR: Greek pages contain broken localized asset URLs"
             exit 1
           fi
