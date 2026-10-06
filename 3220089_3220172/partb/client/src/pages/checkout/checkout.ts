@@ -13,6 +13,10 @@ const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 const PREMIUM_GIFT_PRICE = 1.5;
 import { setFlashToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
+import {
+  locale,
+  localizedPath,
+} from "../../i18n/locale";
 
 function saveCheckoutDraft(formEl: HTMLFormElement): void {
   const form = new FormData(formEl)
@@ -939,7 +943,10 @@ if (!user) {
    * carrying the same checkout context for new customers.
    */
   window.location.href =
-    `/login?${payload}`;
+    localizedPath(
+      `/login?${payload}`,
+      locale
+    );
 
   return;
 }
@@ -966,12 +973,15 @@ submitButton && (submitButton.textContent = "Preparing payment...");
           setFlashToast("Please verify your email before checkout.");
 
           window.location.href =
-            "/verify-email?redirect=" +
-            encodeURIComponent(
-              normalizeRoutePath(
-                window.location.pathname,
-                "/checkout"
-              )
+            localizedPath(
+              "/verify-email?redirect=" +
+                encodeURIComponent(
+                  normalizeRoutePath(
+                    window.location.pathname,
+                    "/checkout"
+                  )
+                ),
+              locale
             );
 
           return;
@@ -1016,6 +1026,7 @@ if (!locker) {
 
 updateLockerValidity(false);
         const result = await checkout({
+  locale,
   customer: {
     firstName,
     lastName,
