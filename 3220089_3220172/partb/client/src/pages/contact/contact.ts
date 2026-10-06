@@ -1,3 +1,4 @@
+import "../../i18n/auto";
 import { apiRequest } from "../../services/api";
 
 const form =
