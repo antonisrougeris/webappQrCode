@@ -118,7 +118,10 @@ form?.addEventListener("submit", async (event) => {
     if (statusEl) statusEl.textContent = "Email verified. Redirecting...";
 
     setTimeout(() => {
-      window.location.href = getRedirectUrl();
+      window.location.href = localizedPath(
+        getRedirectUrl(),
+        locale
+      );
     }, 800);
   } catch (err: any) {
     console.error("Verify email failed:", err);
