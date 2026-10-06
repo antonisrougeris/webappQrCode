@@ -109,7 +109,47 @@ jobs:
             exit 1
           }
 
-          echo "SEO prerendering + live refresh markers OK"
+          test -f dist/el/index.html || {
+            echo "ERROR: Greek homepage was not built"
+            exit 1
+          }
+
+          test -f dist/el/products/index.html || {
+            echo "ERROR: Greek products page was not built"
+            exit 1
+          }
+
+          test -f dist/el/_templates/product-details.html || {
+            echo "ERROR: Greek product detail template was not built"
+            exit 1
+          }
+
+          grep -q 'lang="el"' dist/el/index.html || {
+            echo "ERROR: Greek homepage language metadata is missing"
+            exit 1
+          }
+
+          grep -q 'hreflang="el"' dist/el/index.html || {
+            echo "ERROR: Greek homepage hreflang is missing"
+            exit 1
+          }
+
+          grep -q 'SKANARE_LIVE:GRID:featuredTshirtsGrid:START' dist/el/index.html || {
+            echo "ERROR: Greek homepage live-refresh markers are missing"
+            exit 1
+          }
+
+          grep -q 'SKANARE_LIVE:GRID:productsGrid:START' dist/el/products/index.html || {
+            echo "ERROR: Greek products live-refresh markers are missing"
+            exit 1
+          }
+
+          grep -q 'Ανακάλυψε προϊόντα QR' dist/el/products/index.html || {
+            echo "ERROR: curated Greek product-page copy is missing"
+            exit 1
+          }
+
+          echo "SEO prerendering + English/Greek localization markers OK"
 
       - name: Guard production bundle against development URLs
         run: |
