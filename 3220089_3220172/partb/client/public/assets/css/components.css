@@ -2557,25 +2557,38 @@ body.cart-open {
 
 .main-nav {
   width: 100%;
-  display: flex;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: clamp(360px, 37vw, 620px);
+  column-gap: clamp(220px, 22vw, 300px);
+  padding-right: 96px;
 }
 
 .nav-left,
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 25px;
-   margin-right: -65px;
+  gap: clamp(10px, 1.2vw, 20px);
+  min-width: 0;
+  margin: 0;
+}
+
+.nav-left {
+  justify-content: flex-start;
+}
+
+.nav-right {
+  justify-content: flex-end;
+  padding-right: 0;
 }
 
 .main-nav a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 14px;
+  padding: 10px clamp(8px, 0.8vw, 12px);
   border-radius: 999px;
   color: #111;
   text-decoration: none;
@@ -2698,7 +2711,7 @@ body.cart-open {
      MOBILE
   ========================= */
 
-@media (max-width: 900px) {
+@media (max-width: 1050px) {
   .header-content {
     min-height: 58px;
     display: grid;
@@ -15618,7 +15631,7 @@ body > div iframe[src*="boxnow"] {
   text-underline-offset: 3px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1050px) {
   html.nav-open .language-switcher {
     order: -10;
     display: inline-flex;
