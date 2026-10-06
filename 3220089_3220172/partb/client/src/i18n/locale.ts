@@ -155,6 +155,14 @@ export function normalizePublicPath(
   return legacyMap[path] ?? path;
 }
 
+function isProductDetailPath(
+  path: string
+): boolean {
+  return /^\/product\/[^/]+\/?$/.test(
+    path
+  );
+}
+
 export function localizedPath(
   rawPath: string,
   targetLocale: Locale
@@ -167,31 +175,43 @@ export function localizedPath(
   let cleanPath =
     normalizePublicPath(url.pathname);
 
-  if (
-    cleanPath === "/product" &&
-    /\/product\//.test(url.pathname)
-  ) {
-    const productMatch =
-      url.pathname.match(
-        /\/product\/([^/]+)$/
-      );
-
-    if (productMatch?.[1]) {
-      cleanPath =
-        `/product/${productMatch[1]}`;
-    }
+  if (cleanPath.length > 1) {
+    cleanPath =
+      cleanPath.replace(/\/+$/, "");
   }
 
-  const localized =
-    targetLocale === "el"
-      ? cleanPath === "/"
-        ? "/el/"
-        : `/el${cleanPath}`
-      : cleanPath;
+  const params =
+    new URLSearchParams(url.search);
+
+  /*
+   * Product detail pages intentionally stay on /product/:slug.
+   * Production Nginx already routes that path to the Express SEO
+   * handler. The Greek locale travels in the query instead.
+   */
+  params.delete("lang");
+
+  let localized: string;
+
+  if (
+    targetLocale === "el" &&
+    isProductDetailPath(cleanPath)
+  ) {
+    localized = cleanPath;
+    params.set("lang", "el");
+  } else {
+    localized =
+      targetLocale === "el"
+        ? cleanPath === "/"
+          ? "/el/"
+          : `/el${cleanPath}`
+        : cleanPath;
+  }
+
+  const query = params.toString();
 
   return (
     localized +
-    url.search +
+    (query ? `?${query}` : "") +
     url.hash
   );
 }
@@ -202,9 +222,10 @@ export function productPath(
   const base =
     `/product/${encodeURIComponent(identifier)}`;
 
-  return locale === "el"
-    ? `/el${base}`
-    : base;
+  return localizedPath(
+    base,
+    locale
+  );
 }
 
 export function localizedHref(
