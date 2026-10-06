@@ -130,6 +130,27 @@ export async function loginUser({ email, idToken }) {
   };
 }
 
+export async function accountExistsByEmail(email) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    throw new ApiError(400, "Email is required");
+  }
+
+  const auth = getAuthService();
+
+  try {
+    await auth.getUserByEmail(normalizedEmail);
+    return true;
+  } catch (error) {
+    if (error?.code === "auth/user-not-found") {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
 export async function getCurrentUser(uid) {
   if (!uid) {
     throw new ApiError(401, "Unauthorized");
