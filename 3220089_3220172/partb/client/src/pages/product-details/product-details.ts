@@ -18,7 +18,7 @@ import { getOrders } from "../../services/orders";
 import { createProductReview, getProductReviews } from "../../services/reviews";
 
 import { showToast } from "../../utils/toast.ts";
-import { locale, productPath, t } from "../../i18n/locale";
+import { productPath, t } from "../../i18n/locale";
 
 
 initNav();
