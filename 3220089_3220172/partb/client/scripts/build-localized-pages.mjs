@@ -9,6 +9,7 @@ const catalog = JSON.parse(await fs.readFile(catalogPath, "utf8"));
 const pages = [
   { route: "/", source: "index.html", target: "el/index.html" },
   { route: "/products", source: "src/pages/products/products.html", target: "el/products/index.html" },
+  { route: "/product", source: "src/pages/product-details/product-details.html", target: "el/_templates/product-details.html" },
   { route: "/cart", source: "src/pages/cart/cart.html", target: "el/cart/index.html" },
   { route: "/checkout", source: "src/pages/checkout/checkout.html", target: "el/checkout/index.html" },
   { route: "/contact", source: "src/pages/contact/contact.html", target: "el/contact/index.html" },
