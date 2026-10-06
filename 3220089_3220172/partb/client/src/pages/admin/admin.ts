@@ -1443,6 +1443,19 @@ function openProductModal(product: any = null) {
   setInputValue("productShortDescription", product?.shortDescription || "");
   setInputValue("productDescription", product?.description || "");
 
+  setInputValue(
+    "productTitleEl",
+    product?.translations?.el?.title || ""
+  );
+  setInputValue(
+    "productShortDescriptionEl",
+    product?.translations?.el?.shortDescription || ""
+  );
+  setInputValue(
+    "productDescriptionEl",
+    product?.translations?.el?.description || ""
+  );
+
   populateProductCategories(product?.category || "");
 
   setInputValue("productPrice", product?.price ?? "");
@@ -1516,6 +1529,9 @@ function resetProductForm() {
   setInputValue("productMerchandisingTag", "none");
 
   setInputValue("productCurrency", "EUR");
+  setInputValue("productTitleEl", "");
+  setInputValue("productShortDescriptionEl", "");
+  setInputValue("productDescriptionEl", "");
 
   setInputValue("qrTextPrint", "");
   setInputValue("qrTextPosition", "bottom");
@@ -2066,6 +2082,13 @@ function collectProductPayload() {
     title: inputValue("productTitle"),
     shortDescription: inputValue("productShortDescription"),
     description: inputValue("productDescription"),
+    translations: {
+      el: {
+        title: inputValue("productTitleEl"),
+        shortDescription: inputValue("productShortDescriptionEl"),
+        description: inputValue("productDescriptionEl"),
+      },
+    },
     category: inputValue("productCategory") || "General",
     price: Number(inputValue("productPrice") || 0),
     currency: inputValue("productCurrency") || "EUR",
