@@ -1,3 +1,4 @@
+import "../../i18n/auto";
 import { onAuthStateChanged } from "firebase/auth";
 import { initLayout } from "../../components/initLayout";
 import { apiRequest, API_BASE_URL } from "../../services/api";
