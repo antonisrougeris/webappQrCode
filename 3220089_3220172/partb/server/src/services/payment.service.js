@@ -22,6 +22,7 @@ import {
   pruneExpiredHolds,
   reservationDocId,
 } from "./inventory-reservation.service.js";
+import { recoveryOfferRef } from "./recovery-offer.service.js";
 
 
 function getEventData(payload) {
@@ -1512,6 +1513,22 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           paidAt,
       }
     );
+
+    if (order.recoveryDiscount?.code) {
+      tx.set(
+        recoveryOfferRef(
+          order.recoveryDiscount.code,
+          db
+        ),
+        {
+          status: "used",
+          usedAt: paidAt,
+          usedOrderId: order.id,
+          updatedAt: paidAt,
+        },
+        { merge: true }
+      );
+    }
 
 
     /*
