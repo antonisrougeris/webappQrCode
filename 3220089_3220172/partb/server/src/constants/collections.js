@@ -8,6 +8,7 @@ export const COLLECTIONS = {
   RETURNS: "returns",
   CONTACT_MESSAGES: "contactMessages",
   INVENTORY_HOLDS: "inventoryHolds",
+  RECOVERY_OFFERS: "recoveryOffers",
     QR_SHORT_IDS: "qrShortIds",
 
 };
