@@ -656,7 +656,7 @@ function buildBoxNowDeliveryPayload(
       "0.00",
 
     allowReturn:
-      true,
+      false,
 
     origin: {
       locationId:
