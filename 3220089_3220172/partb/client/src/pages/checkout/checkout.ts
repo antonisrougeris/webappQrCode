@@ -940,7 +940,11 @@ if (!user) {
   let authPath = "/login";
 
   try {
-    const existingCustomer = await accountExists(email);
+    const existingCustomer = await accountExists(email, {
+      firstName,
+      lastName,
+      phone: formValues.phone,
+    });
     authPath = existingCustomer ? "/login" : "/register";
   } catch (error) {
     console.error("Account lookup failed; falling back to login:", error);
