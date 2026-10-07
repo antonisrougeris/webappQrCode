@@ -89,6 +89,14 @@ let recoveryCode = "";
 let checkoutSubmitting = false;
 let checkoutHasItems = true;
 
+function setDiscountStatus(message: string, success = false): void {
+  const el = document.getElementById("discountStatus");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle("is-success", success);
+  el.classList.toggle("is-error", !success && Boolean(message));
+}
+
 function formatPrice(n: number): string {
   return new Intl.NumberFormat("el-GR", {
     style: "currency",
@@ -730,11 +738,14 @@ document.addEventListener("DOMContentLoaded", () => {
         recoveryCode = offer.code;
         localStorage.setItem(RECOVERY_CODE_KEY, offer.code);
         if (input) input.value = offer.code;
-        setFlashToast(`${discount}% recovery discount applied ✅`);
+        setDiscountStatus(`${discount}% discount applied`, true);
+      setFlashToast(`${discount}% discount applied ✅`);
         void render();
       })
       .catch(() => {
         recoveryCode = "";
+        discount = 0;
+        setDiscountStatus("This discount code is no longer valid.");
         localStorage.removeItem(RECOVERY_CODE_KEY);
       });
   }
@@ -884,6 +895,7 @@ editCartButton?.addEventListener(
       discount = 0;
       recoveryCode = "";
       localStorage.removeItem(RECOVERY_CODE_KEY);
+      setDiscountStatus("Enter a discount code");
       setFlashToast("Enter a discount code");
       void render();
       return;
@@ -900,7 +912,9 @@ editCartButton?.addEventListener(
       discount = 0;
       recoveryCode = "";
       localStorage.removeItem(RECOVERY_CODE_KEY);
-      setFlashToast(error instanceof Error ? error.message : "Invalid code");
+      const message = error instanceof Error ? error.message : "Invalid code";
+      setDiscountStatus(message);
+      setFlashToast(message);
     }
 
     void render();
