@@ -14,6 +14,11 @@ import {
   releaseInventoryHold,
   reserveInventoryHold,
 } from "./inventory-reservation.service.js";
+import {
+  normalizeRecoveryCode,
+  recoveryOfferRef,
+  validateRecoveryOfferData,
+} from "./recovery-offer.service.js";
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -125,6 +130,7 @@ export async function checkoutCartForOwner({
   },
   documentType = "receipt",
   invoiceDetails = null,
+  recoveryCode = "",
 }) {
   if (!ownerId) throw new ApiError(401, "Missing checkout owner");
 
@@ -150,6 +156,33 @@ export async function checkoutCartForOwner({
     const cart = cartSnap.exists ? cartSnap.data() : { items: [] };
     const cartItems = Array.isArray(cart.items) ? cart.items : [];
     if (!cartItems.length) throw new ApiError(400, "Cart is empty");
+    const normalizedRecoveryCode = normalizeRecoveryCode(recoveryCode);
+    let recoveryOffer = null;
+    let recoveryRef = null;
+
+    if (normalizedRecoveryCode) {
+      recoveryRef = recoveryOfferRef(normalizedRecoveryCode, db);
+      const recoverySnap = await tx.get(recoveryRef);
+
+      recoveryOffer = validateRecoveryOfferData(
+        recoverySnap.exists ? recoverySnap.data() : null,
+        {
+          email: customer.email,
+          code: normalizedRecoveryCode,
+        }
+      );
+
+      if (
+        recoveryOffer.reservedOrderId &&
+        String(recoveryOffer.reservedOrderId) !==
+          String(cart.checkoutOrderId || "")
+      ) {
+        throw new ApiError(
+          409,
+          "Recovery discount is already reserved by another checkout"
+        );
+      }
+    }
 
     /*
      * Checkout idempotency:
@@ -202,7 +235,9 @@ export async function checkoutCartForOwner({
                 existingLocker === requestedLocker
               )
             ) &&
-            existingGiftFee === requestedGiftFee
+            existingGiftFee === requestedGiftFee &&
+            String(existingOrder.recoveryDiscount?.code || "") ===
+              normalizedRecoveryCode
           ) {
             const refreshedAt = nowIso();
 
@@ -402,9 +437,25 @@ orderItems.push({
 
     }
 
-    const shippingCost = calculateShipping(subtotal, delivery);
+    const subtotalBeforeRecoveryDiscount = subtotal;
+    const recoveryDiscountPercent =
+      Number(recoveryOffer?.discountPercent || 0);
+    const recoveryDiscountAmount =
+      Math.round(
+        subtotalBeforeRecoveryDiscount *
+        (recoveryDiscountPercent / 100) *
+        100
+      ) / 100;
+    const discountedSubtotal =
+      Math.max(
+        0,
+        subtotalBeforeRecoveryDiscount -
+        recoveryDiscountAmount
+      );
+
+    const shippingCost = calculateShipping(discountedSubtotal, delivery);
     const giftFee = giftFeeFor(giftOptions);
-    const total = subtotal + shippingCost + giftFee;
+    const total = discountedSubtotal + shippingCost + giftFee;
 
     const order = {
   id: orderId,
@@ -485,7 +536,16 @@ items: orderItems,
 
 
 
-  subtotal,
+  subtotal: discountedSubtotal,
+  subtotalBeforeRecoveryDiscount,
+  recoveryDiscountAmount,
+  recoveryDiscount: recoveryOffer
+    ? {
+        code: recoveryOffer.code,
+        percent: recoveryDiscountPercent,
+        expiresAt: recoveryOffer.expiresAt,
+      }
+    : null,
   shippingCost,
   total,
   currency: "EUR",
@@ -510,6 +570,18 @@ items: orderItems,
       db.collection(COLLECTIONS.ORDERS).doc(orderId),
       order
     );
+
+    if (recoveryRef && recoveryOffer) {
+      tx.set(
+        recoveryRef,
+        {
+          reservedOrderId: orderId,
+          reservedAt: createdAt,
+          updatedAt: createdAt,
+        },
+        { merge: true }
+      );
+    }
 
     tx.set(
       cartRef,
@@ -590,6 +662,20 @@ items: orderItems,
         },
         { merge: true }
       );
+
+    if (result.order?.recoveryDiscount?.code) {
+      await recoveryOfferRef(
+        result.order.recoveryDiscount.code,
+        db
+      ).set(
+        {
+          reservedOrderId: null,
+          reservedAt: null,
+          updatedAt: failedAt,
+        },
+        { merge: true }
+      );
+    }
 
     throw error;
   }
