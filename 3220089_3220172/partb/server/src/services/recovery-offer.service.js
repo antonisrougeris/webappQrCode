@@ -21,7 +21,7 @@ export function recoveryOfferRef(code, db = getDB()) {
 
 export function validateRecoveryOfferData(data, { email, code } = {}) {
   if (!data) {
-    throw new ApiError(400, "Recovery discount is invalid");
+    throw new ApiError(400, "Discount code is invalid");
   }
 
   const normalizedCode = normalizeRecoveryCode(code || data.code);
@@ -32,7 +32,7 @@ export function validateRecoveryOfferData(data, { email, code } = {}) {
   const source = data.source === "manual" ? "manual" : "recovery";
 
   if (!normalizedCode || data.status !== "active") {
-    throw new ApiError(400, "Recovery discount is no longer active");
+    throw new ApiError(400, "Discount code is no longer active");
   }
 
   if (
@@ -43,7 +43,7 @@ export function validateRecoveryOfferData(data, { email, code } = {}) {
   }
 
   if (offerEmail && normalizedEmail && offerEmail !== normalizedEmail) {
-    throw new ApiError(400, "Recovery discount is not valid for this email");
+    throw new ApiError(400, "This discount code is not valid for this email");
   }
 
   const discountPercent = Number(data.discountPercent || 0);
@@ -115,7 +115,7 @@ export async function getActiveRecoveryOffer(code) {
   const normalizedCode = normalizeRecoveryCode(code);
 
   if (!normalizedCode) {
-    throw new ApiError(400, "Recovery discount code is required");
+    throw new ApiError(400, "Discount code is required");
   }
 
   if (normalizedCode === "SKANARE10") {
