@@ -946,15 +946,30 @@ async function openOrder(orderId: string) {
 
     <div class="admin-detail-group">
       <h3>BOX NOW / shipping</h3>
-      <div class="admin-form-grid">
-        <label class="admin-field"><span>Carrier</span><input id="shippingCarrier" type="text" value="${escapeHtml(shipping.carrier || "BOX NOW")}" /></label>
-        <label class="admin-field"><span>Parcel ID</span><input id="shippingParcelId" type="text" value="${escapeHtml(shipping.parcelId || "")}" /></label>
-        <label class="admin-field"><span>Tracking number</span><input id="shippingTrackingNumber" type="text" value="${escapeHtml(shipping.trackingNumber || "")}" /></label>
-        <label class="admin-field"><span>Locker ID</span><input id="shippingLockerId" type="text" value="${escapeHtml(shipping.lockerId || order.locker?.id || "")}" /></label>
-      </div>
-      <label class="admin-field"><span>Tracking URL</span><input id="shippingTrackingUrl" type="url" value="${escapeHtml(shipping.trackingUrl || "")}" /></label>
-      <label class="admin-field"><span>Locker name</span><input id="shippingLockerName" type="text" value="${escapeHtml(shipping.lockerName || order.locker?.name || "")}" /></label>
-      <div class="admin-actions"><button id="saveShippingButton" class="admin-secondary-button" type="button">Save shipping</button></div>
+      <label class="admin-field">
+        <span>Parcel ID</span>
+        <input
+          id="shippingParcelId"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          maxlength="10"
+          placeholder="e.g. 6548139925"
+          value="${escapeHtml(
+            shipping.parcelId ||
+            shipping.boxnow?.parcelIds?.[0] ||
+            ""
+          )}"
+        />
+      </label>
+      <p class="admin-muted" style="margin:8px 0 12px">
+        Enter only the 10-digit BOX NOW Parcel ID from the voucher.
+        Tracking number and tracking link are generated automatically.
+      </p>
+      ${shipping.parcelId
+        ? `<p class="admin-muted">Tracking: <a href="https://boxnow.gr/?track=${encodeURIComponent(String(shipping.parcelId))}" target="_blank" rel="noopener noreferrer">https://boxnow.gr/?track=${escapeHtml(String(shipping.parcelId))}</a></p>`
+        : ""}
+      <div class="admin-actions"><button id="saveShippingButton" class="admin-secondary-button" type="button">Save parcel ID</button></div>
       <p id="shippingStatus" class="admin-inline-status"></p>
     </div>
 
@@ -1110,22 +1125,32 @@ function bindOrderDrawerActions(order: any) {
 
   document.getElementById("saveShippingButton")?.addEventListener("click", async () => {
     const statusEl = document.getElementById("shippingStatus");
-    setInlineStatus(statusEl, "Saving shipping details...");
+    const parcelId = inputValue("shippingParcelId").replace(/\s+/g, "");
+
+    if (!/^\d{10}$/.test(parcelId)) {
+      setInlineStatus(
+        statusEl,
+        "Parcel ID must be exactly 10 digits.",
+        "error"
+      );
+      return;
+    }
+
+    setInlineStatus(statusEl, "Saving BOX NOW parcel ID...");
 
     try {
       await adminApi(`/orders/${encodeURIComponent(order.id)}/shipping`, {
         method: "PATCH",
         body: JSON.stringify({
-          carrier: inputValue("shippingCarrier"),
-          parcelId: inputValue("shippingParcelId"),
-          trackingNumber: inputValue("shippingTrackingNumber"),
-          trackingUrl: inputValue("shippingTrackingUrl"),
-          lockerId: inputValue("shippingLockerId"),
-          lockerName: inputValue("shippingLockerName"),
+          parcelId,
         }),
       });
 
-      setInlineStatus(statusEl, "Shipping details saved.", "success");
+      setInlineStatus(
+        statusEl,
+        "Parcel ID saved. Tracking link generated automatically.",
+        "success"
+      );
       await openOrder(order.id);
     } catch (error) {
       setInlineStatus(statusEl, errorMessage(error), "error");
