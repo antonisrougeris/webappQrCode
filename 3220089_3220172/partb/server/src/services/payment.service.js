@@ -1514,7 +1514,10 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       }
     );
 
-    if (order.recoveryDiscount?.code) {
+    if (
+      order.recoveryDiscount?.code &&
+      order.recoveryDiscount?.source !== "store"
+    ) {
       tx.set(
         recoveryOfferRef(
           order.recoveryDiscount.code,
