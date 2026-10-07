@@ -28,12 +28,7 @@ export function renderFooter(): void {
             Dynamic QR. Your link. Your story.
           </p>
 
-          <a
-            href="mailto:hello@skanare.com"
-            class="footer-email"
-          >
-            hello@skanare.com
-          </a>
+          
 
           <div
             class="footer-socials"
