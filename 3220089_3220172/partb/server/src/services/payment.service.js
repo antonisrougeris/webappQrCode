@@ -452,6 +452,17 @@ async function markBoxNowShippingCreated({
       "shipping.boxnow.parcelIds":
         parcelIds,
 
+      "shipping.parcelId":
+        parcelIds[0],
+
+      "shipping.trackingNumber":
+        parcelIds[0],
+
+      "shipping.trackingUrl":
+        `https://boxnow.gr/?track=${encodeURIComponent(
+          parcelIds[0]
+        )}`,
+
       "shipping.boxnow.createdAt":
         completedAt,
 
