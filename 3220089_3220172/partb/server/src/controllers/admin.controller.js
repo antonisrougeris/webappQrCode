@@ -52,6 +52,13 @@ import {
   refreshStorefrontProductHtmlSafe,
 } from "../services/storefront-seo-html.service.js";
 
+import {
+  getCommerceOperationsData,
+  sendCartRecoveryEmail,
+  sendPaymentRecoveryEmail,
+} from "../services/admin-commerce.service.js";
+
+
 
 
 const __filename =
@@ -531,6 +538,47 @@ export const getAdminDashboard =
         });
     }
   );
+
+
+/* =========================================================
+   COMMERCE OPERATIONS / RECOVERY
+   ========================================================= */
+
+export const getAdminCommerceOperations = asyncHandler(
+  async (_req, res) => {
+    const data = await getCommerceOperationsData();
+    return res.status(200).json(data);
+  }
+);
+
+export const sendAdminCartRecovery = asyncHandler(
+  async (req, res) => {
+    const result = await sendCartRecoveryEmail({
+      cartId: req.params.id,
+      discountPercent: req.body?.discountPercent || 0,
+      adminUid: req.user?.uid || null,
+    });
+
+    return ok(res, {
+      message: "Cart recovery email sent",
+      ...result,
+    });
+  }
+);
+
+export const sendAdminPaymentRecovery = asyncHandler(
+  async (req, res) => {
+    const result = await sendPaymentRecoveryEmail({
+      orderId: req.params.id,
+      adminUid: req.user?.uid || null,
+    });
+
+    return ok(res, {
+      message: "Payment reminder sent",
+      ...result,
+    });
+  }
+);
 
 
 /* =========================================================
