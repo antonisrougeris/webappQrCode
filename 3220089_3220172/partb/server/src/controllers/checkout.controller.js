@@ -28,6 +28,7 @@ export const checkout = asyncHandler(async (req, res) => {
     giftOptions: body.giftOptions,
     documentType: body.documentType || "receipt",
     invoiceDetails: body.invoiceDetails || null,
+    recoveryCode: body.recoveryCode || "",
   });
 
   const existingVivaOrderCode =
