@@ -1297,3 +1297,64 @@ button {
   font-size:10px;
   font-weight:800;
 }
+
+
+/* =========================================================
+   COMMERCE OPERATIONS
+   ========================================================= */
+
+.commerce-ops-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.admin-table--ops td {
+  vertical-align: top;
+}
+
+.stock-number {
+  display: inline-flex;
+  min-width: 34px;
+  justify-content: center;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #e9f8ec;
+  color: #18752b;
+  font-weight: 800;
+}
+
+.stock-number.is-low {
+  background: #fff5d9;
+  color: #8b6500;
+}
+
+.stock-number.is-empty {
+  background: #ffe8e5;
+  color: #a82a1e;
+}
+
+.admin-button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  text-decoration: none;
+}
+
+#view-operations .admin-section__header p {
+  margin: 8px 0 0;
+  color: #777772;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#view-operations .admin-section {
+  overflow: hidden;
+}
+
+@media (max-width: 760px) {
+  #view-operations .admin-section__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
