@@ -1262,6 +1262,46 @@ function renderReturns() {
             ? `<p class="admin-muted"><strong>Customer note:</strong> ${escapeHtml(request.customerNote)}</p>`
             : ""}
 
+          ${
+            Array.isArray(request.evidence) && request.evidence.length
+              ? `
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;">
+                  ${request.evidence
+                    .map(
+                      (item: any, index: number) => `
+                        <a
+                          href="${escapeHtml(item.url || "")}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style="display:block;"
+                        >
+                          <img
+                            src="${escapeHtml(item.url || "")}"
+                            alt="Return evidence ${index + 1}"
+                            style="width:110px;height:110px;object-fit:cover;border:1px solid #ddd;border-radius:8px;"
+                          />
+                        </a>
+                      `
+                    )
+                    .join("")}
+                </div>
+              `
+              : ""
+          }
+
+          ${
+            request.returnShipping
+              ? `
+                <p class="admin-muted">
+                  <strong>Return shipping:</strong>
+                  ${request.returnShipping.customerPays
+                    ? `Customer-paid €${Number(request.returnShipping.fee || 0).toFixed(2)} via Viva · ${escapeHtml(request.payment?.status || "pending")}`
+                    : "Free — merchant/product issue"}
+                </p>
+              `
+              : ""
+          }
+
           ${request.providerError?.message
             ? `<p class="admin-status" style="color:#9b1c1c;">BOX NOW: ${escapeHtml(request.providerError.message)}</p>`
             : ""}

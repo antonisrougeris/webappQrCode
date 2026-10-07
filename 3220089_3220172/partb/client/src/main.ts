@@ -756,21 +756,45 @@ function renderCustomerOrders(
          * BOX NOW / TRACKING
          */
 
-        const trackingNumber =
-          order?.shipping
-            ?.trackingNumber ||
-          order?.shipping
-            ?.parcelId ||
-          order?.shipping
-            ?.boxnow
-            ?.parcelIds?.[0] ||
-          "";
+        const rawBoxNowParcelId =
+          String(
+            order?.shipping
+              ?.boxnow
+              ?.parcelIds?.[0] ||
+            order?.shipping
+              ?.parcelId ||
+            ""
+          ).trim();
 
+        const boxNowParcelId =
+          /^\d{10}$/.test(
+            rawBoxNowParcelId
+          )
+            ? rawBoxNowParcelId
+            : "";
+
+        const trackingNumber =
+          boxNowParcelId ||
+          (
+            order?.shipping?.provider !== "boxnow"
+              ? String(
+                  order?.shipping
+                    ?.trackingNumber ||
+                  ""
+                ).trim()
+              : ""
+          );
 
         const trackingUrl =
-          order?.shipping
-            ?.trackingUrl ||
-          "";
+          boxNowParcelId
+            ? `https://boxnow.gr/?track=${encodeURIComponent(
+                boxNowParcelId
+              )}`
+            : String(
+                order?.shipping
+                  ?.trackingUrl ||
+                ""
+              ).trim();
 
 
         const carrier =

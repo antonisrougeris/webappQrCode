@@ -50,6 +50,17 @@ type ReturnRequest = {
   }>;
   boxnow?: { parcelId?: string | null };
   review?: { note?: string };
+  returnShipping?: {
+    customerPays?: boolean;
+    fee?: number;
+    currency?: string;
+  };
+  payment?: {
+    status?: string;
+    checkoutUrl?: string;
+    amount?: number;
+    currency?: string;
+  };
   createdAt?: string;
 };
 
@@ -80,6 +91,7 @@ const reasons = [
 ];
 
 const statusSteps = [
+  "payment_required",
   "requested",
   "label_ready",
   "dropped_off",
@@ -414,6 +426,41 @@ form?.addEventListener("submit", async (event) => {
     return;
   }
 
+  const freeFaultReasons = new Set([
+    "wrong_item",
+    "damaged",
+    "defective",
+    "not_as_described",
+  ]);
+
+  const hasFaultReason = items.some((item) => freeFaultReasons.has(item.reason));
+  const customerNote =
+    (document.getElementById("returnCustomerNote") as HTMLTextAreaElement | null)
+      ?.value.trim() || "";
+  const evidenceInput =
+    document.getElementById("returnEvidence") as HTMLInputElement | null;
+  const evidenceFiles = Array.from(evidenceInput?.files || []);
+
+  if (evidenceFiles.length > 4) {
+    if (formStatus) formStatus.textContent = "Upload up to 4 photos.";
+    return;
+  }
+
+  if (hasFaultReason && evidenceFiles.length === 0) {
+    if (formStatus) {
+      formStatus.textContent =
+        "Upload at least one photo for defective, damaged, incorrect or not-as-described items.";
+    }
+    return;
+  }
+
+  if (hasFaultReason && customerNote.length < 10) {
+    if (formStatus) {
+      formStatus.textContent = "Please describe the problem in a little more detail.";
+    }
+    return;
+  }
+
   const submit = document.getElementById("submitReturn") as HTMLButtonElement | null;
   if (submit) {
     submit.disabled = true;
@@ -421,17 +468,28 @@ form?.addEventListener("submit", async (event) => {
   }
 
   try {
+    const payload = new FormData();
+    payload.append("orderId", selectedOrder.id);
+    payload.append("items", JSON.stringify(items));
+    payload.append("customerNote", customerNote);
+    payload.append("conditionConfirmed", "true");
+
+    for (const file of evidenceFiles) {
+      payload.append("evidence", file);
+    }
+
     const response = await apiRequest<{ return: ReturnRequest }>("/returns", {
       method: "POST",
-      body: JSON.stringify({
-        orderId: selectedOrder.id,
-        items,
-        customerNote:
-          (document.getElementById("returnCustomerNote") as HTMLTextAreaElement | null)
-            ?.value.trim() || "",
-        conditionConfirmed: true,
-      }),
+      body: payload,
     });
+
+    if (
+      response.return.status === "payment_required" &&
+      response.return.payment?.checkoutUrl
+    ) {
+      window.location.href = response.return.payment.checkoutUrl;
+      return;
+    }
 
     window.history.replaceState(
       {},
@@ -470,7 +528,7 @@ function renderReturnHistory(): void {
     .map((request) => {
       const status = String(request.status || "requested");
       const stepIndex = statusSteps.indexOf(status);
-      const canCancel = ["requested", "provider_failed"].includes(status);
+      const canCancel = ["payment_required", "requested", "provider_failed"].includes(status);
       const canDownload = Boolean(request.boxnow?.parcelId) &&
         !["cancelled", "rejected"].includes(status);
 
@@ -506,6 +564,11 @@ function renderReturnHistory(): void {
             : ""}
 
           <div class="return-history-card__actions">
+            ${
+              status === "payment_required" && request.payment?.checkoutUrl
+                ? `<a class="returns-primary" href="${esc(request.payment.checkoutUrl)}">Pay €2 return shipping →</a>`
+                : ""
+            }
             ${canDownload
               ? `<button class="returns-secondary" type="button" data-download-return="${esc(request.id)}">Download BOX NOW voucher</button>`
               : ""}

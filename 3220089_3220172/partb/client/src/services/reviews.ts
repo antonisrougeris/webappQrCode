@@ -11,13 +11,27 @@ export async function getProductReviews(productId: string): Promise<ProductRevie
 export async function createProductReview(
   productId: string,
   payload: { name: string; rating: number; comment: string }
-): Promise<ProductReview> {
-  const response = await apiRequest<{ review: ProductReview }>(
+): Promise<{
+  review: ProductReview;
+  reward?: {
+    code?: string;
+    discountPercent?: number;
+    expiresAt?: string;
+  };
+}> {
+  const response = await apiRequest<{
+    review: ProductReview;
+    reward?: {
+      code?: string;
+      discountPercent?: number;
+      expiresAt?: string;
+    };
+  }>(
     `/reviews/${encodeURIComponent(productId)}`,
     {
       method: "POST",
       body: JSON.stringify(payload),
     }
   );
-  return response.review;
+  return response;
 }

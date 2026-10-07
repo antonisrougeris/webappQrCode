@@ -65,14 +65,37 @@
               <div id="returnItems"></div>
 
               <label class="returns-field">
-                <span>Anything else we should know? <small>(optional)</small></span>
+                <span>Tell us what happened</span>
                 <textarea
                   id="returnCustomerNote"
                   rows="4"
                   maxlength="2000"
-                  placeholder="Add details that may help us review the return."
+                  placeholder="For damaged, defective, incorrect or not-as-described items, describe the problem clearly."
                 ></textarea>
               </label>
+
+              <label class="returns-field">
+                <span>Photos <small>(required for product/order problems)</small></span>
+                <input
+                  id="returnEvidence"
+                  type="file"
+                  name="evidence"
+                  accept="image/png,image/jpeg,image/webp"
+                  multiple
+                />
+                <small class="return-muted">
+                  Up to 4 photos. JPG, PNG or WEBP.
+                </small>
+              </label>
+
+              <div class="returns-condition">
+                <span>
+                  <strong>Return shipping:</strong>
+                  defective, damaged, wrong-item and not-as-described returns are free.
+                  Change-of-mind and wrong-size returns have a €2 BOX NOW return-shipping fee,
+                  paid securely through Viva before the voucher is created.
+                </span>
+              </div>
 
               <label class="returns-condition">
                 <input id="returnConditionConfirmed" type="checkbox" required />

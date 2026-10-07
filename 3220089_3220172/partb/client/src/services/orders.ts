@@ -10,6 +10,11 @@ export interface Order {
   items?: CartItem[];
   createdAt?: string;
   paymentStatus?: string;
+  fulfillmentStatus?: string;
+  shipping?: {
+    status?: string;
+    deliveredAt?: string;
+  };
 }
 
 export async function getOrders(): Promise<Order[]> {

@@ -6,6 +6,7 @@ import { createBoxNowCustomerReturn, getBoxNowParcelLabel } from "./boxnow.servi
 import { getOrdersForUser } from "./order.service.js";
 import { sendEmail } from "./email.service.js";
 import { brandedEmailTemplate } from "./email-template.service.js";
+import { createVivaPaymentOrder } from "./viva.service.js";
 import {
   RETURN_REASON_KEYS,
   RETURN_REASON_LABELS,
@@ -16,6 +17,13 @@ import {
 } from "./returns-policy.service.js";
 
 const releasedStatuses = new Set(["cancelled", "rejected"]);
+const RETURN_FEE_EUR = 2;
+const FREE_RETURN_REASONS = new Set([
+  "wrong_item",
+  "damaged",
+  "defective",
+  "not_as_described",
+]);
 
 function collection(db) {
   return db.collection(COLLECTIONS.RETURNS || "returns");
@@ -199,6 +207,7 @@ export async function createReturnRequest({
   items,
   customerNote,
   conditionConfirmed,
+  evidence = [],
 }) {
   if (!conditionConfirmed) {
     throw new ApiError(400, "Confirm the return condition statement");
@@ -234,6 +243,34 @@ export async function createReturnRequest({
       reservedQuantityByItem(existing)
     );
 
+    const hasFaultReason = normalizedItems.some((item) =>
+      FREE_RETURN_REASONS.has(item.reason)
+    );
+
+    const customerPaysReturn = normalizedItems.some(
+      (item) => !FREE_RETURN_REASONS.has(item.reason)
+    );
+
+    const normalizedEvidence = Array.isArray(evidence)
+      ? evidence.slice(0, 4)
+      : [];
+
+    const normalizedCustomerNote = text(customerNote, 2000);
+
+    if (hasFaultReason && normalizedEvidence.length === 0) {
+      throw new ApiError(
+        400,
+        "Upload at least one photo for defective, damaged, incorrect or not-as-described items"
+      );
+    }
+
+    if (hasFaultReason && normalizedCustomerNote.length < 10) {
+      throw new ApiError(
+        400,
+        "Describe the problem in a little more detail"
+      );
+    }
+
     const refundEstimate =
       Math.round(
         normalizedItems.reduce(
@@ -244,6 +281,10 @@ export async function createReturnRequest({
 
     const returnNumber =
       `RET-${String(order.orderNumber || order.id)}-${returnId.slice(-6).toUpperCase()}`;
+
+    const status = customerPaysReturn
+      ? "payment_required"
+      : "requested";
 
     const request = {
       id: returnId,
@@ -258,18 +299,42 @@ export async function createReturnRequest({
         phone: order.customer?.phone || "",
       },
       items: normalizedItems,
-      customerNote: text(customerNote, 2000),
+      customerNote: normalizedCustomerNote,
+      evidence: normalizedEvidence,
       conditionConfirmed: true,
-      status: "requested",
+      status,
       provider: "boxnow",
       refundEstimate,
       currency: order.currency || "EUR",
+      returnShipping: {
+        customerPays: customerPaysReturn,
+        fee: customerPaysReturn ? RETURN_FEE_EUR : 0,
+        currency: "EUR",
+        reason:
+          customerPaysReturn
+            ? "customer_reason"
+            : "merchant_fault",
+      },
+      payment: customerPaysReturn
+        ? {
+            provider: "viva",
+            status: "pending_creation",
+            amount: RETURN_FEE_EUR,
+            currency: "EUR",
+          }
+        : null,
       eligibility: {
         deliveredAt: eligibility.deliveredAt,
         deadline: eligibility.deadline,
         returnWindowDays: getReturnWindowDays(),
       },
-      history: [{ status: "requested", at: createdAt, actor: "customer" }],
+      history: [
+        {
+          status,
+          at: createdAt,
+          actor: "customer",
+        },
+      ],
       createdAt,
       updatedAt: createdAt,
     };
@@ -280,7 +345,7 @@ export async function createReturnRequest({
       {
         returns: {
           latestReturnId: returnId,
-          latestReturnStatus: "requested",
+          latestReturnStatus: status,
           updatedAt: createdAt,
         },
         updatedAt: createdAt,
@@ -291,43 +356,139 @@ export async function createReturnRequest({
     return { order, request };
   });
 
-  await notifyBestEffort(
-    () =>
-      sendReturnEmail({
-        to: result.order.customer?.email,
-        subject: `Return request ${result.request.returnNumber} received`,
-        title: "We received your return request",
-        intro: `Your return request for order ${result.request.orderNumber} is waiting for review.`,
-        body: `
-          <p style="color:#555;line-height:1.7;">
-            Estimated item refund: <strong>€${Number(result.request.refundEstimate).toFixed(2)}</strong>.
-            We will email you when the return is approved and the BOX NOW voucher is ready.
-          </p>
-          <p><a href="${pageUrl(result.request.id)}">View return status →</a></p>
-        `,
-      }),
-    { returnId }
-  );
+  let currentRequest = result.request;
+
+  if (currentRequest.returnShipping?.customerPays) {
+    try {
+      const base = String(
+        process.env.PUBLIC_BASE_URL ||
+        process.env.PUBLIC_SITE_URL ||
+        "https://skanare.com"
+      ).replace(/\/+$/, "");
+
+      const successUrl =
+        `${base}/returns?returnId=${encodeURIComponent(returnId)}&returnPayment=success`;
+
+      const failureUrl =
+        `${base}/returns?returnId=${encodeURIComponent(returnId)}&returnPayment=failed`;
+
+      const viva = await createVivaPaymentOrder(
+        {
+          id: returnId,
+          orderNumber: currentRequest.returnNumber,
+          total: RETURN_FEE_EUR,
+          customer: {
+            ...currentRequest.customer,
+            phoneCountryCode: "GR",
+          },
+        },
+        {
+          successUrl,
+          failureUrl,
+          customerTrns:
+            `Skanare return shipping ${currentRequest.returnNumber}`,
+          merchantTrns: returnId,
+          tags: ["skanare", "return", returnId],
+        }
+      );
+
+      const paymentUpdatedAt = nowIso();
+
+      const paymentPatch = {
+        payment: {
+          provider: "viva",
+          status: "pending",
+          amount: RETURN_FEE_EUR,
+          currency: "EUR",
+          vivaOrderCode: viva.vivaOrderCode,
+          checkoutUrl: viva.checkoutUrl,
+          createdAt: paymentUpdatedAt,
+        },
+        updatedAt: paymentUpdatedAt,
+      };
+
+      await returnRef.set(paymentPatch, { merge: true });
+
+      currentRequest = {
+        ...currentRequest,
+        ...paymentPatch,
+      };
+    } catch (error) {
+      const failedAt = nowIso();
+
+      await returnRef.set(
+        {
+          payment: {
+            provider: "viva",
+            status: "creation_failed",
+            amount: RETURN_FEE_EUR,
+            currency: "EUR",
+            error: error?.message || String(error),
+            failedAt,
+          },
+          updatedAt: failedAt,
+        },
+        { merge: true }
+      );
+
+      throw error;
+    }
+  } else {
+    currentRequest = await approveReturnForAdmin(
+      returnId,
+      {
+        uid: "system:auto-return",
+        email: "system@skanare.com",
+      }
+    );
+  }
+
+  if (currentRequest.returnShipping?.customerPays) {
+    await notifyBestEffort(
+      () =>
+        sendReturnEmail({
+          to: result.order.customer?.email,
+          subject:
+            `Return shipping payment required — ${currentRequest.returnNumber}`,
+          title:
+            "Complete your return shipping payment",
+          intro:
+            `Pay €${RETURN_FEE_EUR.toFixed(2)} return shipping before we create your BOX NOW return voucher.`,
+          body: `
+            <p style="color:#555;line-height:1.7;">
+              Estimated item refund: <strong>€${Number(currentRequest.refundEstimate).toFixed(2)}</strong>.
+            </p>
+            <p><a href="${pageUrl(currentRequest.id)}">Open return page →</a></p>
+          `,
+        }),
+      { returnId }
+    );
+  }
 
   await notifyBestEffort(
     () =>
       sendReturnEmail({
         to: process.env.ADMIN_EMAIL,
-        subject: `New return request ${result.request.returnNumber}`,
+        subject: `New return ${currentRequest.returnNumber}`,
         title: "New return request",
-        intro: `A customer requested a return for order ${result.request.orderNumber}.`,
+        intro: `A customer started a return for order ${currentRequest.orderNumber}.`,
         body: `
           <p style="color:#555;line-height:1.7;">
             Customer: <strong>${text(result.order.customer?.email, 320)}</strong><br/>
-            Estimated item refund: <strong>€${Number(result.request.refundEstimate).toFixed(2)}</strong>.
+            Estimated item refund: <strong>€${Number(currentRequest.refundEstimate).toFixed(2)}</strong><br/>
+            Return shipping: <strong>${
+              currentRequest.returnShipping?.customerPays
+                ? "€2 customer-paid via Viva"
+                : "Free — reported merchant/product issue"
+            }</strong>
           </p>
-          <p>Review the request in Skanare Admin → Returns.</p>
+          <p>Review details and evidence in Skanare Admin → Returns.</p>
         `,
       }),
     { returnId, recipient: "admin" }
   );
 
-  return result.request;
+  return currentRequest;
 }
 
 export async function getReturnsForUser(userId) {
@@ -363,7 +524,7 @@ export async function cancelReturnForUser(userId, returnId) {
     const request = { id: snap.id, ...snap.data() };
 
     if (request.userId !== userId) throw new ApiError(403, "Access denied");
-    if (!["requested", "provider_failed"].includes(request.status)) {
+    if (!["payment_required", "requested", "provider_failed"].includes(request.status)) {
       throw new ApiError(409, "This return can no longer be cancelled");
     }
 

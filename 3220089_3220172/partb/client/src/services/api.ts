@@ -29,10 +29,17 @@ function readCookie(name: string): string | null {
   return null;
 }
 
-async function buildHeaders(init?: HeadersInit): Promise<Headers> {
+async function buildHeaders(
+  init?: HeadersInit,
+  body?: BodyInit | null
+): Promise<Headers> {
   const headers = new Headers(init || {});
 
-  if (!headers.has("Content-Type")) {
+  const isFormData =
+    typeof FormData !== "undefined" &&
+    body instanceof FormData;
+
+  if (!headers.has("Content-Type") && !isFormData) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -59,7 +66,10 @@ export async function apiRequest<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     credentials: "include",
-    headers: await buildHeaders(options.headers),
+    headers: await buildHeaders(
+      options.headers,
+      options.body || null
+    ),
   });
 
   if (response.status === 204) {

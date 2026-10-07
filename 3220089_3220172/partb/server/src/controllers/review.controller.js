@@ -20,10 +20,10 @@ export const listReviews = asyncHandler(async (req, res) => {
 
 export const createReview = asyncHandler(async (req, res) => {
   const input = parseOrThrow(reviewSchema, req.body, "Invalid review data");
-  const review = await createVerifiedReview(
+  const result = await createVerifiedReview(
     req.user.uid,
     req.params.productId,
     input
   );
-  return ok(res, { review }, 201);
+  return ok(res, result, 201);
 });

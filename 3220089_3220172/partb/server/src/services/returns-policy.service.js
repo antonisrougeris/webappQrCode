@@ -21,6 +21,7 @@ export const RETURN_REASON_LABELS = {
 const TERMINAL = new Set(["rejected", "cancelled", "refunded"]);
 
 const RANK = {
+  payment_required: 0,
   requested: 0,
   provider_failed: 0,
   approving: 1,

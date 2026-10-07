@@ -184,7 +184,7 @@ export async function checkoutCartForOwner({
         };
 
         if (
-          recoveryOffer.source === "recovery" &&
+          ["recovery", "review"].includes(recoveryOffer.source) &&
           recoveryOffer.reservedOrderId &&
           String(recoveryOffer.reservedOrderId) !==
             String(cart.checkoutOrderId || "")
@@ -603,7 +603,7 @@ items: orderItems,
     if (
       recoveryRef &&
       recoveryOffer &&
-      recoveryOffer.source === "recovery"
+      ["recovery", "review"].includes(recoveryOffer.source)
     ) {
       tx.set(
         recoveryRef,
@@ -698,7 +698,9 @@ items: orderItems,
 
     if (
       result.order?.recoveryDiscount?.code &&
-      result.order?.recoveryDiscount?.source === "recovery"
+      ["recovery", "review"].includes(
+        result.order?.recoveryDiscount?.source
+      )
     ) {
       await recoveryOfferRef(
         result.order.recoveryDiscount.code,

@@ -1,3 +1,5 @@
+import { randomUUID } from "crypto";
+import { getStorage } from "firebase-admin/storage";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ok } from "../utils/response.js";
 import {
@@ -23,12 +25,61 @@ export const listMyReturns = asyncHandler(async (req, res) => {
 });
 
 export const createReturn = asyncHandler(async (req, res) => {
+  const files = Array.isArray(req.files) ? req.files : [];
+  const evidence = [];
+  const bucket = getStorage().bucket();
+
+  for (const file of files) {
+    const storagePath =
+      `returns/${req.user.uid}/${Date.now()}-${randomUUID()}`;
+
+    const downloadToken = randomUUID();
+    const storageFile = bucket.file(storagePath);
+
+    await storageFile.save(file.buffer, {
+      resumable: false,
+      metadata: {
+        contentType: file.mimetype,
+        cacheControl: "private,max-age=0,no-store",
+        metadata: {
+          firebaseStorageDownloadTokens: downloadToken,
+          uploadedBy: req.user.uid,
+        },
+      },
+    });
+
+    evidence.push({
+      url:
+        `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/` +
+        `${encodeURIComponent(storagePath)}?alt=media&token=${downloadToken}`,
+      storagePath,
+      contentType: file.mimetype,
+      fileName: String(file.originalname || "return-evidence").slice(0, 180),
+      uploadedAt: new Date().toISOString(),
+    });
+  }
+
+  let items = req.body?.items;
+
+  if (typeof items === "string") {
+    try {
+      items = JSON.parse(items);
+    } catch {
+      items = null;
+    }
+  }
+
+  const conditionConfirmed =
+    req.body?.conditionConfirmed === true ||
+    req.body?.conditionConfirmed === "true";
+
   const request = await createReturnRequest({
     userId: req.user.uid,
     orderId: req.body?.orderId,
-    items: req.body?.items,
+    items,
     customerNote: req.body?.customerNote,
-    conditionConfirmed: req.body?.conditionConfirmed === true,
+    conditionConfirmed,
+    evidence,
   });
 
   return ok(res, { return: request }, 201);

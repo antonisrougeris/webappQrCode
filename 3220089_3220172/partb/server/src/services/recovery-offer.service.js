@@ -29,7 +29,12 @@ export function validateRecoveryOfferData(data, { email, code } = {}) {
   const offerEmail = String(data.email || "").trim().toLowerCase();
   const expiresAtRaw = String(data.expiresAt || "").trim();
   const expiresAt = expiresAtRaw ? Date.parse(expiresAtRaw) : null;
-  const source = data.source === "manual" ? "manual" : "recovery";
+  const source =
+    data.source === "manual"
+      ? "manual"
+      : data.source === "review"
+        ? "review"
+        : "recovery";
 
   if (!normalizedCode || data.status !== "active") {
     throw new ApiError(400, "Discount code is no longer active");

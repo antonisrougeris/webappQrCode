@@ -85,7 +85,7 @@ async function getVivaAccessToken() {
   return payload.access_token;
 }
 
-export async function createVivaPaymentOrder(order) {
+export async function createVivaPaymentOrder(order, options = {}) {
   const token = await getVivaAccessToken();
 
   const sourceCode = process.env.VIVA_SOURCE_CODE || null;
@@ -97,19 +97,25 @@ export async function createVivaPaymentOrder(order) {
     throw new ApiError(400, "Invalid payment amount");
   }
 const successUrl =
+  options.successUrl ||
   `${publicBaseUrl}/payment/success?orderId=${encodeURIComponent(
     order.id
   )}`;
 
 const failureUrl =
+  options.failureUrl ||
   `${publicBaseUrl}/payment/failure?orderId=${encodeURIComponent(
     order.id
   )}`;
 
   const body = {
     amount: amountInCents,
-    customerTrns: `Order ${order.orderNumber}`,
-    merchantTrns: order.id,
+    customerTrns:
+      options.customerTrns ||
+      `Order ${order.orderNumber}`,
+    merchantTrns:
+      options.merchantTrns ||
+      order.id,
 
     customer: {
       email: order.customer.email,
@@ -129,7 +135,10 @@ const failureUrl =
     disableCash: true,
     disableWallet: false,
 
-    tags: ["skanare", order.id],
+    tags:
+      Array.isArray(options.tags) && options.tags.length
+        ? options.tags
+        : ["skanare", order.id],
 
     successUrl,
     failureUrl,
