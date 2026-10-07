@@ -135,10 +135,13 @@ export async function getCommerceOperationsData() {
     readyByKey.set(key, (readyByKey.get(key) || 0) + 1);
   }
 
+  const activeProducts = productsSnap.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .filter((product) => product.active !== false);
+
   const inventory = [];
 
-  for (const doc of productsSnap.docs) {
-    const product = { id: doc.id, ...doc.data() };
+  for (const product of activeProducts) {
     const variants = Array.isArray(product.variants) && product.variants.length
       ? product.variants
       : [null];
@@ -238,7 +241,7 @@ export async function getCommerceOperationsData() {
   return {
     generatedAt: nowIso(),
     summary: {
-      products: productsSnap.size,
+      products: activeProducts.length,
       inventoryUnits: inventory.reduce((sum, row) => sum + row.physicalStock, 0),
       availableUnits: inventory.reduce((sum, row) => sum + row.available, 0),
       reservedUnits: inventory.reduce((sum, row) => sum + row.reserved, 0),
