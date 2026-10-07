@@ -60,7 +60,12 @@ export async function registerUser({
   return userData;
 }
 
-export async function loginUser({ email, idToken }) {
+export async function loginUser({
+  email,
+  idToken,
+  firstName = "",
+  lastName = "",
+}) {
   if (!email || !idToken) {
     throw new ApiError(400, "Email and idToken are required");
   }
@@ -86,8 +91,17 @@ export async function loginUser({ email, idToken }) {
     const newUser = {
       uid: decoded.uid,
       email: decoded.email || email,
-      firstName: "",
-      lastName: "",
+      firstName: String(firstName || decoded.name || "")
+        .trim()
+        .split(/\s+/)[0] || "",
+      lastName: String(
+        lastName ||
+        String(decoded.name || "")
+          .trim()
+          .split(/\s+/)
+          .slice(1)
+          .join(" ")
+      ).trim(),
       role: "user",
       emailVerified:
         decoded.email_verified === true,
@@ -118,14 +132,25 @@ export async function loginUser({ email, idToken }) {
         }
       : {};
 
+  const profilePatch = {
+    ...(String(firstName || "").trim() && !String(user.firstName || "").trim()
+      ? { firstName: String(firstName).trim() }
+      : {}),
+    ...(String(lastName || "").trim() && !String(user.lastName || "").trim()
+      ? { lastName: String(lastName).trim() }
+      : {}),
+  };
+
   await userRef.update({
     ...verificationPatch,
+    ...profilePatch,
     updatedAt: nowIso(),
   });
 
   return {
     ...user,
     ...verificationPatch,
+    ...profilePatch,
     uid: decoded.uid,
   };
 }
