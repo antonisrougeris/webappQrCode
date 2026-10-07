@@ -77,7 +77,7 @@ export async function createVerifiedReview(userId, productId, input) {
 
   const existing = await db
     .collection(COLLECTIONS.REVIEWS)
-    .where("productId", "==", String(productId))
+    .where("productId", "==", String(product.id))
     .get();
 
   if (existing.docs.some((doc) => doc.data().userId === userId)) {
@@ -91,7 +91,7 @@ export async function createVerifiedReview(userId, productId, input) {
 
   const review = {
     id: createId("review"),
-    productId: String(productId),
+    productId: String(product.id),
     userId,
     name: input.name,
     rating: input.rating,
@@ -114,7 +114,7 @@ export async function createVerifiedReview(userId, productId, input) {
   }
 
   const rewardCode =
-    `REVIEW20-${review.id
+    `REVIEW20-${completedOrder.id
       .replace(/[^a-zA-Z0-9]/g, "")
       .slice(-8)
       .toUpperCase()}`;
@@ -134,6 +134,7 @@ export async function createVerifiedReview(userId, productId, input) {
     maxUses: 1,
     minOrderAmount: 0,
     reviewId: review.id,
+    orderId: completedOrder.id,
     userId,
     createdAt: rewardCreatedAt,
     updatedAt: rewardCreatedAt,
@@ -141,6 +142,13 @@ export async function createVerifiedReview(userId, productId, input) {
     reservedOrderId: null,
     usedAt: null,
   };
+
+  const rewardRef =
+    recoveryOfferRef(reward.code, db);
+  const existingRewardSnap =
+    await rewardRef.get();
+  const rewardCreated =
+    !existingRewardSnap.exists;
 
   const productRef = db.collection(COLLECTIONS.PRODUCTS).doc(product.id);
   await db.runTransaction(async (transaction) => {
@@ -158,18 +166,21 @@ export async function createVerifiedReview(userId, productId, input) {
       review
     );
 
-    transaction.set(
-      recoveryOfferRef(reward.code, db),
-      reward
-    );
+    if (rewardCreated) {
+      transaction.set(
+        rewardRef,
+        reward
+      );
+    }
 
     transaction.update(productRef, {
       reviews: [...currentReviews, review],
     });
   });
 
-  try {
-    await sendEmail({
+  if (rewardCreated) {
+    try {
+      await sendEmail({
       from:
         process.env.EMAIL_ORDER ||
         process.env.EMAIL_FROM,
@@ -187,21 +198,24 @@ export async function createVerifiedReview(userId, productId, input) {
           </div>
         `,
       }),
-    });
-  } catch (error) {
-    console.error("Review reward email failed", {
-      reviewId: review.id,
-      userId,
-      message: error?.message || String(error),
-    });
+      });
+    } catch (error) {
+      console.error("Review reward email failed", {
+        reviewId: review.id,
+        userId,
+        message: error?.message || String(error),
+      });
+    }
   }
 
   return {
     review,
-    reward: {
-      code: reward.code,
-      discountPercent: reward.discountPercent,
-      expiresAt: reward.expiresAt,
-    },
+    reward: rewardCreated
+      ? {
+          code: reward.code,
+          discountPercent: reward.discountPercent,
+          expiresAt: reward.expiresAt,
+        }
+      : null,
   };
 }
