@@ -3214,9 +3214,7 @@ body.cart-open {
 
 .footer-tagline {
   margin:
-    0
-    0
-    24px;
+    0;
 
   color: #ffffff;
 
@@ -3277,7 +3275,7 @@ body.cart-open {
   align-items: center;
   gap: 9px;
 
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 
@@ -3631,7 +3629,7 @@ body.cart-open {
 
 
   .footer-tagline {
-    margin-bottom: 18px;
+    margin-bottom: 0;
 
     font-size: 0.78rem;
   }
