@@ -13,6 +13,7 @@ import {
   type CountryCode,
 } from "libphonenumber-js";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
+const RECOVERY_CODE_KEY = "skanare_recovery_code";
 const PREMIUM_GIFT_PRICE = 1.5;
 import { setFlashToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
@@ -715,9 +716,9 @@ function restoreAfterAuth(): void {
 document.addEventListener("DOMContentLoaded", () => {
   restoreAfterAuth();
   restoreCheckoutDraft();
-  const recoveryParam = new URLSearchParams(window.location.search)
-    .get("code")
-    ?.trim();
+  const recoveryParam =
+    new URLSearchParams(window.location.search).get("code")?.trim() ||
+    localStorage.getItem(RECOVERY_CODE_KEY)?.trim();
 
   if (recoveryParam) {
     const input = document.getElementById("discountInput") as HTMLInputElement | null;
@@ -727,12 +728,14 @@ document.addEventListener("DOMContentLoaded", () => {
       .then((offer) => {
         discount = Number(offer.discountPercent || 0);
         recoveryCode = offer.code;
+        localStorage.setItem(RECOVERY_CODE_KEY, offer.code);
         if (input) input.value = offer.code;
         setFlashToast(`${discount}% recovery discount applied ✅`);
         void render();
       })
       .catch(() => {
         recoveryCode = "";
+        localStorage.removeItem(RECOVERY_CODE_KEY);
       });
   }
 
@@ -880,6 +883,7 @@ editCartButton?.addEventListener(
     if (!code) {
       discount = 0;
       recoveryCode = "";
+      localStorage.removeItem(RECOVERY_CODE_KEY);
       setFlashToast("Enter a discount code");
       void render();
       return;
@@ -889,11 +893,13 @@ editCartButton?.addEventListener(
       const offer = await validateRecoveryOffer(code);
       discount = Number(offer.discountPercent || 0);
       recoveryCode = offer.code;
+      localStorage.setItem(RECOVERY_CODE_KEY, offer.code);
       if (input) input.value = offer.code;
       setFlashToast(`${discount}% recovery discount applied ✅`);
     } catch (error) {
       discount = 0;
       recoveryCode = "";
+      localStorage.removeItem(RECOVERY_CODE_KEY);
       setFlashToast(error instanceof Error ? error.message : "Invalid code");
     }
 
@@ -1115,6 +1121,7 @@ updateLockerValidity(false);
 
         if (result.checkoutUrl) {
   saveCheckoutDraft(formEl);
+  localStorage.removeItem(RECOVERY_CODE_KEY);
 
   window.location.href =
     result.checkoutUrl;
