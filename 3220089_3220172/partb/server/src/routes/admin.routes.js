@@ -29,6 +29,9 @@ import {
   getAdminCustomers,
   getAdminQrCodes,
   getAdminPayments,
+  getAdminCommerceOperations,
+  sendAdminCartRecovery,
+  sendAdminPaymentRecovery,
   getAdminContactMessages,
   markAdminContactMessageRead,
   replyToAdminContactMessage,
@@ -123,6 +126,22 @@ router.get(
 router.get(
   "/dashboard",
   getAdminDashboard
+);
+
+
+router.get(
+  "/commerce-operations",
+  getAdminCommerceOperations
+);
+
+router.post(
+  "/carts/:id/recovery-email",
+  sendAdminCartRecovery
+);
+
+router.post(
+  "/orders/:id/payment-reminder",
+  sendAdminPaymentRecovery
 );
 
 
