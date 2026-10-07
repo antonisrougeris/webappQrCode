@@ -16,6 +16,11 @@ router.post(
 );
 
 router.post(
+  "/discount-code",
+  validateRecoveryOffer
+);
+
+router.post(
   "/",
   requireAuth,
   requireVerifiedEmail,

@@ -214,6 +214,7 @@ function openView(view: string) {
     returns: "Returns",
     messages: "Messages",
     products: "Products",
+    discounts: "Discount Codes",
     customers: "Customers",
     qr: "QR Codes",
     payments: "Payments",
@@ -259,6 +260,9 @@ async function loadView(view: string) {
       break;
     case "products":
       await loadProducts();
+      break;
+    case "discounts":
+      await loadDiscountCodes();
       break;
     case "customers":
       await loadCustomers();
@@ -1553,6 +1557,113 @@ document.getElementById("adminMessagesList")?.addEventListener("click", async (e
       replyButton.disabled = false;
       replyButton.textContent = "Send reply";
     }
+  }
+});
+
+
+/* =========================================================
+   DISCOUNT CODES
+   ========================================================= */
+
+async function loadDiscountCodes() {
+  const data = await adminApi("/discount-codes");
+  renderDiscountCodes(data.codes || []);
+}
+
+function renderDiscountCodes(codes: any[]) {
+  const body = document.getElementById("discountCodesBody");
+  if (!body) return;
+
+  if (!codes.length) {
+    body.innerHTML = `<tr><td colspan="7">No manual discount codes yet.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = codes
+    .map((code) => {
+      const active = code.status === "active";
+      return `
+        <tr>
+          <td><strong>${escapeHtml(code.code || "")}</strong></td>
+          <td>${Number(code.discountPercent || 0)}%</td>
+          <td>${formatMoney(Number(code.minOrderAmount || 0))}</td>
+          <td>${code.expiresAt ? formatDate(code.expiresAt) : "No expiry"}</td>
+          <td>${Number(code.usedCount || 0)}</td>
+          <td><span class="admin-badge admin-badge--${active ? "paid" : "failed"}">${active ? "Active" : "Inactive"}</span></td>
+          <td>
+            <button
+              class="${active ? "admin-secondary-button" : "admin-primary-button"}"
+              type="button"
+              data-discount-status="${escapeHtml(code.code || "")}"
+              data-active="${active ? "false" : "true"}"
+            >${active ? "Deactivate" : "Activate"}</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+document.getElementById("discountCodeForm")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const form = event.currentTarget as HTMLFormElement;
+  const data = new FormData(form);
+  const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+  const expiresValue = String(data.get("expiresAt") || "").trim();
+  const expiresAt = expiresValue
+    ? new Date(expiresValue).toISOString()
+    : null;
+
+  submit && (submit.disabled = true);
+
+  try {
+    await adminApi("/discount-codes", {
+      method: "POST",
+      body: JSON.stringify({
+        code: String(data.get("code") || "").trim(),
+        discountPercent: Number(data.get("discountPercent") || 0),
+        minOrderAmount: Number(data.get("minOrderAmount") || 0),
+        expiresAt,
+      }),
+    });
+
+    form.reset();
+    const percent = form.elements.namedItem("discountPercent") as HTMLInputElement | null;
+    const minimum = form.elements.namedItem("minOrderAmount") as HTMLInputElement | null;
+    if (percent) percent.value = "10";
+    if (minimum) minimum.value = "0";
+    await loadDiscountCodes();
+  } catch (error) {
+    window.alert(errorMessage(error));
+  } finally {
+    submit && (submit.disabled = false);
+  }
+});
+
+document.getElementById("discountCodesBody")?.addEventListener("click", async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-discount-status]");
+  if (!button?.dataset.discountStatus) return;
+
+  button.disabled = true;
+
+  try {
+    await adminApi(
+      `/discount-codes/${encodeURIComponent(button.dataset.discountStatus)}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          active: button.dataset.active === "true",
+        }),
+      }
+    );
+
+    await loadDiscountCodes();
+  } catch (error) {
+    window.alert(errorMessage(error));
+  } finally {
+    button.disabled = false;
   }
 });
 

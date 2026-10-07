@@ -80,24 +80,27 @@ export async function validateRecoveryOffer(
 ): Promise<{
   code: string;
   discountPercent: number;
-  expiresAt: string;
+  expiresAt: string | null;
+  minOrderAmount?: number;
 }> {
   const res = await apiRequest<
     | {
         offer?: {
           code: string;
           discountPercent: number;
-          expiresAt: string;
+          expiresAt: string | null;
+          minOrderAmount?: number;
         };
         data?: {
           offer?: {
             code: string;
             discountPercent: number;
-            expiresAt: string;
+            expiresAt: string | null;
+            minOrderAmount?: number;
           };
         };
       }
-  >("/checkout/recovery-offer", {
+  >("/checkout/discount-code", {
     method: "POST",
     body: JSON.stringify({ code }),
   });
@@ -105,7 +108,7 @@ export async function validateRecoveryOffer(
   const offer = res?.offer || res?.data?.offer;
 
   if (!offer) {
-    throw new Error("Recovery discount could not be validated");
+    throw new Error("Discount code could not be validated");
   }
 
   return offer;

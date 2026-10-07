@@ -58,6 +58,12 @@ import {
   sendPaymentRecoveryEmail,
 } from "../services/admin-commerce.service.js";
 
+import {
+  createManualDiscountCode,
+  listManualDiscountCodes,
+  setManualDiscountCodeStatus,
+} from "../services/recovery-offer.service.js";
+
 
 
 
@@ -575,6 +581,55 @@ export const sendAdminPaymentRecovery = asyncHandler(
 
     return ok(res, {
       message: "Payment reminder sent",
+      ...result,
+    });
+  }
+);
+
+
+/* =========================================================
+   DISCOUNT CODES
+   ========================================================= */
+
+export const getAdminDiscountCodes = asyncHandler(
+  async (_req, res) => {
+    const codes = await listManualDiscountCodes();
+    return ok(res, { codes });
+  }
+);
+
+export const createAdminDiscountCode = asyncHandler(
+  async (req, res) => {
+    const code = await createManualDiscountCode({
+      code: req.body?.code,
+      discountPercent: req.body?.discountPercent,
+      minOrderAmount: req.body?.minOrderAmount || 0,
+      expiresAt: req.body?.expiresAt || null,
+      createdBy: req.user?.uid || null,
+    });
+
+    return ok(
+      res,
+      {
+        message: "Discount code created",
+        code,
+      },
+      201
+    );
+  }
+);
+
+export const updateAdminDiscountCodeStatus = asyncHandler(
+  async (req, res) => {
+    const result = await setManualDiscountCodeStatus({
+      code: req.params.code,
+      active: Boolean(req.body?.active),
+    });
+
+    return ok(res, {
+      message: result.status === "active"
+        ? "Discount code activated"
+        : "Discount code deactivated",
       ...result,
     });
   }

@@ -18,7 +18,7 @@ import { getOrders } from "../../services/orders";
 import { createProductReview, getProductReviews } from "../../services/reviews";
 
 import { showToast } from "../../utils/toast.ts";
-import { productPath, t } from "../../i18n/locale";
+import { locale, productPath, t } from "../../i18n/locale";
 
 
 initNav();
@@ -187,6 +187,73 @@ async function setupReviewForm(productId: string): Promise<void> {
 function safeProductText(value: unknown): string {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+}
+
+
+function setupSizeGuideModal(product: Product): void {
+  const button = document.getElementById("sizeGuideButton") as HTMLButtonElement | null;
+  const modal = document.getElementById("sizeGuideModal");
+  const image = document.getElementById("sizeGuideImage") as HTMLImageElement | null;
+  const title = document.getElementById("sizeGuideModalTitle");
+  const closeButton = document.getElementById("sizeGuideClose") as HTMLButtonElement | null;
+
+  const hasSizes =
+    product.category === "tshirt" &&
+    (product.variants || []).some(
+      (variant) => String(variant.size || "").trim().length > 0
+    );
+
+  if (!button || !modal || !image || !hasSizes) {
+    if (button) button.hidden = true;
+    return;
+  }
+
+  button.hidden = false;
+
+  const close = () => {
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("size-guide-open");
+    button.focus();
+  };
+
+  const open = () => {
+    image.src =
+      locale === "el"
+        ? "/assets/img/size-guide-tshirt-el.svg"
+        : "/assets/img/size-guide-tshirt-en.svg";
+    image.alt =
+      locale === "el"
+        ? "SKANARE οδηγός μεγεθών T-shirt"
+        : "SKANARE T-shirt size guide";
+
+    if (title) {
+      title.textContent =
+        locale === "el"
+          ? "Οδηγός μεγεθών"
+          : "Size guide";
+    }
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("size-guide-open");
+    closeButton?.focus();
+  };
+
+  button.addEventListener("click", open);
+  closeButton?.addEventListener("click", close);
+  modal
+    .querySelector<HTMLElement>("[data-size-guide-close]")
+    ?.addEventListener("click", close);
+
+  document.addEventListener("keydown", (event) => {
+    if (
+      event.key === "Escape" &&
+      !modal.classList.contains("hidden")
+    ) {
+      close();
+    }
+  });
 }
 
 /** Only exact color AND size may be selected. Never match by size alone. */
@@ -1113,6 +1180,7 @@ if (imageStage) {
       renderReviews(getFallbackReviews(product));
     }
 
+    setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
     selectedVariantStock = 0;
     updateQuantity();

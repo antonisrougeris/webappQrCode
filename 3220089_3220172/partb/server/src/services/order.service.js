@@ -181,10 +181,10 @@ export async function checkoutCartForOwner({
               code: normalizedRecoveryCode,
             }
           ),
-          source: "recovery",
         };
 
         if (
+          recoveryOffer.source === "recovery" &&
           recoveryOffer.reservedOrderId &&
           String(recoveryOffer.reservedOrderId) !==
             String(cart.checkoutOrderId || "")
@@ -451,6 +451,19 @@ orderItems.push({
     }
 
     const subtotalBeforeRecoveryDiscount = subtotal;
+
+    if (
+      recoveryOffer &&
+      Number(recoveryOffer.minOrderAmount || 0) > subtotalBeforeRecoveryDiscount
+    ) {
+      throw new ApiError(
+        400,
+        `Discount code requires a minimum order of €${Number(
+          recoveryOffer.minOrderAmount
+        ).toFixed(2)}`
+      );
+    }
+
     const recoveryDiscountPercent =
       Number(recoveryOffer?.discountPercent || 0);
     const recoveryDiscountAmount =
@@ -558,6 +571,8 @@ items: orderItems,
         percent: recoveryDiscountPercent,
         expiresAt: recoveryOffer.expiresAt,
         source: recoveryOffer.source || "recovery",
+        minOrderAmount: Number(recoveryOffer.minOrderAmount || 0),
+        usedCount: Number(recoveryOffer.usedCount || 0),
       }
     : null,
   shippingCost,
@@ -585,7 +600,11 @@ items: orderItems,
       order
     );
 
-    if (recoveryRef && recoveryOffer) {
+    if (
+      recoveryRef &&
+      recoveryOffer &&
+      recoveryOffer.source === "recovery"
+    ) {
       tx.set(
         recoveryRef,
         {
@@ -677,7 +696,10 @@ items: orderItems,
         { merge: true }
       );
 
-    if (result.order?.recoveryDiscount?.code) {
+    if (
+      result.order?.recoveryDiscount?.code &&
+      result.order?.recoveryDiscount?.source === "recovery"
+    ) {
       await recoveryOfferRef(
         result.order.recoveryDiscount.code,
         db

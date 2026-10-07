@@ -21,37 +21,50 @@ export function recoveryOfferRef(code, db = getDB()) {
 
 export function validateRecoveryOfferData(data, { email, code } = {}) {
   if (!data) {
-    throw new ApiError(400, "Recovery discount is invalid");
+    throw new ApiError(400, "Discount code is invalid");
   }
 
   const normalizedCode = normalizeRecoveryCode(code || data.code);
   const normalizedEmail = String(email || "").trim().toLowerCase();
   const offerEmail = String(data.email || "").trim().toLowerCase();
-  const expiresAt = Date.parse(String(data.expiresAt || ""));
+  const expiresAtRaw = String(data.expiresAt || "").trim();
+  const expiresAt = expiresAtRaw ? Date.parse(expiresAtRaw) : null;
+  const source = data.source === "manual" ? "manual" : "recovery";
 
   if (!normalizedCode || data.status !== "active") {
-    throw new ApiError(400, "Recovery discount is no longer active");
+    throw new ApiError(400, "Discount code is no longer active");
   }
 
-  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
-    throw new ApiError(400, "Recovery discount has expired");
+  if (
+    expiresAt !== null &&
+    (!Number.isFinite(expiresAt) || expiresAt <= Date.now())
+  ) {
+    throw new ApiError(400, "Discount code has expired");
   }
 
   if (offerEmail && normalizedEmail && offerEmail !== normalizedEmail) {
-    throw new ApiError(400, "Recovery discount is not valid for this email");
+    throw new ApiError(400, "This discount code is not valid for this email");
   }
 
   const discountPercent = Number(data.discountPercent || 0);
-  if (!Number.isFinite(discountPercent) || discountPercent <= 0 || discountPercent > 30) {
-    throw new ApiError(400, "Recovery discount is invalid");
+  const maxPercent = source === "manual" ? 90 : 30;
+  if (
+    !Number.isFinite(discountPercent) ||
+    discountPercent <= 0 ||
+    discountPercent > maxPercent
+  ) {
+    throw new ApiError(400, "Discount code is invalid");
   }
 
   return {
     code: normalizedCode,
     discountPercent,
     email: offerEmail,
-    expiresAt: data.expiresAt,
+    expiresAt: data.expiresAt || null,
     reservedOrderId: data.reservedOrderId || null,
+    source,
+    minOrderAmount: Math.max(0, Number(data.minOrderAmount || 0)),
+    usedCount: Math.max(0, Number(data.usedCount || 0)),
   };
 }
 
@@ -83,6 +96,7 @@ export async function createRecoveryOffer({
     cartId: cartId ? String(cartId) : null,
     discountPercent: percent,
     status: "active",
+    source: "recovery",
     maxUses: 1,
     createdBy: createdBy || null,
     createdAt,
@@ -101,7 +115,7 @@ export async function getActiveRecoveryOffer(code) {
   const normalizedCode = normalizeRecoveryCode(code);
 
   if (!normalizedCode) {
-    throw new ApiError(400, "Recovery discount code is required");
+    throw new ApiError(400, "Discount code is required");
   }
 
   if (normalizedCode === "SKANARE10") {
@@ -124,6 +138,105 @@ export async function getActiveRecoveryOffer(code) {
     code: offer.code,
     discountPercent: offer.discountPercent,
     expiresAt: offer.expiresAt,
-    source: "recovery",
+    source: offer.source,
+    minOrderAmount: offer.minOrderAmount,
+    usedCount: offer.usedCount,
+  };
+}
+
+export async function listManualDiscountCodes() {
+  const snapshot = await getDB()
+    .collection(COLLECTIONS.RECOVERY_OFFERS)
+    .where("source", "==", "manual")
+    .get();
+
+  return snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a, b) =>
+      String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+    );
+}
+
+export async function createManualDiscountCode({
+  code,
+  discountPercent,
+  expiresAt = null,
+  minOrderAmount = 0,
+  createdBy = null,
+}) {
+  const normalizedCode = normalizeRecoveryCode(code);
+  const percent = Math.round(Number(discountPercent || 0));
+  const minimum = Math.max(0, Number(minOrderAmount || 0));
+
+  if (!normalizedCode || normalizedCode.length < 3) {
+    throw new ApiError(400, "Discount code must be at least 3 characters");
+  }
+
+  if (normalizedCode === "SKANARE10") {
+    throw new ApiError(409, "SKANARE10 is a reserved store code");
+  }
+
+  if (!Number.isInteger(percent) || percent < 1 || percent > 90) {
+    throw new ApiError(400, "Discount must be between 1% and 90%");
+  }
+
+  let normalizedExpiry = null;
+  if (expiresAt) {
+    const parsed = Date.parse(String(expiresAt));
+    if (!Number.isFinite(parsed) || parsed <= Date.now()) {
+      throw new ApiError(400, "Expiry must be a future date");
+    }
+    normalizedExpiry = new Date(parsed).toISOString();
+  }
+
+  const ref = recoveryOfferRef(normalizedCode);
+  const existing = await ref.get();
+  if (existing.exists) {
+    throw new ApiError(409, "Discount code already exists");
+  }
+
+  const createdAt = nowIso();
+  const data = {
+    code: normalizedCode,
+    discountPercent: percent,
+    minOrderAmount: minimum,
+    status: "active",
+    source: "manual",
+    email: "",
+    expiresAt: normalizedExpiry,
+    createdBy,
+    createdAt,
+    updatedAt: createdAt,
+    usedCount: 0,
+  };
+
+  await ref.set(data);
+  return data;
+}
+
+export async function setManualDiscountCodeStatus({
+  code,
+  active,
+}) {
+  const normalizedCode = normalizeRecoveryCode(code);
+  const ref = recoveryOfferRef(normalizedCode);
+  const snap = await ref.get();
+
+  if (!snap.exists || snap.data()?.source !== "manual") {
+    throw new ApiError(404, "Discount code not found");
+  }
+
+  const status = active ? "active" : "inactive";
+  await ref.set(
+    {
+      status,
+      updatedAt: nowIso(),
+    },
+    { merge: true }
+  );
+
+  return {
+    code: normalizedCode,
+    status,
   };
 }

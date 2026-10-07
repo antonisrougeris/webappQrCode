@@ -1518,17 +1518,28 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       order.recoveryDiscount?.code &&
       order.recoveryDiscount?.source !== "store"
     ) {
+      const source =
+        order.recoveryDiscount.source || "recovery";
+
       tx.set(
         recoveryOfferRef(
           order.recoveryDiscount.code,
           db
         ),
-        {
-          status: "used",
-          usedAt: paidAt,
-          usedOrderId: order.id,
-          updatedAt: paidAt,
-        },
+        source === "manual"
+          ? {
+              usedCount:
+                Number(order.recoveryDiscount.usedCount || 0) + 1,
+              lastUsedAt: paidAt,
+              lastUsedOrderId: order.id,
+              updatedAt: paidAt,
+            }
+          : {
+              status: "used",
+              usedAt: paidAt,
+              usedOrderId: order.id,
+              updatedAt: paidAt,
+            },
         { merge: true }
       );
     }

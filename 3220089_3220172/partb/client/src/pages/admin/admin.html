@@ -234,6 +234,7 @@
         <button class="admin-nav__item" data-view="returns" type="button"><span class="admin-nav__icon">↩</span>Returns</button>
         <button class="admin-nav__item" data-view="messages" type="button"><span class="admin-nav__icon">✉</span><span>Messages</span><span id="messagesBadge" class="nav-badge" hidden></span></button>
         <button class="admin-nav__item" data-view="products" type="button"><span class="admin-nav__icon">□</span>Products</button>
+        <button class="admin-nav__item" data-view="discounts" type="button"><span class="admin-nav__icon">%</span>Discount Codes</button>
         <button class="admin-nav__item" data-view="customers" type="button"><span class="admin-nav__icon">♙</span>Customers</button>
         <button class="admin-nav__item" data-view="qr" type="button"><span class="admin-nav__icon">⌗</span>QR Codes</button>
         <button class="admin-nav__item" data-view="payments" type="button"><span class="admin-nav__icon">€</span>Payments</button>
@@ -428,6 +429,58 @@
             </div>
           </div>
           <div id="adminProductsGrid" class="admin-products-grid"></div>
+        </div>
+      </section>
+
+      <!-- DISCOUNT CODES -->
+      <section id="view-discounts" class="admin-view hidden">
+        <div class="admin-section">
+          <div class="admin-section__header">
+            <div>
+              <span class="admin-eyebrow">Promotions</span>
+              <h2>Discount Codes</h2>
+              <p>Create store discount codes. Recovery-email codes are generated automatically and continue to use the same checkout validation.</p>
+            </div>
+          </div>
+
+          <form id="discountCodeForm" class="admin-form-grid">
+            <label>
+              Code
+              <input name="code" maxlength="40" placeholder="WELCOME10" required />
+            </label>
+            <label>
+              Discount %
+              <input name="discountPercent" type="number" min="1" max="90" step="1" value="10" required />
+            </label>
+            <label>
+              Minimum order (€)
+              <input name="minOrderAmount" type="number" min="0" step="0.01" value="0" />
+            </label>
+            <label>
+              Expires at
+              <input name="expiresAt" type="datetime-local" />
+            </label>
+            <div class="admin-actions">
+              <button class="admin-primary-button" type="submit">Create code</button>
+            </div>
+          </form>
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Discount</th>
+                  <th>Minimum</th>
+                  <th>Expires</th>
+                  <th>Uses</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="discountCodesBody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
