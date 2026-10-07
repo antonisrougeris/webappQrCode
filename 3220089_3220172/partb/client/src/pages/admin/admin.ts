@@ -208,6 +208,7 @@ function openView(view: string) {
 
   const titles: Record<string, string> = {
     dashboard: "Dashboard",
+    operations: "Commerce Operations",
     fulfillment: "Fulfillment",
     orders: "Orders",
     returns: "Returns",
@@ -240,6 +241,9 @@ async function loadView(view: string) {
   switch (view) {
     case "dashboard":
       await loadDashboard();
+      break;
+    case "operations":
+      await loadOperations();
       break;
     case "fulfillment":
       await loadFulfillment();
@@ -287,6 +291,278 @@ async function loadDashboard() {
 
   renderOrders(data.recentOrders || [], "recentOrdersBody");
 }
+
+/* =========================================================
+   COMMERCE OPERATIONS
+   ========================================================= */
+
+let operationsLoading = false;
+
+function remainingLabel(expiresAt: unknown): string {
+  const expires = Date.parse(String(expiresAt || ""));
+  if (!Number.isFinite(expires)) return "No active hold";
+
+  const diff = expires - Date.now();
+  if (diff <= 0) return "Expired";
+
+  const minutes = Math.ceil(diff / 60000);
+  if (minutes < 60) return `${minutes}m left`;
+
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours}h ${rest}m left` : `${hours}h left`;
+}
+
+function recoveryLabel(recovery: any): string {
+  if (!recovery?.lastSentAt) return "Never";
+  return `${Number(recovery.count || 1)} sent · ${formatDate(recovery.lastSentAt)}`;
+}
+
+async function loadOperations() {
+  if (operationsLoading) return;
+  operationsLoading = true;
+
+  try {
+    const data = await adminApi("/commerce-operations");
+    const summary = data.summary || {};
+
+    setText("opsAvailableUnits", String(summary.availableUnits || 0));
+    setText("opsReservedUnits", String(summary.reservedUnits || 0));
+    setText("opsOpenCarts", String(summary.openCarts || 0));
+    setText("opsPendingPayments", String(summary.pendingPayments || 0));
+    setText(
+      "opsPendingValue",
+      `${formatMoney(Number(summary.pendingPaymentValue || 0))} waiting`
+    );
+    setText(
+      "operationsUpdatedAt",
+      data.generatedAt ? `Updated ${formatDate(data.generatedAt)}` : ""
+    );
+
+    const badge = document.getElementById("operationsBadge");
+    const actionCount =
+      Number(summary.pendingPayments || 0) +
+      Number(summary.activeCartReservations || 0);
+    if (badge) {
+      badge.textContent = String(actionCount);
+      badge.hidden = actionCount === 0;
+    }
+
+    renderOperationsInventory(data.inventory || []);
+    renderOperationsCarts(data.carts || []);
+    renderOperationsPayments(data.pendingPayments || []);
+  } catch (error) {
+    console.error("Commerce operations load failed", error);
+  } finally {
+    operationsLoading = false;
+  }
+}
+
+function renderOperationsInventory(rows: any[]) {
+  const body = document.getElementById("operationsInventoryBody");
+  if (!body) return;
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="6">No inventory rows found.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = rows
+    .map((row) => {
+      const variant = [
+        row.sku ? `SKU ${row.sku}` : "",
+        row.color || "",
+        row.size ? `Size ${row.size}` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+
+      const available = Number(row.available || 0);
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(row.title || row.productId || "")}</strong><br /><span class="admin-muted">${escapeHtml(row.productId || "")}</span></td>
+          <td>${escapeHtml(variant || "Base stock")}</td>
+          <td>${Number(row.physicalStock || 0)}</td>
+          <td>${Number(row.cartReserved || 0)}</td>
+          <td>${Number(row.paymentReserved || 0)}</td>
+          <td><span class="stock-number ${available <= 0 ? "is-empty" : available <= 2 ? "is-low" : ""}">${available}</span></td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderOperationsCarts(carts: any[]) {
+  const body = document.getElementById("operationsCartsBody");
+  if (!body) return;
+
+  if (!carts.length) {
+    body.innerHTML = `<tr><td colspan="6">No open carts.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = carts
+    .map((cart) => {
+      const customer = cart.customer || {};
+      const name = customerName(customer);
+      const holdClass =
+        cart.reservationState === "active" ? "paid" : "failed";
+
+      return `
+        <tr>
+          <td class="admin-table__customer">
+            <strong>${escapeHtml(name || (cart.ownerType === "guest" ? "Guest" : "Customer"))}</strong>
+            <span>${escapeHtml(customer.email || "No email captured yet")}</span>
+            <span>${escapeHtml(customer.phone || "")}</span>
+          </td>
+          <td><strong>${Number(cart.itemCount || 0)} item(s)</strong><br /><span class="admin-muted">${formatMoney(Number(cart.total || 0))} · ${escapeHtml(cart.ownerType || "")}</span></td>
+          <td><span class="admin-badge admin-badge--${holdClass}">${escapeHtml(remainingLabel(cart.reservationExpiresAt))}</span></td>
+          <td>${formatDate(cart.updatedAt)}</td>
+          <td>${escapeHtml(recoveryLabel(cart.recovery))}</td>
+          <td>
+            <button
+              class="admin-primary-button"
+              type="button"
+              data-cart-recovery="${escapeHtml(cart.id)}"
+              ${cart.canEmail ? "" : "disabled"}
+            >Email customer</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderOperationsPayments(payments: any[]) {
+  const body = document.getElementById("operationsPaymentsBody");
+  if (!body) return;
+
+  if (!payments.length) {
+    body.innerHTML = `<tr><td colspan="7">No pending Viva payments.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = payments
+    .map((payment) => {
+      const holdClass =
+        payment.reservationState === "active" ? "paid" : "failed";
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(payment.orderNumber || payment.id || "")}</strong><br /><span class="admin-muted">${escapeHtml(payment.vivaOrderCode || "")}</span></td>
+          <td class="admin-table__customer"><strong>${escapeHtml(customerName(payment.customer))}</strong><span>${escapeHtml(payment.customer?.email || "")}</span></td>
+          <td>${formatMoney(Number(payment.total || 0))}</td>
+          <td><span class="admin-badge admin-badge--${holdClass}">${escapeHtml(remainingLabel(payment.reservationExpiresAt))}</span></td>
+          <td>${formatDate(payment.createdAt)}</td>
+          <td>${escapeHtml(recoveryLabel(payment.recovery))}</td>
+          <td>
+            <div class="admin-actions">
+              ${payment.checkoutUrl ? `<a class="admin-secondary-button admin-button-link" href="${escapeHtml(payment.checkoutUrl)}" target="_blank" rel="noopener">Open Viva</a>` : ""}
+              <button
+                class="admin-primary-button"
+                type="button"
+                data-payment-recovery="${escapeHtml(payment.id)}"
+                ${payment.canEmail && payment.checkoutUrl ? "" : "disabled"}
+              >Send reminder</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+document.getElementById("refreshOperations")?.addEventListener("click", () => {
+  void loadOperations();
+});
+
+document.getElementById("operationsCartsBody")?.addEventListener("click", async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-cart-recovery]");
+  if (!button?.dataset.cartRecovery) return;
+
+  const raw = window.prompt(
+    "Private discount for this recovery email (0-30%). Enter 0 for no discount.",
+    "10"
+  );
+
+  if (raw === null) return;
+
+  const discountPercent = Number(raw);
+  if (
+    !Number.isFinite(discountPercent) ||
+    discountPercent < 0 ||
+    discountPercent > 30
+  ) {
+    alert("Discount must be between 0% and 30%.");
+    return;
+  }
+
+  if (!window.confirm(
+    discountPercent > 0
+      ? `Send cart recovery email with a private ${Math.round(discountPercent)}% discount valid for 24 hours?`
+      : "Send cart recovery email without a discount?"
+  )) {
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    await adminApi(
+      `/carts/${encodeURIComponent(button.dataset.cartRecovery)}/recovery-email`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          discountPercent: Math.round(discountPercent),
+        }),
+      }
+    );
+
+    await loadOperations();
+  } catch (error) {
+    alert(errorMessage(error));
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.getElementById("operationsPaymentsBody")?.addEventListener("click", async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-payment-recovery]");
+  if (!button?.dataset.paymentRecovery) return;
+
+  if (!window.confirm("Send a reminder with the existing Viva payment link?")) {
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    await adminApi(
+      `/orders/${encodeURIComponent(button.dataset.paymentRecovery)}/payment-reminder`,
+      {
+        method: "POST",
+        body: JSON.stringify({}),
+      }
+    );
+
+    await loadOperations();
+  } catch (error) {
+    alert(errorMessage(error));
+  } finally {
+    button.disabled = false;
+  }
+});
+
+window.setInterval(() => {
+  const active = document.querySelector<HTMLElement>(".admin-nav__item.is-active");
+  if (
+    firebaseAuth.currentUser &&
+    active?.dataset.view === "operations" &&
+    !document.hidden
+  ) {
+    void loadOperations();
+  }
+}, 15000);
+
 
 /* =========================================================
    ORDERS
