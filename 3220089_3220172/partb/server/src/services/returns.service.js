@@ -443,28 +443,27 @@ export async function createReturnRequest({
     );
   }
 
-  await notifyBestEffort(
-    () =>
-      sendReturnEmail({
-        to: result.order.customer?.email,
-        subject: currentRequest.returnShipping?.customerPays
-          ? `Return shipping payment required — ${currentRequest.returnNumber}`
-          : `Return ${currentRequest.returnNumber} approved`,
-        title: currentRequest.returnShipping?.customerPays
-          ? "Complete your return shipping payment"
-          : "Your return is ready",
-        intro: currentRequest.returnShipping?.customerPays
-          ? `Pay €${RETURN_FEE_EUR.toFixed(2)} return shipping before we create your BOX NOW return voucher.`
-          : "Your reported issue qualifies for a free BOX NOW return.",
-        body: `
-          <p style="color:#555;line-height:1.7;">
-            Estimated item refund: <strong>€${Number(currentRequest.refundEstimate).toFixed(2)}</strong>.
-          </p>
-          <p><a href="${pageUrl(currentRequest.id)}">Open return page →</a></p>
-        `,
-      }),
-    { returnId }
-  );
+  if (currentRequest.returnShipping?.customerPays) {
+    await notifyBestEffort(
+      () =>
+        sendReturnEmail({
+          to: result.order.customer?.email,
+          subject:
+            `Return shipping payment required — ${currentRequest.returnNumber}`,
+          title:
+            "Complete your return shipping payment",
+          intro:
+            `Pay €${RETURN_FEE_EUR.toFixed(2)} return shipping before we create your BOX NOW return voucher.`,
+          body: `
+            <p style="color:#555;line-height:1.7;">
+              Estimated item refund: <strong>€${Number(currentRequest.refundEstimate).toFixed(2)}</strong>.
+            </p>
+            <p><a href="${pageUrl(currentRequest.id)}">Open return page →</a></p>
+          `,
+        }),
+      { returnId }
+    );
+  }
 
   await notifyBestEffort(
     () =>
