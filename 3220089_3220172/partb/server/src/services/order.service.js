@@ -161,26 +161,39 @@ export async function checkoutCartForOwner({
     let recoveryRef = null;
 
     if (normalizedRecoveryCode) {
-      recoveryRef = recoveryOfferRef(normalizedRecoveryCode, db);
-      const recoverySnap = await tx.get(recoveryRef);
+      if (normalizedRecoveryCode === "SKANARE10") {
+        recoveryOffer = {
+          code: "SKANARE10",
+          discountPercent: 10,
+          expiresAt: null,
+          reservedOrderId: null,
+          source: "store",
+        };
+      } else {
+        recoveryRef = recoveryOfferRef(normalizedRecoveryCode, db);
+        const recoverySnap = await tx.get(recoveryRef);
 
-      recoveryOffer = validateRecoveryOfferData(
-        recoverySnap.exists ? recoverySnap.data() : null,
-        {
-          email: customer.email,
-          code: normalizedRecoveryCode,
+        recoveryOffer = {
+          ...validateRecoveryOfferData(
+            recoverySnap.exists ? recoverySnap.data() : null,
+            {
+              email: customer.email,
+              code: normalizedRecoveryCode,
+            }
+          ),
+          source: "recovery",
+        };
+
+        if (
+          recoveryOffer.reservedOrderId &&
+          String(recoveryOffer.reservedOrderId) !==
+            String(cart.checkoutOrderId || "")
+        ) {
+          throw new ApiError(
+            409,
+            "Recovery discount is already reserved by another checkout"
+          );
         }
-      );
-
-      if (
-        recoveryOffer.reservedOrderId &&
-        String(recoveryOffer.reservedOrderId) !==
-          String(cart.checkoutOrderId || "")
-      ) {
-        throw new ApiError(
-          409,
-          "Recovery discount is already reserved by another checkout"
-        );
       }
     }
 
@@ -544,6 +557,7 @@ items: orderItems,
         code: recoveryOffer.code,
         percent: recoveryDiscountPercent,
         expiresAt: recoveryOffer.expiresAt,
+        source: recoveryOffer.source || "recovery",
       }
     : null,
   shippingCost,
