@@ -32,6 +32,9 @@ import {
   getAdminCommerceOperations,
   sendAdminCartRecovery,
   sendAdminPaymentRecovery,
+  getAdminDiscountCodes,
+  createAdminDiscountCode,
+  updateAdminDiscountCodeStatus,
   getAdminContactMessages,
   markAdminContactMessageRead,
   replyToAdminContactMessage,
@@ -142,6 +145,22 @@ router.post(
 router.post(
   "/orders/:id/payment-reminder",
   sendAdminPaymentRecovery
+);
+
+
+router.get(
+  "/discount-codes",
+  getAdminDiscountCodes
+);
+
+router.post(
+  "/discount-codes",
+  createAdminDiscountCode
+);
+
+router.patch(
+  "/discount-codes/:code/status",
+  updateAdminDiscountCodeStatus
 );
 
 
