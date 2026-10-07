@@ -1576,30 +1576,35 @@ export const updateOrderShipping = asyncHandler(
     }
 
     const current = snapshot.data()?.shipping || {};
+    const parcelId =
+      cleanString(
+        req.body?.parcelId,
+        20
+      ).replace(/\s+/g, "");
+
+    if (!/^\d{10}$/.test(parcelId)) {
+      throw new ApiError(
+        400,
+        "BOX NOW Parcel ID must be exactly 10 digits"
+      );
+    }
+
+    const trackingUrl =
+      `https://boxnow.gr/?track=${encodeURIComponent(
+        parcelId
+      )}`;
 
     const shipping = {
       ...current,
-
-      carrier:
-        cleanString(req.body?.carrier, 100) ||
-        current.carrier ||
-        "BOX NOW",
-
-      parcelId:
-        cleanString(req.body?.parcelId, 200),
-
-      trackingNumber:
-        cleanString(req.body?.trackingNumber, 200),
-
-      trackingUrl:
-        cleanString(req.body?.trackingUrl, 1000),
-
-      lockerId:
-        cleanString(req.body?.lockerId, 200),
-
-      lockerName:
-        cleanString(req.body?.lockerName, 300),
-
+      provider: "boxnow",
+      carrier: "BOX NOW",
+      parcelId,
+      trackingNumber: parcelId,
+      trackingUrl,
+      boxnow: {
+        ...(current.boxnow || {}),
+        parcelIds: [parcelId],
+      },
       updatedAt: nowIso(),
     };
 
