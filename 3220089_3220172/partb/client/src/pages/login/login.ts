@@ -3,8 +3,6 @@ import "../../i18n/auto";
 
 import {
   signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
 } from "firebase/auth";
 
 import { initNav } from "../../components/initNav";
@@ -12,7 +10,11 @@ import { initMobileMenu } from "../../components/menu";
 import { updateCartBadge } from "../../utils/cart-badge";
 import { initPasswordVisibility } from "../../utils/password-visibility";
 import { firebaseAuth } from "../../services/firebase";
-import { login, register } from "../../services/api";
+import { login } from "../../services/api";
+import {
+  googleAuthErrorMessage,
+  signInWithGoogleAccount,
+} from "../../services/google-auth";
 
 
 import { showFlashToast } from "../../utils/toast.ts";
@@ -219,30 +221,36 @@ if (form) {
   });
 }
 
-googleBtn?.addEventListener("click", async () => {
+googleBtn?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (googleBtn.disabled) return;
+
+  googleBtn.disabled = true;
+
+  // Browser password managers can leave autofilled credentials in the
+  // email/password form. Google authentication must never consume or submit
+  // that form state.
+  form?.querySelectorAll<HTMLInputElement>("input").forEach((input) => {
+    input.blur();
+  });
+
   try {
     if (statusEl) statusEl.textContent = "Signing in with Google...";
 
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(firebaseAuth, provider);
-
-    const token = await result.user.getIdToken();
-
-    await register({
-      firstName: result.user.displayName?.split(" ")[0] || "",
-      lastName: result.user.displayName?.split(" ").slice(1).join(" ") || "",
-      email: result.user.email || "",
-      idToken: token,
-      emailVerified: true,
-    });
+    await signInWithGoogleAccount();
 
     if (statusEl) statusEl.textContent = "Login successful! Redirecting...";
 
     goToRedirect();
   } catch (err: any) {
     console.error("Google login error:", err);
+
     if (statusEl) {
-      statusEl.textContent = err?.message || "Google sign-in failed";
+      statusEl.textContent = googleAuthErrorMessage(err);
     }
+  } finally {
+    googleBtn.disabled = false;
   }
 });

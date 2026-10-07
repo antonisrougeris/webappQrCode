@@ -4,8 +4,6 @@ import { locale, localizedPath } from "../../i18n/locale";
 
 import {
   createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
 } from "firebase/auth";
 
 import { initNav } from "../../components/initNav";
@@ -14,6 +12,10 @@ import { updateCartBadge } from "../../utils/cart-badge";
 import { initPasswordVisibility } from "../../utils/password-visibility";
 import { firebaseAuth } from "../../services/firebase";
 import { register, sendVerificationCode } from "../../services/api";
+import {
+  googleAuthErrorMessage,
+  signInWithGoogleAccount,
+} from "../../services/google-auth";
 import { normalizeSameOriginPath } from "../../utils/redirect";
 
 initPasswordVisibility();
@@ -152,22 +154,25 @@ try {
 
 );
 
-googleBtn?.addEventListener("click", async () => {
+googleBtn?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (googleBtn.disabled) return;
+
+  googleBtn.disabled = true;
+
+  form?.querySelectorAll<HTMLInputElement>("input").forEach((input) => {
+    input.blur();
+  });
+
   try {
     if (statusEl) statusEl.textContent = "Signing up with Google...";
 
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(firebaseAuth, provider);
-
-    const token = await result.user.getIdToken();
-
-    await register({
-      firstName: result.user.displayName?.split(" ")[0] || "",
-      lastName: result.user.displayName?.split(" ").slice(1).join(" ") || "",
-      email: result.user.email || "",
-      idToken: token,
-      emailVerified: true,
-    });
+    // Google sign-in is also the registration path for a new Google user.
+    // The backend login/sync endpoint creates the Firestore profile on first
+    // login and reuses it on every later login, so this flow is idempotent.
+    await signInWithGoogleAccount();
 
     if (statusEl) {
       statusEl.textContent = "Registration successful! Redirecting...";
@@ -178,7 +183,9 @@ googleBtn?.addEventListener("click", async () => {
     console.error("Google register error:", err);
 
     if (statusEl) {
-      statusEl.textContent = err?.message || "Google sign-up failed";
+      statusEl.textContent = googleAuthErrorMessage(err);
     }
+  } finally {
+    googleBtn.disabled = false;
   }
 });

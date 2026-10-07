@@ -101,6 +101,8 @@ export interface RegisterPayload {
 export interface LoginPayload {
   email: string;
   idToken: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface AuthUser {
