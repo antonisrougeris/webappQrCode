@@ -3,7 +3,10 @@ import "../../i18n/auto";
 
 import { firebaseAuth } from "../../services/firebase";
 import { getCart, type CartItem } from "../../services/cart";
-import { checkout } from "../../services/checkout";
+import {
+  checkout,
+  validateRecoveryOffer,
+} from "../../services/checkout";
 import { accountExists, getMe } from "../../services/api";
 import {
   parsePhoneNumberFromString,
@@ -81,6 +84,7 @@ function saveCheckoutDraftFromPage(): void {
 }
 
 let discount = 0;
+let recoveryCode = "";
 let checkoutSubmitting = false;
 let checkoutHasItems = true;
 
@@ -711,6 +715,26 @@ function restoreAfterAuth(): void {
 document.addEventListener("DOMContentLoaded", () => {
   restoreAfterAuth();
   restoreCheckoutDraft();
+  const recoveryParam = new URLSearchParams(window.location.search)
+    .get("code")
+    ?.trim();
+
+  if (recoveryParam) {
+    const input = document.getElementById("discountInput") as HTMLInputElement | null;
+    if (input) input.value = recoveryParam;
+
+    void validateRecoveryOffer(recoveryParam)
+      .then((offer) => {
+        discount = Number(offer.discountPercent || 0);
+        recoveryCode = offer.code;
+        if (input) input.value = offer.code;
+        setFlashToast(`${discount}% recovery discount applied ✅`);
+        void render();
+      })
+      .catch(() => {
+        recoveryCode = "";
+      });
+  }
 
   const editCartButton =
   document.getElementById(
@@ -847,19 +871,30 @@ editCartButton?.addEventListener(
 
 
 
-  document.getElementById("applyDiscount")?.addEventListener("click", (e) => {
+  document.getElementById("applyDiscount")?.addEventListener("click", async (e) => {
     e.preventDefault();
 
-    const code = (
-      document.getElementById("discountInput") as HTMLInputElement | null
-    )?.value?.trim();
+    const input = document.getElementById("discountInput") as HTMLInputElement | null;
+    const code = String(input?.value || "").trim();
 
-    if (code === "SKANARE10") {
-      discount = 10;
-      setFlashToast("10% discount applied ✅");
-    } else {
+    if (!code) {
       discount = 0;
-      setFlashToast("Invalid code");
+      recoveryCode = "";
+      setFlashToast("Enter a discount code");
+      void render();
+      return;
+    }
+
+    try {
+      const offer = await validateRecoveryOffer(code);
+      discount = Number(offer.discountPercent || 0);
+      recoveryCode = offer.code;
+      if (input) input.value = offer.code;
+      setFlashToast(`${discount}% recovery discount applied ✅`);
+    } catch (error) {
+      discount = 0;
+      recoveryCode = "";
+      setFlashToast(error instanceof Error ? error.message : "Invalid code");
     }
 
     void render();
@@ -1075,6 +1110,7 @@ updateLockerValidity(false);
   },
   documentType,
   invoiceDetails,
+  recoveryCode,
 });
 
         if (result.checkoutUrl) {
