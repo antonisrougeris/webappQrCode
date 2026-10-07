@@ -104,6 +104,15 @@ export async function getActiveRecoveryOffer(code) {
     throw new ApiError(400, "Recovery discount code is required");
   }
 
+  if (normalizedCode === "SKANARE10") {
+    return {
+      code: "SKANARE10",
+      discountPercent: 10,
+      expiresAt: null,
+      source: "store",
+    };
+  }
+
   const snap = await recoveryOfferRef(normalizedCode).get();
 
   const offer = validateRecoveryOfferData(
@@ -115,5 +124,6 @@ export async function getActiveRecoveryOffer(code) {
     code: offer.code,
     discountPercent: offer.discountPercent,
     expiresAt: offer.expiresAt,
+    source: "recovery",
   };
 }
