@@ -95,6 +95,10 @@ function setDiscountStatus(message: string, success = false): void {
   el.textContent = message;
   el.classList.toggle("is-success", success);
   el.classList.toggle("is-error", !success && Boolean(message));
+  el.style.margin = message ? "8px 0 0" : "0";
+  el.style.fontSize = "12px";
+  el.style.fontWeight = "700";
+  el.style.color = success ? "#0b7a36" : "#b42318";
 }
 
 function formatPrice(n: number): string {
