@@ -134,6 +134,13 @@ export const checkoutSchema = z.object({
 
   notes: z.string().trim().max(1000).optional().default(""),
 
+  recoveryCode: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .default(""),
+
   giftOptions: giftOptionsSchema.optional().default({
     tier: "none",
     giftBox: false,
