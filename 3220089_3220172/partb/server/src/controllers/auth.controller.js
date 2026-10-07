@@ -7,6 +7,9 @@ import {
   accountExistsByEmail,
 } from "../services/auth.service.js";
 import { mergeGuestCartIntoUserCart } from "../services/cart.service.js";
+import { getDB } from "../config/db.js";
+import { COLLECTIONS } from "../constants/collections.js";
+import { nowIso } from "../utils/ids.js";
 
 
 
@@ -52,6 +55,27 @@ export const login = asyncHandler(async (req, res) => {
 export const accountStatus = asyncHandler(async (req, res) => {
   const email = String(req.body?.email || "").trim();
   const exists = await accountExistsByEmail(email);
+
+  if (req.guestId && !req.user?.uid) {
+    const lead = {
+      email,
+      firstName: String(req.body?.firstName || "").trim().slice(0, 80),
+      lastName: String(req.body?.lastName || "").trim().slice(0, 80),
+      phone: String(req.body?.phone || "").trim().slice(0, 40),
+      capturedAt: nowIso(),
+    };
+
+    await getDB()
+      .collection(COLLECTIONS.CARTS)
+      .doc(String(req.guestId))
+      .set(
+        {
+          checkoutLead: lead,
+          updatedAt: nowIso(),
+        },
+        { merge: true }
+      );
+  }
 
   return ok(res, { exists });
 });
