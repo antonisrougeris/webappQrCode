@@ -525,7 +525,7 @@ export async function cancelReturnForUser(userId, returnId) {
     const request = { id: snap.id, ...snap.data() };
 
     if (request.userId !== userId) throw new ApiError(403, "Access denied");
-    if (!["requested", "provider_failed"].includes(request.status)) {
+    if (!["payment_required", "requested", "provider_failed"].includes(request.status)) {
       throw new ApiError(409, "This return can no longer be cancelled");
     }
 
