@@ -44,6 +44,7 @@ export interface CheckoutPayload {
   };
   documentType?: "receipt" | "invoice";
   invoiceDetails?: CheckoutInvoiceDetails | null;
+  recoveryCode?: string;
 }
 
 export interface CheckoutResult {
@@ -71,4 +72,41 @@ export async function checkout(
   }
 
   return res as CheckoutResult;
+}
+
+
+export async function validateRecoveryOffer(
+  code: string
+): Promise<{
+  code: string;
+  discountPercent: number;
+  expiresAt: string;
+}> {
+  const res = await apiRequest<
+    | {
+        offer?: {
+          code: string;
+          discountPercent: number;
+          expiresAt: string;
+        };
+        data?: {
+          offer?: {
+            code: string;
+            discountPercent: number;
+            expiresAt: string;
+          };
+        };
+      }
+  >("/checkout/recovery-offer", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+
+  const offer = res?.offer || res?.data?.offer;
+
+  if (!offer) {
+    throw new Error("Recovery discount could not be validated");
+  }
+
+  return offer;
 }
