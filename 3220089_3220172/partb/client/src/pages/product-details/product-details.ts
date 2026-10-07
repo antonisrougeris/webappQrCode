@@ -140,6 +140,10 @@ async function setupReviewForm(productId: string): Promise<void> {
   const hasPurchased = orders.some(
     (order) =>
       order.paymentStatus === "paid" &&
+      (
+        String(order.fulfillmentStatus || "").toLowerCase() === "completed" ||
+        String(order.shipping?.status || "").toLowerCase() === "delivered"
+      ) &&
       order.items?.some(
         (item) => String(item.productId || item.id) === String(productId)
       )
@@ -166,7 +170,7 @@ async function setupReviewForm(productId: string): Promise<void> {
     if (button) button.disabled = true;
 
     try {
-      await createProductReview(productId, {
+      const result = await createProductReview(productId, {
         name: String(data.get("name") || "").trim(),
         rating: Number(data.get("rating") || 0),
         comment: String(data.get("comment") || "").trim(),
@@ -175,7 +179,11 @@ async function setupReviewForm(productId: string): Promise<void> {
       renderReviews(reviews);
       form.reset();
       if (nameInput) nameInput.value = user.displayName || user.email?.split("@")[0] || "";
-      eligibility.textContent = "Your verified review was added.";
+
+      eligibility.textContent =
+        result.reward?.code
+          ? `Your verified review was added. Your 20% code is ${result.reward.code} (also sent by email).`
+          : "Your verified review was added.";
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Failed to submit review.");
     } finally {
