@@ -5,11 +5,18 @@ import { createVivaPaymentOrder } from "../services/viva.service.js";
 import { ApiError } from "../utils/apiError.js";
 import { checkoutSchema, parseOrThrow } from "../utils/validators.js";
 import { attachVivaPaymentToOrder } from "../services/payment.service.js";
+import { getActiveRecoveryOffer } from "../services/recovery-offer.service.js";
 
 function getCheckoutOwner(req) {
   if (req.user?.uid) return { type: "user", id: req.user.uid };
   throw new ApiError(401, "You must be signed in to checkout");
 }
+
+export const validateRecoveryOffer = asyncHandler(async (req, res) => {
+  const offer = await getActiveRecoveryOffer(req.body?.code);
+
+  return ok(res, { offer });
+});
 
 export const checkout = asyncHandler(async (req, res) => {
   const owner = getCheckoutOwner(req);
