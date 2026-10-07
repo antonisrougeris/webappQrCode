@@ -95,3 +95,25 @@ export async function createRecoveryOffer({
 
   return data;
 }
+
+
+export async function getActiveRecoveryOffer(code) {
+  const normalizedCode = normalizeRecoveryCode(code);
+
+  if (!normalizedCode) {
+    throw new ApiError(400, "Recovery discount code is required");
+  }
+
+  const snap = await recoveryOfferRef(normalizedCode).get();
+
+  const offer = validateRecoveryOfferData(
+    snap.exists ? snap.data() : null,
+    { code: normalizedCode }
+  );
+
+  return {
+    code: offer.code,
+    discountPercent: offer.discountPercent,
+    expiresAt: offer.expiresAt,
+  };
+}
