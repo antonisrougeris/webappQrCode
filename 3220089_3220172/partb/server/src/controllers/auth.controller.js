@@ -6,7 +6,10 @@ import {
   getCurrentUser,
   accountExistsByEmail,
 } from "../services/auth.service.js";
-import { mergeGuestCartIntoUserCart } from "../services/cart.service.js";
+import {
+  getCartByUserId,
+  mergeGuestCartIntoUserCart,
+} from "../services/cart.service.js";
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { nowIso } from "../utils/ids.js";
@@ -21,34 +24,86 @@ async function mergeGuestCartIfNeeded(req, user) {
   const userId = getUserCartId(user);
 
   if (!req.guestId || !userId) {
-    return null;
+    return {
+      cart: null,
+      cartMergeWarning: null,
+    };
   }
 
-  return mergeGuestCartIntoUserCart({
-    guestId: req.guestId,
-    userId,
-  });
+  try {
+    return {
+      cart: await mergeGuestCartIntoUserCart({
+        guestId: req.guestId,
+        userId,
+      }),
+      cartMergeWarning: null,
+    };
+  } catch (error) {
+    // Cart synchronization is a post-auth convenience, not an authentication
+    // requirement. A stale/out-of-stock guest cart must never turn a valid
+    // Firebase login or registration into a 4xx/5xx auth failure.
+    console.warn("auth_cart_merge_skipped", {
+      requestId: req.requestId || null,
+      guestId: req.guestId,
+      userId,
+      status: error?.statusCode || null,
+      message: error?.message || String(error),
+    });
+
+    let cart = null;
+
+    try {
+      cart = await getCartByUserId(userId);
+    } catch (cartError) {
+      console.warn("auth_user_cart_fallback_failed", {
+        requestId: req.requestId || null,
+        userId,
+        message: cartError?.message || String(cartError),
+      });
+    }
+
+    return {
+      cart,
+      cartMergeWarning: {
+        code: "CART_MERGE_SKIPPED",
+        message:
+          "Signed in successfully, but the guest cart could not be merged automatically.",
+      },
+    };
+  }
 }
 
 export const register = asyncHandler(async (req, res) => {
   const user = await registerUser(req.body || {});
-  const cart = await mergeGuestCartIfNeeded(req, user);
+  const {
+    cart,
+    cartMergeWarning,
+  } = await mergeGuestCartIfNeeded(req, user);
 
   return ok(res, {
     message: "User synced successfully",
     user,
     cart,
+    ...(cartMergeWarning
+      ? { cartMergeWarning }
+      : {}),
   });
 });
 
 export const login = asyncHandler(async (req, res) => {
   const user = await loginUser(req.body || {});
-  const cart = await mergeGuestCartIfNeeded(req, user);
+  const {
+    cart,
+    cartMergeWarning,
+  } = await mergeGuestCartIfNeeded(req, user);
 
   return ok(res, {
     message: "Login successful",
     user,
     cart,
+    ...(cartMergeWarning
+      ? { cartMergeWarning }
+      : {}),
   });
 });
 
