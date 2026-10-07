@@ -41,6 +41,53 @@ function googleAuthErrorMessage(error: unknown): string {
     : "Google sign-in failed";
 }
 
+function isTransientGatewayError(error: unknown): boolean {
+  const message = String(
+    error instanceof Error
+      ? error.message
+      : (error as any)?.message || error || ""
+  );
+
+  return /\b(502|503|504)\b/.test(message);
+}
+
+async function syncGoogleUser(params: {
+  email: string;
+  idToken: string;
+  firstName: string;
+  lastName: string;
+}): Promise<AuthUser> {
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await login(params);
+
+      if (!response?.user) {
+        throw new Error(
+          "Google authentication succeeded, but the Skanare account could not be synchronized."
+        );
+      }
+
+      return response.user;
+    } catch (error) {
+      lastError = error;
+
+      if (!isTransientGatewayError(error) || attempt === 3) {
+        throw error;
+      }
+
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, attempt * 700)
+      );
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Google account synchronization failed");
+}
+
 async function runGoogleAuth(): Promise<AuthUser> {
   const provider = new GoogleAuthProvider();
 
@@ -75,20 +122,12 @@ async function runGoogleAuth(): Promise<AuthUser> {
     // "Continue with Google" on registration. The backend login endpoint
     // creates the Firestore user on first Google login and returns the
     // existing user on later logins.
-    const response = await login({
+    return await syncGoogleUser({
       email,
       idToken: token,
       firstName,
       lastName,
     });
-
-    if (!response?.user) {
-      throw new Error(
-        "Google authentication succeeded, but the Skanare account could not be synchronized."
-      );
-    }
-
-    return response.user;
   } catch (error) {
     // Firebase may already consider the user signed in even when our backend
     // sync fails. Roll that state back so a retry starts cleanly.
