@@ -412,9 +412,24 @@ async function sendDeliveredOrderEmail(orderId) {
           <p style="margin:0 0 8px;"><strong>Order:</strong> ${order.orderNumber || order.id}</p>
           <p style="margin:0;"><strong>Status:</strong> Delivered</p>
         </div>
+        <p style="color:#555;line-height:1.7;margin:0 0 18px;">
+          Thank you for choosing Skanare. We hope you enjoy your order.
+        </p>
+        <p style="color:#555;line-height:1.7;margin:0 0 18px;">
+          Leave a verified product review and we will send you a
+          <strong>one-time 20% discount code</strong> for your next order.
+        </p>
+        <p style="margin:22px 0;">
+          <a
+            href="https://skanare.com/products"
+            style="display:inline-block;background:#111;color:#fff;padding:14px 20px;text-decoration:none;border-radius:999px;"
+          >
+            Leave a review
+          </a>
+        </p>
         <p style="color:#555;line-height:1.7;margin:0;">
-          We hope you enjoy your Skanare order. If something is not right,
-          contact us at hello@skanare.com.
+          If something is not right, you can start a return from your account
+          or contact us at hello@skanare.com.
         </p>
       `,
     }),
