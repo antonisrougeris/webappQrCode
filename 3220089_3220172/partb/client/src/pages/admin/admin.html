@@ -228,6 +228,7 @@
 
       <nav class="admin-nav">
         <button class="admin-nav__item is-active" data-view="dashboard" type="button"><span class="admin-nav__icon">◫</span>Dashboard</button>
+        <button class="admin-nav__item" data-view="operations" type="button"><span class="admin-nav__icon">◎</span><span>Commerce Ops</span><span id="operationsBadge" class="nav-badge" hidden></span></button>
         <button class="admin-nav__item" data-view="fulfillment" type="button"><span class="admin-nav__icon">▣</span><span>Fulfillment</span><span id="fulfillmentBadge" class="nav-badge" hidden></span></button>
         <button class="admin-nav__item" data-view="orders" type="button"><span class="admin-nav__icon">▤</span>Orders</button>
         <button class="admin-nav__item" data-view="returns" type="button"><span class="admin-nav__icon">↩</span>Returns</button>
@@ -272,6 +273,74 @@
               <tbody id="recentOrdersBody"></tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <!-- COMMERCE OPERATIONS -->
+      <section id="view-operations" class="admin-view hidden">
+        <div class="admin-section__header">
+          <div>
+            <span class="admin-eyebrow">Inventory & recovery</span>
+            <h2>Commerce Operations</h2>
+            <p>Live sellable stock, open carts, active reservations and pending Viva payments.</p>
+          </div>
+          <div class="admin-actions">
+            <span id="operationsUpdatedAt" class="admin-muted"></span>
+            <button id="refreshOperations" class="admin-text-button" type="button">Refresh ↻</button>
+          </div>
+        </div>
+
+        <div class="admin-stats">
+          <article class="admin-stat"><span>Available stock</span><strong id="opsAvailableUnits">0</strong><small>After active reservations</small></article>
+          <article class="admin-stat"><span>Reserved</span><strong id="opsReservedUnits">0</strong><small>Cart + checkout holds</small></article>
+          <article class="admin-stat"><span>Open carts</span><strong id="opsOpenCarts">0</strong><small>Guest + signed-in</small></article>
+          <article class="admin-stat"><span>Pending Viva</span><strong id="opsPendingPayments">0</strong><small id="opsPendingValue">€0.00 waiting</small></article>
+        </div>
+
+        <div class="commerce-ops-grid">
+          <section class="admin-section">
+            <div class="admin-section__header">
+              <div><span class="admin-eyebrow">Real-time availability</span><h2>Stock by product / variant</h2></div>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table admin-table--ops">
+                <thead><tr><th>Product</th><th>Variant</th><th>Physical</th><th>Cart hold</th><th>Payment hold</th><th>Available</th></tr></thead>
+                <tbody id="operationsInventoryBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="admin-section">
+            <div class="admin-section__header">
+              <div>
+                <span class="admin-eyebrow">Abandoned checkout</span>
+                <h2>Open carts</h2>
+                <p>Send a recovery email when customer contact details are available. Cart offers may include a private 24-hour discount.</p>
+              </div>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table admin-table--ops">
+                <thead><tr><th>Customer</th><th>Cart</th><th>Reservation</th><th>Updated</th><th>Recovery</th><th></th></tr></thead>
+                <tbody id="operationsCartsBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="admin-section">
+            <div class="admin-section__header">
+              <div>
+                <span class="admin-eyebrow">Payment recovery</span>
+                <h2>Pending Viva payments</h2>
+                <p>Reminders reuse the existing Viva checkout URL. Discounts are intentionally not added after a Viva payment order has already been created.</p>
+              </div>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table admin-table--ops">
+                <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Stock hold</th><th>Created</th><th>Recovery</th><th></th></tr></thead>
+                <tbody id="operationsPaymentsBody"></tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </section>
 
