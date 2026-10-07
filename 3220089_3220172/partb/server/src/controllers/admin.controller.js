@@ -3347,10 +3347,21 @@ export const shipOrderAndNotify =
         order.shipping ||
         {};
 
+      const boxNowParcelId =
+        Array.isArray(
+          shipping.boxnow?.parcelIds
+        )
+          ? String(
+              shipping.boxnow.parcelIds[0] ||
+              ""
+            ).trim()
+          : "";
+
       const shippingReference =
         String(
           shipping.trackingNumber ||
           shipping.parcelId ||
+          boxNowParcelId ||
           ""
         ).trim();
 
@@ -3369,6 +3380,7 @@ export const shipOrderAndNotify =
       const trackingText =
         shipping.trackingNumber ||
         shipping.parcelId ||
+        boxNowParcelId ||
         "—";
 
 
