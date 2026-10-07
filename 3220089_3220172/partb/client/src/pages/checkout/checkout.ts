@@ -733,19 +733,39 @@ document.addEventListener("DOMContentLoaded", () => {
     if (input) input.value = recoveryParam;
 
     void validateRecoveryOffer(recoveryParam)
-      .then((offer) => {
+      .then(async (offer) => {
+        const cart = await getCart();
+        const cartSubtotal = (cart?.items || []).reduce(
+          (sum: number, item: CartItem) =>
+            sum +
+            getCartItemUnitPrice(item) *
+              Number(item.quantity || 0),
+          0
+        );
+        const minimum = Number(offer.minOrderAmount || 0);
+
+        if (minimum > 0 && cartSubtotal < minimum) {
+          throw new Error(
+            `This code requires a minimum order of ${formatPrice(minimum)}.`
+          );
+        }
+
         discount = Number(offer.discountPercent || 0);
         recoveryCode = offer.code;
         localStorage.setItem(RECOVERY_CODE_KEY, offer.code);
         if (input) input.value = offer.code;
         setDiscountStatus(`${discount}% discount applied`, true);
-      setFlashToast(`${discount}% discount applied ✅`);
+        setFlashToast(`${discount}% discount applied ✅`);
         void render();
       })
-      .catch(() => {
+      .catch((error) => {
         recoveryCode = "";
         discount = 0;
-        setDiscountStatus("This discount code is no longer valid.");
+        const message =
+          error instanceof Error
+            ? error.message
+            : "This discount code is no longer valid.";
+        setDiscountStatus(message);
         localStorage.removeItem(RECOVERY_CODE_KEY);
       });
   }
@@ -903,11 +923,28 @@ editCartButton?.addEventListener(
 
     try {
       const offer = await validateRecoveryOffer(code);
+      const cart = await getCart();
+      const cartSubtotal = (cart?.items || []).reduce(
+        (sum: number, item: CartItem) =>
+          sum +
+          getCartItemUnitPrice(item) *
+            Number(item.quantity || 0),
+        0
+      );
+      const minimum = Number(offer.minOrderAmount || 0);
+
+      if (minimum > 0 && cartSubtotal < minimum) {
+        throw new Error(
+          `This code requires a minimum order of ${formatPrice(minimum)}.`
+        );
+      }
+
       discount = Number(offer.discountPercent || 0);
       recoveryCode = offer.code;
       localStorage.setItem(RECOVERY_CODE_KEY, offer.code);
       if (input) input.value = offer.code;
-      setFlashToast(`${discount}% recovery discount applied ✅`);
+      setDiscountStatus(`${discount}% discount applied`, true);
+      setFlashToast(`${discount}% discount applied ✅`);
     } catch (error) {
       discount = 0;
       recoveryCode = "";
