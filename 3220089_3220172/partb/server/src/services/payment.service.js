@@ -23,6 +23,7 @@ import {
   reservationDocId,
 } from "./inventory-reservation.service.js";
 import { recoveryOfferRef } from "./recovery-offer.service.js";
+import { approveReturnForAdmin } from "./returns.service.js";
 
 
 function getEventData(payload) {
@@ -699,6 +700,123 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
   const db = getDB();
   const paidAt = nowIso();
+
+  /*
+   * Return-shipping payments use the same Viva webhook as normal orders.
+   * Handle them first so a €2 return fee never enters the merchandise
+   * payment / stock-consumption path.
+   */
+  const returnPaymentSnap = await db
+    .collection(COLLECTIONS.RETURNS || "returns")
+    .where("payment.vivaOrderCode", "==", vivaOrderCode)
+    .limit(1)
+    .get();
+
+  if (!returnPaymentSnap.empty) {
+    const returnDoc = returnPaymentSnap.docs[0];
+    const returnRef = returnDoc.ref;
+    const request = {
+      id: returnDoc.id,
+      ...returnDoc.data(),
+    };
+
+    const expectedReturnAmount = Math.round(
+      Number(request.payment?.amount || 0) * 100
+    );
+
+    if (
+      !amount ||
+      !expectedReturnAmount ||
+      amount !== expectedReturnAmount
+    ) {
+      throw new ApiError(
+        400,
+        "Viva amount does not match return shipping fee",
+        {
+          returnId: request.id,
+          vivaOrderCode,
+          vivaAmount: amount,
+          expectedAmount: expectedReturnAmount,
+        }
+      );
+    }
+
+    if (request.payment?.status !== "paid") {
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(returnRef);
+
+        if (!snap.exists) {
+          throw new ApiError(404, "Return request not found");
+        }
+
+        const current = {
+          id: snap.id,
+          ...snap.data(),
+        };
+
+        if (current.payment?.status === "paid") {
+          return;
+        }
+
+        if (current.status !== "payment_required") {
+          throw new ApiError(
+            409,
+            "Return is not waiting for shipping payment"
+          );
+        }
+
+        tx.set(
+          returnRef,
+          {
+            status: "requested",
+            payment: {
+              ...(current.payment || {}),
+              status: "paid",
+              transactionId,
+              paidAt,
+              updatedAt: paidAt,
+            },
+            history: [
+              ...(current.history || []),
+              {
+                status: "requested",
+                at: paidAt,
+                actor: "viva",
+                action: "return_shipping_paid",
+              },
+            ],
+            updatedAt: paidAt,
+          },
+          { merge: true }
+        );
+
+        tx.set(
+          db
+            .collection(COLLECTIONS.ORDERS)
+            .doc(String(current.orderId)),
+          {
+            returns: {
+              latestReturnId: current.id,
+              latestReturnStatus: "requested",
+              updatedAt: paidAt,
+            },
+            updatedAt: paidAt,
+          },
+          { merge: true }
+        );
+      });
+    }
+
+    await approveReturnForAdmin(
+      request.id,
+      {
+        uid: "system:viva-return",
+        email: "system@skanare.com",
+      }
+    );
+
+    return;
+  }
 
 
   await db.runTransaction(async (tx) => {
