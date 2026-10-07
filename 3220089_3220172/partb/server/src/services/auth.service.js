@@ -26,7 +26,11 @@ export async function registerUser({
     throw new ApiError(401, "Invalid Firebase token");
   }
 
-  if (decoded.email && decoded.email !== email) {
+  if (
+    decoded.email &&
+    String(decoded.email).trim().toLowerCase() !==
+      String(email).trim().toLowerCase()
+  ) {
     throw new ApiError(400, "Email does not match authenticated user");
   }
 
@@ -79,7 +83,11 @@ export async function loginUser({
     throw new ApiError(401, "Invalid Firebase token");
   }
 
-  if (decoded.email && decoded.email !== email) {
+  if (
+    decoded.email &&
+    String(decoded.email).trim().toLowerCase() !==
+      String(email).trim().toLowerCase()
+  ) {
     throw new ApiError(400, "Email does not match authenticated user");
   }
 
