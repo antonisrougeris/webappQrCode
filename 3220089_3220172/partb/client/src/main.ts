@@ -1,4 +1,5 @@
 import "./i18n/auto";
+import { initHomepageSocialProof } from "./components/homepageSocialProof";
 /* 3220089_3220172 */
 
 import { initNav } from "./components/initNav";
@@ -1242,6 +1243,7 @@ async function loadHomepageProducts(
 ========================= */
 
 document.addEventListener("DOMContentLoaded", () => {
+  initHomepageSocialProof();
   void loadHomepageProducts(
     "featuredTshirtsGrid",
     "featuredTshirtsLoading",
