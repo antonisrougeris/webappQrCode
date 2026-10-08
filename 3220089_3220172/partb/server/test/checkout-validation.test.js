@@ -7,6 +7,7 @@ import {
 
 function baseCheckout() {
   return {
+    termsAcceptance: { accepted: true, version: "2026-09" },
     phoneCountryCode: "GR",
     customer: {
       firstName: "Test",
@@ -162,4 +163,35 @@ test("checkout rejects unsupported locale", () => {
   const result = checkoutSchema.safeParse(payload);
 
   assert.equal(result.success, false);
+});
+
+test("checkout rejects missing terms acceptance", () => {
+  const payload = baseCheckout();
+  delete payload.termsAcceptance;
+  assert.equal(checkoutSchema.safeParse(payload).success, false);
+});
+
+test("checkout rejects unchecked or falsified terms acceptance", () => {
+  for (const value of [false, "true", 1, null]) {
+    const payload = baseCheckout();
+    payload.termsAcceptance = { accepted: value, version: "2026-09" };
+    assert.equal(checkoutSchema.safeParse(payload).success, false);
+  }
+});
+
+test("checkout rejects an outdated or missing terms version", () => {
+  for (const version of ["2025-01", ""]) {
+    const payload = baseCheckout();
+    payload.termsAcceptance.version = version;
+    assert.equal(checkoutSchema.safeParse(payload).success, false);
+  }
+});
+
+test("checkout accepts explicit consent to the current terms version", () => {
+  const result = checkoutSchema.safeParse(baseCheckout());
+  assert.equal(result.success, true);
+  assert.deepEqual(result.data.termsAcceptance, {
+    accepted: true,
+    version: "2026-09",
+  });
 });
