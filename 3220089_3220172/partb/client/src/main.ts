@@ -9,7 +9,6 @@ import { updateCartBadge } from "./utils/cart-badge";
 import { firebaseAuth } from "./services/firebase";
 import { getMyQrCodes, updateQrCode, type QrCode } from "./services/qr";
 
-import { initCookieConsent } from "./components/cookieConsent";
 
 import QRCode from "qrcode";
 
@@ -155,7 +154,6 @@ initPromoPopup();
 
 initCountdown();
 
-initCookieConsent();
 
 initNav();
 initMobileMenu();

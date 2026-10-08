@@ -61,6 +61,15 @@ jobs:
 
           echo "Production frontend configuration OK"
 
+      - name: Validate GA4 web stream configuration
+        env:
+          VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
+        run: |
+          if ! [[ "$VITE_GA_MEASUREMENT_ID" =~ ^G-[A-Za-z0-9]{6,}$ ]]; then
+            echo "ERROR: Set the full GA4 Web stream Measurement ID as the GitHub Actions variable VITE_GA_MEASUREMENT_ID"
+            exit 1
+          fi
+
       - name: Audit frontend dependencies
         run: npm audit --audit-level=critical
 
