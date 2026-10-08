@@ -3,3 +3,15 @@
 @media(max-width:900px){.social-story__reels{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.social-story,.customer-reviews{padding-block:64px}}
 @media(max-width:600px){.social-story__intro{margin-bottom:26px}.social-story__reels{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-inline:contain;gap:12px;padding:4px 15% 16px 2px;scrollbar-width:thin}.social-story__reels .story-reel{scroll-snap-align:start;flex:0 0 76%;max-width:310px}.customer-reviews__grid{grid-template-columns:1fr}.customer-reviews__controls{align-items:center}.customer-reviews__summary-button{gap:5px}.customer-reviews__summary-button .customer-reviews__stars{font-size:18px}.customer-reviews__summary-text{font-size:12px}.customer-reviews__distribution{min-width:260px}.customer-review-card{padding:18px}}
 @media(prefers-reduced-motion:reduce){.story-reel__video,.story-reel__hover,.customer-reviews__more{transition:none!important}}
+
+/* Interactive distribution: buttons have an obvious hover, pressed and focus state. */
+.customer-reviews__distribution-row{display:grid!important;grid-template-columns:45px minmax(130px,1fr) 30px!important;width:100%;align-items:center;text-align:left;gap:10px;margin:4px 0!important;padding:7px 6px!important;border-radius:7px;background:transparent;font-size:12px;transition:background .18s ease}
+.customer-reviews__distribution-row:not(:disabled){cursor:pointer}
+.customer-reviews__distribution-row:not(:disabled):is(:hover,.is-selected){background:#fff6d7}
+.customer-reviews__distribution-row:disabled{opacity:.5;cursor:not-allowed}
+.customer-reviews__active-filter{display:block;margin:5px 0 0;border-radius:20px!important;padding:6px 11px!important;background:#f8f2df!important;color:#624900!important;font-size:12px!important}
+.customer-reviews__active-filter[hidden]{display:none}
+.story-reel--demo-2 .story-reel__video{filter:hue-rotate(65deg)}
+.story-reel--demo-3 .story-reel__video{filter:hue-rotate(155deg)}
+.story-reel--demo-4 .story-reel__video{filter:hue-rotate(255deg)}
+.story-reel--preview video{object-fit:cover}
