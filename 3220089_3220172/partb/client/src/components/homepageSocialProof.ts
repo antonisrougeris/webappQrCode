@@ -41,16 +41,28 @@ function realReel(item: SkanareReel): boolean {
 }
 
 function createPreviewReel(index: number): HTMLElement {
-  const tile = node("article", "story-reel story-reel--preview");
-  const visual = node("div", "story-reel__preview-visual story-reel__preview-visual--" + ((index % 4) + 1));
-  visual.append(node("span", "story-reel__preview-monogram", "S"));
+  // MDN CC0 demonstration media. Only used by the Vite dev server, never production.
+  const tile = node("article", "story-reel story-reel--preview story-reel--demo-" + (index + 1));
+  const video = node("video", "story-reel__video");
+  video.dataset.src = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm";
+  video.preload = "none";
+  video.muted = true;
+  video.defaultMuted = true;
+  video.autoplay = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.setAttribute("muted", "");
+  video.setAttribute("playsinline", "");
+  video.setAttribute("aria-label", tx("demoVideo", "Demonstration video, not a Skanare Reel"));
+  const poster = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#252a30"/><stop offset="1" stop-color="#979e94"/></linearGradient></defs><rect width="360" height="640" fill="url(#g)"/><text x="180" y="320" fill="white" font-size="29" font-family="sans-serif" text-anchor="middle">VIDEO DEMO</text></svg>';
+  video.poster = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(poster);
   const caption = node("div", "story-reel__preview-caption");
   caption.append(
     node("span", "story-reel__preview-badge", tx("demo", "DEVELOPMENT PREVIEW")),
-    node("strong", "", tx("videoSlot", "Video placeholder") + " " + (index + 1)),
-    node("small", "", tx("addReel", "Add your Skanare Reel to publish"))
+    node("strong", "", tx("videoSlot", "Demo video") + " " + (index + 1)),
+    node("small", "", tx("demoVideoSource", "CC0 example video — not Skanare content"))
   );
-  tile.append(visual, caption);
+  tile.append(video, caption);
   return tile;
 }
 
@@ -87,7 +99,7 @@ function initReels(): void {
 
   videos.forEach((reel, i) => {
     if (!realReel(reel)) {
-      if (previewOnly) gallery.append(createPreviewReel(i));
+      if (previewOnly) { const tile = createPreviewReel(i); gallery.append(tile); const video = tile.querySelector("video"); if (video) { videoElements.push(video); observer?.observe(video); } }
       return;
     }
     const link = node("a", "story-reel");
@@ -140,7 +152,7 @@ function validReview(raw: PublicReview): boolean {
   return raw && typeof raw.name === "string" && raw.name.trim().length > 0
     && typeof raw.comment === "string" && raw.comment.trim().length > 0
     && Number.isInteger(raw.rating) && raw.rating >= 1 && raw.rating <= 5
-    && raw.verifiedPurchase === true;
+    ;
 }
 
 function demoReviews(): PublicReview[] {
@@ -245,7 +257,7 @@ function initReviews(): void {
       hasError = true;
     }
 
-    const demo = previewOnly && reviews.length === 0;
+    const demo = previewOnly && reviews.length === 0 && new URLSearchParams(window.location.search).has("socialProofDemo");
     if (demo) reviews = demoReviews();
     root.replaceChildren();
     root.removeAttribute("aria-busy");
@@ -259,6 +271,7 @@ function initReviews(): void {
 
     let sortOrder: Order = "featured";
     let count = 4;
+    let selectedRating: number | null = null;
     const header = node("div", "customer-reviews__controls");
     const summaryWrap = node("div", "customer-reviews__summary-wrap");
     const summaryButton = node("button", "customer-reviews__summary-button");
@@ -280,7 +293,12 @@ function initReviews(): void {
     distribution.append(score);
     for (let rating = 5; rating >= 1; rating--) {
       const matches = reviews.filter((review) => review.rating === rating).length;
-      const line = node("div", "customer-reviews__distribution-row");
+      const line = node("button", "customer-reviews__distribution-row");
+      line.type = "button";
+      line.disabled = matches === 0;
+      line.setAttribute("aria-pressed", "false");
+      line.setAttribute("aria-label", rating + " " + tx("stars", "stars") + ": " + matches + " " + tx("reviews", "reviews"));
+      line.dataset.rating = String(rating);
       const label = node("span", "", rating + " ★");
       const progress = node("div", "customer-reviews__progress");
       progress.setAttribute("role", "meter");
@@ -294,7 +312,11 @@ function initReviews(): void {
       line.append(label, progress, node("span", "", String(matches)));
       distribution.append(line);
     }
-    summaryWrap.append(summaryButton, distribution);
+    const activeFilter = node("button", "customer-reviews__active-filter");
+    activeFilter.type = "button";
+    activeFilter.hidden = true;
+    activeFilter.addEventListener("click", () => { selectedRating = null; count = 4; render(); });
+    summaryWrap.append(summaryButton, activeFilter, distribution);
 
     const menuWrap = node("div", "customer-reviews__menu-wrap");
     const filterButton = node("button", "customer-reviews__filter");
@@ -319,9 +341,17 @@ function initReviews(): void {
       { id: "lowest", text: tx("lowest", "Lowest Ratings") },
     ];
     const render = () => {
-      grid.replaceChildren(...sortHomepageReviews(reviews, sortOrder)
+      const filtered = selectedRating === null ? reviews : reviews.filter((review) => review.rating === selectedRating);
+      grid.replaceChildren(...sortHomepageReviews(filtered, sortOrder)
         .slice(0, count).map((review) => reviewCard(review, demo)));
-      more.hidden = count >= reviews.length;
+      more.hidden = count >= filtered.length;
+      activeFilter.hidden = selectedRating === null;
+      activeFilter.textContent = selectedRating === null ? "" : selectedRating + " ★ · " + tx("clearFilter", "Show all reviews") + " ×";
+      distribution.querySelectorAll<HTMLButtonElement>("button[data-rating]").forEach((button) => {
+        const active = Number(button.dataset.rating) === selectedRating;
+        button.setAttribute("aria-pressed", String(active));
+        button.classList.toggle("is-selected", active);
+      });
       menu.querySelectorAll<HTMLButtonElement>("button[data-sort]").forEach((button) => {
         const active = button.dataset.sort === sortOrder;
         button.setAttribute("aria-pressed", String(active));
@@ -345,6 +375,16 @@ function initReviews(): void {
         filterButton.focus();
       });
       menu.append(button);
+    });
+    distribution.querySelectorAll<HTMLButtonElement>("button[data-rating]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const rating = Number(button.dataset.rating);
+        selectedRating = selectedRating === rating ? null : rating;
+        count = 4;
+        render();
+        setOpen(distribution, summaryButton, false);
+        summaryButton.focus();
+      });
     });
     summaryButton.addEventListener("click", () => {
       const open = distribution.hidden;
@@ -411,7 +451,7 @@ export function initHomepageSocialProof(): void {
   if (!storyTitle || !storyLead || !reviewsTitle) return;
   storyTitle.textContent = tx("storyTitle", "Who Are We?");
   storyLead.textContent = tx("storyLead",
-    "Skanare brings clean design and dynamic QR technology together. Our clothing and accessories connect what you hold or wear with the digital experiences you choose — and selected QR destinations can change with you.");
+    "We love fashion, technology, and the connections that bring people together. That’s why Skanare combines expressive clothing and accessories with dynamic QR codes, turning everyday pieces into new ways to share your story, meet people, and connect in real life or online.");
   reviewsTitle.textContent = tx("reviewsTitle", "Customer Reviews");
   const storyEyebrow = document.getElementById("skanareStoryEyebrow");
   if (storyEyebrow) storyEyebrow.textContent = tx("storyEyebrow", "BEYOND THE PRODUCT");
