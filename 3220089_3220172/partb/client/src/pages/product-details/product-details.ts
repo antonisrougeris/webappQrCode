@@ -1,4 +1,5 @@
 import "../../i18n/auto";
+import { mountBrandTrustSections } from "../../components/brandTrustSections";
 /* 3220089_3220172 */
 
 import { initNav } from "../../components/initNav";
@@ -1346,6 +1347,7 @@ if (imageStage) {
   }
 }
 
+mountBrandTrustSections("productDetails");
 void initProductDetailsPage();
 
 
