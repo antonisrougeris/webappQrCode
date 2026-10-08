@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   createVerifiedReview,
   getReviewsForProduct,
+  getHomepageVerifiedReviews,
 } from "../services/review.service.js";
 import { parseOrThrow } from "../utils/validators.js";
 
@@ -26,4 +27,8 @@ export const createReview = asyncHandler(async (req, res) => {
     input
   );
   return ok(res, result, 201);
+});
+export const listHomepageReviews = asyncHandler(async (_req, res) => {
+  const reviews = await getHomepageVerifiedReviews();
+  return ok(res, { reviews });
 });
