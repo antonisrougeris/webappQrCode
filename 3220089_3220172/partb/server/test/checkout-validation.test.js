@@ -8,6 +8,7 @@ import {
 function baseCheckout() {
   return {
     termsAcceptance: { accepted: true, version: "2026-09" },
+    tip: { choice: "percent:5" },
     phoneCountryCode: "GR",
     customer: {
       firstName: "Test",
@@ -194,4 +195,30 @@ test("checkout accepts explicit consent to the current terms version", () => {
     accepted: true,
     version: "2026-09",
   });
+});
+
+test("checkout accepts none, 5%, 10% and custom tips", () => {
+  for (const tip of [
+    { choice: "none" }, { choice: "percent:5" },
+    { choice: "percent:10" }, { choice: "custom", customAmount: 2.50 },
+  ]) {
+    const payload = baseCheckout();
+    payload.tip = tip;
+    assert.equal(checkoutSchema.safeParse(payload).success, true);
+  }
+});
+
+test("checkout rejects invalid or missing tip input", () => {
+  for (const tip of [
+    undefined, { choice: "custom" }, { choice: "custom", customAmount: 0 },
+    { choice: "custom", customAmount: 101 },
+    { choice: "custom", customAmount: 1.234 },
+    { choice: "custom", customAmount: "2" },
+    { choice: "none", customAmount: 2 },
+    { choice: "percent:20" },
+  ]) {
+    const payload = baseCheckout();
+    payload.tip = tip;
+    assert.equal(checkoutSchema.safeParse(payload).success, false);
+  }
 });
