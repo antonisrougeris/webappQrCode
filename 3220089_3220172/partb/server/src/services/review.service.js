@@ -219,3 +219,77 @@ export async function createVerifiedReview(userId, productId, input) {
       : null,
   };
 }
+/**
+ * Build public homepage reviews from Firestore's reviews collection and
+ * embedded product.reviews (legacy data), deduplicating the same submission.
+ * Only safe display fields are returned; no userId, orderId or email leaks.
+ * The backend does not translate customer-submitted review text.
+ */
+export function mapHomepageReviews(reviewDocs, productDocs) {
+  const products = new Map();
+  for (const entry of productDocs) {
+    const product = { id: entry.id, ...entry.data };
+    if (product.active === false) continue;
+    for (const key of [product.id, product.slug]) {
+      if (key) products.set(String(key), product);
+    }
+  }
+
+  const seen = new Set();
+  const reviews = [];
+  const addReview = (review, docId, productHint) => {
+    const rating = Number(review?.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return;
+    if (typeof review?.name !== "string" || !review.name.trim()) return;
+    if (typeof review?.comment !== "string" || !review.comment.trim()) return;
+    // The visible productId may refer to a slug rather than the Firestore doc ID.
+    const product = productHint || products.get(String(review.productId || ""));
+    const productId = String(product?.id || review.productId || "unknown");
+    const fingerprint = productId + "|" + review.name.trim() + "|" + rating + "|" + review.comment.trim();
+    if (seen.has(fingerprint)) return;
+    seen.add(fingerprint);
+    const timestamp = typeof review.createdAt === "string"
+      ? review.createdAt
+      : (review.createdAt?.toDate?.()?.toISOString?.() || undefined);
+    reviews.push({
+      id: String(review.id || docId || fingerprint),
+      name: review.name.trim(),
+      comment: review.comment.trim(),
+      rating,
+      // Require an order reference before claiming purchase verification.
+      verifiedPurchase: review.verifiedPurchase === true && Boolean(review.orderId),
+      createdAt: timestamp,
+      productId,
+      productTitle: typeof product?.title === "string" ? product.title : "",
+      productImage: typeof product?.image === "string" ? product.image : (
+        Array.isArray(product?.images) ? product.images[0] : undefined
+      ),
+      productSlug: product ? String(product.slug || product.id) : undefined,
+    });
+  };
+
+  for (const { id, data } of reviewDocs) addReview(data, id);
+  for (const { id, data } of productDocs) {
+    const product = products.get(String(id));
+    if (!product || !Array.isArray(data.reviews)) continue;
+    data.reviews.forEach((review, index) => addReview(review, id + "-" + index, product));
+  }
+
+  return reviews.sort((a, b) =>
+    String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+  );
+}
+
+/** Read-only list of actual Firestore reviews, including older reviews without orderId. */
+export async function getHomepageReviews() {
+  const db = getDB();
+  const [reviewsSnapshot, productsSnapshot] = await Promise.all([
+    db.collection(COLLECTIONS.REVIEWS).get(),
+    db.collection(COLLECTIONS.PRODUCTS).get(),
+  ]);
+  const docs = (snapshot) => snapshot.docs.map((doc) => ({
+    id: doc.id,
+    data: doc.data(),
+  }));
+  return mapHomepageReviews(docs(reviewsSnapshot), docs(productsSnapshot));
+}

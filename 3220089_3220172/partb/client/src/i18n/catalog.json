@@ -686,7 +686,9 @@
     "Your cart is empty": "Το καλάθι σου είναι άδειο",
     "Add a product before continuing to payment.": "Πρόσθεσε προϊόν στο καλάθι πριν συνεχίσεις στην πληρωμή.",
     "For orders delivered in Greece, standard shipping costs €2. Orders of €50 or more qualify for free standard shipping.": "Για παραγγελίες που παραδίδονται στην Ελλάδα, τα βασικά μεταφορικά κοστίζουν 2€. Οι παραγγελίες αξίας 50€ ή περισσότερο έχουν δωρεάν βασικά μεταφορικά.",
-    "The final shipping charge is shown during checkout before payment.": "Το τελικό κόστος αποστολής εμφανίζεται στο checkout πριν από την πληρωμή."
+    "The final shipping charge is shown during checkout before payment.": "Το τελικό κόστος αποστολής εμφανίζεται στο checkout πριν από την πληρωμή.",
+    "THE COMMUNITY": "Η ΚΟΙΝΟΤΗΤΑ",
+    "Skanare Instagram video gallery": "Βίντεο Instagram Skanare"
   },
   "messages": {
     "el": {
@@ -771,7 +773,40 @@
       "cart.saving": "Αποθήκευση...",
       "cart.giftSaved": "Οι επιλογές δώρου αποθηκεύτηκαν.",
       "cart.giftFailed": "Δεν ήταν δυνατή η αποθήκευση των επιλογών δώρου.",
-      "cart.productNotFound": "Το προϊόν δεν βρέθηκε."
+      "cart.productNotFound": "Το προϊόν δεν βρέθηκε.",
+      "social.storyTitle": "Ποιοι είμαστε;",
+      "social.storyEyebrow": "Η ΙΔΕΑ ΤΟΥ SKANARE",
+      "social.storyLead": "Μια νέα και δημιουργική ομάδα από την Ελλάδα, με όνειρο να φέρει τους ανθρώπους πιο κοντά.",
+      "social.reviewsTitle": "Αξιολογήσεις πελατών",
+      "social.demo": "ΔΟΚΙΜΑΣΤΙΚΗ ΠΡΟΒΟΛΗ",
+      "social.videoSlot": "Δοκιμαστικό βίντεο",
+      "social.addReel": "Πρόσθεσε το Skanare Reel για δημοσίευση",
+      "social.sampleName": "Δοκιμαστική κάρτα",
+      "social.sampleText": "Παράδειγμα εμφάνισης — ΔΕΝ αποτελεί πραγματική αξιολόγηση πελάτη.",
+      "social.demoProduct": "Προεπισκόπηση προϊόντος",
+      "social.notReal": "DEMO — ΟΧΙ ΑΞΙΟΛΟΓΗΣΗ ΠΕΛΑΤΗ",
+      "social.ratingOf": "Βαθμολογία",
+      "social.verified": "Επαληθευμένη αγορά",
+      "social.unavailable": "Οι αξιολογήσεις πελατών είναι προσωρινά μη διαθέσιμες.",
+      "social.empty": "Οι επαληθευμένες αξιολογήσεις θα εμφανιστούν εδώ όταν υποβληθούν.",
+      "social.distribution": "Προβολή κατανομής βαθμολογιών",
+      "social.reviews": "αξιολογήσεις",
+      "social.stars": "αστέρια",
+      "social.sort": "Ταξινόμηση αξιολογήσεων",
+      "social.more": "Περισσότερες αξιολογήσεις",
+      "social.featured": "Προτεινόμενες",
+      "social.newest": "Νεότερες",
+      "social.highest": "Υψηλότερη βαθμολογία",
+      "social.lowest": "Χαμηλότερη βαθμολογία",
+      "social.demoNotice": "ΔΟΚΙΜΑΣΤΙΚΗ ΠΡΟΒΟΛΗ · Οι κάρτες είναι φανταστικά placeholders για έλεγχο της εμφάνισης, όχι πραγματικές αξιολογήσεις.",
+      "social.demoVideo": "Δοκιμαστικό βίντεο, όχι επίσημο Skanare Reel",
+      "social.demoVideoSource": "Ενδεικτικό βίντεο CC0 — όχι περιεχόμενο Skanare",
+      "social.clearFilter": "Όλες οι αξιολογήσεις",
+      "social.storyValues": "Αγαπάμε τη μόδα,\nαγαπάμε την τεχνολογία,\nαγαπάμε τους ανθρώπους!",
+      "social.storyBody": "Γι’ αυτό δημιουργήσαμε έναν νέο τρόπο επικοινωνίας, συνδυάζοντας τους QR κωδικούς με ποιοτικά ρούχα, για να γίνεται πιο εύκολο να δημιουργούμε νέες γνωριμίες — σε προσωπικό, επαγγελματικό ή φιλικό επίπεδο.",
+      "social.storyTagline": "SKANARE — ΦΟΡΕΣΕ ΤΗ ΣΥΝΔΕΣΗ",
+      "social.viewOnInstagram": "Δες στο Instagram ↗",
+      "social.openInstagram": "Άνοιγμα στο Instagram"
     }
   }
 }
