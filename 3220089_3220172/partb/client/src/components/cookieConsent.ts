@@ -35,7 +35,11 @@ export function loadGoogleAnalytics(): void {
   if (document.querySelector('script[data-skanare-ga="true"]')) return;
 
   window.dataLayer = window.dataLayer || [];
-  window.gtag = (...args: unknown[]) => { window.dataLayer.push(args); };
+  // gtag.js only interprets the native Arguments object as a command.
+  // Pushing a plain array silently drops config and event hits.
+  window.gtag = function (..._args: unknown[]): void {
+    window.dataLayer.push(arguments);
+  };
   window.gtag("consent", "default", {
     analytics_storage: "granted",
     ad_storage: "denied",
@@ -132,7 +136,7 @@ export function initCookieConsent(): void {
 
 declare global {
   interface Window {
-    dataLayer: unknown[][];
+    dataLayer: unknown[];
     gtag: (...args: unknown[]) => void;
   }
 }
