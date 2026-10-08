@@ -1,4 +1,5 @@
 import "../../i18n/auto";
+import { mountBrandTrustSections } from "../../components/brandTrustSections";
 /* 3220089_3220172  2025 */
 
 import { initNav } from "../../components/initNav";
@@ -236,6 +237,7 @@ function applyClientFilters(
 }
 
 async function initProductsPage(): Promise<void> {
+  mountBrandTrustSections("products");
   const grid = document.getElementById("productsGrid") as HTMLElement | null;
   if (!grid) return;
 
