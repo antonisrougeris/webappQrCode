@@ -1,3 +1,4 @@
+import "../../i18n/auto";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
