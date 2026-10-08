@@ -39,14 +39,17 @@ function realReel(item: SkanareReel): boolean {
   );
 }
 
-const pauseSvg = '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+const instagramSvg = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.7" cy="6.4" r="1" fill="currentColor" stroke="none"/></svg>';
 
 function hoverLayer(): HTMLElement {
   const layer = node("span", "story-reel__hover");
   layer.setAttribute("aria-hidden", "true");
+  const action = node("span", "story-reel__hover-action");
   const circle = node("span", "story-reel__hover-icon");
-  circle.innerHTML = pauseSvg;
-  layer.append(circle);
+  circle.innerHTML = instagramSvg;
+  const label = node("span", "story-reel__hover-label", tx("viewOnInstagram", "View on Instagram ↗"));
+  action.append(circle, label);
+  layer.append(action);
   return layer;
 }
 
@@ -66,20 +69,17 @@ function createPreviewReel(index: number): HTMLElement {
   video.poster = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(poster);
   const caption = node("div", "story-reel__preview-caption");
   caption.append(node("span", "story-reel__preview-badge", tx("demo", "DEVELOPMENT PREVIEW")), node("strong", "", tx("videoSlot", "Demo video") + " " + (index + 1)), node("small", "", tx("demoVideoSource", "CC0 example video — not Skanare content")));
-  // Demo links are optional: only configured, genuine Instagram Reel links are clickable.
-  const reelUrl = homepageReels[index]?.instagramUrl || "";
-  const validUrl = /^https:\/\/(www\.)?instagram\.com\/reel\/[\w-]+\/?(?:\?.*)?$/i.test(reelUrl);
-  if (validUrl) {
-    const link = node("a", "story-reel__preview-link");
-    link.href = reelUrl;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.setAttribute("aria-label", tx("openReel", "Open Instagram Reel") + " " + (index + 1));
-    link.append(video, hoverLayer(), caption);
-    tile.append(link);
-  } else {
-    tile.append(video, hoverLayer(), caption);
-  }
+  // Development-only demo: fall back to Instagram's homepage until real Reel links exist.
+  // Published Skanare videos still require a valid Reel URL and licensed local media.
+  const configuredUrl = homepageReels[index]?.instagramUrl || "";
+  const validReelUrl = /^https:\/\/(www\.)?instagram\.com\/reel\/[\w-]+\/?(?:\?.*)?$/i.test(configuredUrl);
+  const link = node("a", "story-reel__preview-link");
+  link.href = validReelUrl ? configuredUrl : "https://www.instagram.com/";
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.setAttribute("aria-label", tx("openInstagram", "Open on Instagram") + " — " + (index + 1));
+  link.append(video, hoverLayer(), caption);
+  tile.append(link);
   return tile;
 }
 
