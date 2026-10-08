@@ -804,7 +804,9 @@
       "social.clearFilter": "Όλες οι αξιολογήσεις",
       "social.storyValues": "Αγαπάμε τη μόδα,\nαγαπάμε την τεχνολογία,\nαγαπάμε τους ανθρώπους!",
       "social.storyBody": "Γι’ αυτό δημιουργήσαμε έναν νέο τρόπο επικοινωνίας, συνδυάζοντας τους QR κωδικούς με ποιοτικά ρούχα, για να γίνεται πιο εύκολο να δημιουργούμε νέες γνωριμίες — σε προσωπικό, επαγγελματικό ή φιλικό επίπεδο.",
-      "social.storyTagline": "SKANARE — ΦΟΡΕΣΕ ΤΗ ΣΥΝΔΕΣΗ"
+      "social.storyTagline": "SKANARE — ΦΟΡΕΣΕ ΤΗ ΣΥΝΔΕΣΗ",
+      "social.viewOnInstagram": "Δες στο Instagram ↗",
+      "social.openInstagram": "Άνοιγμα στο Instagram"
     }
   }
 }
