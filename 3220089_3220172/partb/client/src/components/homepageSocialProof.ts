@@ -453,13 +453,13 @@ export function initHomepageSocialProof(): void {
   const storyBody = document.getElementById("skanareStoryBody");
   const storyTagline = document.getElementById("skanareStoryTagline");
   const reviewsTitle = document.getElementById("skanareReviewsTitle");
-  if (!storyTitle || !storyLead || !storyValues || !storyBody || !reviewsTitle) return;
+  if (!storyTitle || !storyLead || !storyValues || !storyBody) return;
   storyTitle.textContent = tx("storyTitle", "Who Are We?");
   storyLead.textContent = tx("storyLead", "A young and creative team from Greece with a dream to bring people together.");
   storyValues.textContent = tx("storyValues", "We love fashion,\nwe love technology,\nwe love people!");
   storyBody.textContent = tx("storyBody", "That's why we created a new way of connecting with others, combining QR codes with quality clothing to make it easier to forge new connections — for dating, business, or friendship.");
   if (storyTagline) storyTagline.textContent = tx("storyTagline", "SKANARE — WEAR THE CONNECTION");
-  reviewsTitle.textContent = tx("reviewsTitle", "Customer Reviews");
+  if (reviewsTitle) reviewsTitle.textContent = tx("reviewsTitle", "Customer Reviews");
   const storyEyebrow = document.getElementById("skanareStoryEyebrow");
   if (storyEyebrow) storyEyebrow.textContent = tx("storyEyebrow", "THE SKANARE IDEA");
   initReels();
