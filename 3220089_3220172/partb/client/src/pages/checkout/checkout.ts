@@ -15,6 +15,7 @@ import {
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 const RECOVERY_CODE_KEY = "skanare_recovery_code";
 const PREMIUM_GIFT_PRICE = 1.5;
+const TERMS_VERSION = "2026-09" as const;
 import { setFlashToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
 import {
@@ -27,7 +28,8 @@ function saveCheckoutDraft(formEl: HTMLFormElement): void {
   const draft: Record<string, string> = {};
 
   form.forEach((value, key) => {
-    draft[key] = String(value);
+    // The buyer must actively accept the terms again on each checkout visit.
+    if (key !== "termsAccepted") draft[key] = String(value);
   });
 
   formEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name]')
@@ -46,6 +48,7 @@ function restoreCheckoutDraft(): void {
     const draft = JSON.parse(raw) as Record<string, string>;
 
     Object.entries(draft).forEach(([key, value]) => {
+      if (key === "termsAccepted") return;
       const el = document.querySelector<HTMLInputElement>(
         `[name="${CSS.escape(key)}"]`
       );
@@ -792,6 +795,18 @@ editCartButton?.addEventListener(
 );
 
   const checkoutForm = document.getElementById("checkoutForm") as HTMLFormElement | null;
+  const termsCheckbox = document.getElementById("checkoutTermsAccepted") as HTMLInputElement | null;
+  const termsError = document.getElementById("checkoutTermsError") as HTMLElement | null;
+
+  function setTermsError(show: boolean): void {
+    if (termsError) termsError.hidden = !show;
+    termsCheckbox?.setAttribute("aria-invalid", String(show));
+  }
+
+  // Browser-native required validation fires "invalid" before "submit".
+  termsCheckbox?.addEventListener("invalid", () => setTermsError(true));
+  termsCheckbox?.addEventListener("change", () => setTermsError(false));
+  if (termsCheckbox) termsCheckbox.checked = false;
 
   updateBillingDocumentFields();
 
@@ -968,6 +983,13 @@ editCartButton?.addEventListener(
 
       const formEl = e.target as HTMLFormElement;
       const user = firebaseAuth.currentUser;
+
+      if (!termsCheckbox?.checked) {
+        setTermsError(true);
+        termsCheckbox?.focus();
+        return;
+      }
+      setTermsError(false);
 
       const lockerInput = document.getElementById("lockerInput") as HTMLInputElement | null;
       const lockerValue = String(lockerInput?.value || "").trim();
@@ -1172,6 +1194,10 @@ updateLockerValidity(false);
   documentType,
   invoiceDetails,
   recoveryCode,
+  termsAcceptance: {
+    accepted: true,
+    version: TERMS_VERSION,
+  },
 });
 
         if (result.checkoutUrl) {
