@@ -45,6 +45,10 @@ export interface CheckoutPayload {
   documentType?: "receipt" | "invoice";
   invoiceDetails?: CheckoutInvoiceDetails | null;
   recoveryCode?: string;
+  termsAcceptance: {
+    accepted: true;
+    version: "2026-09";
+  };
 }
 
 export interface CheckoutResult {

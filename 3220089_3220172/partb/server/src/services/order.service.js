@@ -131,6 +131,7 @@ export async function checkoutCartForOwner({
   documentType = "receipt",
   invoiceDetails = null,
   recoveryCode = "",
+  termsAcceptance,
 }) {
   if (!ownerId) throw new ApiError(401, "Missing checkout owner");
 
@@ -291,6 +292,10 @@ export async function checkoutCartForOwner({
               },
 
               giftFee: giftFeeFor(giftOptions),
+              termsAcceptance: {
+                ...termsAcceptance,
+                acceptedAt: refreshedAt,
+              },
               total:
                 Number(existingOrder.subtotal || 0) +
                 Number(existingOrder.shippingCost || 0) +
@@ -578,6 +583,10 @@ items: orderItems,
   shippingCost,
   total,
   currency: "EUR",
+  termsAcceptance: {
+    ...termsAcceptance,
+    acceptedAt: createdAt,
+  },
 
   status: "pending",
   paymentStatus: "pending",
