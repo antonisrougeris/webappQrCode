@@ -40,8 +40,16 @@ function realReel(item: SkanareReel): boolean {
   );
 }
 
+const pauseSvg = '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+
+function hoverLayer(): HTMLElement {
+  const layer = node("span", "story-reel__hover");
+  layer.setAttribute("aria-hidden", "true");
+  layer.innerHTML = pauseSvg;
+  return layer;
+}
+
 function createPreviewReel(index: number): HTMLElement {
-  // MDN CC0 demonstration media. Only used by the Vite dev server, never production.
   const tile = node("article", "story-reel story-reel--preview story-reel--demo-" + (index + 1));
   const video = node("video", "story-reel__video");
   video.dataset.src = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm";
@@ -53,16 +61,12 @@ function createPreviewReel(index: number): HTMLElement {
   video.playsInline = true;
   video.setAttribute("muted", "");
   video.setAttribute("playsinline", "");
-  video.setAttribute("aria-label", tx("demoVideo", "Demonstration video, not a Skanare Reel"));
-  const poster = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#252a30"/><stop offset="1" stop-color="#979e94"/></linearGradient></defs><rect width="360" height="640" fill="url(#g)"/><text x="180" y="320" fill="white" font-size="29" font-family="sans-serif" text-anchor="middle">VIDEO DEMO</text></svg>';
+  const poster = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640"><rect width="360" height="640" fill="#424745"/><text x="180" y="320" fill="white" font-size="29" font-family="sans-serif" text-anchor="middle">VIDEO DEMO</text></svg>';
   video.poster = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(poster);
   const caption = node("div", "story-reel__preview-caption");
-  caption.append(
-    node("span", "story-reel__preview-badge", tx("demo", "DEVELOPMENT PREVIEW")),
-    node("strong", "", tx("videoSlot", "Demo video") + " " + (index + 1)),
-    node("small", "", tx("demoVideoSource", "CC0 example video — not Skanare content"))
-  );
-  tile.append(video, caption);
+  caption.append(node("span", "story-reel__preview-badge", tx("demo", "DEVELOPMENT PREVIEW")), node("strong", "", tx("videoSlot", "Demo video") + " " + (index + 1)), node("small", "", tx("demoVideoSource", "CC0 example video — not Skanare content")));
+  // No fake Instagram destination. Preview remains unlinked until configured.
+  tile.append(video, hoverLayer(), caption);
   return tile;
 }
 
@@ -119,8 +123,7 @@ function initReels(): void {
     video.setAttribute("muted", "");
     video.setAttribute("playsinline", "");
     video.setAttribute("aria-hidden", "true");
-    const layer = node("span", "story-reel__hover");
-    layer.innerHTML = instagramSvg;
+    const layer = hoverLayer();
     link.append(video, layer);
     gallery.append(link);
     videoElements.push(video);
@@ -447,14 +450,19 @@ function initReviews(): void {
 export function initHomepageSocialProof(): void {
   const storyTitle = document.getElementById("skanareStoryTitle");
   const storyLead = document.getElementById("skanareStoryLead");
+  const storyValues = document.getElementById("skanareStoryValues");
+  const storyBody = document.getElementById("skanareStoryBody");
+  const storyTagline = document.getElementById("skanareStoryTagline");
   const reviewsTitle = document.getElementById("skanareReviewsTitle");
-  if (!storyTitle || !storyLead || !reviewsTitle) return;
+  if (!storyTitle || !storyLead || !storyValues || !storyBody || !reviewsTitle) return;
   storyTitle.textContent = tx("storyTitle", "Who Are We?");
-  storyLead.textContent = tx("storyLead",
-    "We love fashion, technology, and the connections that bring people together. That’s why Skanare combines expressive clothing and accessories with dynamic QR codes, turning everyday pieces into new ways to share your story, meet people, and connect in real life or online.");
+  storyLead.textContent = tx("storyLead", "A young and creative team from Greece with a dream to bring people together.");
+  storyValues.textContent = tx("storyValues", "We love fashion,\nwe love technology,\nwe love people!");
+  storyBody.textContent = tx("storyBody", "That's why we created a new way of connecting with others, combining QR codes with quality clothing to make it easier to forge new connections — for dating, business, or friendship.");
+  if (storyTagline) storyTagline.textContent = tx("storyTagline", "SKANARE — WEAR THE CONNECTION");
   reviewsTitle.textContent = tx("reviewsTitle", "Customer Reviews");
   const storyEyebrow = document.getElementById("skanareStoryEyebrow");
-  if (storyEyebrow) storyEyebrow.textContent = tx("storyEyebrow", "BEYOND THE PRODUCT");
+  if (storyEyebrow) storyEyebrow.textContent = tx("storyEyebrow", "THE SKANARE IDEA");
   initReels();
   initReviews();
 }
