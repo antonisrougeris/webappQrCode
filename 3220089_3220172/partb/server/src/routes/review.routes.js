@@ -3,10 +3,12 @@ import { requireAuth } from "../middleware/auth.js";
 import {
   createReview,
   listReviews,
+  listHomepageReviews,
 } from "../controllers/review.controller.js";
 
 const router = Router();
 
+router.get("/homepage", listHomepageReviews);
 router.get("/:productId", listReviews);
 router.post("/:productId", requireAuth, createReview);
 
