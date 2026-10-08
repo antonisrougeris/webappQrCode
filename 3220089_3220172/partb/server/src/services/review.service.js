@@ -244,8 +244,7 @@ export function mapHomepageReviews(reviewDocs, productDocs) {
     if (typeof review?.comment !== "string" || !review.comment.trim()) return;
     // The visible productId may refer to a slug rather than the Firestore doc ID.
     const product = productHint || products.get(String(review.productId || ""));
-    if (!product) return;
-    const productId = String(product.id);
+    const productId = String(product?.id || review.productId || "unknown");
     const fingerprint = productId + "|" + review.name.trim() + "|" + rating + "|" + review.comment.trim();
     if (seen.has(fingerprint)) return;
     seen.add(fingerprint);
@@ -261,11 +260,11 @@ export function mapHomepageReviews(reviewDocs, productDocs) {
       verifiedPurchase: review.verifiedPurchase === true && Boolean(review.orderId),
       createdAt: timestamp,
       productId,
-      productTitle: typeof product.title === "string" ? product.title : "",
-      productImage: typeof product.image === "string" ? product.image : (
-        Array.isArray(product.images) ? product.images[0] : undefined
+      productTitle: typeof product?.title === "string" ? product.title : "",
+      productImage: typeof product?.image === "string" ? product.image : (
+        Array.isArray(product?.images) ? product.images[0] : undefined
       ),
-      productSlug: String(product.slug || product.id),
+      productSlug: product ? String(product.slug || product.id) : undefined,
     });
   };
 
