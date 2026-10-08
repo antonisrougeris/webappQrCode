@@ -7,7 +7,7 @@ import lusca from "lusca";
 import crypto from "node:crypto";
 
 import { connectDB, closeDB } from "./config/db.js";
-import { corsOptions } from "./config/security.js";
+import { corsOptions, CONSENTED_ANALYTICS_SCRIPT_ORIGIN } from "./config/security.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { notFound } from "./middleware/notFound.js";
 import { attachGuestSession } from "./middleware/guestSession.js";
@@ -74,6 +74,7 @@ app.use(
           "https://client.crisp.chat",
           "https://apis.google.com",
           "https://www.gstatic.com",
+          CONSENTED_ANALYTICS_SCRIPT_ORIGIN,
         ],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'", "https:", "'unsafe-inline'"],

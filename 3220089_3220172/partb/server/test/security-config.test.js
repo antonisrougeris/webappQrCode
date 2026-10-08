@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { corsOptions, getAllowedOrigins } from "../src/config/security.js";
+import { corsOptions, getAllowedOrigins, CONSENTED_ANALYTICS_SCRIPT_ORIGIN } from "../src/config/security.js";
 
 test("normalizes configured CORS origins", () => {
   const previous = process.env.CORS_ORIGIN;
@@ -71,4 +71,8 @@ test("allows only configured browser origins and server-to-server requests", asy
     if (previousEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previousEnv;
   }
+});
+
+test("consent-gated GA4 tag origin is whitelisted for SEO product pages", () => {
+  assert.equal(CONSENTED_ANALYTICS_SCRIPT_ORIGIN, "https://www.googletagmanager.com");
 });

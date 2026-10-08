@@ -1,3 +1,9 @@
+/**
+ * The storefront Google Analytics tag is injected only after cookie consent.
+ * These are script sources, not permission to load GA before consent.
+ */
+export const CONSENTED_ANALYTICS_SCRIPT_ORIGIN = "https://www.googletagmanager.com";
+
 function normalizeConfiguredOrigin(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
