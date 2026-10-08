@@ -94,6 +94,43 @@ let recoveryCode = "";
 let checkoutSubmitting = false;
 let checkoutHasItems = true;
 
+type TipChoice = "none" | "percent:5" | "percent:10" | "custom";
+function tipDetails(): { choice: TipChoice; customAmount?: number } {
+  const choice = (document.querySelector<HTMLInputElement>('input[name="tipChoice"]:checked')?.value || "percent:5") as TipChoice;
+  if (choice !== "custom") return { choice };
+  const field = document.getElementById("checkoutCustomTip") as HTMLInputElement | null;
+  const value = Number(field?.value);
+  if (!field?.value || !Number.isFinite(value) || value < 0.01 || value > 100 ||
+    Math.round(value * 100) !== value * 100) {
+    throw new Error("Enter a valid custom tip between €0.01 and €100.");
+  }
+  return { choice, customAmount: value };
+}
+
+function updateTip(subtotal: number): number {
+  const checked = document.querySelector<HTMLInputElement>('input[name="tipChoice"]:checked')?.value || "percent:5";
+  const customGroup = document.getElementById("checkoutCustomTipGroup");
+  const customField = document.getElementById("checkoutCustomTip") as HTMLInputElement | null;
+  const isCustom = checked === "custom";
+  if (customGroup) customGroup.hidden = !isCustom;
+  if (customField) customField.disabled = !isCustom;
+  const tip = checked === "percent:5" ? Math.round(subtotal * 5) / 100
+    : checked === "percent:10" ? Math.round(subtotal * 10) / 100
+    : checked === "custom" ? Number(customField?.value || 0) : 0;
+  const validTip = Number.isFinite(tip) && tip >= 0 && tip <= 100000 ? tip : 0;
+  const five = document.getElementById("checkoutTip5Amount");
+  const ten = document.getElementById("checkoutTip10Amount");
+  if (five) five.textContent = formatPrice(Math.round(subtotal * 5) / 100);
+  if (ten) ten.textContent = formatPrice(Math.round(subtotal * 10) / 100);
+  const preview = document.getElementById("checkoutTipPreview");
+  if (preview) preview.textContent = checked === "none" ? "No tip added" : "Optional tip: " + formatPrice(validTip);
+  const row = document.getElementById("checkoutTipRow");
+  row?.classList.toggle("hidden", validTip <= 0);
+  const totalEl = document.getElementById("checkoutTipTotal");
+  if (totalEl) totalEl.textContent = "+" + formatPrice(validTip);
+  return validTip;
+}
+
 function setDiscountStatus(message: string, success = false): void {
   const el = document.getElementById("discountStatus");
   if (!el) return;
@@ -268,6 +305,7 @@ async function render(): Promise<void> {
     document.getElementById("subtotal")!.textContent = formatPrice(0);
     document.getElementById("shipping")!.textContent = formatPrice(0);
     document.getElementById("total")!.textContent = formatPrice(0);
+    updateTip(0);
 
     document
       .getElementById("giftFeeRow")
@@ -324,10 +362,12 @@ async function render(): Promise<void> {
     giftTier === "premium"
       ? PREMIUM_GIFT_PRICE
       : 0;
+  const tipAmount = updateTip(discountedSubtotal);
   const total =
     discountedSubtotal +
     shipping +
-    giftFee;
+    giftFee +
+    tipAmount;
 
   document.getElementById("subtotal")!.textContent =
     formatPrice(discountedSubtotal);
@@ -810,6 +850,17 @@ editCartButton?.addEventListener(
   termsCheckbox?.addEventListener("change", () => setTermsError(false));
   if (termsCheckbox) termsCheckbox.checked = false;
 
+  checkoutForm?.querySelectorAll<HTMLInputElement>('input[name="tipChoice"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      saveCheckoutDraftFromPage();
+      void render();
+    });
+  });
+  document.getElementById("checkoutCustomTip")?.addEventListener("input", () => {
+    saveCheckoutDraftFromPage();
+    void render();
+  });
+
   updateBillingDocumentFields();
 
   checkoutForm
@@ -1196,6 +1247,7 @@ updateLockerValidity(false);
   documentType,
   invoiceDetails,
   recoveryCode,
+  tip: tipDetails(),
   termsAcceptance: {
     accepted: true,
     version: TERMS_VERSION,

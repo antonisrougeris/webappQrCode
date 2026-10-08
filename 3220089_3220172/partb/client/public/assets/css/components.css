@@ -15872,3 +15872,56 @@ body > div iframe[src*="boxnow"] {
     margin-left: 0;
   }
 }
+
+
+/* Checkout: quiet legal acknowledgement without a surrounding box. */
+.checkout-terms {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 36px 0 24px 50px;
+  width: calc(100% - 50px);
+}
+.checkout-terms__main { gap: 14px; }
+.checkout-terms__copy label { font-size: .85rem; }
+.checkout-tip-content { padding-left: 50px; }
+.checkout-tip-options { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.checkout-tip-option {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  min-height: 66px;
+  border-radius: 9px;
+  border: 1px solid #dadada;
+  background: white;
+  text-align: center;
+  transition: border-color .15s, background .15s;
+  position: relative;
+}
+.checkout-page__form .checkout-tip-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.checkout-tip-option:has(input:checked) { border: 2px solid #111; background: #f7f7f7; }
+.checkout-tip-option:has(input:focus-visible) { outline: 3px solid #888; outline-offset: 3px; }
+.checkout-tip-option span { font-weight: 650; font-size: .9rem; }
+.checkout-tip-option small { display: block; margin-top: 4px; font-weight: 400; color: #686868; }
+.checkout-custom-tip { display: grid; margin-top: 14px; gap: 6px; max-width: 290px; }
+.checkout-custom-tip[hidden] { display: none; }
+.checkout-custom-tip label { font-size: .82rem; font-weight: 600; }
+.checkout-custom-tip small { font-size: .73rem; color: #666; }
+.checkout-page__form .checkout-custom-tip input { max-width: 290px; }
+.checkout-tip-summary { font-weight: 650; margin: 13px 0 7px; font-size: .84rem; }
+.checkout-tip-note { color: #777; font-size: .74rem; line-height: 1.65; margin: 5px 0 0; }
+.checkout-tip-row strong { font-size: .9rem; }
+@media (max-width: 980px) {
+  .checkout-tip-content { padding-left: 0; }
+  .checkout-terms { width: 100%; margin-left: 0; }
+}
+@media (max-width: 480px) {
+  .checkout-tip-options { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}

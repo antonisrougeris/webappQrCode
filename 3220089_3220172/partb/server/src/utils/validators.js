@@ -101,6 +101,17 @@ export const giftOptionsSchema = z.object({
 });
 
 export const checkoutSchema = z.object({
+  tip: z.object({
+    choice: z.enum(["none", "percent:5", "percent:10", "custom"]),
+    customAmount: z.number().finite().min(0.01).max(100).refine((n) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-7, "Tip must be in cents").optional(),
+  }).superRefine((tip, ctx) => {
+    if (tip.choice === "custom" && tip.customAmount === undefined) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["customAmount"], message: "Custom tip amount is required" });
+    }
+    if (tip.choice !== "custom" && tip.customAmount !== undefined) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["customAmount"], message: "Custom amount is only allowed for custom tips" });
+    }
+  }),
   termsAcceptance: z.object({
     accepted: z.literal(true),
     version: z.literal("2026-09"),

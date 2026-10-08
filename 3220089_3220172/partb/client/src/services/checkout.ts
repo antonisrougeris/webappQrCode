@@ -45,6 +45,10 @@ export interface CheckoutPayload {
   documentType?: "receipt" | "invoice";
   invoiceDetails?: CheckoutInvoiceDetails | null;
   recoveryCode?: string;
+  tip: {
+    choice: "none" | "percent:5" | "percent:10" | "custom";
+    customAmount?: number;
+  };
   termsAcceptance: {
     accepted: true;
     version: "2026-09";

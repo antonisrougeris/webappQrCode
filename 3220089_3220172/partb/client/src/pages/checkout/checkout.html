@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/assets/css/reset.css" />
   <link rel="stylesheet" href="/assets/css/theme.css" />
   <link rel="stylesheet" href="/assets/css/layout.css" />
-  <link rel="stylesheet" href="/assets/css/components.css?v=5.2-checkout-terms" />
+  <link rel="stylesheet" href="/assets/css/components.css?v=5.3-checkout-tips" />
   <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="5001afeb-b9df-4288-92c2-6febe12a2a03";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
 <meta
   name="description"
@@ -542,30 +542,53 @@
       </details>
 
 
-      <!-- Explicit, unchecked acceptance immediately before payment. -->
+      <!-- Optional, customer-controlled gratuity. Calculated on discounted items only. -->
+      <section class="checkout-page__section checkout-tip-section" aria-labelledby="checkoutTipHeading">
+        <div class="checkout-section-heading">
+          <span>05</span>
+          <div>
+            <h2 id="checkoutTipHeading">Leave a tip</h2>
+            <p>Optional — your support means a lot. Choose any amount, or select No tip.</p>
+          </div>
+        </div>
+        <div class="checkout-tip-content">
+          <div class="checkout-tip-options" role="radiogroup" aria-label="Choose a tip">
+            <label class="checkout-tip-option">
+              <input type="radio" name="tipChoice" value="none" />
+              <span>No tip</span>
+            </label>
+            <label class="checkout-tip-option">
+              <input type="radio" name="tipChoice" value="percent:5" checked />
+              <span>5% <small id="checkoutTip5Amount"></small></span>
+            </label>
+            <label class="checkout-tip-option">
+              <input type="radio" name="tipChoice" value="percent:10" />
+              <span>10% <small id="checkoutTip10Amount"></small></span>
+            </label>
+            <label class="checkout-tip-option">
+              <input type="radio" name="tipChoice" value="custom" />
+              <span>Custom</span>
+            </label>
+          </div>
+          <div id="checkoutCustomTipGroup" class="checkout-custom-tip" hidden>
+            <label for="checkoutCustomTip">Your tip amount (€)</label>
+            <input type="number" id="checkoutCustomTip" name="customTip" min="0.01" max="100" step="0.01" inputmode="decimal" placeholder="e.g. 2.50" disabled />
+            <small>Enter an amount between €0.01 and €100.</small>
+          </div>
+          <p class="checkout-tip-summary" id="checkoutTipPreview" aria-live="polite"></p>
+          <p class="checkout-tip-note">Tips are calculated on the discounted product subtotal, excluding shipping and gift packaging. You can remove or change your tip at any time before payment.</p>
+        </div>
+      </section>
+
+      <!-- Unchecked acknowledgement immediately before payment. -->
       <div class="checkout-terms" id="checkoutTermsSection">
         <div class="checkout-terms__main">
-          <input
-            type="checkbox"
-            id="checkoutTermsAccepted"
-            name="termsAccepted"
-            value="yes"
-            required
-            aria-describedby="checkoutTermsPolicies checkoutTermsError"
-          />
+          <input type="checkbox" id="checkoutTermsAccepted" name="termsAccepted" value="yes" required aria-describedby="checkoutTermsError" />
           <div class="checkout-terms__copy">
             <label for="checkoutTermsAccepted">
               I have read and accept
               <a href="/terms" target="_blank" rel="noopener noreferrer">the Terms &amp; Conditions</a>.
             </label>
-            <p id="checkoutTermsPolicies">
-              Please review:
-              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-              &middot;
-              <a href="/shipping-policy" target="_blank" rel="noopener noreferrer">Shipping Policy</a>
-              &middot;
-              <a href="/refund-policy" target="_blank" rel="noopener noreferrer">Refund policy</a>.
-            </p>
           </div>
         </div>
         <p class="checkout-terms__error" id="checkoutTermsError" role="alert" hidden>
@@ -662,6 +685,11 @@
         <span id="giftFee">+€1.50</span>
       </div>
 
+
+      <div id="checkoutTipRow" class="checkout-line checkout-tip-row hidden">
+        <span>Optional tip</span>
+        <strong id="checkoutTipTotal">€0.00</strong>
+      </div>
 
       <div class="checkout-total">
         <span>Total</span>

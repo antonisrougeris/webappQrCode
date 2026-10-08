@@ -56,6 +56,20 @@ function giftFeeFor(value) {
     : 0;
 }
 
+function calculateTip(subtotal, tip) {
+  if (tip.choice === "none") return 0;
+  if (tip.choice === "custom") {
+    const value = Number(tip.customAmount);
+    if (!Number.isFinite(value) || value < 0.01 || value > 100 ||
+        Math.round(value * 100) !== value * 100) {
+      throw new ApiError(400, "Invalid custom tip amount");
+    }
+    return Math.round(value * 100) / 100;
+  }
+  const percentage = tip.choice === "percent:10" ? 10 : 5;
+  return Math.round(subtotal * percentage) / 100;
+}
+
 function calculateShipping(subtotal, delivery) {
   if (subtotal >= 50) return 0;
   if (delivery === "boxnow") return 2.0;
@@ -132,6 +146,7 @@ export async function checkoutCartForOwner({
   invoiceDetails = null,
   recoveryCode = "",
   termsAcceptance,
+  tip,
 }) {
   if (!ownerId) throw new ApiError(401, "Missing checkout owner");
 
@@ -145,6 +160,9 @@ export async function checkoutCartForOwner({
     );
   }
 
+  if (!tip || !["none", "percent:5", "percent:10", "custom"].includes(tip.choice)) {
+    throw new ApiError(400, "Invalid tip selection");
+  }
   const db = getDB();
   const orderId = createId("order");
   const orderNumber = buildOrderNumber();
@@ -240,6 +258,9 @@ export async function checkoutCartForOwner({
 
           const existingGiftFee =
             Number(existingOrder.giftFee || 0);
+          const requestedTipAmount = calculateTip(
+            Number(existingOrder.subtotal || 0), tip
+          );
 
           if (
             (
@@ -250,6 +271,7 @@ export async function checkoutCartForOwner({
               )
             ) &&
             existingGiftFee === requestedGiftFee &&
+            Number(existingOrder.tipAmount || 0) === requestedTipAmount &&
             String(existingOrder.recoveryDiscount?.code || "") ===
               normalizedRecoveryCode
           ) {
@@ -292,6 +314,8 @@ export async function checkoutCartForOwner({
               },
 
               giftFee: giftFeeFor(giftOptions),
+              tipAmount: requestedTipAmount,
+              tipChoice: tip.choice,
               termsAcceptance: {
                 ...termsAcceptance,
                 acceptedAt: refreshedAt,
@@ -299,7 +323,8 @@ export async function checkoutCartForOwner({
               total:
                 Number(existingOrder.subtotal || 0) +
                 Number(existingOrder.shippingCost || 0) +
-                (giftFeeFor(giftOptions)),
+                (giftFeeFor(giftOptions)) +
+                requestedTipAmount,
 
               updatedAt:
                 refreshedAt,
@@ -486,7 +511,8 @@ orderItems.push({
 
     const shippingCost = calculateShipping(discountedSubtotal, delivery);
     const giftFee = giftFeeFor(giftOptions);
-    const total = discountedSubtotal + shippingCost + giftFee;
+    const tipAmount = calculateTip(discountedSubtotal, tip);
+    const total = discountedSubtotal + shippingCost + giftFee + tipAmount;
 
     const order = {
   id: orderId,
@@ -528,6 +554,8 @@ giftOptions: {
 },
 
 giftFee,
+tipAmount,
+tipChoice: tip.choice,
 
 billing: {
   documentType:
