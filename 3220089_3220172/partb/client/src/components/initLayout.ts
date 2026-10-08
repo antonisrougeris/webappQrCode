@@ -6,7 +6,6 @@ import { initMobileMenu } from "./menu";
 
 import { updateCartBadge } from "../utils/cart-badge";
 
-import { initCookieConsent } from "./cookieConsent";
 
 export function initLayout(): void {
   renderHeader();
@@ -17,5 +16,4 @@ export function initLayout(): void {
 
   void updateCartBadge();
 
-  initCookieConsent();
 }
