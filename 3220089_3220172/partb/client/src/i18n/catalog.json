@@ -686,7 +686,9 @@
     "Your cart is empty": "Το καλάθι σου είναι άδειο",
     "Add a product before continuing to payment.": "Πρόσθεσε προϊόν στο καλάθι πριν συνεχίσεις στην πληρωμή.",
     "For orders delivered in Greece, standard shipping costs €2. Orders of €50 or more qualify for free standard shipping.": "Για παραγγελίες που παραδίδονται στην Ελλάδα, τα βασικά μεταφορικά κοστίζουν 2€. Οι παραγγελίες αξίας 50€ ή περισσότερο έχουν δωρεάν βασικά μεταφορικά.",
-    "The final shipping charge is shown during checkout before payment.": "Το τελικό κόστος αποστολής εμφανίζεται στο checkout πριν από την πληρωμή."
+    "The final shipping charge is shown during checkout before payment.": "Το τελικό κόστος αποστολής εμφανίζεται στο checkout πριν από την πληρωμή.",
+    "THE COMMUNITY": "Η ΚΟΙΝΟΤΗΤΑ",
+    "Skanare Instagram video gallery": "Βίντεο Instagram Skanare"
   },
   "messages": {
     "el": {
@@ -771,7 +773,32 @@
       "cart.saving": "Αποθήκευση...",
       "cart.giftSaved": "Οι επιλογές δώρου αποθηκεύτηκαν.",
       "cart.giftFailed": "Δεν ήταν δυνατή η αποθήκευση των επιλογών δώρου.",
-      "cart.productNotFound": "Το προϊόν δεν βρέθηκε."
+      "cart.productNotFound": "Το προϊόν δεν βρέθηκε.",
+      "social.storyTitle": "Ποιοι είμαστε;",
+      "social.storyEyebrow": "ΠΕΡΑ ΑΠΟ ΤΟ ΠΡΟΪΟΝ",
+      "social.storyLead": "Το Skanare συνδυάζει τον καθαρό σχεδιασμό με την τεχνολογία δυναμικών QR. Τα ρούχα και τα αξεσουάρ μας συνδέουν φυσικά αντικείμενα με ψηφιακές εμπειρίες που επιλέγεις — και ο προορισμός επιλεγμένων QR μπορεί να αλλάζει μαζί σου.",
+      "social.reviewsTitle": "Αξιολογήσεις πελατών",
+      "social.demo": "ΔΟΚΙΜΑΣΤΙΚΗ ΠΡΟΒΟΛΗ",
+      "social.videoSlot": "Θέση βίντεο",
+      "social.addReel": "Πρόσθεσε το Skanare Reel για δημοσίευση",
+      "social.sampleName": "Δοκιμαστική κάρτα",
+      "social.sampleText": "Παράδειγμα εμφάνισης — ΔΕΝ αποτελεί πραγματική αξιολόγηση πελάτη.",
+      "social.demoProduct": "Προεπισκόπηση προϊόντος",
+      "social.notReal": "DEMO — ΟΧΙ ΑΞΙΟΛΟΓΗΣΗ ΠΕΛΑΤΗ",
+      "social.ratingOf": "Βαθμολογία",
+      "social.verified": "Επαληθευμένη αγορά",
+      "social.unavailable": "Οι αξιολογήσεις πελατών είναι προσωρινά μη διαθέσιμες.",
+      "social.empty": "Οι επαληθευμένες αξιολογήσεις θα εμφανιστούν εδώ όταν υποβληθούν.",
+      "social.distribution": "Προβολή κατανομής βαθμολογιών",
+      "social.reviews": "αξιολογήσεις",
+      "social.stars": "αστέρια",
+      "social.sort": "Ταξινόμηση αξιολογήσεων",
+      "social.more": "Περισσότερες αξιολογήσεις",
+      "social.featured": "Προτεινόμενες",
+      "social.newest": "Νεότερες",
+      "social.highest": "Υψηλότερη βαθμολογία",
+      "social.lowest": "Χαμηλότερη βαθμολογία",
+      "social.demoNotice": "ΔΟΚΙΜΑΣΤΙΚΗ ΠΡΟΒΟΛΗ · Οι κάρτες είναι φανταστικά placeholders για έλεγχο της εμφάνισης, όχι πραγματικές αξιολογήσεις."
     }
   }
 }
