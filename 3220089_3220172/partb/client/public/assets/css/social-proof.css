@@ -66,3 +66,10 @@
 .story-reel__preview-link:focus-visible{outline:3px solid #7a47d7;outline-offset:-4px}
 .story-reel--preview:has(.story-reel__preview-link:is(:hover,:focus-visible)) .story-reel__hover{opacity:1}
 .story-reel--preview:has(.story-reel__preview-link:is(:hover,:focus-visible)) .story-reel__video{transform:scale(1.045)}
+
+/* Instagram destination affordance on every shared reel tile. */
+.story-reel__hover-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:10px}
+.story-reel__hover-label{font-size:13px;font-weight:750;color:#fff;letter-spacing:.01em;text-shadow:0 1px 6px rgba(0,0,0,.45)}
+.story-reel__preview-link{cursor:pointer}
+.story-reel__preview-link:focus-visible .story-reel__hover{opacity:1}
+@media(max-width:600px){.story-reel__hover-action{gap:6px}.story-reel__hover-label{font-size:10px}.story-reel__hover-icon{width:42px;height:42px}.story-reel__hover-icon svg{width:25px;height:25px}}
