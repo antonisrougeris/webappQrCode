@@ -771,7 +771,13 @@
       "cart.saving": "Αποθήκευση...",
       "cart.giftSaved": "Οι επιλογές δώρου αποθηκεύτηκαν.",
       "cart.giftFailed": "Δεν ήταν δυνατή η αποθήκευση των επιλογών δώρου.",
-      "cart.productNotFound": "Το προϊόν δεν βρέθηκε."
+      "cart.productNotFound": "Το προϊόν δεν βρέθηκε.",
+      "cookies.label": "Προτιμήσεις cookies",
+      "cookies.heading": "Η ιδιωτικότητά σου έχει σημασία",
+      "cookies.description": "Χρησιμοποιούμε απαραίτητα cookies και προαιρετικά analytics για να βελτιώνουμε το Skanare. Τα analytics ενεργοποιούνται μόνο αν αποδεχτείς.",
+      "cookies.policy": "Πολιτική Cookies",
+      "cookies.accept": "Αποδοχή",
+      "cookies.reject": "Απόρριψη"
     }
   }
 }
