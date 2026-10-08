@@ -130,7 +130,8 @@ const failureUrl =
     allowRecurring: false,
     maxInstallments: 0,
     paymentNotification: true,
-    tipAmount: 0,
+    // tipAmount is a breakdown of the total amount, not an additional charge.
+    tipAmount: Math.round(Number(order.tipAmount || 0) * 100),
     disableExactAmount: false,
     disableCash: true,
     disableWallet: false,
