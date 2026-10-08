@@ -36,6 +36,7 @@ export const checkout = asyncHandler(async (req, res) => {
     documentType: body.documentType || "receipt",
     invoiceDetails: body.invoiceDetails || null,
     recoveryCode: body.recoveryCode || "",
+    termsAcceptance: body.termsAcceptance,
   });
 
   const existingVivaOrderCode =
