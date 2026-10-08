@@ -34,7 +34,9 @@ function saveCheckoutDraft(formEl: HTMLFormElement): void {
 
   formEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name]')
     .forEach((checkbox) => {
-      draft[checkbox.name] = String(checkbox.checked);
+      if (checkbox.name !== "termsAccepted") {
+        draft[checkbox.name] = String(checkbox.checked);
+      }
     });
 
   localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
