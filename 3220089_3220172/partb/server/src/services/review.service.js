@@ -219,3 +219,48 @@ export async function createVerifiedReview(userId, productId, input) {
       : null,
   };
 }
+/**
+ * Public homepage social proof: real, purchase-verified reviews only.
+ * Read-only; no email, seed, reward, or customer database writes.
+ */
+export async function getHomepageVerifiedReviews() {
+  const db = getDB();
+  const [reviewsSnapshot, productsSnapshot] = await Promise.all([
+    db.collection(COLLECTIONS.REVIEWS).get(),
+    db.collection(COLLECTIONS.PRODUCTS).get(),
+  ]);
+  const products = new Map(
+    productsSnapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((product) => product.active !== false)
+      .map((product) => [String(product.id), product])
+  );
+  const seen = new Set();
+  const reviews = [];
+  for (const doc of reviewsSnapshot.docs) {
+    const review = doc.data();
+    if (review.verifiedPurchase !== true || !review.orderId) continue;
+    const rating = Number(review.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) continue;
+    if (typeof review.name !== "string" || !review.name.trim()) continue;
+    if (typeof review.comment !== "string" || !review.comment.trim()) continue;
+    const product = products.get(String(review.productId));
+    if (!product) continue;
+    const id = String(review.id || doc.id);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    reviews.push({
+      id,
+      name: review.name.trim(),
+      comment: review.comment.trim(),
+      rating,
+      verifiedPurchase: true,
+      createdAt: typeof review.createdAt === "string" ? review.createdAt : undefined,
+      productId: String(product.id),
+      productTitle: String(product.title || ""),
+      productImage: typeof product.image === "string" ? product.image : undefined,
+      productSlug: String(product.slug || product.id),
+    });
+  }
+  return reviews.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
