@@ -128,7 +128,7 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
       if (onSale) {
         const saleBadge = document.createElement("span");
         saleBadge.className = "badge badge--sale";
-        saleBadge.textContent = `-${discountPercent}%`;
+        saleBadge.textContent = `${t("sale.save", "Save")} ${formatPrice(Math.round((originalPrice - productPrice) * 100) / 100)}`;
         badgeStack.appendChild(saleBadge);
       }
       media.appendChild(badgeStack);
