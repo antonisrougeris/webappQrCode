@@ -384,3 +384,22 @@ body.gift-dialog-open {
 .cart-gift-tier__copy {
   padding-left: 0;
 }
+
+/* Cuer-inspired monetary savings: clear comparison price without affecting
+   the server-authoritative discounted cart total. */
+.drawer-cart-price__amounts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  white-space: nowrap;
+}
+.drawer-cart-price__original {
+  color: #777;
+  font-size: 0.9rem;
+}
+.drawer-cart-price__savings {
+  color: #118145;
+  font-weight: 700;
+  font-size: 0.8rem;
+}

@@ -1,0 +1,43 @@
+name: SKANARE Staging DAST
+
+# Passive OWASP ZAP baseline against staging only. Never scans production.
+# Requires a separate staging.skanare.com environment and manual invocation.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  passive-zap:
+    name: Passive ZAP scan (staging only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_URL: https://staging.skanare.com
+    steps:
+      - name: Enforce staging-only target
+        run: |
+          test "$TARGET_URL" = 'https://staging.skanare.com' || {
+            echo 'ERROR: Only staging.skanare.com may be scanned.'
+            exit 1
+          }
+          curl -fsSI --connect-timeout 8 --max-time 15 "$TARGET_URL" >/dev/null
+
+      - name: Run passive OWASP ZAP baseline scan
+        run: |
+          mkdir -p zap-output
+          chmod 777 zap-output
+          docker run --rm \
+            -v "$PWD/zap-output:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t "$TARGET_URL" -m 2 \
+            -r report.html -J report.json -w report.md -I
+
+      - name: Upload passive scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skanare-staging-zap
+          path: zap-output/
+          if-no-files-found: warn

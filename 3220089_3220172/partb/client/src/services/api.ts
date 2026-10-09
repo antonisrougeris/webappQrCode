@@ -152,29 +152,16 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
   });
 }
 
-export async function accountExists(
-  email: string,
-  checkoutLead?: {
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-  }
-): Promise<boolean> {
-  const response = await apiRequest<{
-    success?: boolean;
-    exists?: boolean;
-    data?: { exists?: boolean };
-  }>("/auth/account-status", {
+export async function saveCheckoutLead(lead: {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+}): Promise<void> {
+  await apiRequest("/auth/checkout-lead", {
     method: "POST",
-    body: JSON.stringify({
-      email,
-      firstName: checkoutLead?.firstName || "",
-      lastName: checkoutLead?.lastName || "",
-      phone: checkoutLead?.phone || "",
-    }),
+    body: JSON.stringify(lead),
   });
-
-  return response?.exists === true || response?.data?.exists === true;
 }
 
 export async function getMe(): Promise<AuthUser | null> {

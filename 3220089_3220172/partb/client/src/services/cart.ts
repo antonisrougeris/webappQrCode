@@ -9,6 +9,8 @@ export interface CartItem {
   title: string;
   slug?: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   currency?: string;
   quantity: number;
   image?: string;

@@ -168,7 +168,7 @@ export function renderProducts(
               ? `
                 <div class="product-badge-stack">
                   ${badgeText ? `<span class="badge">${escapeHtml(badgeText)}</span>` : ""}
-                  ${onSale ? `<span class="badge badge--sale">-${discountPercent}%</span>` : ""}
+                  ${onSale ? `<span class="badge badge--sale">${escapeHtml(t("sale.save", "Save"))} ${formatPrice(Math.round((originalPrice - product.price) * 100) / 100)}</span>` : ""}
                 </div>
               `
               : ""

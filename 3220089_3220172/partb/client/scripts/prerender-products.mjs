@@ -87,7 +87,7 @@ function renderProductCard(
     : `<div class="mini-shirt product-image-fallback" aria-hidden="true"></div>`;
 
   const badgeHtml = badge || onSale
-    ? `<div class="product-badge-stack">${badge ? `<span class="badge">${escapeHtml(badge)}</span>` : ""}${onSale ? `<span class="badge badge--sale">-${discountPercent}%</span>` : ""}</div>`
+    ? `<div class="product-badge-stack">${badge ? `<span class="badge">${escapeHtml(badge)}</span>` : ""}${onSale ? `<span class="badge badge--sale">Save ${formatPrice(Math.round((originalPrice - currentPrice) * 100) / 100)}</span>` : ""}</div>`
     : "";
 
   const priceHtml = onSale

@@ -7,7 +7,7 @@ import {
   checkout,
   validateRecoveryOffer,
 } from "../../services/checkout";
-import { accountExists, getMe } from "../../services/api";
+import { saveCheckoutLead, getMe } from "../../services/api";
 import {
   parsePhoneNumberFromString,
   type CountryCode,
@@ -31,6 +31,13 @@ function saveCheckoutDraft(formEl: HTMLFormElement): void {
     // The buyer must actively accept the terms again on each checkout visit.
     if (key !== "termsAccepted") draft[key] = String(value);
   });
+  // Only restore tip selection if the shopper personally changed it.
+  // Old drafts may contain a silently preselected 5% tip.
+  if (formEl.dataset.tipChoiceExplicit === "true") {
+    draft.tipChoiceExplicit = "true";
+  } else {
+    delete draft.tipChoice;
+  }
 
   formEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name]')
     .forEach((checkbox) => {
@@ -49,8 +56,13 @@ function restoreCheckoutDraft(): void {
   try {
     const draft = JSON.parse(raw) as Record<string, string>;
 
+    // Do not silently restore tips saved before explicit opt-in was tracked.
+    const explicitTip = draft.tipChoiceExplicit === "true";
+    const form = document.getElementById("checkoutForm") as HTMLFormElement | null;
+    if (explicitTip && form) form.dataset.tipChoiceExplicit = "true";
     Object.entries(draft).forEach(([key, value]) => {
-      if (key === "termsAccepted") return;
+      if (key === "termsAccepted" || key === "tipChoiceExplicit") return;
+      if (key === "tipChoice" && !explicitTip) return;
       const el = document.querySelector<HTMLInputElement>(
         `[name="${CSS.escape(key)}"]`
       );
@@ -96,7 +108,7 @@ let checkoutHasItems = true;
 
 type TipChoice = "none" | "percent:5" | "percent:10" | "custom";
 function tipDetails(): { choice: TipChoice; customAmount?: number } {
-  const choice = (document.querySelector<HTMLInputElement>('input[name="tipChoice"]:checked')?.value || "percent:5") as TipChoice;
+  const choice = (document.querySelector<HTMLInputElement>('input[name="tipChoice"]:checked')?.value || "none") as TipChoice;
   if (choice !== "custom") return { choice };
   const field = document.getElementById("checkoutCustomTip") as HTMLInputElement | null;
   const value = Number(field?.value);
@@ -108,7 +120,7 @@ function tipDetails(): { choice: TipChoice; customAmount?: number } {
 }
 
 function updateTip(subtotal: number): number {
-  const checked = document.querySelector<HTMLInputElement>('input[name="tipChoice"]:checked')?.value || "percent:5";
+  const checked = document.querySelector<HTMLInputElement>('input[name="tipChoice"]:checked')?.value || "none";
   const customGroup = document.getElementById("checkoutCustomTipGroup");
   const customField = document.getElementById("checkoutCustomTip") as HTMLInputElement | null;
   const isCustom = checked === "custom";
@@ -852,6 +864,7 @@ editCartButton?.addEventListener(
 
   checkoutForm?.querySelectorAll<HTMLInputElement>('input[name="tipChoice"]').forEach((input) => {
     input.addEventListener("change", () => {
+      if (checkoutForm) checkoutForm.dataset.tipChoiceExplicit = "true";
       saveCheckoutDraftFromPage();
       void render();
     });
@@ -1108,22 +1121,22 @@ if (!user) {
       lastName,
     });
 
-  let authPath = "/login";
-
+  // A public account-existence lookup leaks who has registered.
+  // Store checkout lead details independently, without exposing that status.
   try {
-    const existingCustomer = await accountExists(email, {
+    await saveCheckoutLead({
+      email,
       firstName,
       lastName,
       phone: formValues.phone,
     });
-    authPath = existingCustomer ? "/login" : "/register";
-  } catch (error) {
-    console.error("Account lookup failed; falling back to login:", error);
+  } catch {
+    // A lead-saving failure must never block sign-in or registration.
   }
 
   window.location.href =
     localizedPath(
-      `${authPath}?${payload}`,
+      `/login?${payload}`,
       locale
     );
 

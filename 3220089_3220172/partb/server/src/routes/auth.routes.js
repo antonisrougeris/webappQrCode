@@ -3,7 +3,7 @@ import {
   register,
   login,
   me,
-  accountStatus,
+  saveCheckoutLead,
 } from "../controllers/auth.controller.js";
 import {
   sendEmailVerificationOtp,
@@ -19,7 +19,7 @@ const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
-router.post("/account-status", accountStatus);
+router.post("/checkout-lead", saveCheckoutLead);
 router.get("/me", requireAuth, me);
 
 router.post("/send-verification", requireAuth, sendEmailVerificationOtp);
