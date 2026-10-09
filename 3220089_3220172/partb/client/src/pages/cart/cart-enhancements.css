@@ -278,10 +278,7 @@ body.gift-dialog-open {
 }
 
 @media (min-width: 769px) {
-  body.gift-dialog-open .cart-drawer {
-    transform: none !important;
-  }
-
+  /* The dialog is portaled to <body>, outside the animated cart drawer. */
   .cart-gift-dialog {
     width: 100vw;
     height: 100dvh;

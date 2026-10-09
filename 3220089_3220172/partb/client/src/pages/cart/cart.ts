@@ -38,6 +38,34 @@ function getGiftTier(cart: Cart | null | undefined): "none" | "simple" | "premiu
 let currentCart: Cart | null = null;
 let catalogCache: Product[] | null = null;
 
+// A fixed-position dialog cannot be viewport-centered inside the translated
+// cart drawer: transformed ancestors establish the fixed-position containing
+// block. Portal the dialog to <body> while it is open, and restore it on close.
+let activeGiftDialog: HTMLElement | null = null;
+let giftDialogHost: HTMLElement | null = null;
+
+function closeGiftDialog(restoreFocus = false): void {
+  if (!activeGiftDialog) return;
+
+  const dialog = activeGiftDialog;
+  const host = giftDialogHost;
+  dialog.classList.add("hidden");
+  document.body.classList.remove("gift-dialog-open");
+
+  if (host?.isConnected) {
+    host.appendChild(dialog);
+    if (restoreFocus) {
+      host.querySelector<HTMLButtonElement>("[data-gift-open]")?.focus({ preventScroll: true });
+    }
+  } else {
+    dialog.remove();
+  }
+
+  activeGiftDialog = null;
+  giftDialogHost = null;
+}
+
+
 function showToast(message: string): void {
   let stack = document.getElementById("toastStack");
 
@@ -385,6 +413,11 @@ async function renderCartFromState(
     );
 
   if (!container) return;
+
+  // Avoid orphaned portaled dialogs when cart data refreshes asynchronously.
+  if (activeGiftDialog && giftDialogHost === container) {
+    closeGiftDialog();
+  }
 
   container.classList.remove(
     "cart-empty-state"
@@ -805,20 +838,29 @@ function bindCartActions(): void {
     const giftOpen = target.closest("[data-gift-open]");
     const giftClose = target.closest("[data-gift-close]");
     const giftSave = target.closest("[data-gift-save]") as HTMLButtonElement | null;
-    const giftDialog = document.querySelector<HTMLElement>("[data-gift-dialog]");
+    const giftDialog = (
+      giftOpen?.parentElement?.querySelector<HTMLElement>("[data-gift-dialog]") ||
+      target.closest<HTMLElement>("[data-gift-dialog]")
+    );
 
     if (giftOpen) {
-      giftDialog?.classList.remove("hidden");
+      if (!giftDialog) return;
+
+      // Move the modal outside the sliding drawer BEFORE displaying it.
+      // This centers it correctly in the viewport from the first frame.
+      closeGiftDialog();
+      giftDialogHost = giftDialog.parentElement;
+      activeGiftDialog = giftDialog;
+      document.body.appendChild(giftDialog);
+      giftDialog.classList.remove("hidden");
       document.body.classList.add("gift-dialog-open");
-      window.setTimeout(() => {
-        document.getElementById("cartGiftNote")?.focus();
-      }, 0);
+      giftDialog.querySelector<HTMLButtonElement>(".cart-gift-dialog__close")
+        ?.focus({ preventScroll: true });
       return;
     }
 
     if (giftClose) {
-      giftDialog?.classList.add("hidden");
-      document.body.classList.remove("gift-dialog-open");
+      closeGiftDialog(true);
       return;
     }
 
@@ -846,8 +888,8 @@ function bindCartActions(): void {
           personalNote,
         });
 
+        closeGiftDialog();
         await refreshAllCartViews(nextCart);
-        document.body.classList.remove("gift-dialog-open");
         showToast(t("cart.giftSaved", "Gift options saved."));
       } catch (error: any) {
         giftSave.disabled = false;
@@ -1045,6 +1087,7 @@ function openCartDrawer(): void {
 }
 
 function closeCartDrawer(): void {
+  closeGiftDialog();
   const drawer = document.getElementById("cartDrawer");
   const overlay = document.getElementById("cartOverlay");
 
