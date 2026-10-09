@@ -163,6 +163,24 @@ export async function loginUser({
   };
 }
 
+// Firebase Authentication is authoritative; stale/missing Firestore profiles
+// must not decide whether a customer can sign in. This lookup is read-only.
+export async function accountExistsByEmail(email) {
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)) {
+    throw new ApiError(400, "Invalid email");
+  }
+
+  try {
+    await getAuthService().getUserByEmail(normalizedEmail);
+    return true;
+  } catch (error) {
+    if (error?.code === "auth/user-not-found") return false;
+    // Never interpret an outage/permission error as an unregistered address.
+    throw new ApiError(503, "Account lookup unavailable. Please try again.");
+  }
+}
+
 export async function getCurrentUser(uid) {
   if (!uid) {
     throw new ApiError(401, "Unauthorized");

@@ -4,6 +4,7 @@ import {
   login,
   me,
   saveCheckoutLead,
+  accountStatus,
 } from "../controllers/auth.controller.js";
 import {
   sendEmailVerificationOtp,
@@ -15,11 +16,14 @@ import {
 } from "../controllers/password-reset.controller.js"; // ✅ ΝΕΟ
 import { requireAuth } from "../middleware/auth.js";
 
+import { accountStatusLimiter } from "../middleware/rateLimits.js";
+
 const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
 router.post("/checkout-lead", saveCheckoutLead);
+router.post("/account-status", accountStatusLimiter, accountStatus);
 router.get("/me", requireAuth, me);
 
 router.post("/send-verification", requireAuth, sendEmailVerificationOtp);
