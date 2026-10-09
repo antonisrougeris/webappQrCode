@@ -35,8 +35,9 @@ function saveCheckoutDraft(formEl: HTMLFormElement): void {
   // Old drafts may contain a silently preselected 5% tip.
   if (formEl.dataset.tipChoiceExplicit === "true") {
     draft.tipChoiceExplicit = "true";
+  } else {
+    delete draft.tipChoice;
   }
-  });
 
   formEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name]')
     .forEach((checkbox) => {
@@ -55,8 +56,13 @@ function restoreCheckoutDraft(): void {
   try {
     const draft = JSON.parse(raw) as Record<string, string>;
 
+    // Do not silently restore tips saved before explicit opt-in was tracked.
+    const explicitTip = draft.tipChoiceExplicit === "true";
+    const form = document.getElementById("checkoutForm") as HTMLFormElement | null;
+    if (explicitTip && form) form.dataset.tipChoiceExplicit = "true";
     Object.entries(draft).forEach(([key, value]) => {
-      if (key === "termsAccepted") return;
+      if (key === "termsAccepted" || key === "tipChoiceExplicit") return;
+      if (key === "tipChoice" && !explicitTip) return;
       const el = document.querySelector<HTMLInputElement>(
         `[name="${CSS.escape(key)}"]`
       );
@@ -858,6 +864,7 @@ editCartButton?.addEventListener(
 
   checkoutForm?.querySelectorAll<HTMLInputElement>('input[name="tipChoice"]').forEach((input) => {
     input.addEventListener("change", () => {
+      if (checkoutForm) checkoutForm.dataset.tipChoiceExplicit = "true";
       saveCheckoutDraftFromPage();
       void render();
     });
@@ -1114,22 +1121,22 @@ if (!user) {
       lastName,
     });
 
-  let authPath = "/login";
-
+  // A public account-existence lookup leaks who has registered.
+  // Store checkout lead details independently, without exposing that status.
   try {
-    const existingCustomer = await accountExists(email, {
+    await saveCheckoutLead({
+      email,
       firstName,
       lastName,
       phone: formValues.phone,
     });
-    authPath = existingCustomer ? "/login" : "/register";
-  } catch (error) {
-    console.error("Account lookup failed; falling back to login:", error);
+  } catch {
+    // A lead-saving failure must never block sign-in or registration.
   }
 
   window.location.href =
     localizedPath(
-      `${authPath}?${payload}`,
+      `/login?${payload}`,
       locale
     );
 
