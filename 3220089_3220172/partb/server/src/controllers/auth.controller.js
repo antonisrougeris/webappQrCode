@@ -4,7 +4,6 @@ import {
   registerUser,
   loginUser,
   getCurrentUser,
-  accountExistsByEmail,
 } from "../services/auth.service.js";
 import {
   getCartByUserId,
@@ -107,32 +106,32 @@ export const login = asyncHandler(async (req, res) => {
   });
 });
 
-export const accountStatus = asyncHandler(async (req, res) => {
-  const email = String(req.body?.email || "").trim();
-  const exists = await accountExistsByEmail(email);
-
-  if (req.guestId && !req.user?.uid) {
-    const lead = {
-      email,
-      firstName: String(req.body?.firstName || "").trim().slice(0, 80),
-      lastName: String(req.body?.lastName || "").trim().slice(0, 80),
-      phone: String(req.body?.phone || "").trim().slice(0, 40),
-      capturedAt: nowIso(),
-    };
-
-    await getDB()
-      .collection(COLLECTIONS.CARTS)
-      .doc(String(req.guestId))
-      .set(
-        {
-          checkoutLead: lead,
-          updatedAt: nowIso(),
-        },
-        { merge: true }
-      );
+// No account lookup is performed or returned. The checkout lead is a
+// guest-owned cart field only; callers cannot enumerate Firebase accounts.
+export const saveCheckoutLead = asyncHandler(async (req, res) => {
+  if (!req.guestId || req.user?.uid) {
+    return res.status(204).end();
   }
 
-  return ok(res, { exists });
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) {
+    return res.status(400).json({ success: false, message: "Invalid email" });
+  }
+
+  const lead = {
+    email,
+    firstName: String(req.body?.firstName || "").trim().slice(0, 80),
+    lastName: String(req.body?.lastName || "").trim().slice(0, 80),
+    phone: String(req.body?.phone || "").trim().slice(0, 40),
+    capturedAt: nowIso(),
+  };
+
+  await getDB()
+    .collection(COLLECTIONS.CARTS)
+    .doc(String(req.guestId))
+    .set({ checkoutLead: lead, updatedAt: nowIso() }, { merge: true });
+
+  return res.status(204).end();
 });
 
 export const me = asyncHandler(async (req, res) => {
