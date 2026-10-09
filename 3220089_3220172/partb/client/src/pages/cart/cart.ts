@@ -284,6 +284,12 @@ function renderCartItem(item: CartItem, index: number, catalog: Product[] = []):
   const title = getCartItemTitle(item);
   const image = getCartItemImage(item, catalog);
   const unitPrice = getCartItemUnitPrice(item);
+  const originalPrice = Number(item.originalPrice ?? unitPrice);
+  const hasSavings = Number.isFinite(originalPrice) && originalPrice > unitPrice &&
+    Number(item.discountPercent || 0) > 0;
+  const savedTotal = hasSavings
+    ? Math.round((originalPrice - unitPrice) * item.quantity * 100) / 100
+    : 0;
   const qr = getCartItemQr(item);
   const itemKey = getCartItemKey(item, index);
 
@@ -321,7 +327,11 @@ function renderCartItem(item: CartItem, index: number, catalog: Product[] = []):
           </svg>
         </button>
 
-        <strong>${formatPrice(unitPrice * item.quantity)}</strong>
+        <div class="drawer-cart-price__amounts">
+          ${hasSavings ? `<del class="drawer-cart-price__original">${formatPrice(originalPrice * item.quantity)}</del>` : ""}
+          <strong>${formatPrice(unitPrice * item.quantity)}</strong>
+          ${hasSavings ? `<span class="drawer-cart-price__savings">${t("sale.save", "Save")} ${formatPrice(savedTotal)}</span>` : ""}
+        </div>
       </div>
     </article>
   `;
