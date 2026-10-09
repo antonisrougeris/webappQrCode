@@ -774,7 +774,7 @@ setMetaName("twitter:image", productImage);
 
     if (saleBadgeEl && onSale) {
       saleBadgeEl.hidden = false;
-      saleBadgeEl.textContent = `-${discountPercent}%`;
+      saleBadgeEl.textContent = `${t("sale.save", "Save")} ${formatPrice(Math.round((originalPrice - product.price) * 100) / 100)}`;
     } else if (saleBadgeEl) {
       saleBadgeEl.hidden = true;
       saleBadgeEl.textContent = "";
