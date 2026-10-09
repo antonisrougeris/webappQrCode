@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: skanare-security-audit-${{ github.run_number }}
           path: security-audit-output/
@@ -78,7 +78,7 @@ jobs:
 
       - name: Upload complete audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: skanare-security-audit-complete-${{ github.run_number }}
           path: security-audit-output/
