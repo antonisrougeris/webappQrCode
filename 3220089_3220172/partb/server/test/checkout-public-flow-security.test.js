@@ -18,17 +18,15 @@ test("checkout tip is opt-in and defaults to none in both HTML and runtime", () 
   assert.doesNotMatch(logic, /\|\| "percent:5"/);
 });
 
-test("anonymous checkout cannot enumerate registered emails using an API endpoint", () => {
+test("checkout routing uses a protected backend lookup and keeps lead capture separate", () => {
   const routes = read(server + "src/routes/auth.routes.js");
   const controller = read(server + "src/controllers/auth.controller.js");
-  const clientLogic = read(client + "src/pages/checkout/checkout.ts");
-  assert.doesNotMatch(routes, /account-status/);
+  const logic = read(client + "src/pages/checkout/checkout.ts");
+  assert.match(routes, /"\/account-status", accountStatusLimiter, accountStatus/);
   assert.match(routes, /checkout-lead/);
-  assert.doesNotMatch(controller, /accountExistsByEmail/);
-  assert.doesNotMatch(controller, /exists\s*}/);
-  assert.match(controller, /status\(204\)/);
-  assert.doesNotMatch(clientLogic, /accountExists\(/);
-  assert.match(clientLogic, /\/login\?/);
+  assert.match(controller, /Cache-Control", "no-store/);
+  assert.match(logic, /await accountExists\(email\) \? "\/login" : "\/register"/);
+  assert.match(logic, /showToast\(locale === "el"/);
 });
 
 test("all storefront discount badges show amounts instead of percentages", () => {

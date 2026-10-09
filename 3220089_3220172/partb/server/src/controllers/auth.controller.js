@@ -4,6 +4,7 @@ import {
   registerUser,
   loginUser,
   getCurrentUser,
+  accountExistsByEmail,
 } from "../services/auth.service.js";
 import {
   getCartByUserId,
@@ -106,7 +107,15 @@ export const login = asyncHandler(async (req, res) => {
   });
 });
 
-// No account lookup is performed or returned. The checkout lead is a
+// Intentionally exposes a boolean for automatic checkout routing. Rate limited,
+// protected by the existing CSRF middleware, and never cached or written to DB.
+export const accountStatus = asyncHandler(async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const exists = await accountExistsByEmail(req.body?.email);
+  return ok(res, { exists });
+});
+
+// No account lookup is performed or returned by checkout-lead. The checkout lead is a
 // guest-owned cart field only; callers cannot enumerate Firebase accounts.
 export const saveCheckoutLead = asyncHandler(async (req, res) => {
   if (!req.guestId || req.user?.uid) {
@@ -114,7 +123,7 @@ export const saveCheckoutLead = asyncHandler(async (req, res) => {
   }
 
   const email = String(req.body?.email || "").trim().toLowerCase();
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) {
     return res.status(400).json({ success: false, message: "Invalid email" });
   }
 

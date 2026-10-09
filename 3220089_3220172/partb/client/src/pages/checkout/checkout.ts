@@ -7,7 +7,7 @@ import {
   checkout,
   validateRecoveryOffer,
 } from "../../services/checkout";
-import { saveCheckoutLead, getMe } from "../../services/api";
+import { accountExists, saveCheckoutLead, getMe } from "../../services/api";
 import {
   parsePhoneNumberFromString,
   type CountryCode,
@@ -16,7 +16,7 @@ const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
 const RECOVERY_CODE_KEY = "skanare_recovery_code";
 const PREMIUM_GIFT_PRICE = 1.5;
 const TERMS_VERSION = "2026-09" as const;
-import { setFlashToast } from "../../utils/toast.ts";
+import { setFlashToast, showToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
 import {
   locale,
@@ -1097,7 +1097,7 @@ editCartButton?.addEventListener(
 if (!user) {
   saveCheckoutDraft(e.target as HTMLFormElement);
 
-  const email = formValues.email;
+  const email = formValues.email.trim().toLowerCase();
   const firstName = formValues.firstName;
   const lastName = formValues.lastName;
 
@@ -1121,8 +1121,24 @@ if (!user) {
       lastName,
     });
 
-  // A public account-existence lookup leaks who has registered.
-  // Store checkout lead details independently, without exposing that status.
+  if (checkoutSubmitting) return;
+  checkoutSubmitting = true;
+  const authButton = formEl.querySelector<HTMLButtonElement>("button[type='submit']");
+  if (authButton) authButton.disabled = true;
+
+  let authPath: string;
+  try {
+    authPath = await accountExists(email) ? "/login" : "/register";
+  } catch {
+    showToast(locale === "el"
+      ? "Δεν ήταν δυνατός ο έλεγχος του λογαριασμού. Δοκιμάστε ξανά σε λίγο. Τα στοιχεία σας έχουν αποθηκευτεί."
+      : "We couldn't check your account. Please try again shortly. Your checkout details are saved.");
+    checkoutSubmitting = false;
+    if (authButton) authButton.disabled = false;
+    return;
+  }
+
+  // Lead capture remains separate from the read-only account lookup.
   try {
     await saveCheckoutLead({
       email,
@@ -1134,9 +1150,12 @@ if (!user) {
     // A lead-saving failure must never block sign-in or registration.
   }
 
+  // Leave a usable form in the browser's back/forward cache.
+  checkoutSubmitting = false;
+  if (authButton) authButton.disabled = false;
   window.location.href =
     localizedPath(
-      `/login?${payload}`,
+      `${authPath}?${payload}`,
       locale
     );
 

@@ -19,6 +19,18 @@ export const apiLimiter = buildLimiter({
   message: "Too many requests, please try again later",
 });
 
+// Additional budget for the intentionally enumerable checkout lookup.
+export const accountStatusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler(req, res) {
+    console.warn("checkout_account_status_rate_limited", { requestId: req.requestId || null });
+    res.status(429).json({ success: false, message: "Too many account lookups, please try again later" });
+  },
+});
+
 export const authLimiter = buildLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 60,

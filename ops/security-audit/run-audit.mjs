@@ -74,14 +74,24 @@ add(
 
 add(
   "SKN-003",
-  "Public account-existence endpoint is not exposed",
+  "Automatic checkout account lookup retains rate limiting and CSRF protection",
   "medium",
-  !files.authRoutes.includes("/check-email") &&
-    !files.checkoutClient.includes("/auth/check-email")
+  files.authRoutes.includes('router.post("/account-status", accountStatusLimiter, accountStatus)') &&
+    files.app.includes('app.use("/api/auth", authLimiter)') &&
+    files.app.includes('lusca.csrf(')
     ? "pass"
     : "fail",
   paths.authRoutes,
-  "Avoid returning whether arbitrary email addresses have accounts."
+  "Keep the route limiter, global auth limiter and CSRF checks enabled."
+);
+
+add(
+  "SKN-W03",
+  "Automatic checkout routing intentionally discloses account existence",
+  "medium",
+  "warn",
+  paths.authRoutes,
+  "Accepted UX tradeoff: monitor account-status traffic and 429s; retain rate limits and no-store responses. Distributed enumeration remains possible."
 );
 
 add(
