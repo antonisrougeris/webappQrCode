@@ -38,7 +38,8 @@ router.get("/image/:publicId", asyncHandler(async (req, res, next) => {
     "Cache-Control": "no-store, private, max-age=0",
     "X-Content-Type-Options": "nosniff",
     "Content-Disposition": "inline",
-    "Cross-Origin-Resource-Policy": "same-origin",
+    // Local Vite and API use different ports (different origins).
+    "Cross-Origin-Resource-Policy": "cross-origin",
   });
   stream.on("error", (error) => {
     if (!res.headersSent) next(error);
