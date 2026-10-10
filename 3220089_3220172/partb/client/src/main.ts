@@ -278,6 +278,8 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
           current.destinationType = "link";
           current.linkUrl = targetUrl;
           current.targetUrl = targetUrl;
+          const card = button.closest<HTMLElement>("[data-qr-editor]");
+          card?.dispatchEvent(new CustomEvent("qr-destination-updated"));
         }
         button.textContent = "Saved";
 
