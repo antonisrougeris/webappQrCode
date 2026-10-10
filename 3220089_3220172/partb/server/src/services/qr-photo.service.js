@@ -105,14 +105,16 @@ export async function uploadQrPhotoForUser({ userId, qrId, file }) {
       }
       oldPath = qr.photo?.storagePath || null;
       const updatedAt = nowIso();
-      const publicId = qr.shortId || latest.id;
       const linkUrl = qr.linkUrl ||
         (qr.destinationType !== "photo" ? qr.targetUrl : "") ||
         "https://skanare.com";
       const updates = {
         destinationType: "photo",
         linkUrl,
-        targetUrl: qrPhotoViewerUrl(publicId),
+        // The deployed legacy redirect function only understands targetUrl.
+        // Keep the previous working link until the photo-aware Cloud Function
+        // is deployed; that function reads destinationType/photo directly.
+        targetUrl: linkUrl,
         photo: {
           storagePath,
           contentType: detected.contentType,
