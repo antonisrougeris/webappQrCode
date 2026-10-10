@@ -6,6 +6,9 @@ export interface QrCode {
   productId?: string;
   productTitle?: string;
   targetUrl?: string;
+  linkUrl?: string;
+  destinationType?: "link" | "photo";
+  photo?: { storagePath: string; contentType: string; sizeBytes: number; updatedAt: string };
   scans?: number;
   createdAt?: string;
 }
@@ -35,5 +38,15 @@ export async function updateQrCode(
     }
   );
 
+  return res.qrCode;
+}
+
+export async function uploadQrPhoto(qrId: string, file: File): Promise<QrCode> {
+  const form = new FormData();
+  form.append("photo", file);
+  const res = await apiRequest<QrUpdateResponse>(
+    `/qr-photo/${encodeURIComponent(qrId)}`,
+    { method: "POST", body: form }
+  );
   return res.qrCode;
 }
