@@ -149,3 +149,24 @@ export async function getQrPhotoStream(publicId) {
   }
   return { stream: getStorage().bucket().file(path).createReadStream(), contentType: type };
 }
+
+export async function getOwnedQrPhotoStream(userId, qrId) {
+  if (!userId) throw new ApiError(401, "Sign in to preview your photo");
+  const id = assertPublicQrId(qrId);
+  const snap = await getDB().collection(COLLECTIONS.QR_CODES).doc(id).get();
+  if (!snap.exists) throw new ApiError(404, "QR code not found");
+  const qr = snap.data();
+  if (qr.userId !== userId || qr.status === "returned") {
+    throw new ApiError(403, "You do not have access to this QR code");
+  }
+  const path = qr.photo?.storagePath;
+  const type = qr.photo?.contentType;
+  if (!path || !path.startsWith(`${QR_PHOTO_PREFIX}${userId}/${id}/`) ||
+      !["image/jpeg", "image/png", "image/webp"].includes(type)) {
+    throw new ApiError(404, "Photo not found");
+  }
+  return {
+    stream: getStorage().bucket().file(path).createReadStream(),
+    contentType: type,
+  };
+}
