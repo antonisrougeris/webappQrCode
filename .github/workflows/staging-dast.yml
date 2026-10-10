@@ -36,7 +36,7 @@ jobs:
 
       - name: Upload passive scan artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: skanare-staging-zap
           path: zap-output/
