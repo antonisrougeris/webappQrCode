@@ -201,6 +201,9 @@ async function main() {
 
             targetUrl:
               "https://skanare.com",
+            linkUrl: "https://skanare.com",
+            destinationType: "link",
+            photo: null,
 
             scans: 0,
 

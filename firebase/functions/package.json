@@ -1,0 +1,16 @@
+{
+  "name": "skanare-qr-redirect",
+  "private": true,
+  "version": "1.1.0",
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.4.0"
+  }
+}

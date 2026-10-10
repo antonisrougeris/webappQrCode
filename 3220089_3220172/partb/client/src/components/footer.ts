@@ -25,7 +25,7 @@ export function renderFooter(): void {
           </p>
 
           <p class="footer-tagline">
-            Dynamic QR. Your link. Your story.
+            Dynamic QR. Your link or photo. Your story.
           </p>
 
           

@@ -32,6 +32,7 @@ import checkoutRoutes from "./routes/checkout.routes.js";
 import ordersRoutes from "./routes/orders.routes.js";
 import returnsRoutes from "./routes/returns.routes.js";
 import qrRoutes from "./routes/qr.routes.js";
+import qrPhotoRoutes from "./routes/qr-photo.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import vivaRoutes from "./routes/viva.routes.js";
@@ -230,6 +231,7 @@ app.use("/api/checkout", checkoutRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/returns", returnsRoutes);
 app.use("/api/qr-codes", qrRoutes);
+app.use("/api/qr-photo", qrPhotoRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
 if (process.env.NODE_ENV !== "production") {

@@ -1302,7 +1302,7 @@ if (imageStage) {
 
           if (!rawQrDestination) {
             showToast(
-              "Don’t forget to add your own QR URL later.",
+              "Add your link or upload a photo from My QR Codes after purchase.",
               {
                 placement:
                   "cart-reminder",

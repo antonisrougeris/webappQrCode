@@ -3,6 +3,7 @@ import { ok } from "../utils/response.js";
 import {
   getQrCodesForUser,
   updateQrCodeTarget,
+  activateQrPhotoForUser,
 } from "../services/qr.service.js";
 
 export const getMyQrCodes = asyncHandler(async (req, res) => {
@@ -11,7 +12,9 @@ export const getMyQrCodes = asyncHandler(async (req, res) => {
 });
 
 export const updateQrCode = asyncHandler(async (req, res) => {
-  const qrCode = await updateQrCodeTarget({
+  const qrCode = req.body?.destinationType === "photo"
+    ? await activateQrPhotoForUser({ userId: req.user.uid, qrId: req.params.qrId })
+    : await updateQrCodeTarget({
     userId: req.user.uid,
     qrId: req.params.qrId,
     targetUrl: req.body?.targetUrl,

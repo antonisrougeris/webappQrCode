@@ -8,6 +8,7 @@ import { getProducts } from "./services/products";
 import { updateCartBadge } from "./utils/cart-badge";
 import { firebaseAuth } from "./services/firebase";
 import { getMyQrCodes, updateQrCode, type QrCode } from "./services/qr";
+import { enhanceQrDestinationEditors } from "./components/qrDestinationEditor";
 
 
 import QRCode from "qrcode";
@@ -188,7 +189,7 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
 
   const htmlBlocks = await Promise.all(
     qrCodes.map(async (qr) => {
-      const safeTarget = escapeHtml(qr.targetUrl || "");
+      const safeTarget = escapeHtml(qr.linkUrl || (qr.destinationType === "photo" ? "" : qr.targetUrl) || "");
       const title = escapeHtml(qr.productTitle || "QR Product");
 
       const publicQrId = qr.shortId || qr.id;
@@ -207,7 +208,7 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
       });
 
       return `
-        <article class="dashboard-card qr-dashboard-card">
+        <article class="dashboard-card qr-dashboard-card" data-qr-editor="${escapeHtml(qr.id)}">
 
           <p class="meta qr-card-meta">QR product</p>
 
@@ -221,11 +222,11 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
           <h3 class="qr-dashboard-title">${title}</h3>
           <span class="qr-scan-badge">${qr.scans ?? 0} scans</span>
 
-          <label class="qr-edit-label" for="input-${qr.id}">
+          <label class="qr-edit-label" data-qr-destination-label for="input-${qr.id}">
             Destination URL
           </label>
 
-          <div class="qr-edit-row">
+          <div class="qr-edit-row" data-qr-link-fields>
             <input
               id="input-${qr.id}"
               class="qr-edit-input"
@@ -247,6 +248,7 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
   );
 
   grid.innerHTML = htmlBlocks.join("");
+  enhanceQrDestinationEditors(grid, qrCodes);
 
 
   grid.querySelectorAll<HTMLButtonElement>(".qr-save-btn").forEach((button) => {
@@ -271,6 +273,14 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
 
       try {
         await updateQrCode(qrId, targetUrl);
+        const current = qrCodes.find((item) => item.id === qrId);
+        if (current) {
+          current.destinationType = "link";
+          current.linkUrl = targetUrl;
+          current.targetUrl = targetUrl;
+          const card = button.closest<HTMLElement>("[data-qr-editor]");
+          card?.dispatchEvent(new CustomEvent("qr-destination-updated"));
+        }
         button.textContent = "Saved";
 
         setTimeout(() => {

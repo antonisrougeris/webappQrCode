@@ -22,6 +22,7 @@ import {
 } from "../../utils/cart-badge";
 
 import QRCode from "qrcode";
+import { enhanceQrDestinationEditors } from "../../components/qrDestinationEditor";
 
 
 /* =========================================================
@@ -186,13 +187,13 @@ async function renderQrCodes(
 
           const destination =
             escapeHtml(
-              qr.targetUrl ||
+              qr.linkUrl || (qr.destinationType === "photo" ? "" : qr.targetUrl) ||
               ""
             );
 
 
           return `
-            <article class="my-qr-card">
+            <article class="my-qr-card" data-qr-editor="${escapeHtml(qr.id)}">
 
               <div class="my-qr-card__visual">
 
@@ -262,6 +263,7 @@ async function renderQrCodes(
 
                 <label
                   class="my-qr-card__label"
+                  data-qr-destination-label
                   for="my-qr-input-${escapeHtml(
                     qr.id
                   )}"
@@ -272,6 +274,7 @@ async function renderQrCodes(
 
                 <div
                   class="my-qr-card__edit"
+                  data-qr-link-fields
                 >
 
                   <input
@@ -315,6 +318,8 @@ async function renderQrCodes(
 
   grid.innerHTML =
     cards.join("");
+
+  enhanceQrDestinationEditors(grid, qrCodes);
 
 
   grid
@@ -385,6 +390,14 @@ async function renderQrCodes(
                 qrId,
                 targetUrl
               );
+              const current = qrCodes.find((item) => item.id === qrId);
+              if (current) {
+                current.destinationType = "link";
+                current.linkUrl = targetUrl;
+                current.targetUrl = targetUrl;
+                const card = button.closest<HTMLElement>("[data-qr-editor]");
+                card?.dispatchEvent(new CustomEvent("qr-destination-updated"));
+              }
 
 
               button.textContent =
