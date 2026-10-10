@@ -8,6 +8,7 @@ import {
   QR_PHOTO_MAX_BYTES,
   uploadQrPhotoForUser,
   getQrPhotoStream,
+  getOwnedQrPhotoStream,
   findPublicQrPhoto,
 } from "../services/qr-photo.service.js";
 
@@ -29,6 +30,21 @@ router.post("/:qrId", requireAuth, (req, res, next) => {
     file: req.file,
   });
   return ok(res, { qrCode });
+}));
+
+router.get("/preview/:qrId", requireAuth, asyncHandler(async (req, res, next) => {
+  const { stream, contentType } = await getOwnedQrPhotoStream(req.user.uid, req.params.qrId);
+  res.set({
+    "Content-Type": contentType,
+    "Cache-Control": "no-store, private, max-age=0",
+    "X-Content-Type-Options": "nosniff",
+    "Cross-Origin-Resource-Policy": "cross-origin",
+  });
+  stream.on("error", (error) => {
+    if (!res.headersSent) next(error);
+    else res.destroy(error);
+  });
+  stream.pipe(res);
 }));
 
 router.get("/image/:publicId", asyncHandler(async (req, res, next) => {
