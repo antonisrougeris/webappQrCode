@@ -52,16 +52,11 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     const reuseButton = wrapper.querySelector<HTMLButtonElement>("[data-qr-reuse-photo]")!;
     const note = wrapper.querySelector<HTMLElement>(".qr-destination-picker__note")!;
     let hasPhoto = Boolean(qr.photo?.storagePath);
-    let currentPreviewUrl: string | null = null;
     let previewVersion = 0;
 
     async function updatePreview(): Promise<void> {
       const version = ++previewVersion;
       preview.replaceChildren();
-      if (currentPreviewUrl) {
-        URL.revokeObjectURL(currentPreviewUrl);
-        currentPreviewUrl = null;
-      }
       if (!hasPhoto) {
         preview.textContent = say("No photo uploaded yet.");
         return;
@@ -82,8 +77,14 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
         if (!response.ok) throw new Error(say("Could not load photo preview."));
         const blob = await response.blob();
         if (version !== previewVersion) return;
-        const url = URL.createObjectURL(blob);
-        currentPreviewUrl = url;
+        // A data URL works with the existing production img-src CSP.
+        const url = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error(say("Could not load photo preview.")));
+          reader.readAsDataURL(blob);
+        });
+        if (version !== previewVersion) return;
         const img = document.createElement("img");
         img.src = url;
         img.alt = say("Current QR photo");
