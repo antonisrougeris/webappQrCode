@@ -18,7 +18,7 @@ async function findQr(id) {
   return oldDoc.exists ? oldDoc : null;
 }
 
-function sendPhotoPage(res, id) {
+function sendPhotoPage(res) {
   res.set({
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "private, no-store, max-age=0",
@@ -35,7 +35,7 @@ function sendPhotoPage(res, id) {
 html,body{margin:0;min-height:100%;background:#111;color:#fff}
 body{min-height:100svh;display:grid;place-items:center}
 img{display:block;max-width:100%;max-height:100svh;object-fit:contain}
-</style></head><body><img alt="Shared QR photo" src="/photo/${encoded}"></body></html>`);
+</style></head><body><img alt="Shared QR photo" src="?photo=1"></body></html>`);
 }
 
 async function servePhoto(req, res, id) {
@@ -100,7 +100,7 @@ exports.redirectQr = onRequest(
             lastScannedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
         }
-        return sendPhotoPage(res, id);
+        return sendPhotoPage(res);
       }
 
       // If a photo was selected but its storage metadata is invalid,
