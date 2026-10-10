@@ -51,7 +51,6 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     const uploadButton = wrapper.querySelector<HTMLButtonElement>("[data-qr-upload-photo]")!;
     const reuseButton = wrapper.querySelector<HTMLButtonElement>("[data-qr-reuse-photo]")!;
     const note = wrapper.querySelector<HTMLElement>(".qr-destination-picker__note")!;
-    let selectedMode: "link" | "photo" = active;
     let hasPhoto = Boolean(qr.photo?.storagePath);
     const photoUrl = () => `${API_BASE_URL}/qr-photo/image/${encodeURIComponent(publicId)}`;
 
@@ -69,13 +68,12 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     }
 
     function switchMode(mode: "link" | "photo"): void {
-      selectedMode = mode;
       modes.forEach((button) => {
         const isActive = button.dataset.destinationMode === mode;
         button.classList.toggle("is-active", isActive);
         button.setAttribute("aria-pressed", String(isActive));
       });
-      linkRow.hidden = mode !== "link";
+      if (linkRow) linkRow.hidden = mode !== "link";
       photoPanel.hidden = mode !== "photo";
       if (label) label.hidden = mode !== "link";
       if (mode === "photo") {
