@@ -1,10 +1,10 @@
 import { API_BASE_URL } from "../services/api";
 import { activateQrPhoto, uploadQrPhoto, type QrCode } from "../services/qr";
-import { t } from "../i18n/locale";
+import { translatePhrase } from "../i18n/locale";
 
 const MAX_PHOTO = 5 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
-const say = (key: string) => t(key, key);
+const say = (key: string) => translatePhrase(key);
 
 export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrCode[]): void {
   for (const qr of qrCodes) {
