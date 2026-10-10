@@ -395,6 +395,8 @@ async function renderQrCodes(
                 current.destinationType = "link";
                 current.linkUrl = targetUrl;
                 current.targetUrl = targetUrl;
+                const card = button.closest<HTMLElement>("[data-qr-editor]");
+                card?.dispatchEvent(new CustomEvent("qr-destination-updated"));
               }
 
 
