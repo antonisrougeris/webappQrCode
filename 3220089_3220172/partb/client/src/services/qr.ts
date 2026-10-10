@@ -50,3 +50,11 @@ export async function uploadQrPhoto(qrId: string, file: File): Promise<QrCode> {
   );
   return res.qrCode;
 }
+
+export async function activateQrPhoto(qrId: string): Promise<QrCode> {
+  const res = await apiRequest<QrUpdateResponse>(
+    `/qr-codes/${encodeURIComponent(qrId)}`,
+    { method: "PATCH", body: JSON.stringify({ destinationType: "photo" }) }
+  );
+  return res.qrCode;
+}
