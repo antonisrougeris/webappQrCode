@@ -1,4 +1,5 @@
 import { getDB } from "../config/db.js";
+import { getStorage } from "firebase-admin/storage";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
@@ -900,6 +901,7 @@ async function deactivateReturnedQrCodes(returnRequest, order) {
   const batch = db.batch();
   const returnedAt = nowIso();
   let changed = 0;
+  const photosToDelete = [];
 
   for (const doc of snap.docs) {
     const qr = doc.data();
@@ -916,11 +918,19 @@ async function deactivateReturnedQrCodes(returnRequest, order) {
 
       if (!matches) continue;
 
+      if (typeof qr.photo?.storagePath === "string" &&
+          qr.photo.storagePath.startsWith("qr-photos/")) {
+        photosToDelete.push(qr.photo.storagePath);
+      }
+
       batch.update(doc.ref, {
         status: "returned",
         userId: null,
         guestId: null,
         targetUrl: "https://skanare.com",
+        linkUrl: "https://skanare.com",
+        destinationType: "link",
+        photo: null,
         returnedAt,
         returnId: returnRequest.id,
         updatedAt: returnedAt,
@@ -932,7 +942,17 @@ async function deactivateReturnedQrCodes(returnRequest, order) {
     }
   }
 
-  if (changed) await batch.commit();
+  if (changed) {
+    await batch.commit();
+    // The old customer\'s QR photo must never survive return/reassignment.
+    await Promise.all(photosToDelete.map(async (path) => {
+      try {
+        await getStorage().bucket().file(path).delete();
+      } catch (error) {
+        console.warn("Returned QR photo cleanup failed", { path, message: error.message });
+      }
+    }));
+  }
 }
 
 export async function markReturnRefundedForAdmin(
