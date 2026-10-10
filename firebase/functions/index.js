@@ -3,7 +3,13 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 
-admin.initializeApp();
+// The bucket shown by Firebase Storage for SKANARE is gs://qrcode-zxfxi9.
+// A default bucket is NOT always available automatically in Cloud Functions v2.
+// Keep this explicit and override via QR_PHOTO_STORAGE_BUCKET if it changes.
+const PHOTO_STORAGE_BUCKET =
+  process.env.QR_PHOTO_STORAGE_BUCKET || "qrcode-zxfxi9";
+
+admin.initializeApp({ storageBucket: PHOTO_STORAGE_BUCKET });
 const db = admin.firestore();
 
 const { extractQrId, isActivePhoto } = require("./qr-photo-utils");
@@ -45,29 +51,44 @@ async function servePhoto(req, res, id) {
   }
 
   const { storagePath, contentType } = doc.data().photo;
-  const file = admin.storage().bucket().file(storagePath);
 
-  // Metadata check prevents content-type spoofing even if Firestore is modified.
-  const [metadata] = await file.getMetadata();
-  if (metadata.contentType !== contentType) {
-    return res.status(404).send("Photo unavailable");
+  try {
+    // Use exactly the Storage bucket containing QR uploads, not the
+    // potentially unset/mismatched Admin SDK default bucket.
+    const file = admin.storage().bucket(PHOTO_STORAGE_BUCKET).file(storagePath);
+    const [metadata] = await file.getMetadata();
+
+    if (metadata.contentType !== contentType) {
+      console.error("QR photo MIME mismatch", {
+        qrId: id,
+        actualContentType: metadata.contentType,
+        expectedContentType: contentType,
+      });
+      return res.status(404).send("Photo unavailable");
+    }
+
+    // Uploaded images are at most 5 MB; buffering allows us to return an
+    // actual 404/500 rather than a broken <img> after headers were sent.
+    const [bytes] = await file.download();
+
+    return res.status(200).set({
+      "Content-Type": contentType,
+      "Content-Length": String(bytes.length),
+      "Cache-Control": "private, no-store, max-age=0",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Disposition": "inline",
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+    }).send(bytes);
+  } catch (error) {
+    const status = error?.code === 404 || error?.code === "404" ? 404 : 500;
+    console.error("QR photo Storage read failed", {
+      qrId: id,
+      bucket: PHOTO_STORAGE_BUCKET,
+      code: error?.code || null,
+      message: error?.message || "Unknown Storage error",
+    });
+    return res.status(status).send("Photo temporarily unavailable");
   }
-
-  res.set({
-    "Content-Type": contentType,
-    "Cache-Control": "private, no-store, max-age=0",
-    "X-Content-Type-Options": "nosniff",
-    "Content-Disposition": "inline",
-    "X-Robots-Tag": "noindex, nofollow, noarchive",
-  });
-
-  const stream = file.createReadStream();
-  stream.on("error", (error) => {
-    console.error("QR photo stream failed", { id, message: error.message });
-    if (!res.headersSent) res.status(500).send("Photo unavailable");
-    else res.destroy(error);
-  });
-  return stream.pipe(res);
 }
 
 exports.redirectQr = onRequest(
