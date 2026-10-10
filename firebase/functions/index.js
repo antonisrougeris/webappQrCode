@@ -36,8 +36,6 @@ function isActivePhoto(qr) {
 }
 
 function sendPhotoPage(res, id) {
-  // The QR ID is strictly validated and percent-encoded before interpolation.
-  const encoded = encodeURIComponent(id);
   res.set({
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "private, no-store, max-age=0",
@@ -97,17 +95,11 @@ exports.redirectQr = onRequest(
         return res.status(405).send("Method not allowed");
       }
 
-      // Internal image request. Does not count as an additional scan.
-      // This path is handled only when the hosting rewrite exposes /photo/:id.
-      const segments = String(req.path || "").split("/").filter(Boolean);
-      if (segments[0] === "photo") {
-        const id = extractQrId(segments.slice(1).join("/"));
-        if (!id) return res.status(400).send("Missing QR ID");
-        return servePhoto(req, res, id);
-      }
-
+      // Same QR URL with ?photo=1 serves the image. No extra Hosting
+      // rewrite is needed; it never increments the scan counter.
       const id = extractQrId(req.path);
       if (!id) return res.status(400).send("Missing QR ID");
+      if (req.query.photo === "1") return servePhoto(req, res, id);
 
       const doc = await findQr(id);
       if (!doc) return res.status(404).send("QR not found");
