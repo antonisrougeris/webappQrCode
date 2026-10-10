@@ -52,6 +52,28 @@ export async function updateQrCodeTarget({ userId, qrId, targetUrl }) {
   return { ...qrCode, ...updates };
 }
 
+export async function activateQrPhotoForUser({ userId, qrId }) {
+  if (!userId) throw new ApiError(401, "Missing user id");
+  if (!qrId) throw new ApiError(400, "Missing qr id");
+  const ref = getDB().collection(COLLECTIONS.QR_CODES).doc(qrId);
+  return getDB().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new ApiError(404, "QR code not found");
+    const qr = snap.data();
+    if (qr.userId !== userId) throw new ApiError(403, "You do not have access to this QR code");
+    if (!qr.photo?.storagePath) throw new ApiError(400, "Upload a photo first");
+    const publicId = qr.shortId || snap.id;
+    const updatedAt = nowIso();
+    const updates = {
+      destinationType: "photo",
+      targetUrl: qrPhotoViewerUrl(publicId),
+      updatedAt,
+    };
+    tx.update(ref, updates);
+    return { id: snap.id, ...qr, ...updates };
+  });
+}
+
 
 export async function generateQrBuffer(url) {
   return QRCode.toBuffer(url, {
