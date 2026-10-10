@@ -16043,3 +16043,71 @@ body > div iframe[src*="boxnow"] {
   .qr-destination-picker__photo { padding: 12px; }
   .qr-destination-picker__modes { max-width: 100%; }
 }
+
+
+/* Live QR destination summary — independent of the currently selected editor tab. */
+.qr-destination-picker__active {
+  border: 1px solid #d8e6da;
+  border-radius: 12px;
+  background: #f5faf6;
+  padding: 13px 14px 12px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 16px;
+}
+.qr-destination-picker__active-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.79rem;
+  font-weight: 650;
+  color: #345342;
+}
+.qr-destination-picker__live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #25966b;
+  flex: 0 0 auto;
+}
+.qr-destination-picker__active-heading strong {
+  font-size: 0.78rem;
+  color: #fff;
+  background: #1d6047;
+  border-radius: 5px;
+  padding: 3px 9px;
+}
+.qr-destination-picker__active p {
+  margin: 10px 0 0;
+  line-height: 1.55;
+  color: #284536;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.qr-destination-picker__edit-heading {
+  font-size: 0.76rem;
+  letter-spacing: 0.015em;
+  font-weight: 750;
+  color: #515151;
+  margin: 0 0 8px;
+  text-align: left;
+}
+.qr-destination-picker__modes {
+  max-width: none;
+  margin-bottom: 14px;
+}
+.qr-destination-picker__modes button.is-live:not(.is-active) {
+  border-color: #8cbd9d;
+}
+.qr-destination-picker__modes button.is-active {
+  background: #161616;
+  border-color: #161616;
+  color: #fff;
+}
+@media (max-width: 480px) {
+  .qr-destination-picker__active { padding: 12px; }
+  .qr-destination-picker__active-heading { font-size: 0.75rem; }
+}
