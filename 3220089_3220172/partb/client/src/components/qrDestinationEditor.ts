@@ -23,9 +23,18 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     const wrapper = document.createElement("div");
     wrapper.className = "qr-destination-picker";
     wrapper.innerHTML = `
+      <div class="qr-destination-picker__active" data-qr-active aria-live="polite" aria-atomic="true">
+        <div class="qr-destination-picker__active-heading">
+          <span class="qr-destination-picker__live-dot" aria-hidden="true"></span>
+          <span>${say("Currently active")}</span>
+          <strong data-qr-active-type></strong>
+        </div>
+        <p data-qr-active-description></p>
+      </div>
+      <p class="qr-destination-picker__edit-heading">${say("Choose what to edit")}</p>
       <div class="qr-destination-picker__modes" role="group" aria-label="${say("QR destination type")}">
-        <button type="button" data-destination-mode="link">${say("Link")}</button>
-        <button type="button" data-destination-mode="photo">${say("Photo")}</button>
+        <button type="button" data-destination-mode="link">${say("Edit link")}</button>
+        <button type="button" data-destination-mode="photo">${say("Edit photo")}</button>
       </div>
       <div class="qr-destination-picker__photo" hidden>
         <label>${say("Choose a photo (JPEG, PNG or WebP, up to 5 MB)")}
@@ -45,6 +54,8 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
       <p class="qr-destination-picker__note" aria-live="polite"></p>`;
     linkRow.parentElement?.insertBefore(wrapper, linkRow);
     const modes = wrapper.querySelectorAll<HTMLButtonElement>("[data-destination-mode]");
+    const activeType = wrapper.querySelector<HTMLElement>("[data-qr-active-type]")!;
+    const activeDescription = wrapper.querySelector<HTMLElement>("[data-qr-active-description]")!;
     const photoPanel = wrapper.querySelector<HTMLElement>(".qr-destination-picker__photo")!;
     const preview = wrapper.querySelector<HTMLElement>(".qr-destination-picker__preview")!;
     const fileInput = wrapper.querySelector<HTMLInputElement>("[data-qr-photo-file]")!;
@@ -52,6 +63,28 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     const reuseButton = wrapper.querySelector<HTMLButtonElement>("[data-qr-reuse-photo]")!;
     const note = wrapper.querySelector<HTMLElement>(".qr-destination-picker__note")!;
     let hasPhoto = Boolean(qr.photo?.storagePath);
+
+    function refreshActiveDestination(): void {
+      const photoActive = qr.destinationType === "photo";
+      activeType.textContent = say(photoActive ? "Photo" : "Link");
+      const currentLink = qr.linkUrl ||
+        (photoActive ? "" : qr.targetUrl) || "";
+      activeDescription.textContent = photoActive
+        ? say("Scanning this QR currently displays your uploaded photo.")
+        : currentLink
+          ? `${say("Scanning this QR currently opens:")} ${currentLink}`
+          : say("Scanning this QR currently opens your saved link.");
+      const photoSelectedButton = wrapper.querySelector<HTMLButtonElement>('[data-destination-mode="photo"]');
+      if (photoSelectedButton) {
+        photoSelectedButton.classList.toggle("is-live", photoActive);
+      }
+      const linkSelectedButton = wrapper.querySelector<HTMLButtonElement>('[data-destination-mode="link"]');
+      if (linkSelectedButton) {
+        linkSelectedButton.classList.toggle("is-live", !photoActive);
+      }
+      uploadButton.textContent = say(hasPhoto ? "Replace and use photo" : "Upload and use photo");
+      reuseButton.hidden = !hasPhoto || photoActive;
+    }
     let previewVersion = 0;
 
     async function updatePreview(): Promise<void> {
@@ -141,7 +174,9 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
         qr.destinationType = "photo";
         qr.photo = saved.photo;
         qr.targetUrl = saved.targetUrl;
+        qr.linkUrl = saved.linkUrl;
         hasPhoto = true;
+        refreshActiveDestination();
         fileInput.value = "";
         updatePreview();
         reuseButton.hidden = true;
@@ -159,6 +194,7 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
         const saved = await activateQrPhoto(qr.id);
         qr.destinationType = "photo";
         qr.targetUrl = saved.targetUrl;
+        refreshActiveDestination();
         reuseButton.hidden = true;
         note.textContent = say("Saved photo is now active.");
       } catch (error) {
@@ -168,14 +204,14 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
       }
     });
 
-    // Clicking Save in the pre-existing URL editor switches back to link mode.
-    const save = linkRow.querySelector<HTMLButtonElement>("button");
-    save?.addEventListener("click", () => {
-      if (!linkInput.value.trim()) return;
-      // The existing API handler is authoritative; do not assume success.
-      note.textContent = say("Save this link to make it your QR destination.");
+    // Both account pages fire this event AFTER the PATCH succeeds.
+    // Simply opening an edit tab must never change the active destination.
+    card.addEventListener("qr-destination-updated", () => {
+      refreshActiveDestination();
+      note.textContent = say("Link saved and now active.");
     });
 
     switchMode(active);
+    refreshActiveDestination();
   }
 }
