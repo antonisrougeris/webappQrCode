@@ -60,7 +60,7 @@ export async function findPublicQrPhoto(publicId) {
   if (!snap.exists) throw new ApiError(404, "QR code not found");
   const qr = snap.data();
   const path = qr?.photo?.storagePath;
-  if (qr?.destinationType !== "photo" ||
+  if (!qr?.userId || qr?.status === "returned" || qr?.destinationType !== "photo" ||
       typeof path !== "string" || !path.startsWith(QR_PHOTO_PREFIX)) {
     throw new ApiError(404, "Photo not found");
   }
