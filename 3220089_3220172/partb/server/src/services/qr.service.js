@@ -3,6 +3,7 @@ import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
 import { normalizeUrlOrThrow } from "../utils/validators.js";
+import { qrPhotoViewerUrl } from "./qr-photo.service.js";
 
 import QRCode from "qrcode";
 
@@ -40,8 +41,15 @@ export async function updateQrCodeTarget({ userId, qrId, targetUrl }) {
     throw new ApiError(403, "You do not have access to this QR code");
 
   const updatedAt = nowIso();
-  await qrRef.update({ targetUrl: normalizedTargetUrl, updatedAt });
-  return { ...qrCode, targetUrl: normalizedTargetUrl, updatedAt };
+  // Preserve the photo: switching back to it does not require re-uploading.
+  const updates = {
+    destinationType: "link",
+    linkUrl: normalizedTargetUrl,
+    targetUrl: normalizedTargetUrl,
+    updatedAt,
+  };
+  await qrRef.update(updates);
+  return { ...qrCode, ...updates };
 }
 
 
