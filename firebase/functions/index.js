@@ -88,10 +88,6 @@ exports.redirectQr = onRequest(
       if (!doc) return res.status(404).send("QR not found");
       const qr = doc.data();
 
-      if (qr.status === "returned") {
-        return res.status(404).send("QR not available");
-      }
-
       if (isActivePhoto(qr)) {
         // One increment per page scan; the image itself is not counted again.
         if (req.method === "GET") {
