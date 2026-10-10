@@ -3,7 +3,6 @@ import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
 import { normalizeUrlOrThrow } from "../utils/validators.js";
-import { qrPhotoViewerUrl } from "./qr-photo.service.js";
 
 import QRCode from "qrcode";
 
@@ -62,11 +61,11 @@ export async function activateQrPhotoForUser({ userId, qrId }) {
     const qr = snap.data();
     if (qr.userId !== userId) throw new ApiError(403, "You do not have access to this QR code");
     if (!qr.photo?.storagePath) throw new ApiError(400, "Upload a photo first");
-    const publicId = qr.shortId || snap.id;
     const updatedAt = nowIso();
     const updates = {
       destinationType: "photo",
-      targetUrl: qrPhotoViewerUrl(publicId),
+      // Preserve the last working link for the legacy redirect function.
+      targetUrl: qr.linkUrl || (qr.destinationType !== "photo" ? qr.targetUrl : "") || "https://skanare.com",
       updatedAt,
     };
     tx.update(ref, updates);
