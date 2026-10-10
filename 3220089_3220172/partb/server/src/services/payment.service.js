@@ -1747,6 +1747,10 @@ export async function markOrderPaidFromVivaWebhook(payload) {
               item.qrDestination ||
               "https://skanare.com",
 
+            linkUrl: item.qrDestination || "https://skanare.com",
+            destinationType: "link",
+            photo: null,
+
             fulfillmentMode:
               "preprinted",
 
@@ -1828,6 +1832,10 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           targetUrl:
             item.qrDestination ||
             "https://skanare.com",
+
+            linkUrl: item.qrDestination || "https://skanare.com",
+            destinationType: "link",
+            photo: null,
 
           qrConfig:
             assignment.qrConfig,
