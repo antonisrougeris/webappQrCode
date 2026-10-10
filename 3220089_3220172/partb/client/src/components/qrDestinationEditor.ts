@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../services/api";
+import { firebaseAuth } from "../services/firebase";
 import { activateQrPhoto, uploadQrPhoto, type QrCode } from "../services/qr";
 import { translatePhrase } from "../i18n/locale";
 
@@ -17,7 +18,6 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     const label = card.querySelector<HTMLLabelElement>("[data-qr-destination-label]");
     if (!linkRow || !linkInput) continue;
 
-    const publicId = qr.shortId || qr.id;
     const active = qr.destinationType === "photo" ? "photo" : "link";
 
     const wrapper = document.createElement("div");
@@ -52,19 +52,48 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     const reuseButton = wrapper.querySelector<HTMLButtonElement>("[data-qr-reuse-photo]")!;
     const note = wrapper.querySelector<HTMLElement>(".qr-destination-picker__note")!;
     let hasPhoto = Boolean(qr.photo?.storagePath);
-    const photoUrl = () => `${API_BASE_URL}/qr-photo/image/${encodeURIComponent(publicId)}`;
+    let currentPreviewUrl: string | null = null;
+    let previewVersion = 0;
 
-    function updatePreview(): void {
+    async function updatePreview(): Promise<void> {
+      const version = ++previewVersion;
       preview.replaceChildren();
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+        currentPreviewUrl = null;
+      }
       if (!hasPhoto) {
         preview.textContent = say("No photo uploaded yet.");
         return;
       }
-      const img = document.createElement("img");
-      img.src = photoUrl();
-      img.alt = say("Current QR photo");
-      img.loading = "lazy";
-      preview.appendChild(img);
+      preview.textContent = say("Loading photo…");
+      try {
+        await firebaseAuth.authStateReady();
+        const token = await firebaseAuth.currentUser?.getIdToken();
+        if (!token) throw new Error(say("Sign in to preview your photo."));
+        const response = await fetch(
+          `${API_BASE_URL}/qr-photo/preview/${encodeURIComponent(qr.id)}`,
+          {
+            credentials: "include",
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          }
+        );
+        if (!response.ok) throw new Error(say("Could not load photo preview."));
+        const blob = await response.blob();
+        if (version !== previewVersion) return;
+        const url = URL.createObjectURL(blob);
+        currentPreviewUrl = url;
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = say("Current QR photo");
+        preview.replaceChildren(img);
+      } catch (error) {
+        if (version !== previewVersion) return;
+        preview.textContent = error instanceof Error
+          ? error.message
+          : say("Could not load photo preview.");
+      }
     }
 
     function switchMode(mode: "link" | "photo"): void {
