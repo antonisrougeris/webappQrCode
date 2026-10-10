@@ -186,7 +186,7 @@ function localizeLinks(html) {
 }
 
 const SHARED_CSS_VERSION =
-  "2.9-i18n-fixes";
+  "20261010-qr-ui-2";
 
 function refreshSharedCssVersion(html) {
   return html.replace(
