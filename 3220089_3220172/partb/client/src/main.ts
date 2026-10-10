@@ -273,6 +273,12 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
 
       try {
         await updateQrCode(qrId, targetUrl);
+        const current = qrCodes.find((item) => item.id === qrId);
+        if (current) {
+          current.destinationType = "link";
+          current.linkUrl = targetUrl;
+          current.targetUrl = targetUrl;
+        }
         button.textContent = "Saved";
 
         setTimeout(() => {
