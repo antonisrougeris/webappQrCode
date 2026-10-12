@@ -64,7 +64,7 @@ test("color preview uses colorOptions first picture, retains fallback", () => {
 });
 test("Crisp widget is raised for mobile product pages only", () => {
   assert.match(css, /body:has\(\.product-page\) #crisp-chatbox/);
-  assert.match(css, /bottom: calc\(112px/);
+  assert.match(css, /bottom: calc\(185px/);
 });
 
 test("product page removes unwanted guarantee and duplicate accordions everywhere", () => {
@@ -98,7 +98,7 @@ test("the product page alone uses euro-first price formatting", () => {
 test("mobile variant section has no duplicate rules and the color label starts on the left", () => {
   assert.match(css, /\.product-info \.variant-controls \{\s*grid-area: variants;[\s\S]*?padding-top: 0;\s*border-top: 0;/);
   assert.match(css, /#productColorRow \{\s*width: 100%;\s*margin: 0;\s*padding: 0;\s*border: 0;/);
-  assert.match(css, /#productColorRow \.product-color-row__heading \{[\s\S]*?justify-content: flex-start;/);
+  assert.match(css, /#productColorRow \.product-color-row__heading \{\s*display: block !important;/);
 });
 
 test("mobile delivery promise sits above Size / Add to cart, without duplicating it in-page", () => {
@@ -109,6 +109,22 @@ test("mobile delivery promise sits above Size / Add to cart, without duplicating
   assert.ok(delivery >= 0 && controls > delivery);
   assert.match(bar, /At your door in <strong>2–5 business days<\/strong>/);
   assert.match(css, /\.product-info \.delivery-info \{ display: none !important; \}/);
-  assert.match(css, /\.mobile-purchase-bar__delivery \{\s*display: flex;/);
+  assert.match(css, /\.mobile-purchase-bar__delivery \{\s*box-sizing: border-box;\s*display: flex;/);
   assert.match(css, /padding: 0 0 calc\(130px/);
+});
+
+test("delivery text stays aligned only with the Add to cart column", () => {
+  assert.match(css, /width: calc\(100% - 103px\)/);
+  assert.match(css, /margin: 0 0 7px 103px/);
+  assert.match(css, /:has\(\.mobile-purchase-bar__size\[hidden\]\) \.mobile-purchase-bar__delivery/);
+  assert.match(css, /white-space: normal/);
+});
+test("color label is block-aligned to the left rather than column-flex centered", () => {
+  assert.match(css, /#productColorRow \.product-color-row__heading \{\s*display: block !important;/);
+  assert.match(css, /#productColorRow \.product-color-row__heading > span \{\s*display: block;/);
+  assert.match(css, /text-align: left !important;/);
+});
+test("Crisp has extra height clearance only on mobile product pages", () => {
+  assert.match(css, /body:has\(\.product-page\) \.crisp-client \.cc-tlyw:not/);
+  assert.match(css, /bottom: calc\(185px \+ env\(safe-area-inset-bottom/);
 });
