@@ -612,6 +612,91 @@ function removeReviewQueryParams(): void {
   );
 }
 
+/**
+ * Mobile-only purchase UI. We forward the action to the original button,
+ * keeping its inventory, size selection, QR and cart-drawer logic authoritative.
+ */
+function setupMobileProductPurchase(product: Product, originalButton: HTMLButtonElement | null): void {
+  const bar = document.getElementById("mobilePurchaseBar");
+  const barButton = document.getElementById("mobileAddToCartBtn") as HTMLButtonElement | null;
+  const sizeWrap = document.getElementById("mobileSizeWrap") as HTMLElement | null;
+  const sizeSelect = document.getElementById("mobileSizeSelect") as HTMLSelectElement | null;
+  const sizeOptions = document.getElementById("sizeOptions");
+  const productPrice = document.getElementById("productPrice");
+  if (!bar || !barButton || !originalButton) return;
+  const buyButton = barButton;
+  const mainCartButton = originalButton;
+
+  const currentPrice = productPrice?.querySelector(".product-price__current")?.textContent?.trim()
+    || productPrice?.textContent?.trim() || "";
+  const title = product.title || "SKANARE";
+  for (const id of ["mobileHeroTitle", "mobileBarTitle"]) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = title;
+  }
+  for (const id of ["mobileHeroPrice", "mobileBarPrice"]) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = currentPrice;
+  }
+
+  function syncPurchaseState(): void {
+    buyButton.disabled = mainCartButton.disabled;
+    const originalLabel = mainCartButton.textContent?.trim();
+    const label = buyButton.querySelector<HTMLElement>("[data-mobile-buy-label]");
+    if (label) label.textContent = originalLabel || "Add to cart";
+  }
+
+  // The actual size controls are the source of truth for stock and selected size.
+  function syncSizeOptions(): void {
+    if (!sizeSelect || !sizeWrap) return;
+    const buttons = Array.from(
+      sizeOptions?.querySelectorAll<HTMLButtonElement>("button[data-size]") || []
+    );
+    if (!buttons.length || sizeOptions?.hasAttribute("hidden")) {
+      sizeWrap.hidden = true;
+      return;
+    }
+    sizeWrap.hidden = false;
+    const selected = buttons.find((button) => button.classList.contains("active"))?.dataset.size || "";
+    sizeSelect.replaceChildren(new Option("Size", ""));
+    for (const button of buttons) {
+      const size = button.dataset.size || "";
+      const option = new Option(size, size);
+      option.disabled = button.disabled;
+      sizeSelect.add(option);
+    }
+    sizeSelect.value = selected;
+  }
+
+  sizeSelect?.addEventListener("change", () => {
+    const value = sizeSelect.value;
+    const candidate = Array.from(
+      sizeOptions?.querySelectorAll<HTMLButtonElement>("button[data-size]") || []
+    ).find((button) => button.dataset.size === value && !button.disabled);
+    candidate?.click();
+    syncPurchaseState();
+  });
+
+  sizeOptions?.addEventListener("click", () => {
+    // Wait for the existing size selection handler to update its state.
+    queueMicrotask(() => { syncSizeOptions(); syncPurchaseState(); });
+  });
+  const colorOptions = document.getElementById("productColorOptions");
+  colorOptions?.addEventListener("click", () => {
+    queueMicrotask(() => { syncSizeOptions(); syncPurchaseState(); });
+  });
+  buyButton.addEventListener("click", () => {
+    if (!mainCartButton.disabled) mainCartButton.click();
+  });
+
+  const observer = new MutationObserver(() => syncPurchaseState());
+  observer.observe(mainCartButton, { attributes: true, attributeFilter: ["disabled"], childList: true, characterData: true, subtree: true });
+
+  bar.hidden = false;
+  syncSizeOptions();
+  syncPurchaseState();
+}
+
 async function initProductDetailsPage(): Promise<void> {
   removeReviewQueryParams();
   
@@ -834,6 +919,8 @@ const setMainImage = (src: string): void => {
 
   imageEl.src = src;
   imageEl.alt = product.title;
+  const mobileCount = document.getElementById("mobileGalleryCount");
+  if (mobileCount) mobileCount.textContent = `${currentImageIndex + 1} / ${productImages.length}`;
   imageEl.hidden = false;
 
   /* Reset zoom when changing image */
@@ -973,6 +1060,25 @@ productImages = unique(
   }
 }
 renderProductThumbnails();
+
+// Horizontal gestures browse photos on touch devices; vertical swipes still scroll.
+if (imageStage) {
+  let touchX = 0;
+  let touchY = 0;
+  imageStage.addEventListener("touchstart", (event: TouchEvent) => {
+    if (event.touches.length !== 1) return;
+    touchX = event.touches[0].clientX;
+    touchY = event.touches[0].clientY;
+  }, { passive: true });
+  imageStage.addEventListener("touchend", (event: TouchEvent) => {
+    if (productImages.length <= 1 || event.changedTouches.length !== 1) return;
+    const dx = event.changedTouches[0].clientX - touchX;
+    const dy = event.changedTouches[0].clientY - touchY;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+    if (dx < 0) showNextImage();
+    else showPreviousImage();
+  }, { passive: true });
+}
 thumbnailsEl?.addEventListener("click", event => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-image-index]");
   if (!button) return;
@@ -1190,6 +1296,7 @@ if (imageStage) {
 
     setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
+    setupMobileProductPurchase(product, addBtn);
     selectedVariantStock = 0;
     updateQuantity();
 
