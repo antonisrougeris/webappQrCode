@@ -345,6 +345,11 @@ export function identifyBoxNowWebhookEnvironment({ rawBody, signature }) {
 
 const BOXNOW_STAGE_COLLECTION = "boxnow_stage_webhook_events";
 
+// Strictly accept 10-digit BOX NOW IDs, including the staging test parcel.
+export function isValidBoxNowStageParcelId(value) {
+  return /^[0-9]{10}$/.test(String(value || ""));
+}
+
 /*
  * Diagnostic-only staging inbox, without customer PII.
  * Staging events never touch the production orders collection.
@@ -352,7 +357,7 @@ const BOXNOW_STAGE_COLLECTION = "boxnow_stage_webhook_events";
 async function recordBoxNowStageEvent({
   parcelId, orderNumber, event, eventTime, messageId, receivedAt,
 }) {
-  if (!/^\\d{10}$/.test(parcelId)) {
+  if (!isValidBoxNowStageParcelId(parcelId)) {
     throw new ApiError(400, "Invalid BOX NOW staging parcel ID");
   }
   const db = getDB();
@@ -388,7 +393,7 @@ async function recordBoxNowStageEvent({
 
 export async function getBoxNowStageParcel(parcelId) {
   const id = String(parcelId || "").trim();
-  if (!/^\\d{10}$/.test(id)) throw new ApiError(400, "Invalid BOX NOW parcel ID");
+  if (!isValidBoxNowStageParcelId(id)) throw new ApiError(400, "Invalid BOX NOW parcel ID");
   const snap = await getDB().collection(BOXNOW_STAGE_COLLECTION).doc(id).get();
   return snap.exists ? { id: snap.id, ...snap.data() } : null;
 }

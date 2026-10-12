@@ -5,6 +5,7 @@ import {
   extractRawDataObject,
   verifyBoxNowSignature,
   identifyBoxNowWebhookEnvironment,
+  isValidBoxNowStageParcelId,
   shouldIgnoreBoxNowEvent,
 } from "../src/services/boxnow-webhook.service.js";
 
@@ -214,4 +215,12 @@ test("rejects invalid signature even when two environment keys are configured", 
     if (beforeStage === undefined) delete process.env.BOXNOW_STAGE_WEBHOOK_SECRET;
     else process.env.BOXNOW_STAGE_WEBHOOK_SECRET = beforeStage;
   }
+});
+
+test("staging parcel ID validation accepts BOX NOW 10-digit tracking IDs", () => {
+  assert.equal(isValidBoxNowStageParcelId("6423451087"), true);
+  assert.equal(isValidBoxNowStageParcelId("9999999999"), true);
+  assert.equal(isValidBoxNowStageParcelId("642345108"), false);
+  assert.equal(isValidBoxNowStageParcelId("64234510878"), false);
+  assert.equal(isValidBoxNowStageParcelId("642345108x"), false);
 });
