@@ -165,7 +165,7 @@
     </div>
     <div class="mobile-product-hero__bottom" aria-hidden="true">
       <span class="mobile-product-hero__tag">WEAR IT. SCAN IT. CHANGE IT.</span>
-      <h2 id="mobileHeroTitle"></h2>
+      <h1 id="mobileHeroTitle"></h1>
       <p id="mobileHeroPrice" class="mobile-product-hero__price"></p>
     </div>
 
@@ -426,21 +426,23 @@
 
 </article>
 
-    <!-- Mobile-only fixed shopping controls. Actual checkout logic stays in the existing add-to-cart button. -->
+    <!-- One mobile purchase action, backed by the existing cart/variant logic. -->
     <aside id="mobilePurchaseBar" class="mobile-purchase-bar" aria-label="Quick purchase" hidden>
-      <div class="mobile-purchase-bar__summary">
-        <span id="mobileBarTitle" class="mobile-purchase-bar__title"></span>
-        <strong id="mobileBarPrice" class="mobile-purchase-bar__price"></strong>
-      </div>
       <div class="mobile-purchase-bar__controls">
-        <label id="mobileSizeWrap" class="mobile-purchase-bar__size" hidden>
-          <span class="sr-only">Select size</span>
-          <select id="mobileSizeSelect" aria-label="Select a size">
-            <option value="">Size</option>
-          </select>
-        </label>
+        <div id="mobileSizeWrap" class="mobile-purchase-bar__size" hidden>
+          <button id="mobileSizeTrigger" class="mobile-purchase-bar__size-trigger" type="button"
+            aria-label="Choose size" aria-haspopup="listbox" aria-controls="mobileSizeMenu" aria-expanded="false">
+            <span id="mobileSizeValue">Size</span>
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div id="mobileSizeMenu" class="mobile-purchase-bar__size-menu"
+            role="listbox" aria-label="Choose size" hidden></div>
+        </div>
         <button id="mobileAddToCartBtn" class="mobile-purchase-bar__cta" type="button" disabled>
-          <span data-mobile-buy-label>Add to cart</span> <span aria-hidden="true">↗</span>
+          <span data-mobile-buy-label>Add to cart</span>
         </button>
       </div>
     </aside>

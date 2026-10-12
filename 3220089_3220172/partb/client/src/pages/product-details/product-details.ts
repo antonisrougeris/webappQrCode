@@ -613,84 +613,147 @@ function removeReviewQueryParams(): void {
 }
 
 /**
- * Mobile-only purchase UI. We forward the action to the original button,
- * keeping its inventory, size selection, QR and cart-drawer logic authoritative.
+ * One mobile purchase bar. Native size chips remain the source of truth for
+ * stock, chosen variant, quantity and the actual add-to-cart operation.
  */
 function setupMobileProductPurchase(product: Product, originalButton: HTMLButtonElement | null): void {
   const bar = document.getElementById("mobilePurchaseBar");
-  const barButton = document.getElementById("mobileAddToCartBtn") as HTMLButtonElement | null;
+  const buyButton = document.getElementById("mobileAddToCartBtn") as HTMLButtonElement | null;
   const sizeWrap = document.getElementById("mobileSizeWrap") as HTMLElement | null;
-  const sizeSelect = document.getElementById("mobileSizeSelect") as HTMLSelectElement | null;
+  const sizeTrigger = document.getElementById("mobileSizeTrigger") as HTMLButtonElement | null;
+  const sizeValue = document.getElementById("mobileSizeValue");
+  const sizeMenu = document.getElementById("mobileSizeMenu") as HTMLElement | null;
   const sizeOptions = document.getElementById("sizeOptions");
-  const productPrice = document.getElementById("productPrice");
-  if (!bar || !barButton || !originalButton) return;
-  const buyButton = barButton;
-  const mainCartButton = originalButton;
+  if (!bar || !buyButton || !originalButton || !sizeWrap || !sizeTrigger || !sizeMenu) return;
 
-  const currentPrice = productPrice?.querySelector(".product-price__current")?.textContent?.trim()
-    || productPrice?.textContent?.trim() || "";
-  const title = product.title || "SKANARE";
-  for (const id of ["mobileHeroTitle", "mobileBarTitle"]) {
-    const element = document.getElementById(id);
-    if (element) element.textContent = title;
+  const mainCartButton = originalButton;
+  const placeholder = locale === "el" ? "Μέγεθος" : "Size";
+  const productPrice = document.getElementById("productPrice");
+  const heroTitle = document.getElementById("mobileHeroTitle");
+  const heroPrice = document.getElementById("mobileHeroPrice");
+  if (heroTitle) heroTitle.textContent = product.title || "SKANARE";
+  if (heroPrice) {
+    heroPrice.textContent =
+      productPrice?.querySelector(".product-price__current")?.textContent?.trim() ||
+      productPrice?.textContent?.trim() || formatPrice(product.price);
   }
-  for (const id of ["mobileHeroPrice", "mobileBarPrice"]) {
-    const element = document.getElementById(id);
-    if (element) element.textContent = currentPrice;
+
+  const currentButtons = (): HTMLButtonElement[] =>
+    Array.from(sizeOptions?.querySelectorAll<HTMLButtonElement>("button[data-size]") || []);
+  const selectedSize = (): string =>
+    currentButtons().find(button => button.classList.contains("active"))?.dataset.size || "";
+
+  function closeSizeMenu(restoreFocus = false): void {
+    sizeMenu!.hidden = true;
+    sizeTrigger!.setAttribute("aria-expanded", "false");
+    if (restoreFocus) sizeTrigger!.focus();
+  }
+
+  function openSizeMenu(): void {
+    if (sizeWrap!.hidden) return;
+    sizeMenu!.hidden = false;
+    sizeTrigger!.setAttribute("aria-expanded", "true");
+    const options = Array.from(sizeMenu!.querySelectorAll<HTMLButtonElement>("[role='option']:not(:disabled)"));
+    (options.find(option => option.getAttribute("aria-selected") === "true") || options[0])?.focus();
+  }
+
+  function syncSizeOptions(): void {
+    const buttons = currentButtons();
+    if (!buttons.length || sizeOptions?.hidden) {
+      sizeWrap!.hidden = true;
+      closeSizeMenu();
+      return;
+    }
+    sizeWrap!.hidden = false;
+    const chosen = selectedSize();
+    if (sizeValue) sizeValue.textContent = chosen || placeholder;
+    sizeTrigger!.setAttribute("aria-label",
+      chosen ? (locale === "el" ? "Μέγεθος " : "Size ") + chosen
+             : (locale === "el" ? "Επιλογή μεγέθους" : "Choose size"));
+
+    const entries = buttons.map(button => {
+      const size = button.dataset.size || "";
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "mobile-purchase-bar__size-option";
+      item.dataset.mobileSize = size;
+      item.setAttribute("role", "option");
+      item.setAttribute("aria-selected", String(chosen === size));
+      item.setAttribute("aria-disabled", String(button.disabled));
+      item.tabIndex = -1;
+      item.textContent = size;
+      item.disabled = button.disabled;
+      if (chosen === size) item.classList.add("is-selected");
+      return item;
+    });
+    sizeMenu!.replaceChildren(...entries);
   }
 
   function syncPurchaseState(): void {
-    buyButton.disabled = mainCartButton.disabled;
-    const originalLabel = mainCartButton.textContent?.trim();
-    const label = buyButton.querySelector<HTMLElement>("[data-mobile-buy-label]");
-    if (label) label.textContent = originalLabel || "Add to cart";
+    buyButton!.disabled = mainCartButton.disabled;
+    const label = buyButton!.querySelector<HTMLElement>("[data-mobile-buy-label]");
+    if (label) label.textContent = mainCartButton.textContent?.trim() ||
+      t("product.addToCart", "Add to cart");
   }
 
-  // The actual size controls are the source of truth for stock and selected size.
-  function syncSizeOptions(): void {
-    if (!sizeSelect || !sizeWrap) return;
-    const buttons = Array.from(
-      sizeOptions?.querySelectorAll<HTMLButtonElement>("button[data-size]") || []
-    );
-    if (!buttons.length || sizeOptions?.hasAttribute("hidden")) {
-      sizeWrap.hidden = true;
-      return;
-    }
-    sizeWrap.hidden = false;
-    const selected = buttons.find((button) => button.classList.contains("active"))?.dataset.size || "";
-    sizeSelect.replaceChildren(new Option("Size", ""));
-    for (const button of buttons) {
-      const size = button.dataset.size || "";
-      const option = new Option(size, size);
-      option.disabled = button.disabled;
-      sizeSelect.add(option);
-    }
-    sizeSelect.value = selected;
-  }
-
-  sizeSelect?.addEventListener("change", () => {
-    const value = sizeSelect.value;
-    const candidate = Array.from(
-      sizeOptions?.querySelectorAll<HTMLButtonElement>("button[data-size]") || []
-    ).find((button) => button.dataset.size === value && !button.disabled);
-    candidate?.click();
+  sizeTrigger.addEventListener("click", () => {
+    if (sizeMenu.hidden) openSizeMenu();
+    else closeSizeMenu(true);
+  });
+  sizeMenu.addEventListener("click", event => {
+    const option = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-mobile-size]");
+    if (!option || option.disabled) return;
+    const original = currentButtons().find(button =>
+      button.dataset.size === option.dataset.mobileSize && !button.disabled);
+    if (!original) return;
+    original.click();
+    closeSizeMenu(true);
+    syncSizeOptions();
     syncPurchaseState();
   });
+  sizeMenu.addEventListener("keydown", event => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp" &&
+        event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    const options = Array.from(sizeMenu.querySelectorAll<HTMLButtonElement>("[role='option']:not(:disabled)"));
+    const index = options.indexOf(document.activeElement as HTMLButtonElement);
+    const target = event.key === "Home" ? 0 :
+      event.key === "End" ? options.length - 1 :
+      (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+    options[target]?.focus();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !sizeMenu.hidden) {
+      event.preventDefault();
+      closeSizeMenu(true);
+    }
+  });
+  document.addEventListener("pointerdown", event => {
+    if (!sizeWrap.contains(event.target as Node) && !sizeMenu.hidden) closeSizeMenu();
+  });
 
-  sizeOptions?.addEventListener("click", () => {
-    // Wait for the existing size selection handler to update its state.
-    queueMicrotask(() => { syncSizeOptions(); syncPurchaseState(); });
-  });
-  const colorOptions = document.getElementById("productColorOptions");
-  colorOptions?.addEventListener("click", () => {
-    queueMicrotask(() => { syncSizeOptions(); syncPurchaseState(); });
-  });
   buyButton.addEventListener("click", () => {
-    if (!mainCartButton.disabled) mainCartButton.click();
+    // A size is mandatory for clothing: open this dropdown, never scroll to hidden chips.
+    if (!sizeWrap.hidden && !selectedSize()) {
+      openSizeMenu();
+      return;
+    }
+    if (!mainCartButton.disabled) {
+      closeSizeMenu();
+      mainCartButton.click();
+    }
   });
 
-  const observer = new MutationObserver(() => syncPurchaseState());
-  observer.observe(mainCartButton, { attributes: true, attributeFilter: ["disabled"], childList: true, characterData: true, subtree: true });
+  // Original variant rendering also runs when changing color. Keep menu and
+  // selection in sync, including newly unavailable sizes.
+  if (sizeOptions) {
+    new MutationObserver(syncSizeOptions).observe(sizeOptions, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ["disabled", "class", "hidden"]
+    });
+  }
+  new MutationObserver(syncPurchaseState).observe(mainCartButton, {
+    attributes: true, attributeFilter: ["disabled"], childList: true, characterData: true, subtree: true
+  });
 
   bar.hidden = false;
   syncSizeOptions();
@@ -1303,7 +1366,9 @@ if (imageStage) {
     await renderRelatedProducts(product);
 
     if (addBtn) {
-      addBtn.disabled = !isInStock(product, getSelectedVariant());
+      // setupVariantControls already calculated availability for the selected color.
+      // Do not overwrite it with product-wide stock on products with variants.
+      if (!(product.variants || []).length) addBtn.disabled = !isInStock(product);
 
       addBtn.addEventListener("click", async () => {
         const selectedVariant =
