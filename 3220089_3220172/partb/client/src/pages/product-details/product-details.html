@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="/assets/css/theme.css" />
   <link rel="stylesheet" href="/assets/css/layout.css" />
   <link rel="stylesheet" href="/assets/css/components.css?v=2.2-colors" />
+  <link rel="stylesheet" href="/assets/css/product-mobile-immersive.css?v=20261012-mobile-1" />
   <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="5001afeb-b9df-4288-92c2-6febe12a2a03";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
 <meta
   name="description"
@@ -156,6 +157,16 @@
       aria-hidden="true"
     >
       ⌕ Zoom
+    </div>
+    <!-- Mobile-only immersive hero details; desktop gallery is unchanged. -->
+    <div class="mobile-product-hero__top" aria-hidden="true">
+      <span>SKANARE <span class="mobile-product-hero__top-divider">/</span> QR EDITION</span>
+      <span id="mobileGalleryCount" class="mobile-product-hero__count">1 / 1</span>
+    </div>
+    <div class="mobile-product-hero__bottom" aria-hidden="true">
+      <span class="mobile-product-hero__tag">WEAR IT. SCAN IT. CHANGE IT.</span>
+      <h2 id="mobileHeroTitle"></h2>
+      <p id="mobileHeroPrice" class="mobile-product-hero__price"></p>
     </div>
 
   </div>
@@ -415,6 +426,24 @@
 
 </article>
 
+    <!-- Mobile-only fixed shopping controls. Actual checkout logic stays in the existing add-to-cart button. -->
+    <aside id="mobilePurchaseBar" class="mobile-purchase-bar" aria-label="Quick purchase" hidden>
+      <div class="mobile-purchase-bar__summary">
+        <span id="mobileBarTitle" class="mobile-purchase-bar__title"></span>
+        <strong id="mobileBarPrice" class="mobile-purchase-bar__price"></strong>
+      </div>
+      <div class="mobile-purchase-bar__controls">
+        <label id="mobileSizeWrap" class="mobile-purchase-bar__size" hidden>
+          <span class="sr-only">Select size</span>
+          <select id="mobileSizeSelect" aria-label="Select a size">
+            <option value="">Size</option>
+          </select>
+        </label>
+        <button id="mobileAddToCartBtn" class="mobile-purchase-bar__cta" type="button" disabled>
+          Add to cart <span aria-hidden="true">↗</span>
+        </button>
+      </div>
+    </aside>
 
     <section class="you-may-like">
   <div class="section-head">
