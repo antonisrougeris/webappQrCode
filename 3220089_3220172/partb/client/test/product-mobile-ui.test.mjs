@@ -26,7 +26,7 @@ test("shorter, clean gallery with real Size guide modal action", () => {
 });
 
 test("sale pricing aligns current price with title and puts old price beside reviews", () => {
-  assert.match(css, /"rating original"\s*"title price"\s*"meta meta"/);
+  assert.match(css, /"rating original"\s*"title price"\s*"meta price"/);
   assert.match(css, /#productTitle\s*\{\s*display: block !important/);
   assert.match(css, /\.product-price-area\s*\{\s*display: flex !important/);
   assert.match(html, /id="mobileReviewOldPrice"/);
@@ -38,7 +38,7 @@ test("sale pricing aligns current price with title and puts old price beside rev
   assert.match(html, /id="mobileGallerySave"/);
 });
 
-test("desktop stays unchanged, original mobile size chips remain hidden", () => {
+test("desktop gallery remains intact and mobile size chips stay hidden", () => {
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.match(css, /@media \(min-width: 601px\)/);
   assert.match(css, /#sizeOptions,[\s\S]*?#productStock\s*\{\s*display: none !important/);
@@ -65,4 +65,32 @@ test("color preview uses colorOptions first picture, retains fallback", () => {
 test("Crisp widget is raised for mobile product pages only", () => {
   assert.match(css, /body:has\(\.product-page\) #crisp-chatbox/);
   assert.match(css, /bottom: calc\(82px/);
+});
+
+test("product page removes unwanted guarantee and duplicate accordions everywhere", () => {
+  assert.doesNotMatch(html, /QR guarantee|Active QR guaranteed/);
+  assert.doesNotMatch(html, /class="product-extra-info"|<summary>\s*Product details|<summary>\s*Shipping & returns/);
+  assert.match(html, /Free shipping/);
+  assert.match(html, /Easy returns/);
+});
+test("desktop and mobile both use compact color photo swatches", () => {
+  const firstMedia = css.indexOf("@media (max-width: 600px)");
+  const sharedRules = css.slice(0, firstMedia);
+  assert.match(sharedRules, /#productColorOptions \.product-color-swatch__preview/);
+  assert.match(sharedRules, /max-width: 82px/);
+  assert.match(sharedRules, /object-fit: cover/);
+  assert.doesNotMatch(css, /\/\* Color images come from colorOptions/);
+});
+test("mobile subtitle follows H1 and price is aligned to the edge", () => {
+  assert.match(css, /"title price"\s*"meta price"/);
+  assert.match(css, /grid-template-columns: minmax\(0, 1fr\) max-content/);
+  assert.match(css, /padding: 16px 12px 24px 14px !important/);
+  assert.match(css, /margin: 2px 0 10px/);
+});
+test("the product page alone uses euro-first price formatting", () => {
+  assert.match(ts, /function formatProductPrice\(value: number\)/);
+  assert.match(ts, /formatProductPrice\(product\.price\)/);
+  assert.match(ts, /formatProductPrice\(originalPrice\)/);
+  assert.match(ts, /reviewOldPrice\.textContent = onSale \? formatProductPrice/);
+  assert.match(ts, /function formatPrice\(value: number\)/);
 });

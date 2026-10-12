@@ -5,6 +5,69 @@
 .mobile-review-old-price,
 .mobile-purchase-bar { display: none; }
 
+/* The color gallery is shared by desktop AND mobile. Photos must never inherit
+   their native dimensions: always render compact, consistently sized swatches. */
+.product-page .product-info #productColorOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  align-items: flex-start;
+}
+.product-page .product-info #productColorOptions .product-color-swatch {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 82px;
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+  height: auto;
+  min-height: 111px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 5px 5px 8px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 11px;
+  background: #fff;
+  color: #151515;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: none;
+  overflow: hidden;
+  cursor: pointer;
+}
+.product-page .product-info #productColorOptions .product-color-swatch.is-selected {
+  border-color: #121212;
+  box-shadow: 0 0 0 1px #121212;
+}
+.product-page .product-info #productColorOptions .product-color-swatch__preview {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: 86px;
+  min-height: 0;
+  border-radius: 6px;
+  object-fit: cover;
+  object-position: center;
+  background: #f3f3f3;
+}
+.product-page .product-info #productColorOptions .product-color-swatch:has(.product-color-swatch__preview)
+.product-color-swatch__dot { display: none; }
+.product-page .product-info #productColorOptions .product-color-swatch:not(:has(.product-color-swatch__preview)) {
+  justify-content: center;
+}
+.product-page .product-info #productColorOptions .product-color-swatch__label {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
 @media (max-width: 600px) {
   body:has(.product-page) { overflow-x: clip; }
 
@@ -124,25 +187,24 @@
   .product-page .product-info {
     display: grid;
     position: static;
-    grid-template-columns: minmax(0, 1fr) minmax(102px, auto);
+    grid-template-columns: minmax(0, 1fr) max-content;
     grid-template-areas:
       "rating original"
       "title price"
-      "meta meta"
+      "meta price"
       "badges badges"
       "variants variants"
       "quantity quantity"
       "qr qr"
       "description description"
       "delivery delivery"
-      "benefits benefits"
-      "extra extra";
+      "benefits benefits";
     align-items: start;
-    column-gap: 12px;
+    column-gap: 6px;
     row-gap: 0;
     width: 100%;
     max-width: none;
-    padding: 18px 17px 28px !important;
+    padding: 16px 12px 24px 14px !important;
     margin: 0;
   }
   .product-page .product-info .product-rating {
@@ -181,9 +243,10 @@
     display: block !important;
     grid-area: meta;
     min-width: 0;
-    margin: 3px 0 10px;
+    margin: 2px 0 10px;
     font-size: 10px;
-    line-height: 1.3;
+    line-height: 1.25;
+    align-self: start;
     color: #6a6a6a;
   }
   .product-page .product-info .product-price-area {
@@ -193,8 +256,10 @@
     align-items: flex-end;
     justify-self: end;
     gap: 4px;
-    min-width: 102px;
-    margin: 0 0 8px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    align-self: start;
     text-align: right;
   }
   .product-page .product-info #productPrice {
@@ -302,7 +367,6 @@
   .product-page .product-info .product-purchase-row { grid-area: quantity; margin: 0 0 15px; }
   .product-page .product-info .delivery-info { grid-area: delivery; margin-bottom: 14px; }
   .product-page .product-info .product-benefits { grid-area: benefits; }
-  .product-page .product-info .product-extra-info { grid-area: extra; }
   .product-page .product-info #productAddToCartBtn { display: none !important; }
   .product-page .you-may-like,
   .product-page .reviews-section,
@@ -360,7 +424,7 @@
   .product-page .product-info #productPrice {
     align-self: start;
     flex-direction: row;
-    padding-top: 2px;
+    padding-top: 0;
   }
   .product-page .product-info #productPrice.is-discounted .product-price__current {
     color: #dc2924;
@@ -374,64 +438,14 @@
     margin-top: 7px;
   }
 
-  /* Color images come from colorOptions[].images[0]; fallback remains a dot. */
+  /* Shared thumbnail sizing above is intentionally used on both screen sizes. */
   .product-page .product-info #productColorRow .product-color-row__heading {
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 7px;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 9px;
   }
-  .product-page .product-info #productColorRow .product-color-row__heading small {
-    display: none;
-  }
-  .product-page .product-info #productColorOptions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  .product-page .product-info #productColorOptions .product-color-swatch {
-    display: flex;
-    flex: 0 0 76px;
-    width: 76px;
-    min-width: 0;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 5px;
-    padding: 4px 4px 7px;
-    border: 1.5px solid #e5e5e5;
-    border-radius: 11px;
-    background: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    box-shadow: none;
-    overflow: hidden;
-  }
-  .product-page .product-info #productColorOptions .product-color-swatch.is-selected {
-    border-color: #121212;
-    box-shadow: 0 0 0 1px #121212;
-  }
-  .product-page .product-info #productColorOptions .product-color-swatch__preview {
-    display: block;
-    width: 100%;
-    height: 78px;
-    border-radius: 6px;
-    object-fit: cover;
-    background: #f3f3f3;
-  }
-  .product-page .product-info #productColorOptions .product-color-swatch:has(.product-color-swatch__preview)
-  .product-color-swatch__dot { display: none; }
-  .product-page .product-info #productColorOptions .product-color-swatch:not(:has(.product-color-swatch__preview)) {
-    justify-content: center;
-    min-height: 104px;
-  }
-  .product-page .product-info #productColorOptions .product-color-swatch__label {
-    text-align: center;
-    line-height: 1.2;
-  }
+  .product-page .product-info #productColorRow .product-color-row__heading small { display: none; }
 
   /* Quantity immediately follows color thumbnails, above the QR destination. */
   .product-page .product-info .product-purchase-row {

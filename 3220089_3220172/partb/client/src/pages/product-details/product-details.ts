@@ -43,6 +43,14 @@ function formatPrice(value: number): string {
   }).format(value || 0);
 }
 
+/** PDP display only: keep cart/checkout currency formatting unchanged. */
+function formatProductPrice(value: number): string {
+  return `€${new Intl.NumberFormat("el-GR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value || 0)}`;
+}
+
 
 
 function openExistingCartDrawer(): void {
@@ -917,15 +925,15 @@ setMetaName("twitter:image", productImage);
 
     if (priceEl) {
       priceEl.innerHTML = onSale
-        ? `<span class="product-price__old">${formatPrice(originalPrice)}</span><span class="product-price__current">${formatPrice(product.price)}</span>`
-        : `<span class="product-price__current">${formatPrice(product.price)}</span>`;
+        ? `<span class="product-price__old">${formatProductPrice(originalPrice)}</span><span class="product-price__current">${formatProductPrice(product.price)}</span>`
+        : `<span class="product-price__current">${formatProductPrice(product.price)}</span>`;
     }
 
     setText(stockEl, isInStock(product) ? "In stock" : "Out of stock");
 
     if (saleBadgeEl && onSale) {
       saleBadgeEl.hidden = false;
-      saleBadgeEl.textContent = `${t("sale.save", "Save")} ${formatPrice(Math.round((originalPrice - product.price) * 100) / 100)}`;
+      saleBadgeEl.textContent = `${t("sale.save", "Save")} ${formatProductPrice(Math.round((originalPrice - product.price) * 100) / 100)}`;
     } else if (saleBadgeEl) {
       saleBadgeEl.hidden = true;
       saleBadgeEl.textContent = "";
@@ -935,7 +943,7 @@ setMetaName("twitter:image", productImage);
     const reviewOldPrice = document.getElementById("mobileReviewOldPrice");
     if (reviewOldPrice) {
       reviewOldPrice.hidden = !onSale;
-      reviewOldPrice.textContent = onSale ? formatPrice(originalPrice) : "";
+      reviewOldPrice.textContent = onSale ? formatProductPrice(originalPrice) : "";
     }
     priceEl?.classList.toggle("is-discounted", onSale);
 
@@ -958,7 +966,7 @@ setMetaName("twitter:image", productImage);
     if (gallerySave) {
       gallerySave.hidden = !onSale;
       gallerySave.textContent = onSale
-        ? `${t("sale.save", "Save")} ${formatPrice(Math.round((originalPrice - product.price) * 100) / 100)}`
+        ? `${t("sale.save", "Save")} ${formatProductPrice(Math.round((originalPrice - product.price) * 100) / 100)}`
         : "";
     }
 
