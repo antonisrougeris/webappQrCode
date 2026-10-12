@@ -2681,7 +2681,7 @@ body.cart-open {
   background: #f3f3f3;
 }
 
-/* Hamburger */
+/* Hamburger: a line icon, consistent with the account/cart icon family. */
 
 .menu-toggle {
   display: none;
@@ -2691,8 +2691,8 @@ body.cart-open {
   width: 42px;
   height: 36px;
   border-radius: 999px;
-  background: #111;
-  color: #fff;
+  background: transparent;
+  color: #111;
   border: 0;
   place-items: center;
   cursor: pointer;
@@ -2720,19 +2720,63 @@ body.cart-open {
     justify-content: initial;
   }
 
+  /* Keep the existing 40×34 hit target and its original grid position.
+     CSS lines replace the ☰ text; the filled circle appears only while open. */
   .menu-toggle {
-    position: static;
+    position: relative;
     display: grid;
     justify-self: start;
     width: 40px;
     height: 34px;
+    padding: 0;
+    background: transparent;
+    color: #111 !important;
+    font-size: 0; /* suppress the old text glyph across static HTML headers */
+    line-height: 0;
+    isolation: isolate;
   }
 
-.menu-toggle {
-  color: #fff !important;
-  font-size: 22px;
-  line-height: 1;
-}
+  .menu-toggle::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 2px;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 -6px 0 currentColor, 0 6px 0 currentColor;
+  }
+
+  .menu-toggle::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    top: 50%;
+    left: 50%;
+    width: 34px;
+    height: 34px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: #111;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .menu-toggle[aria-expanded="true"],
+  html.nav-open .menu-toggle {
+    color: #fff !important;
+  }
+  .menu-toggle[aria-expanded="true"]::after,
+  html.nav-open .menu-toggle::after {
+    opacity: 1;
+  }
+  .menu-toggle:focus-visible {
+    outline: 2px solid #111;
+    outline-offset: 3px;
+  }
 
   .logo {
     position: static;
