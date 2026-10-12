@@ -620,7 +620,7 @@ function removeReviewQueryParams(): void {
  * One mobile purchase bar. Native size chips remain the source of truth for
  * stock, chosen variant, quantity and the actual add-to-cart operation.
  */
-function setupMobileProductPurchase(product: Product, originalButton: HTMLButtonElement | null): void {
+function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): void {
   const bar = document.getElementById("mobilePurchaseBar");
   const buyButton = document.getElementById("mobileAddToCartBtn") as HTMLButtonElement | null;
   const sizeWrap = document.getElementById("mobileSizeWrap") as HTMLElement | null;
@@ -1369,7 +1369,7 @@ if (imageStage) {
 
     setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
-    setupMobileProductPurchase(product, addBtn);
+    setupMobileProductPurchase(addBtn);
     selectedVariantStock = 0;
     updateQuantity();
 
