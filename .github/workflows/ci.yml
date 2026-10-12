@@ -211,7 +211,7 @@ jobs:
             exit 1
           fi
 
-          grep -q 'components.css?v=20261012-product-mobile-4' dist/el/index.html || {
+          grep -q 'components.css?v=20261012-product-mobile-5' dist/el/index.html || {
             echo "ERROR: shared CSS cache-buster was not refreshed"
             exit 1
           }
