@@ -644,6 +644,8 @@ function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): v
   if (!bar || !buyButton || !originalButton || !sizeWrap || !sizeTrigger || !sizeMenu) return;
 
   const mainCartButton = originalButton;
+  // Only a purchase-triggered size selection should auto-add to cart.
+  let addOnSizeSelection = false;
   const placeholder = locale === "el" ? "Μέγεθος" : "Size";
   const currentButtons = (): HTMLButtonElement[] =>
     Array.from(sizeOptions?.querySelectorAll<HTMLButtonElement>("button[data-size]") || []);
@@ -653,6 +655,8 @@ function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): v
   function closeSizeMenu(restoreFocus = false): void {
     sizeMenu!.hidden = true;
     sizeTrigger!.setAttribute("aria-expanded", "false");
+    // Dismissing the picker must discard any pending purchase intent.
+    addOnSizeSelection = false;
     if (restoreFocus) sizeTrigger!.focus();
   }
 
@@ -704,6 +708,8 @@ function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): v
   }
 
   sizeTrigger.addEventListener("click", () => {
+    // A manually opened size menu is never a request to purchase.
+    addOnSizeSelection = false;
     if (sizeMenu.hidden) openSizeMenu();
     else closeSizeMenu(true);
   });
@@ -713,10 +719,16 @@ function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): v
     const original = currentButtons().find(button =>
       button.dataset.size === option.dataset.mobileSize && !button.disabled);
     if (!original) return;
+    const shouldAddToCart = addOnSizeSelection;
     original.click();
     closeSizeMenu(true);
     syncSizeOptions();
     syncPurchaseState();
+    // The native variant handler synchronously updates the selected variant.
+    // Forward the original purchase once, only when Add to cart opened the picker.
+    if (shouldAddToCart && selectedSize() === option.dataset.mobileSize && !mainCartButton.disabled) {
+      mainCartButton.click();
+    }
   });
   sizeMenu.addEventListener("keydown", event => {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp" &&
@@ -742,6 +754,7 @@ function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): v
   buyButton.addEventListener("click", () => {
     // A size is mandatory for clothing: open this dropdown, never scroll to hidden chips.
     if (!sizeWrap.hidden && !selectedSize()) {
+      addOnSizeSelection = true;
       openSizeMenu();
       return;
     }

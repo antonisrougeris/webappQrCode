@@ -20,7 +20,7 @@ test("one mobile purchase row, custom stock-aware size picker and no duplicated 
 test("shorter, clean gallery with real Size guide modal action", () => {
   assert.doesNotMatch(html, /id="mobileHeroTitle"|id="mobileHeroPrice"|mobile-product-hero__bottom/);
   assert.match(html, /id="mobileSizeGuideButton"[\s\S]*?Size guide/);
-  assert.match(css, /height: clamp\(310px, 54svh, 510px\)/);
+  assert.match(css, /height: clamp\(350px, 61svh, 580px\)/);
   assert.match(css, /\.product-main-image::after[\s\S]*?rgba\(0,0,0,\.29\), transparent 23%\)/);
   assert.match(ts, /mobileButton\?\.addEventListener\("click", open\)/);
 });
@@ -127,4 +127,28 @@ test("color label is block-aligned to the left rather than column-flex centered"
 test("Crisp has extra height clearance only on mobile product pages", () => {
   assert.match(css, /body:has\(\.product-page\) \.crisp-client \.cc-tlyw:not/);
   assert.match(css, /bottom: calc\(185px \+ env\(safe-area-inset-bottom/);
+});
+
+
+test("cart-first size selection adds exactly once while manual size selection does not", () => {
+  const addMobile = ts.indexOf("function setupMobileProductPurchase(");
+  const rest = ts.slice(addMobile, ts.indexOf("async function initProductDetailsPage", addMobile));
+  assert.match(rest, /let addOnSizeSelection = false;/);
+  assert.match(rest, /addOnSizeSelection = true;\s*openSizeMenu\(\);/);
+  assert.match(rest, /const shouldAddToCart = addOnSizeSelection;\s*original\.click\(\);/);
+  assert.match(rest, /if \(shouldAddToCart && selectedSize\(\) === option\.dataset\.mobileSize && !mainCartButton\.disabled\) \{\s*mainCartButton\.click\(\);/);
+  assert.match(rest, /function closeSizeMenu\([\s\S]*?addOnSizeSelection = false;/);
+  assert.match(rest, /sizeTrigger\.addEventListener\("click", \(\) => \{[\s\S]*?addOnSizeSelection = false;/);
+  assert.equal((rest.match(/mainCartButton\.click\(\)/g) || []).length, 2);
+});
+test("mobile color heading remains invisible but reserves original swatch position", () => {
+  assert.match(css, /#productColorRow \.product-color-row__heading \{[\s\S]*?visibility: hidden;/);
+  assert.match(css, /margin: 0 0 9px !important;/);
+  assert.match(css, /@media \(min-width: 601px\)/);
+});
+test("mobile trust benefits render as two balanced cards, desktop unchanged", () => {
+  const mobile = css.slice(css.indexOf("@media (max-width: 600px)"), css.indexOf("@media (min-width: 601px)"));
+  assert.match(mobile, /\.product-info \.product-benefits \{\s*grid-area: benefits;\s*display: grid;\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(mobile, /\.product-info \.product-benefit \{[\s\S]*?border-radius: 12px;/);
+  assert.match(mobile, /\.product-info \.product-benefit strong \{[\s\S]*?font-size: 11px;/);
 });
