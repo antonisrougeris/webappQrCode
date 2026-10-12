@@ -12,8 +12,19 @@ export interface Order {
   paymentStatus?: string;
   fulfillmentStatus?: string;
   shipping?: {
+    provider?: string;
+    carrier?: string;
     status?: string;
+    parcelId?: string;
+    trackingNumber?: string;
+    trackingUrl?: string;
     deliveredAt?: string;
+    boxnow?: {
+      parcelIds?: string[];
+      environment?: string;
+      lastEvent?: string;
+      lastEventAt?: string;
+    };
   };
 }
 

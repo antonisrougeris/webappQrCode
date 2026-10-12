@@ -1,0 +1,19 @@
+.account-order__parcel-status {
+  display: block;
+  margin-top: 5px;
+  color: #44443f;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+@media (max-width: 640px) {
+  .account-order__tracking-info {
+    min-width: 0;
+  }
+  .account-order__parcel-status {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}

@@ -1,4 +1,5 @@
 import "./i18n/auto";
+import "./boxnow-tracking.css";
 /* 3220089_3220172 */
 
 import { initNav } from "./components/initNav";
@@ -428,6 +429,32 @@ const CUSTOMER_ORDER_LABELS:
   };
 
 
+const BOXNOW_TRACKING_EVENTS: Record<string, { en: string; el: string }> = {
+  new: { en: "Awaiting collection from the e-shop", el: "Σε αναμονή παραλαβής από το E-shop" },
+  "accepted-to-locker": { en: "Being delivered", el: "Σε διαδικασία παράδοσης" },
+  "in-depot": { en: "Being delivered", el: "Σε διαδικασία παράδοσης" },
+  "accepted-for-return": { en: "Being delivered", el: "Σε διαδικασία παράδοσης" },
+  "final-destination": { en: "Your parcel is at the locker", el: "Το δέμα σας βρίσκεται στη θυρίδα" },
+  delivered: { en: "Your parcel has been delivered", el: "Το δέμα σας παραδόθηκε" },
+  returned: { en: "Parcel has been returned", el: "Το δέμα έχει επιστραφεί" },
+  expired: { en: "Expired return", el: "Η επιστροφή έχει λήξει" },
+  canceled: { en: "Canceled", el: "Ακυρώθηκε" },
+  missing: { en: "Parcel under investigation", el: "Προς εντοπισμό" },
+  lost: { en: "Parcel under investigation", el: "Προς εντοπισμό" },
+};
+
+function getBoxNowTrackingStatus(order: any): string {
+  const greek = document.documentElement.lang.toLowerCase().startsWith("el") ||
+    window.location.pathname.startsWith("/el/");
+  const lang = greek ? "el" : "en";
+  const event = String(
+    order?.shipping?.boxnow?.lastEvent || order?.shipping?.status || ""
+  ).trim().toLowerCase();
+  if (BOXNOW_TRACKING_EVENTS[event]) return BOXNOW_TRACKING_EVENTS[event][lang];
+  // Do not misrepresent a locally-created voucher as a carrier update.
+  return greek ? "Αναμονή ενημέρωσης από BOX NOW" : "Awaiting BOX NOW tracking update";
+}
+
 function getCustomerOrderStatus(
   order: any
 ): string {
@@ -809,16 +836,14 @@ function renderCustomerOrders(
           order?.shipping?.carrier ||
           "BOX NOW";
 
+        const isBoxNow =
+          Boolean(boxNowParcelId) ||
+          order?.shipping?.provider === "boxnow" ||
+          order?.delivery === "boxnow";
 
         const canShowTracking =
-          (
-            status === "shipped" ||
-            status === "completed"
-          ) &&
-          Boolean(
-            trackingNumber ||
-            trackingUrl
-          );
+          Boolean(trackingNumber || trackingUrl) &&
+          (isBoxNow || status === "shipped" || status === "completed");
 
 
         const tracking =
@@ -845,6 +870,12 @@ function renderCustomerOrders(
                       "Shipment available"
                     )}
                   </strong>
+
+                  ${isBoxNow ? `
+                    <span class="account-order__parcel-status" role="status">
+                      ${accountEscapeHtml(getBoxNowTrackingStatus(order))}
+                    </span>
+                  ` : ""}
 
                 </div>
 

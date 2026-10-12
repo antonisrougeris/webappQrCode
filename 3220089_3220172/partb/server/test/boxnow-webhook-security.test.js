@@ -4,6 +4,7 @@ import crypto from "crypto";
 import {
   extractRawDataObject,
   verifyBoxNowSignature,
+  identifyBoxNowWebhookEnvironment,
   shouldIgnoreBoxNowEvent,
 } from "../src/services/boxnow-webhook.service.js";
 
@@ -137,4 +138,80 @@ test("accepts first BOX NOW event when no previous timestamp exists", () => {
     shouldIgnoreBoxNowEvent(null, "2026-10-01T09:00:00.000Z"),
     false
   );
+});
+
+test("identifies a staging-signed BOX NOW v1.5 event without accepting it as production", () => {
+  const beforeMode = process.env.BOXNOW_MODE;
+  const beforeProd = process.env.BOXNOW_WEBHOOK_SECRET;
+  const beforeStage = process.env.BOXNOW_STAGE_WEBHOOK_SECRET;
+  process.env.BOXNOW_MODE = "production";
+  process.env.BOXNOW_WEBHOOK_SECRET = "production-only-secret";
+  process.env.BOXNOW_STAGE_WEBHOOK_SECRET = secret;
+  const data = '{ "parcelId":"6423451087", "event":"delivered", "time":"2026-10-12T18:00:00Z" }';
+  const rawBody = Buffer.from('{"id":"stage-event","datasignature":"", "data":'+data+'}');
+  try {
+    assert.equal(
+      identifyBoxNowWebhookEnvironment({ rawBody, signature: sign(data) }),
+      "stage"
+    );
+    const productionHash = crypto.createHmac("sha256", "production-only-secret")
+      .update(data).digest("hex");
+    assert.equal(
+      identifyBoxNowWebhookEnvironment({ rawBody, signature: productionHash }),
+      "production"
+    );
+  } finally {
+    if (beforeMode === undefined) delete process.env.BOXNOW_MODE;
+    else process.env.BOXNOW_MODE = beforeMode;
+    if (beforeProd === undefined) delete process.env.BOXNOW_WEBHOOK_SECRET;
+    else process.env.BOXNOW_WEBHOOK_SECRET = beforeProd;
+    if (beforeStage === undefined) delete process.env.BOXNOW_STAGE_WEBHOOK_SECRET;
+    else process.env.BOXNOW_STAGE_WEBHOOK_SECRET = beforeStage;
+  }
+});
+
+test("rejects production/staging using the same secret", () => {
+  const beforeProd = process.env.BOXNOW_WEBHOOK_SECRET;
+  const beforeStage = process.env.BOXNOW_STAGE_WEBHOOK_SECRET;
+  process.env.BOXNOW_WEBHOOK_SECRET = secret;
+  process.env.BOXNOW_STAGE_WEBHOOK_SECRET = secret;
+  try {
+    assert.throws(
+      () => identifyBoxNowWebhookEnvironment({
+        rawBody: Buffer.from('{"data":{"event":"delivered"}}'),
+        signature: "0".repeat(64),
+      }),
+      /must be different/
+    );
+  } finally {
+    if (beforeProd === undefined) delete process.env.BOXNOW_WEBHOOK_SECRET;
+    else process.env.BOXNOW_WEBHOOK_SECRET = beforeProd;
+    if (beforeStage === undefined) delete process.env.BOXNOW_STAGE_WEBHOOK_SECRET;
+    else process.env.BOXNOW_STAGE_WEBHOOK_SECRET = beforeStage;
+  }
+});
+
+test("rejects invalid signature even when two environment keys are configured", () => {
+  const beforeMode = process.env.BOXNOW_MODE;
+  const beforeProd = process.env.BOXNOW_WEBHOOK_SECRET;
+  const beforeStage = process.env.BOXNOW_STAGE_WEBHOOK_SECRET;
+  process.env.BOXNOW_MODE = "production";
+  process.env.BOXNOW_WEBHOOK_SECRET = "different-production-secret";
+  process.env.BOXNOW_STAGE_WEBHOOK_SECRET = secret;
+  try {
+    assert.throws(
+      () => identifyBoxNowWebhookEnvironment({
+        rawBody: Buffer.from('{"data":{"event":"delivered"}}'),
+        signature: "0".repeat(64),
+      }),
+      /Invalid BOX NOW webhook signature/
+    );
+  } finally {
+    if (beforeMode === undefined) delete process.env.BOXNOW_MODE;
+    else process.env.BOXNOW_MODE = beforeMode;
+    if (beforeProd === undefined) delete process.env.BOXNOW_WEBHOOK_SECRET;
+    else process.env.BOXNOW_WEBHOOK_SECRET = beforeProd;
+    if (beforeStage === undefined) delete process.env.BOXNOW_STAGE_WEBHOOK_SECRET;
+    else process.env.BOXNOW_STAGE_WEBHOOK_SECRET = beforeStage;
+  }
 });
