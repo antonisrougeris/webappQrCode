@@ -624,6 +624,8 @@ function setupMobileProductPurchase(product: Product, originalButton: HTMLButton
   const sizeOptions = document.getElementById("sizeOptions");
   const productPrice = document.getElementById("productPrice");
   if (!bar || !barButton || !originalButton) return;
+  const buyButton = barButton;
+  const mainCartButton = originalButton;
 
   const currentPrice = productPrice?.querySelector(".product-price__current")?.textContent?.trim()
     || productPrice?.textContent?.trim() || "";
@@ -638,9 +640,9 @@ function setupMobileProductPurchase(product: Product, originalButton: HTMLButton
   }
 
   function syncPurchaseState(): void {
-    barButton.disabled = originalButton.disabled;
-    const originalLabel = originalButton.textContent?.trim();
-    const label = barButton.querySelector<HTMLElement>("[data-mobile-buy-label]");
+    buyButton.disabled = mainCartButton.disabled;
+    const originalLabel = mainCartButton.textContent?.trim();
+    const label = buyButton.querySelector<HTMLElement>("[data-mobile-buy-label]");
     if (label) label.textContent = originalLabel || "Add to cart";
   }
 
@@ -683,12 +685,12 @@ function setupMobileProductPurchase(product: Product, originalButton: HTMLButton
   colorOptions?.addEventListener("click", () => {
     queueMicrotask(() => { syncSizeOptions(); syncPurchaseState(); });
   });
-  barButton.addEventListener("click", () => {
-    if (!originalButton.disabled) originalButton.click();
+  buyButton.addEventListener("click", () => {
+    if (!mainCartButton.disabled) mainCartButton.click();
   });
 
   const observer = new MutationObserver(() => syncPurchaseState());
-  observer.observe(originalButton, { attributes: true, attributeFilter: ["disabled"], childList: true, characterData: true, subtree: true });
+  observer.observe(mainCartButton, { attributes: true, attributeFilter: ["disabled"], childList: true, characterData: true, subtree: true });
 
   bar.hidden = false;
   syncSizeOptions();
