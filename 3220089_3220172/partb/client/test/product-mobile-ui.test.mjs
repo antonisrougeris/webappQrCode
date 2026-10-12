@@ -109,7 +109,7 @@ test("mobile delivery promise sits above Size / Add to cart, without duplicating
   assert.ok(delivery >= 0 && controls > delivery);
   assert.match(bar, /At your door in <strong>2–5 business days<\/strong>/);
   assert.match(css, /\.product-info \.delivery-info \{ display: none !important; \}/);
-  assert.match(css, /\.mobile-purchase-bar__delivery \{\s*display: flex;/);
+  assert.match(css, /\.mobile-purchase-bar__delivery \{\s*box-sizing: border-box;\s*display: flex;/);
   assert.match(css, /padding: 0 0 calc\(130px/);
 });
 
