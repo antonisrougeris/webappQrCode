@@ -163,11 +163,14 @@
       <span>SKANARE <span class="mobile-product-hero__top-divider">/</span> QR EDITION</span>
       <span id="mobileGalleryCount" class="mobile-product-hero__count">1 / 1</span>
     </div>
-    <div class="mobile-product-hero__bottom" aria-hidden="true">
-      <span class="mobile-product-hero__tag">WEAR IT. SCAN IT. CHANGE IT.</span>
-      <h1 id="mobileHeroTitle"></h1>
-      <p id="mobileHeroPrice" class="mobile-product-hero__price"></p>
-    </div>
+    <!-- Mobile-only size-guide action, reusing the existing size-guide modal. -->
+    <button id="mobileSizeGuideButton" class="mobile-gallery-size-guide" type="button" hidden>
+      Size guide
+      <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M3 5.5h14v9H3zM6 5.5v3m3-3v2m3-2v3m3-3v2"
+          fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+    </button>
 
   </div>
 
@@ -225,6 +228,10 @@
         id="productPrice"
         class="product-price"
       ></p>
+      <div id="mobilePriceSavings" class="mobile-price-savings" hidden>
+        <span id="mobileDiscountPercent" class="mobile-price-savings__percent"></span>
+        <span id="mobileSaveAmount" class="mobile-price-savings__amount"></span>
+      </div>
 
       <p class="tax-note">
         Tax included.

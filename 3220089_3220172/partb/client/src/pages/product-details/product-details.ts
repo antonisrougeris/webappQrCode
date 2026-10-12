@@ -200,6 +200,7 @@ function safeProductText(value: unknown): string {
 
 function setupSizeGuideModal(product: Product): void {
   const button = document.getElementById("sizeGuideButton") as HTMLButtonElement | null;
+  const mobileButton = document.getElementById("mobileSizeGuideButton") as HTMLButtonElement | null;
   const modal = document.getElementById("sizeGuideModal");
   const image = document.getElementById("sizeGuideImage") as HTMLImageElement | null;
   const title = document.getElementById("sizeGuideModalTitle");
@@ -213,10 +214,12 @@ function setupSizeGuideModal(product: Product): void {
 
   if (!button || !modal || !image || !hasSizes) {
     if (button) button.hidden = true;
+    if (mobileButton) mobileButton.hidden = true;
     return;
   }
 
   button.hidden = false;
+  if (mobileButton) mobileButton.hidden = false;
 
   const close = () => {
     modal.classList.add("hidden");
@@ -249,6 +252,7 @@ function setupSizeGuideModal(product: Product): void {
   };
 
   button.addEventListener("click", open);
+  mobileButton?.addEventListener("click", open);
   closeButton?.addEventListener("click", close);
   modal
     .querySelector<HTMLElement>("[data-size-guide-close]")
@@ -616,7 +620,7 @@ function removeReviewQueryParams(): void {
  * One mobile purchase bar. Native size chips remain the source of truth for
  * stock, chosen variant, quantity and the actual add-to-cart operation.
  */
-function setupMobileProductPurchase(product: Product, originalButton: HTMLButtonElement | null): void {
+function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): void {
   const bar = document.getElementById("mobilePurchaseBar");
   const buyButton = document.getElementById("mobileAddToCartBtn") as HTMLButtonElement | null;
   const sizeWrap = document.getElementById("mobileSizeWrap") as HTMLElement | null;
@@ -628,16 +632,6 @@ function setupMobileProductPurchase(product: Product, originalButton: HTMLButton
 
   const mainCartButton = originalButton;
   const placeholder = locale === "el" ? "Μέγεθος" : "Size";
-  const productPrice = document.getElementById("productPrice");
-  const heroTitle = document.getElementById("mobileHeroTitle");
-  const heroPrice = document.getElementById("mobileHeroPrice");
-  if (heroTitle) heroTitle.textContent = product.title || "SKANARE";
-  if (heroPrice) {
-    heroPrice.textContent =
-      productPrice?.querySelector(".product-price__current")?.textContent?.trim() ||
-      productPrice?.textContent?.trim() || formatPrice(product.price);
-  }
-
   const currentButtons = (): HTMLButtonElement[] =>
     Array.from(sizeOptions?.querySelectorAll<HTMLButtonElement>("button[data-size]") || []);
   const selectedSize = (): string =>
@@ -926,6 +920,22 @@ setMetaName("twitter:image", productImage);
     } else if (saleBadgeEl) {
       saleBadgeEl.hidden = true;
       saleBadgeEl.textContent = "";
+    }
+
+    // The mobile price stack reuses the same discounted prices as desktop,
+    // displaying both the percentage and the exact euro savings.
+    const mobileSavings = document.getElementById("mobilePriceSavings");
+    if (mobileSavings) {
+      mobileSavings.hidden = !onSale;
+      if (onSale) {
+        const amountSaved = Math.round((originalPrice - product.price) * 100) / 100;
+        const percentSaved = Math.round((amountSaved / originalPrice) * 100);
+        setText(document.getElementById("mobileDiscountPercent"), `−${percentSaved}%`);
+        setText(
+          document.getElementById("mobileSaveAmount"),
+          `${t("sale.save", "Save")} ${formatPrice(amountSaved)}`
+        );
+      }
     }
 
     if (badgeEl && product.badge) {
@@ -1359,7 +1369,7 @@ if (imageStage) {
 
     setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
-    setupMobileProductPurchase(product, addBtn);
+    setupMobileProductPurchase(addBtn);
     selectedVariantStock = 0;
     updateQuantity();
 
