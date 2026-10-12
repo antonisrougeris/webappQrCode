@@ -64,7 +64,7 @@ test("color preview uses colorOptions first picture, retains fallback", () => {
 });
 test("Crisp widget is raised for mobile product pages only", () => {
   assert.match(css, /body:has\(\.product-page\) #crisp-chatbox/);
-  assert.match(css, /bottom: calc\(82px/);
+  assert.match(css, /bottom: calc\(112px/);
 });
 
 test("product page removes unwanted guarantee and duplicate accordions everywhere", () => {
@@ -93,4 +93,22 @@ test("the product page alone uses euro-first price formatting", () => {
   assert.match(ts, /formatProductPrice\(originalPrice\)/);
   assert.match(ts, /reviewOldPrice\.textContent = onSale \? formatProductPrice/);
   assert.match(ts, /function formatPrice\(value: number\)/);
+});
+
+test("mobile variant section has no duplicate rules and the color label starts on the left", () => {
+  assert.match(css, /\.product-info \.variant-controls \{\s*grid-area: variants;[\s\S]*?padding-top: 0;\s*border-top: 0;/);
+  assert.match(css, /#productColorRow \{\s*width: 100%;\s*margin: 0;\s*padding: 0;\s*border: 0;/);
+  assert.match(css, /#productColorRow \.product-color-row__heading \{[\s\S]*?justify-content: flex-start;/);
+});
+
+test("mobile delivery promise sits above Size / Add to cart, without duplicating it in-page", () => {
+  const bar = html.match(/<aside id="mobilePurchaseBar"[\s\S]+?<\/aside>/)?.[0];
+  assert.ok(bar);
+  const delivery = bar.indexOf("mobile-purchase-bar__delivery");
+  const controls = bar.indexOf("mobile-purchase-bar__controls");
+  assert.ok(delivery >= 0 && controls > delivery);
+  assert.match(bar, /At your door in <strong>2–5 business days<\/strong>/);
+  assert.match(css, /\.product-info \.delivery-info \{ display: none !important; \}/);
+  assert.match(css, /\.mobile-purchase-bar__delivery \{\s*display: flex;/);
+  assert.match(css, /padding: 0 0 calc\(130px/);
 });

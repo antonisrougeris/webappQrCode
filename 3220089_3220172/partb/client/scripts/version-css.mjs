@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const CSS_VERSION = "20261012-product-mobile-5";
+export const CSS_VERSION = "20261012-product-mobile-6";
 
 export function versionStylesheetLinks(html, version = CSS_VERSION) {
   return html.replace(
