@@ -215,10 +215,12 @@ export function extractRawDataObject(rawBody) {
 export function verifyBoxNowSignature({
   rawBody,
   signature,
+  secret: secretOverride,
 }) {
   const secret =
     String(
-      process.env.BOXNOW_WEBHOOK_SECRET ||
+      secretOverride ??
+      process.env.BOXNOW_WEBHOOK_SECRET ??
       ""
     ).trim();
 
@@ -297,6 +299,99 @@ export function verifyBoxNowSignature({
   return true;
 }
 
+
+
+/*
+ * BOX NOW v1.5 uses a DIFFERENT webhook secret in staging.
+ *
+ * A stage event may be sent to the same public HTTPS callback URL
+ * as production. Verify both keys, but NEVER let a staging event
+ * update a production order or send customer email.
+ *
+ * On an isolated staging server BOXNOW_MODE=stage makes its
+ * BOXNOW_WEBHOOK_SECRET the staging key.
+ * On production BOXNOW_STAGE_WEBHOOK_SECRET is an optional
+ * independent key for BOX NOW's registered stage callback.
+ */
+export function identifyBoxNowWebhookEnvironment({ rawBody, signature }) {
+  const configuredSecret = String(process.env.BOXNOW_WEBHOOK_SECRET || "").trim();
+  const stageSecret = String(process.env.BOXNOW_STAGE_WEBHOOK_SECRET || "").trim();
+  const mode = String(process.env.BOXNOW_MODE || "mock").trim().toLowerCase();
+  const configuredEnvironment = mode === "production" ? "production" : "stage";
+
+  if (!configuredSecret && !stageSecret) {
+    throw new ApiError(500, "BOX NOW webhook secrets are not configured");
+  }
+  if (configuredSecret && stageSecret && configuredSecret === stageSecret) {
+    throw new ApiError(500, "BOX NOW staging and production secrets must be different");
+  }
+
+  const candidates = [
+    { environment: configuredEnvironment, secret: configuredSecret },
+    { environment: "stage", secret: stageSecret },
+  ].filter((candidate) => candidate.secret);
+
+  for (const candidate of candidates) {
+    try {
+      verifyBoxNowSignature({ rawBody, signature, secret: candidate.secret });
+      return candidate.environment;
+    } catch (error) {
+      if (error?.statusCode !== 401) throw error;
+    }
+  }
+
+  throw new ApiError(401, "Invalid BOX NOW webhook signature");
+}
+
+const BOXNOW_STAGE_COLLECTION = "boxnow_stage_webhook_events";
+
+/*
+ * Diagnostic-only staging inbox, without customer PII.
+ * Staging events never touch the production orders collection.
+ */
+async function recordBoxNowStageEvent({
+  parcelId, orderNumber, event, eventTime, messageId, receivedAt,
+}) {
+  if (!/^\\d{10}$/.test(parcelId)) {
+    throw new ApiError(400, "Invalid BOX NOW staging parcel ID");
+  }
+  const db = getDB();
+  const ref = db.collection(BOXNOW_STAGE_COLLECTION).doc(parcelId);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const current = snap.exists ? snap.data() : {};
+    if (shouldIgnoreBoxNowEvent(current?.lastEventAt, eventTime)) {
+      return {
+        processed: false, environment: "stage",
+        reason: "duplicate_or_old_event", parcelId,
+        event: current?.lastEvent || null,
+      };
+    }
+    const history = [
+      ...(Array.isArray(current?.history) ? current.history : []),
+      { event, eventTime, messageId: messageId || null, receivedAt },
+    ].slice(-30);
+    tx.set(ref, {
+      environment: "stage",
+      parcelId,
+      orderNumber: orderNumber || null,
+      lastEvent: event,
+      lastEventAt: eventTime,
+      lastWebhookMessageId: messageId || null,
+      lastWebhookReceivedAt: receivedAt,
+      history,
+      updatedAt: receivedAt,
+    }, { merge: true });
+    return { processed: true, environment: "stage", parcelId, event, eventTime };
+  });
+}
+
+export async function getBoxNowStageParcel(parcelId) {
+  const id = String(parcelId || "").trim();
+  if (!/^\\d{10}$/.test(id)) throw new ApiError(400, "Invalid BOX NOW parcel ID");
+  const snap = await getDB().collection(BOXNOW_STAGE_COLLECTION).doc(id).get();
+  return snap.exists ? { id: snap.id, ...snap.data() } : null;
+}
 
 /* ==================================================
    ORDER LOOKUP
@@ -489,10 +584,9 @@ export async function processBoxNowWebhook({
    * BOX NOW guide:
    * datasignature = HMAC SHA256 of exact raw data object.
    */
-  verifyBoxNowSignature({
+  const environment = identifyBoxNowWebhookEnvironment({
     rawBody,
-    signature:
-      payload.datasignature,
+    signature: payload.datasignature,
   });
 
 
@@ -600,6 +694,13 @@ export async function processBoxNowWebhook({
   const receivedAt =
     nowIso();
 
+  if (environment === "stage") {
+    const result = await recordBoxNowStageEvent({
+      parcelId, orderNumber, event, eventTime, messageId, receivedAt,
+    });
+    console.info("BOX NOW staging webhook", result);
+    return result;
+  }
 
   const result =
     await db.runTransaction(

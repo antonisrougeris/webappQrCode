@@ -43,6 +43,7 @@ import {
 import {
   requireAuth,
 } from "../middleware/auth.js";
+import { getBoxNowStageParcel } from "../services/boxnow-webhook.service.js";
 
 import {
   adminApproveReturn,
@@ -163,6 +164,16 @@ router.patch(
   updateAdminDiscountCodeStatus
 );
 
+
+/* BOX NOW staging diagnostics - admin authentication is required. */
+router.get("/boxnow/staging/:parcelId", async (req, res, next) => {
+  try {
+    const parcel = await getBoxNowStageParcel(req.params.parcelId);
+    return res.status(200).json({ success: true, parcel });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /* =========================
    ORDERS
