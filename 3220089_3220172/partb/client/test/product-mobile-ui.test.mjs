@@ -138,7 +138,7 @@ test("cart-first size selection adds exactly once while manual size selection do
   assert.match(rest, /const shouldAddToCart = addOnSizeSelection;\s*original\.click\(\);/);
   assert.match(rest, /if \(shouldAddToCart && selectedSize\(\) === option\.dataset\.mobileSize && !mainCartButton\.disabled\) \{\s*mainCartButton\.click\(\);/);
   assert.match(rest, /function closeSizeMenu\([\s\S]*?addOnSizeSelection = false;/);
-  assert.match(rest, /sizeTrigger\.addEventListener\("click", \(\) => \{\s*\/\/[^\\n]*\s*addOnSizeSelection = false;/);
+  assert.match(rest, /sizeTrigger\.addEventListener\("click", \(\) => \{[\s\S]*?addOnSizeSelection = false;/);
   assert.equal((rest.match(/mainCartButton\.click\(\)/g) || []).length, 2);
 });
 test("mobile color heading remains invisible but reserves original swatch position", () => {
