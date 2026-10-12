@@ -163,6 +163,10 @@
       <span>SKANARE <span class="mobile-product-hero__top-divider">/</span> QR EDITION</span>
       <span id="mobileGalleryCount" class="mobile-product-hero__count">1 / 1</span>
     </div>
+    <div class="mobile-gallery-badges" aria-label="Product offers">
+      <span id="mobileGalleryBadge" class="mobile-gallery-badge" hidden></span>
+      <span id="mobileGallerySave" class="mobile-gallery-badge mobile-gallery-badge--save" hidden></span>
+    </div>
     <!-- Mobile-only size-guide action, reusing the existing size-guide modal. -->
     <button id="mobileSizeGuideButton" class="mobile-gallery-size-guide" type="button" hidden>
       Size guide
@@ -220,6 +224,7 @@
       <span id="productStars">★★★★★</span>
       <small id="reviewLinkText">0 reviews</small>
     </a>
+    <span id="mobileReviewOldPrice" class="mobile-review-old-price" hidden></span>
 
 
     <!-- PRICE -->
@@ -228,11 +233,6 @@
         id="productPrice"
         class="product-price"
       ></p>
-      <div id="mobilePriceSavings" class="mobile-price-savings" hidden>
-        <span id="mobileDiscountPercent" class="mobile-price-savings__percent"></span>
-        <span id="mobileSaveAmount" class="mobile-price-savings__amount"></span>
-      </div>
-
       <p class="tax-note">
         Tax included.
       </p>
@@ -434,10 +434,10 @@
 </article>
 
     <!-- One mobile purchase action, backed by the existing cart/variant logic. -->
-    <aside id="mobilePurchaseBar" class="mobile-purchase-bar" aria-label="Quick purchase" hidden>
+    <aside id="mobilePurchaseBar" class="mobile-purchase-bar is-loading" aria-label="Quick purchase" aria-busy="true">
       <div class="mobile-purchase-bar__controls">
-        <div id="mobileSizeWrap" class="mobile-purchase-bar__size" hidden>
-          <button id="mobileSizeTrigger" class="mobile-purchase-bar__size-trigger" type="button"
+        <div id="mobileSizeWrap" class="mobile-purchase-bar__size">
+          <button id="mobileSizeTrigger" class="mobile-purchase-bar__size-trigger" type="button" disabled
             aria-label="Choose size" aria-haspopup="listbox" aria-controls="mobileSizeMenu" aria-expanded="false">
             <span id="mobileSizeValue">Size</span>
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">

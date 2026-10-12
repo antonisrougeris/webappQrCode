@@ -25,21 +25,44 @@ test("shorter, clean gallery with real Size guide modal action", () => {
   assert.match(ts, /mobileButton\?\.addEventListener\("click", open\)/);
 });
 
-test("reviews above real title; price, sale percent and euro savings alongside", () => {
-  assert.match(css, /"rating rating"\s*"title\s+price"\s*"meta\s+price"/);
+test("sale pricing aligns current price with title and puts old price beside reviews", () => {
+  assert.match(css, /"rating original"\s*"title price"\s*"meta meta"/);
   assert.match(css, /#productTitle\s*\{\s*display: block !important/);
   assert.match(css, /\.product-price-area\s*\{\s*display: flex !important/);
-  assert.match(html, /id="mobilePriceSavings"/);
-  assert.match(html, /id="mobileDiscountPercent"/);
-  assert.match(html, /id="mobileSaveAmount"/);
-  assert.match(ts, /mobileSavings.hidden = !onSale/);
-  assert.match(ts, /formatPrice\(amountSaved\)/);
-  assert.match(css, /#productSaleBadge\s*\{\s*display: none !important/);
+  assert.match(html, /id="mobileReviewOldPrice"/);
+  assert.match(ts, /reviewOldPrice.hidden = !onSale/);
+  assert.match(ts, /priceEl\?\.classList.toggle\("is-discounted", onSale\)/);
+  assert.match(css, /#productPrice\.is-discounted \.product-price__current/);
+  assert.doesNotMatch(html, /mobileDiscountPercent|mobilePriceSavings|mobileSaveAmount/);
+  assert.match(html, /id="mobileGalleryBadge"/);
+  assert.match(html, /id="mobileGallerySave"/);
 });
 
 test("desktop stays unchanged, original mobile size chips remain hidden", () => {
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.match(css, /@media \(min-width: 601px\)/);
   assert.match(css, /#sizeOptions,[\s\S]*?#productStock\s*\{\s*display: none !important/);
-  assert.match(css, /\.mobile-gallery-size-guide,[\s\S]*?\.mobile-price-savings \{ display: none !important/);
+  assert.match(css, /\.mobile-gallery-size-guide,[\s\S]*?\.mobile-price-savings,[\s\S]*?\.mobile-review-old-price \{ display: none !important/);
+});
+
+test("purchase renders before reviews and related product requests", () => {
+  const bind = ts.indexOf("setupMobileProductPurchase(addBtn)");
+  const handle = ts.indexOf('addBtn.addEventListener("click", async () =>');
+  const loadReviews = ts.lastIndexOf("const reviews = await getProductReviews(product.id)");
+  const recommendations = ts.indexOf("void renderRelatedProducts(product)");
+  assert.ok(bind >= 0 && handle > bind);
+  assert.ok(loadReviews > handle);
+  assert.ok(recommendations > handle);
+  assert.match(html, /class="mobile-purchase-bar is-loading"/);
+  assert.match(ts, /bar.classList.remove\("is-loading"\)/);
+});
+test("color preview uses colorOptions first picture, retains fallback", () => {
+  assert.match(ts, /const cover = option\?\.images\?\.\[0\]/);
+  assert.match(ts, /product-color-swatch__preview/);
+  assert.match(ts, /product-color-swatch__dot/);
+  assert.match(css, /grid-area: quantity/);
+});
+test("Crisp widget is raised for mobile product pages only", () => {
+  assert.match(css, /body:has\(\.product-page\) #crisp-chatbox/);
+  assert.match(css, /bottom: calc\(82px/);
 });
