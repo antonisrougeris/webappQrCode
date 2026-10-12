@@ -1,7 +1,8 @@
 /* Mobile product details — product photography first, purchase information beneath. */
 .mobile-product-hero__top,
 .mobile-gallery-size-guide,
-.mobile-price-savings,
+.mobile-gallery-badges,
+.mobile-review-old-price,
 .mobile-purchase-bar { display: none; }
 
 @media (max-width: 600px) {
@@ -125,14 +126,14 @@
     position: static;
     grid-template-columns: minmax(0, 1fr) minmax(102px, auto);
     grid-template-areas:
-      "rating rating"
-      "title  price"
-      "meta   price"
+      "rating original"
+      "title price"
+      "meta meta"
       "badges badges"
       "variants variants"
+      "quantity quantity"
       "qr qr"
       "description description"
-      "quantity quantity"
       "delivery delivery"
       "benefits benefits"
       "extra extra";
@@ -149,7 +150,7 @@
     display: inline-flex;
     align-items: center;
     justify-self: start;
-    margin: 0 0 13px;
+    margin: 0 0 10px;
     gap: 8px;
     min-height: 22px;
     font-size: 12px;
@@ -163,21 +164,26 @@
     grid-area: title;
     max-width: 100%;
     min-width: 0;
-    margin: 0 0 5px;
+    margin: 0;
     color: #141414;
-    font-size: clamp(23px, 6.3vw, 30px);
+    font-size: clamp(21px, 5.7vw, 27px);
     font-weight: 800;
-    line-height: 1.08;
+    line-height: 1.12;
     letter-spacing: -.035em;
-    overflow-wrap: break-word;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
   }
   .product-page .product-info #productMeta {
     display: block !important;
     grid-area: meta;
     min-width: 0;
-    margin: 0 0 12px;
-    font-size: 11px;
-    line-height: 1.4;
+    margin: 3px 0 10px;
+    font-size: 10px;
+    line-height: 1.3;
     color: #6a6a6a;
   }
   .product-page .product-info .product-price-area {
@@ -193,21 +199,18 @@
   }
   .product-page .product-info #productPrice {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
+    justify-content: flex-end;
     gap: 3px;
     margin: 0;
     white-space: nowrap;
   }
   .product-page .product-info #productPrice .product-price__old {
-    color: #858585;
-    font-size: 12px;
-    font-weight: 500;
-    text-decoration: line-through;
+    display: none !important;
   }
   .product-page .product-info #productPrice .product-price__current {
-    color: #e32923;
-    font-size: clamp(18px, 5.3vw, 23px);
+    color: #171717;
+    font-size: clamp(18px, 5.1vw, 23px);
     font-weight: 800;
     line-height: 1.1;
     letter-spacing: -.025em;
@@ -304,6 +307,186 @@
   .product-page .you-may-like,
   .product-page .reviews-section,
   .product-page > .section { margin-left: 16px; margin-right: 16px; }
+
+
+  /* Merchandising tag and savings belong only to the photo, under QR EDITION. */
+  .product-page .mobile-gallery-badges {
+    position: absolute;
+    top: 43px;
+    left: 17px;
+    right: 17px;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+  }
+  .product-page .mobile-gallery-badge:not([hidden]) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 23px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #151515;
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .05em;
+    line-height: 1;
+  }
+  .product-page .mobile-gallery-badge--save:not([hidden]) {
+    background: #e12d28;
+    color: #fff;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .product-page .mobile-gallery-badge[hidden],
+  .product-page .mobile-review-old-price[hidden] { display: none !important; }
+
+  .product-page .product-info .mobile-review-old-price:not([hidden]) {
+    display: inline-block;
+    grid-area: original;
+    justify-self: end;
+    align-self: center;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: line-through;
+    color: #8c8c8c;
+    white-space: nowrap;
+    margin-bottom: 10px;
+  }
+  .product-page .product-info #productPrice {
+    align-self: start;
+    flex-direction: row;
+    padding-top: 2px;
+  }
+  .product-page .product-info #productPrice.is-discounted .product-price__current {
+    color: #dc2924;
+  }
+  .product-page .product-info .tax-note {
+    font-size: 9px;
+  }
+  /* Badge moved to the photo. Don't leave an empty gap below subtitle. */
+  .product-page .product-info .product-detail-badges { display: none !important; }
+  .product-page .product-info .variant-controls {
+    margin-top: 7px;
+  }
+
+  /* Color images come from colorOptions[].images[0]; fallback remains a dot. */
+  .product-page .product-info #productColorRow .product-color-row__heading {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 7px;
+    margin-bottom: 9px;
+  }
+  .product-page .product-info #productColorRow .product-color-row__heading small {
+    display: none;
+  }
+  .product-page .product-info #productColorOptions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .product-page .product-info #productColorOptions .product-color-swatch {
+    display: flex;
+    flex: 0 0 76px;
+    width: 76px;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 5px;
+    padding: 4px 4px 7px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 11px;
+    background: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    box-shadow: none;
+    overflow: hidden;
+  }
+  .product-page .product-info #productColorOptions .product-color-swatch.is-selected {
+    border-color: #121212;
+    box-shadow: 0 0 0 1px #121212;
+  }
+  .product-page .product-info #productColorOptions .product-color-swatch__preview {
+    display: block;
+    width: 100%;
+    height: 78px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #f3f3f3;
+  }
+  .product-page .product-info #productColorOptions .product-color-swatch:has(.product-color-swatch__preview)
+  .product-color-swatch__dot { display: none; }
+  .product-page .product-info #productColorOptions .product-color-swatch:not(:has(.product-color-swatch__preview)) {
+    justify-content: center;
+    min-height: 104px;
+  }
+  .product-page .product-info #productColorOptions .product-color-swatch__label {
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* Quantity immediately follows color thumbnails, above the QR destination. */
+  .product-page .product-info .product-purchase-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 6px 0 15px;
+  }
+  .product-page .product-info .quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .product-page .product-info .quantity-box {
+    display: inline-flex;
+    align-items: center;
+    min-height: 43px;
+    border: 1px solid #e3e3e3;
+    border-radius: 10px;
+    background: #f7f7f6;
+    overflow: hidden;
+  }
+  .product-page .product-info .quantity-box button {
+    min-width: 40px;
+    min-height: 42px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .product-page .product-info #quantityValue {
+    min-width: 24px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  /* Crisp is injected dynamically. Keep its floating launcher above the
+     fixed buy bar, without affecting any other page. */
+  body:has(.product-page) #crisp-chatbox {
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 2147483005 !important;
+  }
+  /* Keep Crisp's normal desktop behavior and don't hide it with the cart bar. */
+  body:has(.product-page) .crisp-client {
+    z-index: 2147483005 !important;
+  }
+  .mobile-purchase-bar.is-loading .mobile-purchase-bar__size-trigger {
+    opacity: .55;
+    cursor: progress;
+  }
+  .mobile-purchase-bar.is-loading .mobile-purchase-bar__cta {
+    opacity: .75;
+    cursor: progress;
+  }
 
   /* ONE compact row: 94px size chooser + flexible add-to-cart CTA. */
   .mobile-purchase-bar:not([hidden]) {
@@ -421,7 +604,9 @@
   .mobile-purchase-bar,
   .mobile-product-hero__top,
   .mobile-gallery-size-guide,
-  .mobile-price-savings { display: none !important; }
+  .mobile-price-savings,
+  .mobile-gallery-badges,
+  .mobile-review-old-price { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) and (max-width: 600px) {
   .product-page .product-main-image #productImage { transition: none; }

@@ -389,7 +389,12 @@ function setupVariantControls(
         const available = variants.some(v => String(v.color || "").toLowerCase() === color.toLowerCase() && Number(v.stock || 0) > 0);
         const hex = /^#[0-9a-fA-F]{6}$/.test(option?.hex || "") ? option!.hex :
           ({white:"#ffffff",black:"#111111",natural:"#e7decb"} as Record<string,string>)[color.toLowerCase()] || "#d5d5d5";
-        return `<button type="button" class="product-color-swatch ${selectedColor === color ? "is-selected" : ""}" data-product-color="${safeProductText(color)}" aria-label="Color ${safeProductText(color || "Default")}" aria-pressed="${selectedColor === color}" ${available ? "" : "disabled"}><span class="product-color-swatch__dot" style="--swatch-color:${hex}"></span><span>${safeProductText(color || "Default")}</span></button>`;
+        const cover = option?.images?.[0] || "";
+        const validCover = cover.startsWith("/") || /^https:\/\//i.test(cover);
+        const preview = validCover
+          ? `<img class="product-color-swatch__preview" src="${safeProductText(cover)}" alt="" loading="lazy" decoding="async">`
+          : "";
+        return `<button type="button" class="product-color-swatch ${selectedColor === color ? "is-selected" : ""}" data-product-color="${safeProductText(color)}" aria-label="Color ${safeProductText(color || "Default")}" aria-pressed="${selectedColor === color}" ${available ? "" : "disabled"}>${preview}<span class="product-color-swatch__dot" style="--swatch-color:${hex}"></span><span class="product-color-swatch__label">${safeProductText(color || "Default")}</span></button>`;
       }).join("");
     }
     const variant = getSelectedVariant();
@@ -750,6 +755,9 @@ function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): v
   });
 
   bar.hidden = false;
+  bar.classList.remove("is-loading");
+  bar.setAttribute("aria-busy", "false");
+  sizeTrigger.disabled = false;
   syncSizeOptions();
   syncPurchaseState();
 }
@@ -833,6 +841,8 @@ const id = getProductIdentifier();
     setText(titleEl, "Product not found");
     setText(descEl, "The product link is invalid.");
     if (addBtn) addBtn.style.display = "none";
+    const purchaseBar = document.getElementById("mobilePurchaseBar");
+    if (purchaseBar) purchaseBar.hidden = true;
     return;
   }
 
@@ -902,9 +912,8 @@ setMetaName("twitter:image", productImage);
     );
     setText(descEl, product.description || product.shortDescription || "");
 
-    const discountPercent = Math.max(0, Number(product.discountPercent || 0));
     const originalPrice = Number(product.originalPrice ?? product.price);
-    const onSale = Boolean(product.onSale) && discountPercent > 0 && originalPrice > product.price;
+    const onSale = Boolean(product.onSale) && originalPrice > product.price;
 
     if (priceEl) {
       priceEl.innerHTML = onSale
@@ -922,21 +931,13 @@ setMetaName("twitter:image", productImage);
       saleBadgeEl.textContent = "";
     }
 
-    // The mobile price stack reuses the same discounted prices as desktop,
-    // displaying both the percentage and the exact euro savings.
-    const mobileSavings = document.getElementById("mobilePriceSavings");
-    if (mobileSavings) {
-      mobileSavings.hidden = !onSale;
-      if (onSale) {
-        const amountSaved = Math.round((originalPrice - product.price) * 100) / 100;
-        const percentSaved = Math.round((amountSaved / originalPrice) * 100);
-        setText(document.getElementById("mobileDiscountPercent"), `−${percentSaved}%`);
-        setText(
-          document.getElementById("mobileSaveAmount"),
-          `${t("sale.save", "Save")} ${formatPrice(amountSaved)}`
-        );
-      }
+    // On mobile the crossed-out original price sits opposite the reviews.
+    const reviewOldPrice = document.getElementById("mobileReviewOldPrice");
+    if (reviewOldPrice) {
+      reviewOldPrice.hidden = !onSale;
+      reviewOldPrice.textContent = onSale ? formatPrice(originalPrice) : "";
     }
+    priceEl?.classList.toggle("is-discounted", onSale);
 
     if (badgeEl && product.badge) {
       badgeEl.hidden = false;
@@ -944,6 +945,21 @@ setMetaName("twitter:image", productImage);
     } else if (badgeEl) {
       badgeEl.hidden = true;
       badgeEl.textContent = "";
+    }
+
+    // Reuse existing badge data, presenting both merchandising tag and savings
+    // only inside the mobile gallery. Desktop badges are untouched.
+    const galleryBadge = document.getElementById("mobileGalleryBadge");
+    if (galleryBadge) {
+      galleryBadge.hidden = !badgeEl || badgeEl.hidden;
+      galleryBadge.textContent = badgeEl?.textContent || "";
+    }
+    const gallerySave = document.getElementById("mobileGallerySave");
+    if (gallerySave) {
+      gallerySave.hidden = !onSale;
+      gallerySave.textContent = onSale
+        ? `${t("sale.save", "Save")} ${formatPrice(Math.round((originalPrice - product.price) * 100) / 100)}`
+        : "";
     }
 
     /* =========================================================
@@ -1358,22 +1374,11 @@ if (imageStage) {
   );
 }
 
-    try {
-      const reviews = await getProductReviews(product.id);
-      renderReviews(reviews.length ? reviews : getFallbackReviews(product));
-      await setupReviewForm(product.id);
-    } catch (reviewError) {
-      console.error("Failed to load reviews:", reviewError);
-      renderReviews(getFallbackReviews(product));
-    }
-
+    // Purchase controls are initialized before any secondary network requests.
     setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
     setupMobileProductPurchase(addBtn);
-    selectedVariantStock = 0;
     updateQuantity();
-
-    await renderRelatedProducts(product);
 
     if (addBtn) {
       // setupVariantControls already calculated availability for the selected color.
@@ -1515,8 +1520,24 @@ if (imageStage) {
         }
       });
     }
+
+    // Non-critical requests run AFTER cart handlers are attached. Neither
+    // reviews nor recommendations should delay the size picker / CTA.
+    void (async () => {
+      try {
+        const reviews = await getProductReviews(product.id);
+        renderReviews(reviews.length ? reviews : getFallbackReviews(product));
+        await setupReviewForm(product.id);
+      } catch (reviewError) {
+        console.error("Failed to load reviews:", reviewError);
+        renderReviews(getFallbackReviews(product));
+      }
+    })();
+    void renderRelatedProducts(product);
   } catch (error: any) {
     console.error("Failed to load product:", error);
+    const purchaseBar = document.getElementById("mobilePurchaseBar");
+    if (purchaseBar) purchaseBar.hidden = true;
 
     setText(titleEl, "Error loading product");
     setText(metaEl, "");
