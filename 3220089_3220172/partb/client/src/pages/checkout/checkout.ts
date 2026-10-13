@@ -22,6 +22,7 @@ import { normalizeSameOriginPath } from "../../utils/redirect";
 import {
   locale,
   localizedPath,
+  productPath,
 } from "../../i18n/locale";
 
 function saveCheckoutDraft(formEl: HTMLFormElement): void {
@@ -347,11 +348,12 @@ async function render(): Promise<void> {
       const image = escapeHtml(getCartItemImage(item));
       const qr = escapeHtml(getCartItemQr(item));
       const quantity = Number(item.quantity || 0);
+      const href = escapeHtml(productPath(item.slug || item.productId));
 
       return `
         <div class="checkout-item">
           <div class="checkout-item__image-wrapper">
-            <img src="${image}" alt="${title}" />
+            <a class="checkout-product-link" href="${href}" aria-label="${title}"><img src="${image}" alt="${title}" /></a>
             <span class="checkout-item__badge">${quantity}</span>
           </div>
 
@@ -372,13 +374,15 @@ async function render(): Promise<void> {
   if (eligibleKeychain) {
     const title = escapeHtml(eligibleKeychain.title || "NFC Keychain");
     const image = escapeHtml(eligibleKeychain.image || "/assets/img/logo_Image.png");
+    const rewardHref = escapeHtml(productPath(eligibleKeychain.slug || eligibleKeychain.productId || "nfc-keychain"));
+    const originalPrice = Number(eligibleKeychain.originalPrice || 0);
     container.insertAdjacentHTML("beforeend", `
       <div class="checkout-item checkout-item--free-reward">
         <div class="checkout-item__image-wrapper">
-          <img src="${image}" alt="${title}" /><span class="checkout-item__badge">1</span>
+          <a class="checkout-product-link" href="${rewardHref}" aria-label="${title}"><img src="${image}" alt="${title}" /></a><span class="checkout-item__badge">1</span>
         </div>
-        <div class="checkout-item__info"><p>${title}</p><small>Free gift with €80+ order</small></div>
-        <strong>FREE</strong>
+        <div class="checkout-item__info"><p><a class="checkout-product-link" href="${rewardHref}">${title}</a></p><small>Free gift with €80+ order</small></div>
+        <span class="checkout-reward-pricing"><del>${formatPrice(originalPrice)}</del><strong>FREE</strong></span>
       </div>
     `);
   }

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/assets/css/layout.css" />
   <link rel="stylesheet" href="/assets/css/components.css?v=2.2-colors" />
   <link rel="stylesheet" href="/assets/css/product-mobile-immersive.css?v=20261013-mobile-quantity" />
-  <link rel="stylesheet" href="/assets/css/product-desktop-premium.css?v=20261013-specs" />
+  <link rel="stylesheet" href="/assets/css/product-desktop-premium.css?v=20261013-layout3" />
   <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="5001afeb-b9df-4288-92c2-6febe12a2a03";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
 <meta
   name="description"
@@ -255,9 +255,20 @@
 
     <!-- Native accessible disclosure: works on desktop and mobile. -->
     <details class="product-description-block pdp-product-information" id="desktopProductDescriptionBlock">
-      <summary><span class="pdp-product-information__icon" aria-hidden="true">▤</span>
+      <summary>
+        <span class="pdp-product-information__icon" aria-hidden="true">
+          <svg role="presentation" fill="none" focusable="false" stroke-width="1.6" width="20" height="24" class="icon icon-picto-document" viewBox="0 0 24 24">
+            <path d="M7.163 4.068a2.544 2.544 0 0 0 2.533 2.307h4.608a2.544 2.544 0 0 0 2.533-2.307l.787.1c.333.042.664.084.993.124a1.731 1.731 0 0 1 1.53 1.584c.352 4.914.352 9.846 0 14.759a1.677 1.677 0 0 1-1.533 1.555c-4.538.38-8.69.38-13.227 0a1.676 1.676 0 0 1-1.533-1.555 103.014 103.014 0 0 1 0-14.759 1.731 1.731 0 0 1 1.53-1.584c.328-.04.66-.082.993-.125l.786-.1Z" stroke="currentColor"/>
+            <path d="M14.304 1.286H9.696A2.544 2.544 0 0 0 7.152 3.83v.001a2.544 2.544 0 0 0 2.544 2.544h4.608a2.544 2.544 0 0 0 2.544-2.544V3.83a2.544 2.544 0 0 0-2.544-2.544Z" stroke="currentColor" stroke-linejoin="round"/>
+            <path d="M9 11h6M9 16h4" stroke="currentColor" stroke-linecap="round"/>
+          </svg>
+        </span>
         <span id="pdpProductInfoTitle">Product Information</span>
-        <span class="pdp-product-information__chevron" aria-hidden="true">⌄</span>
+        <span class="pdp-product-information__chevron" aria-hidden="true">
+          <svg role="presentation" focusable="false" width="8" height="6" class="icon icon-chevron-bottom-small" viewBox="0 0 8 6">
+            <path d="m1 1.5 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </span>
       </summary>
       <div class="pdp-product-information__body">
         <ul id="pdpProductFacts" class="pdp-product-information__facts" hidden></ul>
