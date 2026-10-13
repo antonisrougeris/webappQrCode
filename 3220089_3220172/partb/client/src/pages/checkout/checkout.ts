@@ -1,3 +1,4 @@
+import "../cart/cart-enhancements.css";
 import "../../i18n/auto";
 
 
