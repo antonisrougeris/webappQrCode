@@ -428,3 +428,41 @@ body.gift-dialog-open {
 .checkout-reward-pricing strong {color:#16783b;font-weight:850;}
 .checkout-item__image-wrapper > .checkout-product-link {display:block;width:100%;height:100%;}
 .checkout-item__image-wrapper > .checkout-product-link img {width:100%;height:100%;object-fit:cover;}
+
+/* Product imagery in the cart: keep the original full-resolution source and
+   avoid soft styling; use a larger, predictable preview area on desktop. */
+@media (min-width: 601px) {
+  .drawer-cart-item {
+    grid-template-columns: 104px minmax(0, 1fr) auto;
+    column-gap: 13px;
+  }
+  .drawer-cart-item > .cart-product-link--image {
+    display: block;
+    width: 104px;
+    height: 122px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #f5f4f2;
+  }
+  .drawer-cart-item > .cart-product-link--image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border: 0;
+    border-radius: 0;
+    filter: none;
+    transform: none;
+    opacity: 1;
+    image-rendering: auto;
+  }
+}
+@media (max-width: 600px) {
+  .drawer-cart-item > .cart-product-link--image img {
+    filter: none;
+    transform: none;
+    opacity: 1;
+    image-rendering: auto;
+  }
+}
