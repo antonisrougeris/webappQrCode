@@ -16,6 +16,7 @@ export interface CartItem {
   image?: string;
   variant?: ProductVariant | null;
   qrDestination?: string;
+  isFreeReward?: boolean;
 }
 export type GiftTier = "none" | "simple" | "premium";
 
@@ -29,6 +30,7 @@ export interface Cart {
   id?: string;
   userId?: string;
   items: CartItem[];
+  rewardItem?: CartItem | null;
   subtotal?: number;
   totalItems?: number;
   currency?: string;

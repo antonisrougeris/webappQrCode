@@ -13,8 +13,8 @@
   <link rel="stylesheet" href="/assets/css/theme.css" />
   <link rel="stylesheet" href="/assets/css/layout.css" />
   <link rel="stylesheet" href="/assets/css/components.css?v=2.2-colors" />
-  <link rel="stylesheet" href="/assets/css/product-mobile-immersive.css?v=20261012-mobile-1" />
-  <link rel="stylesheet" href="/assets/css/product-desktop-premium.css?v=20261013-pdp-desktop-1" />
+  <link rel="stylesheet" href="/assets/css/product-mobile-immersive.css?v=20261013-mobile-quantity" />
+  <link rel="stylesheet" href="/assets/css/product-desktop-premium.css?v=20261013-specs" />
   <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="5001afeb-b9df-4288-92c2-6febe12a2a03";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
 <meta
   name="description"
@@ -248,11 +248,22 @@
     </div>
 
 
-    <!-- DESCRIPTION -->
-    <div class="product-description-block" id="desktopProductDescriptionBlock">
-      <p id="productDescription"></p>
-      <button id="desktopProductDescriptionToggle" class="pdp-desktop-description-toggle" type="button" aria-controls="productDescription" aria-expanded="false">Read more <span aria-hidden="true">↓</span></button>
+    <div class="pdp-eco-highlights" id="pdpEcoHighlights" hidden>
+      <span>100% Organic Cotton | Fair &amp; Sustainable</span>
+      <span>Durable &amp; High Quality Print | Made with love in Greece</span>
     </div>
+
+    <!-- Native accessible disclosure: works on desktop and mobile. -->
+    <details class="product-description-block pdp-product-information" id="desktopProductDescriptionBlock">
+      <summary><span class="pdp-product-information__icon" aria-hidden="true">▤</span>
+        <span id="pdpProductInfoTitle">Product Information</span>
+        <span class="pdp-product-information__chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div class="pdp-product-information__body">
+        <ul id="pdpProductFacts" class="pdp-product-information__facts" hidden></ul>
+        <p id="productDescription"></p>
+      </div>
+    </details>
 
 
     <!-- QR DESTINATION -->
@@ -427,6 +438,11 @@
           </button>
           <div id="mobileSizeMenu" class="mobile-purchase-bar__size-menu"
             role="listbox" aria-label="Choose size" hidden></div>
+        </div>
+        <div id="mobileAccessoryQuantity" class="mobile-purchase-bar__quantity" hidden aria-label="Quantity">
+          <button id="mobileAccessoryQtyMinus" type="button" aria-label="Decrease quantity">−</button>
+          <span id="mobileAccessoryQtyValue" aria-live="polite">1</span>
+          <button id="mobileAccessoryQtyPlus" type="button" aria-label="Increase quantity">+</button>
         </div>
         <button id="mobileAddToCartBtn" class="mobile-purchase-bar__cta" type="button" disabled>
           <span data-mobile-buy-label>Add to cart</span>

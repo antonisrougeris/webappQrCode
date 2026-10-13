@@ -25,10 +25,10 @@ test("gallery uses one existing image, thumbnails and navigation", () => {
 });
 
 test("desktop includes real product breadcrumbs and an expandable description", () => {
-  for (const id of ["pdpBreadcrumbCategory", "pdpBreadcrumbProduct", "desktopProductDescriptionToggle"]) {
+  for (const id of ["pdpBreadcrumbCategory", "pdpBreadcrumbProduct", "desktopProductDescriptionBlock"]) {
     assert.match(html, new RegExp('id="' + id + '"'));
   }
-  assert.match(ts, /descriptionBlock\.classList\.toggle\("is-expanded"\)/);
+  assert.match(html, /<details class="product-description-block pdp-product-information"/);
   assert.match(ts, /setText\(document\.getElementById\("pdpBreadcrumbProduct"\), product\.title\)/);
 });
 

@@ -27,7 +27,7 @@ export const getCart = asyncHandler(async (req, res) => {
 
 const cart = await getCartByUserId(owner.id);
 
-  return ok(res, { cart });
+  return ok(res, { cart: await getCartByUserId(owner.id) });
 });
 
 export const transferCartToGuest = asyncHandler(async (req, res) => {
@@ -51,7 +51,7 @@ export const transferCartToGuest = asyncHandler(async (req, res) => {
     guestId,
   });
 
-  return ok(res, { cart, guestId });
+  return ok(res, { cart: await getCartByUserId(guestId), guestId });
 });
 
 export const addToCart = asyncHandler(async (req, res) => {
@@ -72,7 +72,7 @@ export const addToCart = asyncHandler(async (req, res) => {
   });
   
 
-  return ok(res, { cart }, 201);
+  return ok(res, { cart: await getCartByUserId(owner.id) }, 201);
 });
 
 export const patchCartItem = asyncHandler(async (req, res) => {
@@ -91,7 +91,7 @@ const cart = await updateCartItem({
 });
 
 
-  return ok(res, { cart });
+  return ok(res, { cart: await getCartByUserId(owner.id) });
 });
 
 export const patchCartGiftOptions = asyncHandler(async (req, res) => {
@@ -107,7 +107,7 @@ export const patchCartGiftOptions = asyncHandler(async (req, res) => {
     giftOptions,
   });
 
-  return ok(res, { cart });
+  return ok(res, { cart: await getCartByUserId(owner.id) });
 });
 
 export const deleteCartItem = asyncHandler(async (req, res) => {
@@ -121,7 +121,7 @@ const cart = await removeCartItem({
 });
 
 
-  return ok(res, { cart });
+  return ok(res, { cart: await getCartByUserId(owner.id) });
 });
 
 

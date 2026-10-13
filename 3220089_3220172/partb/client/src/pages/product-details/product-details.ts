@@ -641,6 +641,14 @@ function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): v
   const sizeTrigger = document.getElementById("mobileSizeTrigger") as HTMLButtonElement | null;
   const sizeValue = document.getElementById("mobileSizeValue");
   const sizeMenu = document.getElementById("mobileSizeMenu") as HTMLElement | null;
+  const qtyValue = document.getElementById("mobileAccessoryQtyValue");
+  const originalQty = document.getElementById("quantityValue");
+  const syncAccessoryQty = () => { if (qtyValue && originalQty) qtyValue.textContent = originalQty.textContent || "1"; };
+  const accessoryQtyMinus = document.getElementById("mobileAccessoryQtyMinus");
+  const accessoryQtyPlus = document.getElementById("mobileAccessoryQtyPlus");
+  accessoryQtyMinus?.addEventListener("click", () => { document.getElementById("decreaseQty")?.click(); syncAccessoryQty(); });
+  accessoryQtyPlus?.addEventListener("click", () => { document.getElementById("increaseQty")?.click(); syncAccessoryQty(); });
+  if (originalQty) new MutationObserver(syncAccessoryQty).observe(originalQty, {childList: true, characterData: true, subtree: true});
   const sizeOptions = document.getElementById("sizeOptions");
   if (!bar || !buyButton || !originalButton || !sizeWrap || !sizeTrigger || !sizeMenu) return;
 
@@ -934,24 +942,25 @@ setMetaName("twitter:image", productImage);
     );
     setText(descEl, product.description || product.shortDescription || "");
 
-    // Desktop-only presentation. Keep the mobile product description unchanged.
-    const fullDescription = product.description || product.shortDescription || "";
-    const descriptionBlock = document.getElementById("desktopProductDescriptionBlock");
-    const descriptionToggle = document.getElementById("desktopProductDescriptionToggle") as HTMLButtonElement | null;
-    if (descriptionBlock && descriptionToggle) {
-      const expandable = fullDescription.trim().length > 170;
-      descriptionBlock.classList.toggle("has-long-description", expandable);
-      descriptionToggle.addEventListener("click", () => {
-        const expanded = descriptionBlock.classList.toggle("is-expanded");
-        descriptionToggle.setAttribute("aria-expanded", String(expanded));
-        descriptionToggle.innerHTML = expanded
-          ? (locale === "el" ? "Λιγότερα <span aria-hidden=\"true\">↑</span>" : "Read less <span aria-hidden=\"true\">↑</span>")
-          : (locale === "el" ? "Περισσότερα <span aria-hidden=\"true\">↓</span>" : "Read more <span aria-hidden=\"true\">↓</span>");
-      });
-      descriptionToggle.innerHTML = locale === "el"
-        ? 'Περισσότερα <span aria-hidden="true">↓</span>'
-        : 'Read more <span aria-hidden="true">↓</span>';
+    const eco = document.getElementById("pdpEcoHighlights");
+    if (eco) eco.hidden = product.category !== "tshirt";
+    const facts = document.getElementById("pdpProductFacts");
+    if (facts) {
+      const isClothing = product.category === "tshirt";
+      facts.hidden = !isClothing;
+      if (isClothing) {
+        const messages = locale === "el"
+          ? ["100% οργανικό βαμβάκι", "Ανθεκτική και ποιοτική εκτύπωση QR", "Άνετη unisex εφαρμογή"]
+          : ["100% organic cotton", "High-quality, durable QR print", "Comfortable unisex fit"];
+        facts.replaceChildren(...messages.map((message) => {
+          const li = document.createElement("li");
+          li.textContent = message;
+          return li;
+        }));
+      }
     }
+    setText(document.getElementById("pdpProductInfoTitle"),
+      locale === "el" ? "Πληροφορίες προϊόντος" : "Product Information");
 
     // The product's existing category determines the breadcrumb; no hardcoded product data.
     const breadcrumbShop = document.getElementById("pdpBreadcrumbShop") as HTMLAnchorElement | null;
@@ -1435,6 +1444,13 @@ if (imageStage) {
     setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
     setupMobileProductPurchase(addBtn);
+    const accessoryMode = product.category === "accessory";
+    const accessoryQuantity = document.getElementById("mobileAccessoryQuantity");
+    const mobileSize = document.getElementById("mobileSizeWrap");
+    if (accessoryQuantity && mobileSize) {
+      accessoryQuantity.hidden = !accessoryMode;
+      if (accessoryMode) mobileSize.hidden = true;
+    }
     updateQuantity();
 
     if (addBtn) {
