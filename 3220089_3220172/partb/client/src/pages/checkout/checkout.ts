@@ -1,3 +1,4 @@
+import { trackEcommerceEvent } from "../../services/analytics";
 import "../cart/cart-enhancements.css";
 import "../../i18n/auto";
 
@@ -797,6 +798,14 @@ function restoreAfterAuth(): void {
 
   if (flag === "1") {
     restoreCheckoutDraft();
+  void getCart().then(cart => {
+    const items = (cart.items || []).filter(item => !item.isFreeReward).map(item => ({
+      item_id: String(item.productId), item_name: item.title,
+      price: Number(item.priceEUR ?? item.price ?? 0),
+      quantity: Number(item.quantity || 1)
+    }));
+    if (items.length) trackEcommerceEvent("begin_checkout", items);
+  }).catch(() => { /* checkout remains functional without analytics */ });
     localStorage.removeItem("skanare_returning_from_auth");
   }
 }
