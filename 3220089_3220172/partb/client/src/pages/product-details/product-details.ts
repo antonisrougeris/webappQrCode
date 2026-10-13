@@ -1,3 +1,4 @@
+import { trackEcommerceEvent } from "../../services/analytics";
 import "../../i18n/auto";
 /* 3220089_3220172 */
 
@@ -1441,6 +1442,10 @@ if (imageStage) {
 }
 
     // Purchase controls are initialized before any secondary network requests.
+    trackEcommerceEvent("view_item", [{
+      item_id: String(product.id), item_name: String(product.title || product.name || ""),
+      price: Number(product.priceEUR ?? product.price ?? 0), quantity: 1
+    }]);
     setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
     setupMobileProductPurchase(addBtn);
