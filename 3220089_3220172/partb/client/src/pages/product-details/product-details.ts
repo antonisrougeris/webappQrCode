@@ -1444,7 +1444,7 @@ if (imageStage) {
     setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
     setupMobileProductPurchase(addBtn);
-    const accessoryMode = product.category !== "tshirt";
+    const accessoryMode = product.category === "accessory";
     const accessoryQuantity = document.getElementById("mobileAccessoryQuantity");
     const mobileSize = document.getElementById("mobileSizeWrap");
     if (accessoryQuantity && mobileSize) {
