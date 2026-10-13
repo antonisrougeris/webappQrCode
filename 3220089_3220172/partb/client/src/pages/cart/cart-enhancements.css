@@ -466,3 +466,35 @@ body.gift-dialog-open {
     image-rendering: auto;
   }
 }
+
+
+.cart-free-shipping-unlocked {
+  display: grid;
+  grid-template-columns: 38px minmax(0,1fr) auto;
+  gap: 11px;
+  align-items: center;
+  margin: 8px 0 18px;
+  padding: 13px 14px;
+  border: 1px solid #bbdfc3;
+  border-radius: 14px;
+  background: #eff8f1;
+  color: #1a703c;
+}
+.cart-free-shipping-unlocked__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #d9efdf;
+  color: #178041;
+  font-size: 18px;
+  font-weight: 900;
+}
+.cart-free-shipping-unlocked strong {display:block;font-size:12px;letter-spacing:.015em;}
+.cart-free-shipping-unlocked small {display:block;margin-top:3px;font-size:11px;line-height:1.35;color:#51745b;}
+.cart-free-shipping-unlocked__free {font-size:12px;font-weight:850;color:#16803c;}
+@media (max-width:420px) {
+  .cart-free-shipping-unlocked {gap:8px;padding:11px;}
+  .cart-free-shipping-unlocked strong {font-size:11px;}
+}
