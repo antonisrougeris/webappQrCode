@@ -641,7 +641,6 @@ function setupMobileProductPurchase(originalButton: HTMLButtonElement | null): v
   const sizeTrigger = document.getElementById("mobileSizeTrigger") as HTMLButtonElement | null;
   const sizeValue = document.getElementById("mobileSizeValue");
   const sizeMenu = document.getElementById("mobileSizeMenu") as HTMLElement | null;
-  const accessoryQty = document.getElementById("mobileAccessoryQuantity");
   const qtyValue = document.getElementById("mobileAccessoryQtyValue");
   const originalQty = document.getElementById("quantityValue");
   const syncAccessoryQty = () => { if (qtyValue && originalQty) qtyValue.textContent = originalQty.textContent || "1"; };
