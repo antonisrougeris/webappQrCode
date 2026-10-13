@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/assets/css/layout.css" />
   <link rel="stylesheet" href="/assets/css/components.css?v=2.2-colors" />
   <link rel="stylesheet" href="/assets/css/product-mobile-immersive.css?v=20261012-mobile-1" />
+  <link rel="stylesheet" href="/assets/css/product-desktop-premium.css?v=20261013-pdp-desktop-1" />
   <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="5001afeb-b9df-4288-92c2-6febe12a2a03";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
 <meta
   name="description"
@@ -109,6 +110,14 @@
     </div>
   </header>
   <main class="container product-page">
+  <!-- Desktop-only navigation context; no changes to the mobile experience. -->
+  <nav class="pdp-desktop-breadcrumb" aria-label="Breadcrumb">
+    <a href="/products" id="pdpBreadcrumbShop">Shop</a>
+    <span class="pdp-desktop-breadcrumb__separator" aria-hidden="true">/</span>
+    <a href="/products" id="pdpBreadcrumbCategory">Products</a>
+    <span class="pdp-desktop-breadcrumb__separator" aria-hidden="true">/</span>
+    <span id="pdpBreadcrumbProduct" aria-current="page">Product</span>
+  </nav>
     
 
 <article id="productDetails" class="product-details-card">
@@ -240,8 +249,9 @@
 
 
     <!-- DESCRIPTION -->
-    <div class="product-description-block">
+    <div class="product-description-block" id="desktopProductDescriptionBlock">
       <p id="productDescription"></p>
+      <button id="desktopProductDescriptionToggle" class="pdp-desktop-description-toggle" type="button" aria-controls="productDescription" aria-expanded="false">Read more <span aria-hidden="true">↓</span></button>
     </div>
 
 
@@ -390,6 +400,10 @@
 
 </div>
 
+    <nav class="pdp-desktop-help-links" aria-label="Shopping information">
+      <a href="/shipping-policy">Shipping information <span aria-hidden="true">↗</span></a>
+      <a href="/refund-policy">Returns policy <span aria-hidden="true">↗</span></a>
+    </nav>
 
   </section>
 
