@@ -1,4 +1,5 @@
 import { getDB } from "../config/db.js";
+import { KEYCHAIN_REWARD_PRODUCT_ID, KEYCHAIN_REWARD_QR_DESTINATION, qualifiesForKeychain, availableKeychainVariant } from "./free-keychain-reward.service.js";
 import {
   getEffectiveUnitPrice,
 } from "./product-pricing.service.js";
@@ -362,6 +363,10 @@ export async function checkoutCartForOwner({
       productRefs.map((ref) => tx.get(ref))
     );
 
+    // Read reward stock in the same transaction before any writes.
+    const rewardProductRef = db.collection(COLLECTIONS.PRODUCTS).doc(KEYCHAIN_REWARD_PRODUCT_ID);
+    const rewardProductSnap = await tx.get(rewardProductRef);
+
     const orderItems = [];
     const stockUpdates = [];
     let subtotal = 0;
@@ -508,6 +513,46 @@ orderItems.push({
         subtotalBeforeRecoveryDiscount -
         recoveryDiscountAmount
       );
+
+    // Applied discounts can revoke the reward; other free lines never count.
+    if (qualifiesForKeychain(discountedSubtotal) && rewardProductSnap.exists) {
+      const rewardProduct = { id: rewardProductSnap.id, ...rewardProductSnap.data() };
+      if (rewardProduct.active !== false) {
+        const rewardVariant = availableKeychainVariant(rewardProduct);
+        if (rewardVariant !== null) {
+          const localizedReward = localizeProduct(rewardProduct, locale);
+          orderItems.push({
+            id: createId("orderitem"),
+            productId: KEYCHAIN_REWARD_PRODUCT_ID,
+            slug: rewardProduct.slug || KEYCHAIN_REWARD_PRODUCT_ID,
+            title: localizedReward.title || "NFC Keychain",
+            image: (Array.isArray(rewardProduct.images) && rewardProduct.images[0]) || rewardProduct.image || null,
+            quantity: 1,
+            unitPrice: 0,
+            originalUnitPrice: Number(rewardProduct.price || 0),
+            discountPercent: 0,
+            currency: "EUR",
+            lineTotal: 0,
+            sku: rewardVariant?.sku || "",
+            variant: rewardVariant ? {
+              sku: rewardVariant.sku || "",
+              size: rewardVariant.size || "",
+              color: rewardVariant.color || "",
+            } : null,
+            qrDestination: KEYCHAIN_REWARD_QR_DESTINATION,
+            customQr: Boolean(rewardProduct.customQr),
+            qrConfig: rewardProduct.customQr ? {
+              textPrint: String(rewardProduct.qrConfig?.textPrint || "").trim(),
+              textPosition: rewardProduct.qrConfig?.textPosition === "top" ? "top" : "bottom",
+              qrColor: rewardProduct.qrConfig?.qrColor || rewardProduct.qrConfig?.color || "#000000",
+              textColor: rewardProduct.qrConfig?.textColor || "#000000",
+              size: rewardProduct.qrConfig?.size || 3540,
+            } : null,
+            isFreeReward: true,
+          });
+        }
+      }
+    }
 
     const shippingCost = calculateShipping(discountedSubtotal, delivery);
     const giftFee = giftFeeFor(giftOptions);
