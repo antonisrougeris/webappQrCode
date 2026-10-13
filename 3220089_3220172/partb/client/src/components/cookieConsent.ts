@@ -1,4 +1,5 @@
 import { locale, localizedPath, t } from "../i18n/locale";
+import "./cookieConsent.css";
 
 const COOKIE_CONSENT_KEY = "skanare_cookie_consent";
 type CookieConsent = "accepted" | "rejected";
