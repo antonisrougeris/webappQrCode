@@ -102,7 +102,7 @@ function renderProducts(container: HTMLElement, products: Product[]): void {
   products.forEach((product) => {
     const productPrice = Number(product.price ?? product.priceEUR ?? 0);
     const article = document.createElement("article");
-    article.className = "card product-card";
+    article.className = `card product-card ${product.category === "accessory" ? "product-card--accessory" : "product-card--clothing"}`;
 
     const link = document.createElement("a");
     link.href = productUrl(product);
