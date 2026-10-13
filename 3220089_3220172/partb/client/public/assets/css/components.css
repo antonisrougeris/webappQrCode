@@ -16489,3 +16489,26 @@ body > div iframe[src*="boxnow"] {
     object-position: center;
   }
 }
+
+
+/* Mobile QR setup reminder appears at cart-heading level, never over the sticky CTA. */
+@media (max-width: 700px) {
+  body > .toast-stack--cart-reminder {
+    position: fixed;
+    inset: max(82px, calc(env(safe-area-inset-top) + 78px)) 12px auto 12px;
+    z-index: 2147483100;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+  body > .toast-stack--cart-reminder .toast-message {
+    box-sizing: border-box;
+    width: min(100%, 460px);
+    max-width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: center;
+  }
+}
