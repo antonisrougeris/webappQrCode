@@ -26,6 +26,6 @@ test("gallery thumbnails use full resolution product images and do not fade", ()
 test("desktop catalog fills the page with edge-to-edge artwork", () => {
   assert.match(catalog,/\.products-shop > \.container \{ width: min\(1440px/);
   assert.match(catalog,/\.products-shop \.products-grid \{ grid-template-columns:repeat\(4/);
-  assert.match(catalog,/\.products-shop \.product-media > img\.product-img\s*\{[\s\S]*?object-fit:cover;/);
+  assert.match(catalog,/\.products-shop \.product-media > img\.product-img\s*\{[\s\S]*?object-fit:\s*cover/);
   assert.match(productsHtml,/components\.css\?v=20261013-catalog-cards/);
 });
