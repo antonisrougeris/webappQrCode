@@ -16310,3 +16310,7 @@ body > div iframe[src*="boxnow"] {
   .qr-destination-picker__photo { grid-template-columns: 1fr; }
   .qr-destination-picker__preview { min-height: 80px; }
 }
+
+/* Keep inactive editor content fully hidden despite page-specific display rules. */
+.qr-destination-picker [data-qr-link-fields][hidden],
+.qr-destination-picker .qr-destination-picker__photo[hidden] { display: none !important; }
