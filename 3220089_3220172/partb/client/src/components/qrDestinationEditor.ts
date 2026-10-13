@@ -23,6 +23,8 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     const action = card.querySelector<HTMLButtonElement>(".qr-save-btn, [data-my-qr-save]");
     const oldLabel = card.querySelector<HTMLLabelElement>("[data-qr-destination-label]");
     if (!linkRow || !linkInput || !action) continue;
+    const submitButton: HTMLButtonElement = action;
+    const linkFields: HTMLElement = linkRow;
 
     let mode: DestinationMode = qr.destinationType === "photo" ? "photo" : "link";
     let busy = false;
@@ -89,10 +91,10 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
     function updateAction(): void {
       const active = qr.destinationType === "photo" ? "photo" : "link";
       const switching = mode !== active;
-      action.textContent = say(switching
+      submitButton.textContent = say(switching
         ? (mode === "photo" ? "Activate photo" : "Activate link")
         : (mode === "photo" ? "Save photo" : "Save"));
-      action.disabled = busy || (mode === "photo" && !fileInput.files?.length &&
+      submitButton.disabled = busy || (mode === "photo" && !fileInput.files?.length &&
         (active === "photo" || !hasPhoto()));
     }
 
@@ -173,7 +175,7 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
         button.classList.toggle("is-active", selected);
         button.setAttribute("aria-pressed", String(selected));
       });
-      linkRow.hidden = mode !== "link";
+      linkFields.hidden = mode !== "link";
       photoPanel.hidden = mode !== "photo";
       if (mode === "photo" && !fileInput.files?.length) void showSavedPhoto();
       note.textContent = "";
@@ -201,7 +203,7 @@ export function enhanceQrDestinationEditors(container: HTMLElement, qrCodes: QrC
       updateAction();
     });
 
-    action.addEventListener("click", async () => {
+    submitButton.addEventListener("click", async () => {
       if (busy) return;
       const requestedMode = mode;
       const target = linkInput.value.trim();
