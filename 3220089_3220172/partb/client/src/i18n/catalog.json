@@ -171,7 +171,7 @@
     "Choose a photo first.": "Επίλεξε πρώτα φωτογραφία.",
     "Uploading photo…": "Ανέβασμα φωτογραφίας…",
     "Photo saved. Your printed QR stays the same.": "Η φωτογραφία αποθηκεύτηκε. Το τυπωμένο QR παραμένει ίδιο.",
-    "Could not upload photo.": "Δεν ήταν δυνατή η μεταφόρτωση φωτογραφίας.",
+    "Could not upload photo.": "Δεν ήταν δυνατό το ανέβασμα της φωτογραφίας.",
     "Saved photo is now active.": "Η αποθηκευμένη φωτογραφία είναι πλέον ενεργή.",
     "Could not activate photo.": "Δεν ήταν δυνατή η ενεργοποίηση φωτογραφίας.",
     "Save this link to make it your QR destination.": "Αποθήκευσε τον σύνδεσμο για να γίνει ο προορισμός του QR.",
@@ -703,9 +703,9 @@
     "Order created, but payment URL was not returned.": "Η παραγγελία δημιουργήθηκε, αλλά δεν επιστράφηκε σύνδεσμος πληρωμής.",
     "Checkout failed.": "Η ολοκλήρωση αγοράς απέτυχε.",
     "Skanare QR Product": "Προϊόν QR Skanare",
-    "Enter a destination URL.": "Συμπλήρωσε έναν προορισμό URL.",
+    "Enter a destination URL.": "Συμπλήρωσε έναν σύνδεσμο URL.",
     "Destination updated successfully.": "Ο προορισμός ενημερώθηκε επιτυχώς.",
-    "Could not update QR destination.": "Δεν ήταν δυνατή η ενημέρωση του προορισμού QR.",
+    "Could not update QR destination.": "Δεν ήταν δυνατή η ενημέρωση του QR.",
     "Add details about this item": "Πρόσθεσε λεπτομέρειες για αυτό το προϊόν",
     "Select at least one item.": "Επίλεξε τουλάχιστον ένα προϊόν.",
     "Choose a reason for every selected item.": "Επίλεξε λόγο επιστροφής για κάθε προϊόν.",
@@ -757,7 +757,13 @@
     "Your cart is empty": "Το καλάθι σου είναι άδειο",
     "Add a product before continuing to payment.": "Πρόσθεσε προϊόν στο καλάθι πριν συνεχίσεις στην πληρωμή.",
     "For orders delivered in Greece, standard shipping costs €2. Orders of €50 or more qualify for free standard shipping.": "Για παραγγελίες που παραδίδονται στην Ελλάδα, τα βασικά μεταφορικά κοστίζουν 2€. Οι παραγγελίες αξίας 50€ ή περισσότερο έχουν δωρεάν βασικά μεταφορικά.",
-    "The final shipping charge is shown during checkout before payment.": "Το τελικό κόστος αποστολής εμφανίζεται στο checkout πριν από την πληρωμή."
+    "The final shipping charge is shown during checkout before payment.": "Το τελικό κόστος αποστολής εμφανίζεται στο checkout πριν από την πληρωμή.",
+    "Activate photo": "Ενεργοποίηση φωτογραφίας",
+    "Activate link": "Ενεργοποίηση συνδέσμου",
+    "Save photo": "Αποθήκευση φωτογραφίας",
+    "Selected QR photo": "Επιλεγμένη φωτογραφία QR",
+    "Saving…": "Αποθήκευση…",
+    "Destination URL": "Σύνδεσμος προορισμού"
   },
   "messages": {
     "el": {
