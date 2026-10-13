@@ -1,0 +1,18 @@
+/* Cookie consent must be actionable above the mobile sticky buy bar, size modal and chat.
+   Imported via Vite to give it a content-hashed asset name on every deployment. */
+@media (max-width: 600px) {
+  body > .cookie-banner {
+    position: fixed;
+    z-index: 2147483600 !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    width: auto;
+    pointer-events: auto;
+  }
+  body > .cookie-banner .cookie-banner-inner {
+    max-height: min(80dvh, 490px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}

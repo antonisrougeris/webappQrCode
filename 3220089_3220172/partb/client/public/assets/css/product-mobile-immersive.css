@@ -753,3 +753,39 @@
  .mobile-purchase-bar:has(.mobile-purchase-bar__quantity:not([hidden])) .mobile-purchase-bar__delivery {
   width:calc(100% - 103px);margin-left:103px;}
 }
+
+
+/* Mobile-only: both benefit tags follow the product title/subtitle as one balanced row. */
+@media (max-width: 600px) {
+ .product-page .product-info {
+   grid-template-areas:
+     "rating original" "title price" "meta price"
+     "highlights highlights" "badges badges"
+     "variants variants" "quantity quantity" "qr qr"
+     "description description" "delivery delivery" "benefits benefits";
+ }
+ .product-page .product-info .pdp-eco-highlights:not([hidden]) {
+   grid-area: highlights;
+   display: grid;
+   grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+   gap: 4px;
+   width: 100%;
+   margin: 5px 0 13px;
+   align-items: stretch;
+ }
+ .product-page .product-info .pdp-eco-highlights span {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   min-width: 0;
+   margin: 0;
+   padding: 5px 3px;
+   border-radius: 8px;
+   text-align: center;
+   font-size: clamp(6px, 1.6vw, 8px);
+   line-height: 1.13;
+   letter-spacing: -.025em;
+   white-space: nowrap;
+   font-weight: 650;
+ }
+}

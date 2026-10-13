@@ -26,6 +26,8 @@ export function showToast(
     document.body.appendChild(stack);
   }
 
+  if (isCartReminder) stack.replaceChildren();
+
   const toast = document.createElement("div");
   toast.className = "toast-message";
   toast.textContent = message;
@@ -34,7 +36,7 @@ export function showToast(
   setTimeout(() => {
     toast.remove();
     if (stack && stack.children.length === 0) stack.remove();
-  }, 7000);
+  }, isCartReminder ? 4000 : 7000);
 }
 
 export function setFlashToast(message: string): void {

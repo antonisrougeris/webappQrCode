@@ -485,6 +485,14 @@ async function renderCartFromState(
   container.innerHTML = `
     ${updateProgress(merchandiseTotal, Boolean(rewardItem))}
 
+    ${merchandiseTotal >= FREE_SHIPPING_TARGET ? `
+      <div class="cart-free-shipping-unlocked" role="status">
+        <span class="cart-free-shipping-unlocked__icon" aria-hidden="true">✓</span>
+        <span><strong>${locale === "el" ? "Ξεκλείδωσες δωρεάν μεταφορικά!" : "FREE SHIPPING UNLOCKED"}</strong>
+        <small>${locale === "el" ? "Η παραγγελία σου έχει δωρεάν αποστολή" : "Free shipping on your eligible order"}</small></span>
+        <span class="cart-free-shipping-unlocked__free">FREE</span>
+      </div>` : ""}
+
     <section class="drawer-cart-list">
       ${items
         .map(
