@@ -8,7 +8,7 @@ import { renderProducts } from "./components/renderProducts";
 import { getProducts } from "./services/products";
 import { updateCartBadge } from "./utils/cart-badge";
 import { firebaseAuth } from "./services/firebase";
-import { getMyQrCodes, updateQrCode, type QrCode } from "./services/qr";
+import { getMyQrCodes, type QrCode } from "./services/qr";
 import { enhanceQrDestinationEditors } from "./components/qrDestinationEditor";
 
 
@@ -252,54 +252,7 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
   enhanceQrDestinationEditors(grid, qrCodes);
 
 
-  grid.querySelectorAll<HTMLButtonElement>(".qr-save-btn").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const qrId = button.dataset.qrId;
-      if (!qrId) return;
 
-      const input = document.getElementById(
-        `input-${qrId}`
-      ) as HTMLInputElement | null;
-
-      const targetUrl = input?.value.trim() || "";
-
-      if (!targetUrl) {
-        alert("Please enter a destination URL.");
-        return;
-      }
-
-      button.disabled = true;
-      const originalText = button.textContent || "Save";
-      button.textContent = "Saving...";
-
-      try {
-        await updateQrCode(qrId, targetUrl);
-        const current = qrCodes.find((item) => item.id === qrId);
-        if (current) {
-          current.destinationType = "link";
-          current.linkUrl = targetUrl;
-          current.targetUrl = targetUrl;
-          const card = button.closest<HTMLElement>("[data-qr-editor]");
-          card?.dispatchEvent(new CustomEvent("qr-destination-updated"));
-        }
-        button.textContent = "Saved";
-
-        setTimeout(() => {
-          button.textContent = originalText;
-          button.disabled = false;
-        }, 1200);
-      } catch (error) {
-        console.error("Failed to update QR code:", error);
-        alert(
-          error instanceof Error
-            ? error.message
-            : "Failed to update QR destination."
-        );
-        button.textContent = originalText;
-        button.disabled = false;
-      }
-    });
-  });
 }
 
 
@@ -1125,7 +1078,7 @@ async function loadUserAccountDashboard(): Promise<void> {
 
       await renderQrDashboard(
         qrGrid,
-        qrCodes
+        qrCodes.slice(0, 2)
       );
 
     } else {
