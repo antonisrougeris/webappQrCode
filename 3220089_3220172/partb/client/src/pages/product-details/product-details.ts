@@ -96,6 +96,7 @@ function renderReviews(reviews: ProductReview[]): void {
 
   if (reviewLinkText) {
     reviewLinkText.textContent = `${reviews.length} reviews`;
+    reviewLinkText.dataset.reviewCount = String(reviews.length);
   }
 
   if (productStars) {
@@ -932,6 +933,41 @@ setMetaName("twitter:image", productImage);
         : "Accessory • Custom editable QR"
     );
     setText(descEl, product.description || product.shortDescription || "");
+
+    // Desktop-only presentation. Keep the mobile product description unchanged.
+    const fullDescription = product.description || product.shortDescription || "";
+    const descriptionBlock = document.getElementById("desktopProductDescriptionBlock");
+    const descriptionToggle = document.getElementById("desktopProductDescriptionToggle") as HTMLButtonElement | null;
+    if (descriptionBlock && descriptionToggle) {
+      const expandable = fullDescription.trim().length > 170;
+      descriptionBlock.classList.toggle("has-long-description", expandable);
+      descriptionToggle.addEventListener("click", () => {
+        const expanded = descriptionBlock.classList.toggle("is-expanded");
+        descriptionToggle.setAttribute("aria-expanded", String(expanded));
+        descriptionToggle.innerHTML = expanded
+          ? (locale === "el" ? "Λιγότερα <span aria-hidden=\"true\">↑</span>" : "Read less <span aria-hidden=\"true\">↑</span>")
+          : (locale === "el" ? "Περισσότερα <span aria-hidden=\"true\">↓</span>" : "Read more <span aria-hidden=\"true\">↓</span>");
+      });
+      descriptionToggle.innerHTML = locale === "el"
+        ? 'Περισσότερα <span aria-hidden="true">↓</span>'
+        : 'Read more <span aria-hidden="true">↓</span>';
+    }
+
+    // The product's existing category determines the breadcrumb; no hardcoded product data.
+    const breadcrumbShop = document.getElementById("pdpBreadcrumbShop") as HTMLAnchorElement | null;
+    const breadcrumbCategory = document.getElementById("pdpBreadcrumbCategory") as HTMLAnchorElement | null;
+    if (breadcrumbShop) {
+      breadcrumbShop.href = locale === "el" ? "/el/products" : "/products";
+      breadcrumbShop.textContent = locale === "el" ? "Κατάστημα" : "Shop";
+    }
+    if (breadcrumbCategory) {
+      const group = product.category === "tshirt" ? "tshirt" : "accessory";
+      breadcrumbCategory.href = `${locale === "el" ? "/el/products" : "/products"}?category=${group}`;
+      breadcrumbCategory.textContent = group === "tshirt"
+        ? (locale === "el" ? "Ρούχα QR" : "QR Clothing")
+        : (locale === "el" ? "Αξεσουάρ QR" : "QR Accessories");
+    }
+    setText(document.getElementById("pdpBreadcrumbProduct"), product.title);
 
     const originalPrice = Number(product.originalPrice ?? product.price);
     const onSale = Boolean(product.onSale) && originalPrice > product.price;
