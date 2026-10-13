@@ -302,7 +302,7 @@ function renderCartItem(item: CartItem, index: number, catalog: Product[] = []):
 
   return `
     <article class="drawer-cart-item" data-item-id="${itemKey}">
-      <img src="${image}" alt="${title}" />
+      <a class="cart-product-link cart-product-link--image" href="${href}" aria-label="${escapeHtml(title)}"><img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" /></a>
 
       <div class="drawer-cart-info">
         <p class="cart-stock-status">
