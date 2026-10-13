@@ -1443,7 +1443,7 @@ if (imageStage) {
 
     // Purchase controls are initialized before any secondary network requests.
     trackEcommerceEvent("view_item", [{
-      item_id: String(product.id), item_name: String(product.title || product.name || ""),
+      item_id: String(product.id), item_name: String(product.title || ""),
       price: Number(product.priceEUR ?? product.price ?? 0), quantity: 1
     }]);
     setupSizeGuideModal(product);
