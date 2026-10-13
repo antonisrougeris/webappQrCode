@@ -414,3 +414,37 @@
 .pdp-product-information__facts[hidden] {display:none!important;}
 .pdp-product-information__facts {margin:0 0 13px;padding:0 0 0 18px;color:#4d4d4d;}
 .pdp-product-information__facts li {margin:0 0 8px;line-height:1.5;font-size:13px;}
+
+
+/* Desktop purchase order: highlights -> colour -> details -> QR -> size -> quantity -> delivery -> CTA */
+@media (min-width: 821px) {
+  .product-page .product-info .pdp-eco-highlights { order: 5; margin: 0 0 12px; }
+  .product-page .product-info .variant-controls {
+    display: contents;
+  }
+  .product-page .product-info #productColorRow {
+    order: 6;
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 0 0 14px;
+    border-top: 0;
+    border-bottom: 1px solid #e9e7e1;
+  }
+  .product-page .product-info #productColorRow[hidden] { display: none !important; }
+  .product-page .product-info .pdp-product-information { order: 7; margin: 0 0 13px; }
+  .product-page .product-info .qr-box { order: 8; }
+  .product-page .product-info .size-row { order: 9; width: 100%; margin: 3px 0 9px; }
+  .product-page .product-info .size-row[hidden] { display: none !important; }
+  .product-page .product-info .size-stock-row { order: 10; width: 100%; margin: 0 0 15px; }
+  .product-page .product-info .product-purchase-row { order: 11; margin: 0 0 10px; }
+  .product-page .product-info .quantity-control { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .product-page .product-info .delivery-info { order: 12; margin: 5px 0 12px; }
+  .product-page .product-info .add-to-cart-btn { order: 13; }
+  .product-page .product-info .product-benefits { order: 14; }
+  .product-page .product-info .pdp-desktop-help-links { order: 15; }
+}
+.pdp-product-information__icon { display: inline-flex; width: 20px; height: 24px; align-items: center; justify-content: center; flex: 0 0 20px; }
+.pdp-product-information__icon svg { display: block; width: 20px; height: 24px; }
+.pdp-product-information__chevron { flex: 0 0 27px; width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; }
+.pdp-product-information__chevron svg { display: block; }
+.pdp-product-information summary { align-items: center; }
