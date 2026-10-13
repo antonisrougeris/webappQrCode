@@ -944,6 +944,21 @@ setMetaName("twitter:image", productImage);
 
     const eco = document.getElementById("pdpEcoHighlights");
     if (eco) eco.hidden = product.category !== "tshirt";
+    const facts = document.getElementById("pdpProductFacts");
+    if (facts) {
+      const isClothing = product.category === "tshirt";
+      facts.hidden = !isClothing;
+      if (isClothing) {
+        const messages = locale === "el"
+          ? ["100% οργανικό βαμβάκι", "Ανθεκτική και ποιοτική εκτύπωση QR", "Άνετη unisex εφαρμογή"]
+          : ["100% organic cotton", "High-quality, durable QR print", "Comfortable unisex fit"];
+        facts.replaceChildren(...messages.map((message) => {
+          const li = document.createElement("li");
+          li.textContent = message;
+          return li;
+        }));
+      }
+    }
     setText(document.getElementById("pdpProductInfoTitle"),
       locale === "el" ? "Πληροφορίες προϊόντος" : "Product Information");
 
