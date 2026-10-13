@@ -24,7 +24,7 @@ initNav();
 initMobileMenu();
 
 const FREE_SHIPPING_TARGET = 50;
-const FREE_STICKERS_TARGET = 80;
+const FREE_KEYCHAIN_TARGET = 80;
 const PREMIUM_GIFT_PRICE = 1.5;
 
 function getGiftTier(cart: Cart | null | undefined): "none" | "simple" | "premium" {
@@ -214,11 +214,11 @@ function updateProgress(total: number): string {
 
   if (total < FREE_SHIPPING_TARGET) {
     percent = (total / FREE_SHIPPING_TARGET) * 50;
-  } else if (total < FREE_STICKERS_TARGET) {
+  } else if (total < FREE_KEYCHAIN_TARGET) {
     percent =
       50 +
       ((total - FREE_SHIPPING_TARGET) /
-        (FREE_STICKERS_TARGET - FREE_SHIPPING_TARGET)) *
+        (FREE_KEYCHAIN_TARGET - FREE_SHIPPING_TARGET)) *
         50;
   } else {
     percent = 100;
@@ -227,7 +227,7 @@ function updateProgress(total: number): string {
   percent = Math.min(percent, 100);
 
   const isShippingDone = total >= FREE_SHIPPING_TARGET;
-  const isStickerDone = total >= FREE_STICKERS_TARGET;
+  const isKeychainDone = total >= FREE_KEYCHAIN_TARGET;
 
   let message = "";
 
@@ -235,12 +235,12 @@ function updateProgress(total: number): string {
     message = `${t("cart.only", "Only")} ${formatPrice(
       FREE_SHIPPING_TARGET - total
     )} ${t("cart.awayFreeShipping", "away from free shipping")}`;
-  } else if (total < FREE_STICKERS_TARGET) {
+  } else if (total < FREE_KEYCHAIN_TARGET) {
     message = `${t("cart.add", "Add")} ${formatPrice(
-      FREE_STICKERS_TARGET - total
-    )} ${t("cart.moreFreeStickers", "more and get a Sticker Set for free")}`;
+      FREE_KEYCHAIN_TARGET - total
+    )} ${(locale === "el" ? "ακόμη για δωρεάν NFC μπρελόκ" : "more for a FREE NFC Keychain")}`;
   } else {
-    message = t("cart.rewardsUnlocked", "You unlocked all rewards");
+    message = (locale === "el" ? "Ξεκλείδωσες δωρεάν NFC μπρελόκ!" : "You unlocked a FREE NFC Keychain!");
   }
 
   return `
@@ -263,7 +263,7 @@ function updateProgress(total: number): string {
           </span>
         </div>
 
-        <div class="progress-step step-2 ${isStickerDone ? "done" : ""}">
+        <div class="progress-step step-2 ${isKeychainDone ? "done" : ""}">
           <div class="icon">
             <svg viewBox="0 0 22 22" width="18" height="18">
               <path d="M19.5 6.25h-1.065A2.709 2.709 0 0 0 18.75 5a2.747 2.747 0 0 0-4.876-1.739L12 5.752l-1.881-2.5A2.747 2.747 0 0 0 5.25 5a2.709 2.709 0 0 0 .315 1.25H4.5A2.253 2.253 0 0 0 2.25 8.5V12a.75.75 0 0 0 .75.75h.25V18A3.383 3.383 0 0 0 7 21.75h10A3.383 3.383 0 0 0 20.75 18v-5.25H21a.75.75 0 0 0 .75-.75V8.5a2.253 2.253 0 0 0-2.25-2.25zm.75 2.25v2.75h-7.5v-3.5h6.75a.751.751 0 0 1 .75.75zm-5.211-4.293A1.223 1.223 0 0 1 16 3.75a1.25 1.25 0 0 1 0 2.5h-2.5l1.539-2.043zM6.75 5A1.252 1.252 0 0 1 8 3.75a1.213 1.213 0 0 1 .948.441L10.5 6.25H8A1.252 1.252 0 0 1 6.75 5zm-3 3.5a.751.751 0 0 1 .75-.75h6.75v3.5h-7.5zm1 9.5v-5.25h6.5v7.5H7c-1.577 0-2.25-.673-2.25-2.25zm14.5 0c0 1.577-.673 2.25-2.25 2.25h-4.25v-7.5h6.5z"/>
@@ -271,7 +271,7 @@ function updateProgress(total: number): string {
           </div>
           <span data-no-i18n>
             <small>FREE</small>
-            STICKER SET
+            KEYCHAIN
           </span>
         </div>
       </div>
@@ -435,6 +435,7 @@ async function renderCartFromState(
 
   const items =
     getCartItems(cart);
+  const rewardItem = cart?.rewardItem || null;
 
   const merchandiseTotal =
     getCartTotal(cart);
@@ -492,6 +493,13 @@ async function renderCartFromState(
             )
         )
         .join("")}
+      ${rewardItem ? `<div class="free-keychain-cart-reward">
+        <span class="free-keychain-cart-reward__ribbon">${locale === "el" ? "ΔΩΡΕΑΝ ΔΩΡΟ" : "FREE GIFT UNLOCKED"}</span>
+        <img src="${escapeHtml(rewardItem.image || "/assets/img/logo_Image.png")}" alt="NFC Keychain" />
+        <div><strong>${locale === "el" ? "NFC Μπρελόκ" : "NFC Keychain"}</strong>
+          <small>${locale === "el" ? "Προστέθηκε δωρεάν με αγορές από 80 €" : "Free with eligible €80+ order"}</small></div>
+        <strong class="free-keychain-cart-reward__price">FREE</strong>
+      </div>` : ""}
     </section>
 
     <button
