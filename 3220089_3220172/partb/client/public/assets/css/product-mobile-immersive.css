@@ -789,3 +789,51 @@
    font-weight: 650;
  }
 }
+
+
+/* Android/WebView resilience: price may not squeeze the H1 or subtitle. */
+.pdp-eco-compact {display:none!important}
+@media (max-width:600px) {
+ .product-page .product-info {
+   grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+   grid-template-areas:
+     "rating original" "title title" "meta meta"
+     "highlights highlights" "price price"
+     "badges badges" "variants variants" "quantity quantity"
+     "qr qr" "description description" "delivery delivery" "benefits benefits";
+ }
+ .product-page .product-info #productTitle {
+   grid-area:title; width:100%; max-width:100%; min-width:0;
+   overflow-wrap:normal; word-break:normal; hyphens:none;
+   -webkit-line-clamp:unset; line-clamp:unset; overflow:visible;
+   font-size:clamp(20px,5.6vw,26px); line-height:1.15;
+ }
+ .product-page .product-info #productMeta {
+   grid-area:meta; width:100%; max-width:100%; min-width:0;
+   white-space:normal; overflow-wrap:normal; margin:3px 0 7px;
+   font-size:11px;
+ }
+ .product-page .product-info .product-price-area {
+   grid-area:price; justify-self:end; align-items:flex-end;
+   margin:1px 0 13px; width:auto; min-width:0;
+ }
+ .product-page .product-info .pdp-eco-highlights:not([hidden]) {
+   grid-area:highlights; display:flex; flex-wrap:nowrap;
+   width:100%; align-items:center; gap:6px;
+   margin:5px 0 8px; min-width:0;
+ }
+ .product-page .product-info .pdp-eco-highlights .pdp-eco-full {display:none!important}
+ .product-page .product-info .pdp-eco-highlights .pdp-eco-compact {
+   display:inline-flex!important; flex:0 1 auto; min-width:0;
+   justify-content:center; align-items:center; width:auto;
+   white-space:nowrap; padding:6px 9px; margin:0;
+   font-size:clamp(10px,2.65vw,12px); line-height:1.15;
+   letter-spacing:-.015em; font-weight:700; border-radius:999px;
+ }
+}
+@media (max-width:350px) {
+ .product-page .product-info .pdp-eco-highlights {gap:4px!important}
+ .product-page .product-info .pdp-eco-highlights .pdp-eco-compact {
+   padding:5px 6px;font-size:10px;
+ }
+}

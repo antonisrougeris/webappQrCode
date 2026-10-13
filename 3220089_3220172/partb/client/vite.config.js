@@ -1,7 +1,27 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 export default defineConfig({
+  plugins: [{
+    name: "skanare-fingerprint-public-css",
+    apply: "build",
+    transformIndexHtml(html) {
+      // Every production page receives fresh asset URLs whenever CSS content
+      // changes, including returning Android users with cached stylesheets.
+      return html.replace(/(href="\/assets\/css\/([a-zA-Z0-9_-]+\.css))(?:\?[^"]*)?(")/g,
+        (match, prefix, fileName, ending) => {
+          try {
+            const bytes = readFileSync(resolve(process.cwd(), "public/assets/css", fileName));
+            const version = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
+            return prefix + "?v=" + version + ending;
+          } catch {
+            return match;
+          }
+        });
+    },
+  }],
   build: {
     rollupOptions: {
       input: {
