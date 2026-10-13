@@ -934,6 +934,22 @@ setMetaName("twitter:image", productImage);
     );
     setText(descEl, product.description || product.shortDescription || "");
 
+    // Concise, genuine product copy near the buy controls (desktop only).
+    const desktopSummary = document.getElementById("desktopProductSummary");
+    if (desktopSummary) {
+      const copy = (product.shortDescription || product.description || "").trim();
+      const clipped = copy.length > 156 ? `${copy.slice(0, 153).trimEnd()}…` : copy;
+      desktopSummary.textContent = clipped;
+      desktopSummary.hidden = !clipped;
+    }
+    details.dataset.productCategory = product.category === "tshirt" ? "tshirt" : "accessory";
+    setText(document.getElementById("desktopQrHeading"), locale === "el" ? "Κάν’ το δικό σου" : "Make it yours");
+    setText(document.getElementById("desktopQrOptional"), locale === "el" ? "Προαιρετικό" : "Optional");
+    setText(
+      document.querySelector<HTMLElement>(".pdp-desktop-gallery-caption"),
+      locale === "el" ? "Επίλεξε φωτογραφία για να δεις τις λεπτομέρειες" : "Select a photo to explore the details"
+    );
+
     // Desktop-only presentation. Keep the mobile product description unchanged.
     const fullDescription = product.description || product.shortDescription || "";
     const descriptionBlock = document.getElementById("desktopProductDescriptionBlock");
