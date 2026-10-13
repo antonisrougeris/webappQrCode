@@ -16436,3 +16436,56 @@ body > div iframe[src*="boxnow"] {
 @media (max-width: 900px) and (min-width: 601px) {
   .products-shop .products-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
 }
+
+/* Shop catalog photography should occupy the whole card, never letterbox.
+   The category modifier keeps accessory framing independent from clothing. */
+@media (min-width: 901px) {
+  .products-shop .product-media {
+    aspect-ratio: 4 / 5;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    background: #f4f3f1;
+  }
+  .products-shop .product-media > img.product-img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    opacity: 1;
+    transform: none;
+    filter: none;
+    image-rendering: auto;
+  }
+  .products-shop .product-card--accessory .product-media > img.product-img {
+    object-fit: cover;
+    object-position: 50% 50%;
+  }
+  .products-shop .product-card .product-body {
+    padding-top: 13px;
+  }
+  .products-shop .product-card .product-row {
+    align-items: baseline;
+  }
+  .products-shop .product-card .product-stock {
+    margin-top: 7px;
+  }
+}
+@media (min-width: 601px) and (max-width: 900px) {
+  .products-shop .product-media {
+    display: block;
+    aspect-ratio: 4 / 5;
+    position: relative;
+    overflow: hidden;
+  }
+  .products-shop .product-media > img.product-img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+}
