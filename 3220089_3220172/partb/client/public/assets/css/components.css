@@ -16314,3 +16314,98 @@ body > div iframe[src*="boxnow"] {
 /* Keep inactive editor content fully hidden despite page-specific display rules. */
 .qr-destination-picker [data-qr-link-fields][hidden],
 .qr-destination-picker .qr-destination-picker__photo[hidden] { display: none !important; }
+
+/* Homepage QR cards: balanced preview and editor. Scoped to homepage only. */
+.customer-qr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.customer-qr-grid .qr-dashboard-card--polished {
+  display: block; min-width: 0; padding: 0; overflow: hidden; border: 1px solid #e7e6e2;
+  border-radius: 20px; background: #fff; box-shadow: 0 12px 32px rgba(16,16,16,.045);
+}
+.qr-dashboard-card--polished .qr-dashboard-card__head {
+  display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 22px 10px;
+}
+.qr-dashboard-card--polished .qr-dashboard-card__eyebrow {
+  color:#777873; font-size:11px; letter-spacing:.12em; font-weight:750;
+}
+.qr-dashboard-card--polished .qr-dashboard-card__scans {
+  color:#626b65; background:#f3f5f2; padding:6px 11px; border-radius:999px; font-size:11px; white-space:nowrap;
+}
+.qr-dashboard-card--polished .qr-dashboard-card__body {
+  display:grid; grid-template-columns: minmax(135px,.78fr) minmax(0,1.6fr);
+  gap:20px; align-items:start; padding:0 22px 22px;
+}
+.qr-dashboard-card--polished .qr-dashboard-card__identity {
+  display:flex; flex-direction:column; align-items:center; min-width:0; gap:10px; padding-top:10px;
+}
+.qr-dashboard-card--polished .qr-dashboard-card__qr-frame {
+  display:grid; place-items:center; width:100%; min-height:166px; border-radius:15px;
+  background:#f7f7f4; border:1px solid #eeefeb; padding:14px; box-sizing:border-box;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-dashboard-image {
+  display:block; width:136px; max-width:100%; height:auto; aspect-ratio:1; margin:0;
+}
+.qr-dashboard-card--polished .qr-dashboard-card__details {text-align:center; min-width:0; }
+.customer-qr-grid .qr-dashboard-card--polished .qr-dashboard-title {
+  font-size:17px; font-weight:750; line-height:1.3; margin:0; text-align:center; overflow-wrap:anywhere;
+}
+.qr-dashboard-card--polished .qr-dashboard-card__view-link {
+  display:inline-flex; align-items:center; gap:5px; margin-top:6px; color:#777;
+  text-decoration:none; font-size:12px; font-weight:650; border-bottom:1px solid #c5c8c3;
+}
+.qr-dashboard-card--polished .qr-dashboard-card__view-link:hover {color:#111; border-color:#111;}
+.qr-dashboard-card--polished .qr-dashboard-card__editor {min-width:0;}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker {margin:0;}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__overview {
+  display:flex; flex-direction:column; gap:14px;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__active {
+  padding:11px 13px; border-radius:12px; background:#f3f8f4;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__active p {
+  font-size:12px; line-height:1.4; margin-top:6px;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__edit-heading {
+  margin-bottom:8px; font-size:12px;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__modes {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; max-width:none; margin:0;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__modes button {
+  min-width:0; min-height:39px; font-size:12px; border-radius:10px; padding:6px 8px;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__fields {margin-top:12px;}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__footer {
+  margin-top:10px; align-items:center; justify-content:flex-end;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__action button {
+  width:auto; min-width:100px; padding:9px 16px; min-height:40px;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__photo {
+  display:grid; grid-template-columns:1fr; gap:8px;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__preview {
+  min-height:60px; padding:0; max-height:120px;
+}
+.customer-qr-grid .qr-dashboard-card--polished .qr-destination-picker__preview img {max-height:118px;}
+@media (max-width:1180px) {
+  .customer-qr-grid {grid-template-columns:1fr;}
+  .qr-dashboard-card--polished .qr-dashboard-card__body {grid-template-columns:minmax(145px,.55fr) minmax(0,1.45fr);}
+}
+@media (max-width:600px) {
+  .qr-dashboard-card--polished .qr-dashboard-card__head {padding:16px 16px 8px;}
+  .qr-dashboard-card--polished .qr-dashboard-card__body {
+    grid-template-columns:minmax(0,1fr); gap:16px; padding:0 16px 18px;
+  }
+  .qr-dashboard-card--polished .qr-dashboard-card__identity {
+    flex-direction:row; gap:15px; justify-content:flex-start; padding-top:0;
+  }
+  .qr-dashboard-card--polished .qr-dashboard-card__qr-frame {
+    width:104px; min-width:104px; min-height:104px; padding:9px; border-radius:12px;
+  }
+  .customer-qr-grid .qr-dashboard-card--polished .qr-dashboard-image {width:84px;}
+  .qr-dashboard-card--polished .qr-dashboard-card__details {text-align:left;}
+  .customer-qr-grid .qr-dashboard-card--polished .qr-dashboard-title {text-align:left;}
+}
+@media (min-width:1181px) and (max-width:1320px) {
+  .qr-dashboard-card--polished .qr-dashboard-card__body {grid-template-columns:130px minmax(0,1fr);gap:12px;}
+}

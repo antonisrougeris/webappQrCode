@@ -209,39 +209,55 @@ async function renderQrDashboard(grid: HTMLElement, qrCodes: QrCode[]): Promise<
       });
 
       return `
-        <article class="dashboard-card qr-dashboard-card" data-qr-editor="${escapeHtml(qr.id)}">
+        <article class="dashboard-card qr-dashboard-card qr-dashboard-card--polished" data-qr-editor="${escapeHtml(qr.id)}">
+          <div class="qr-dashboard-card__head">
+            <span class="qr-dashboard-card__eyebrow">QR PRODUCT</span>
+            <span class="qr-dashboard-card__scans">${Math.max(0, Number(qr.scans) || 0)} scans</span>
+          </div>
 
-          <p class="meta qr-card-meta">QR product</p>
+          <div class="qr-dashboard-card__body">
+            <div class="qr-dashboard-card__identity">
+              <div class="qr-dashboard-card__qr-frame">
+                <img
+                  class="qr-dashboard-image"
+                  src="${qrDataUrl}"
+                  alt="QR code for ${title}"
+                  loading="lazy"
+                  width="136"
+                  height="136"
+                />
+              </div>
+              <div class="qr-dashboard-card__details">
+                <h3 class="qr-dashboard-title">${title}</h3>
+                <a
+                  class="qr-dashboard-card__view-link"
+                  href="${escapeHtml(qrRedirectUrl)}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open QR link for ${title}"
+                >Open QR <span aria-hidden="true">↗</span></a>
+              </div>
+            </div>
 
-          <img
-            class="qr-dashboard-image"
-            src="${qrDataUrl}"
-            alt="QR code for ${title}"
-            loading="lazy"
-          />
-
-          <h3 class="qr-dashboard-title">${title}</h3>
-          <span class="qr-scan-badge">${qr.scans ?? 0} scans</span>
-
-          <label class="qr-edit-label" data-qr-destination-label for="input-${qr.id}">
-            Destination URL
-          </label>
-
-          <div class="qr-edit-row" data-qr-link-fields>
-            <input
-              id="input-${qr.id}"
-              class="qr-edit-input"
-              type="url"
-              value="${safeTarget}"
-              placeholder="https://example.com"
-            />
-            <button
-              type="button"
-              class="btn-primary qr-save-btn"
-              data-qr-id="${qr.id}"
-            >
-              Save
-            </button>
+            <div class="qr-dashboard-card__editor">
+              <label class="qr-edit-label" data-qr-destination-label for="input-${escapeHtml(qr.id)}">
+                Destination URL
+              </label>
+              <div class="qr-edit-row" data-qr-link-fields>
+                <input
+                  id="input-${escapeHtml(qr.id)}"
+                  class="qr-edit-input"
+                  type="url"
+                  value="${safeTarget}"
+                  placeholder="https://example.com"
+                />
+                <button
+                  type="button"
+                  class="btn-primary qr-save-btn"
+                  data-qr-id="${escapeHtml(qr.id)}"
+                >Save</button>
+              </div>
+            </div>
           </div>
         </article>
       `;
