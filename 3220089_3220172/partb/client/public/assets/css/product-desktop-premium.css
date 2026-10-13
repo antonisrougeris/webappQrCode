@@ -399,3 +399,18 @@
 .pdp-product-information[open] .pdp-product-information__chevron {transform:rotate(180deg);}
 .pdp-product-information__body {padding:0 0 17px 26px;}
 .pdp-product-information__body p {white-space:pre-line;margin:0;line-height:1.8;color:#5e5b57;font-size:13px;}
+
+/* Keep merchandising facts and Product Information near variant selection. */
+@media (min-width: 821px) {
+ .product-page .pdp-eco-highlights {order:6;margin:5px 0 15px;}
+ .product-page .pdp-product-information {order:7;margin:0 0 17px;}
+ .product-page .qr-box {order:8;}
+ .product-page .product-purchase-row {order:9;}
+ .product-page .add-to-cart-btn {order:10;}
+ .product-page .delivery-info {order:11;}
+ .product-page .product-benefits {order:12;}
+ .product-page .pdp-desktop-help-links {order:13;}
+}
+.pdp-product-information__facts[hidden] {display:none!important;}
+.pdp-product-information__facts {margin:0 0 13px;padding:0 0 0 18px;color:#4d4d4d;}
+.pdp-product-information__facts li {margin:0 0 8px;line-height:1.5;font-size:13px;}
