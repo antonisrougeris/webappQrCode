@@ -209,7 +209,7 @@ function getItemAvailableStock(item: CartItem): number {
   return 99;
 }
 
-function updateProgress(total: number): string {
+function updateProgress(total: number, rewardAvailable: boolean): string {
   let percent = 0;
 
   if (total < FREE_SHIPPING_TARGET) {
@@ -227,7 +227,7 @@ function updateProgress(total: number): string {
   percent = Math.min(percent, 100);
 
   const isShippingDone = total >= FREE_SHIPPING_TARGET;
-  const isKeychainDone = total >= FREE_KEYCHAIN_TARGET;
+  const isKeychainDone = total >= FREE_KEYCHAIN_TARGET && rewardAvailable;
 
   let message = "";
 
@@ -240,7 +240,9 @@ function updateProgress(total: number): string {
       FREE_KEYCHAIN_TARGET - total
     )} ${(locale === "el" ? "ακόμη για δωρεάν NFC μπρελόκ" : "more for a FREE NFC Keychain")}`;
   } else {
-    message = (locale === "el" ? "Ξεκλείδωσες δωρεάν NFC μπρελόκ!" : "You unlocked a FREE NFC Keychain!");
+    message = rewardAvailable
+      ? (locale === "el" ? "Ξεκλείδωσες δωρεάν NFC μπρελόκ!" : "You unlocked a FREE NFC Keychain!")
+      : (locale === "el" ? "Το δωρεάν NFC μπρελόκ δεν είναι προσωρινά διαθέσιμο" : "The free NFC Keychain is currently unavailable");
   }
 
   return `
@@ -480,7 +482,7 @@ async function renderCartFromState(
     );
 
   container.innerHTML = `
-    ${updateProgress(merchandiseTotal)}
+    ${updateProgress(merchandiseTotal, Boolean(rewardItem))}
 
     <section class="drawer-cart-list">
       ${items
