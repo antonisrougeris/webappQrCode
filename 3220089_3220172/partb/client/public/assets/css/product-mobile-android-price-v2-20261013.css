@@ -1,0 +1,143 @@
+/*
+ * SKANARE mobile PDP Android/Samsung cache recovery (2026-10-13 v2).
+ * A new URL is intentional: returning browsers must not reuse the older
+ * product-mobile-immersive.css, which sometimes arrives with newer HTML.
+ * This sheet is loaded AFTER all other PDP stylesheets.
+ */
+@media (max-width: 600px) {
+  .product-page .product-info {
+    box-sizing: border-box;
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "rating original"
+      "title price"
+      "meta price"
+      "highlights highlights"
+      "badges badges"
+      "variants variants"
+      "quantity quantity"
+      "qr qr"
+      "description description"
+      "delivery delivery"
+      "benefits benefits";
+    column-gap: 10px;
+    align-items: start;
+  }
+
+  .product-page .product-info #productTitle {
+    display: block !important;
+    grid-area: title;
+    justify-self: start;
+    align-self: start;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0 0 3px;
+    padding: 0;
+    font-size: clamp(19px, 5.25vw, 25px);
+    line-height: 1.14;
+    letter-spacing: -.035em;
+    text-wrap: balance;
+    overflow: visible;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+  }
+
+  .product-page .product-info #productMeta {
+    display: block !important;
+    grid-area: meta;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 2px 0 11px;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: normal;
+    line-height: 1.3;
+    font-size: 11px;
+  }
+
+  .product-page .product-info .product-price-area {
+    display: flex !important;
+    grid-area: price;
+    justify-self: end;
+    align-self: start;
+    align-items: flex-end;
+    flex-direction: column;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    gap: 3px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    text-align: right;
+  }
+  .product-page .product-info #productPrice {
+    width: auto;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .product-page .product-info #productPrice .product-price__current {
+    font-size: clamp(19px, 5vw, 23px);
+    white-space: nowrap;
+  }
+  .product-page .product-info .tax-note {
+    display: block;
+    margin: 0;
+    white-space: nowrap;
+    font-size: 9px;
+  }
+
+  .product-page .product-info .pdp-eco-highlights:not([hidden]) {
+    display: flex !important;
+    grid-area: highlights;
+    flex-wrap: nowrap !important;
+    gap: 6px;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 7px 0 14px;
+  }
+  .product-page .product-info #pdpEcoHighlights .pdp-eco-full {
+    display: none !important;
+  }
+  .product-page .product-info #pdpEcoHighlights .pdp-eco-compact {
+    display: inline-flex !important;
+    box-sizing: border-box;
+    flex: 0 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 6px 8px;
+    white-space: nowrap;
+    text-align: center;
+    font-size: clamp(10px, 2.6vw, 12px);
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -.025em;
+    border-radius: 999px;
+  }
+}
+@media (max-width: 355px) {
+  .product-page .product-info { column-gap: 6px; }
+  .product-page .product-info #productTitle { font-size: 19px; }
+  .product-page .product-info #pdpEcoHighlights .pdp-eco-compact {
+    font-size: 9px; padding: 5px 5px;
+  }
+  .product-page .product-info .pdp-eco-highlights:not([hidden]) { gap: 4px; }
+}
