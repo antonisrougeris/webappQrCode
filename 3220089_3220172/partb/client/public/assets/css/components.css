@@ -16155,3 +16155,158 @@ body > div iframe[src*="boxnow"] {
   .qr-destination-picker__active { padding: 12px; }
   .qr-destination-picker__active-heading { font-size: 0.75rem; }
 }
+
+
+/* Compact QR destinations — shared by dashboard and My QR page */
+.customer-qr-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.customer-qr-grid .qr-dashboard-card,
+.my-qr-grid .my-qr-card {
+  min-width: 0;
+  height: auto;
+  align-self: start;
+}
+.customer-qr-grid .qr-dashboard-card {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 8px 20px;
+  padding: 22px;
+  align-items: start;
+}
+.customer-qr-grid .qr-dashboard-card > .qr-card-meta,
+.customer-qr-grid .qr-dashboard-card > .qr-dashboard-image,
+.customer-qr-grid .qr-dashboard-card > .qr-dashboard-title,
+.customer-qr-grid .qr-dashboard-card > .qr-scan-badge {
+  grid-column: 1;
+}
+.customer-qr-grid .qr-dashboard-card > .qr-edit-label,
+.customer-qr-grid .qr-dashboard-card > .qr-destination-picker {
+  grid-column: 2;
+}
+.customer-qr-grid .qr-dashboard-card > .qr-card-meta { margin: 0; }
+.customer-qr-grid .qr-dashboard-card > .qr-dashboard-image {
+  width: min(130px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+.customer-qr-grid .qr-dashboard-card > .qr-dashboard-title,
+.customer-qr-grid .qr-dashboard-card > .qr-scan-badge { margin: 0; text-align: center; }
+.my-qr-grid .my-qr-card {
+  grid-template-columns: 120px minmax(0, 1fr);
+  min-height: 0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.my-qr-grid .my-qr-card__visual { padding: 16px 12px; }
+.my-qr-grid .my-qr-card__qr { width: 100px; height: 100px; }
+.my-qr-grid .my-qr-card__content { padding: 18px; }
+.my-qr-grid .my-qr-card__public { margin-top: 10px; overflow-wrap: anywhere; }
+.qr-destination-picker { margin: 12px 0 0; min-width: 0; }
+.qr-destination-picker__overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.qr-destination-picker__active { margin: 0; padding: 12px; overflow-wrap: anywhere; }
+.qr-destination-picker__active p { margin-bottom: 0; }
+.qr-destination-picker__edit-heading { margin: 0 0 6px; }
+.qr-destination-picker__modes { max-width: none; margin-bottom: 0; }
+.qr-destination-picker__fields { margin-top: 12px; }
+.qr-destination-picker__link .qr-edit-row,
+.qr-destination-picker__link .my-qr-card__edit {
+  display: block;
+  width: 100%;
+}
+.qr-destination-picker__link input[type="url"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 43px;
+  box-sizing: border-box;
+  border: 1px solid #d8d8d5;
+  border-radius: 9px;
+  padding-inline: 12px;
+  font-size: 14px;
+}
+.qr-destination-picker__photo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, .75fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+.qr-destination-picker__photo-input { min-width: 0; }
+.qr-destination-picker__preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+  padding: 6px;
+}
+.qr-destination-picker__preview img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 132px;
+  object-fit: contain;
+}
+.qr-destination-picker__privacy { font-size: 11px; line-height: 1.4; }
+.qr-destination-picker__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.qr-destination-picker__note {
+  flex: 1 1 120px;
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.qr-destination-picker__action { flex: none; }
+.qr-destination-picker__action button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 43px;
+  width: auto;
+  min-width: 118px;
+  max-width: 100%;
+  padding: 8px 15px;
+  color: #fff;
+  background: #141414;
+  border: 1px solid #141414;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+.qr-destination-picker__action button:disabled { opacity: .5; cursor: not-allowed; }
+.qr-destination-picker__action button:focus-visible { outline: 3px solid #7e9b90; outline-offset: 2px; }
+.qr-destination-picker__note:empty,
+.my-qr-card__status:empty { display: none; }
+@media (min-width: 1480px) {
+  .qr-destination-picker__overview { grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); }
+}
+@media (max-width: 1180px) {
+  .customer-qr-grid,
+  .my-qr-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .customer-qr-grid .qr-dashboard-card { grid-template-columns: minmax(0, 1fr); }
+  .customer-qr-grid .qr-dashboard-card > * { grid-column: 1 !important; }
+  .my-qr-grid .my-qr-card { grid-template-columns: 1fr; }
+  .my-qr-grid .my-qr-card__visual { border-right: 0; border-bottom: 1px solid #deded8; }
+  .my-qr-grid .my-qr-card__qr { width: 120px; height: 120px; }
+}
+@media (max-width: 420px) {
+  .qr-destination-picker__photo { grid-template-columns: 1fr; }
+  .qr-destination-picker__preview { min-height: 80px; }
+}
