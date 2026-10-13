@@ -448,3 +448,11 @@
 .pdp-product-information__chevron { flex: 0 0 27px; width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; }
 .pdp-product-information__chevron svg { display: block; }
 .pdp-product-information summary { align-items: center; }
+
+
+@media (min-width: 821px) {
+ .product-page .product-info .variant-controls[hidden] {display:none!important;}
+ .product-page .product-info .size-stock-row:has(#sizeOptions[hidden]) {
+   margin-bottom:0; min-height:0;
+ }
+}
