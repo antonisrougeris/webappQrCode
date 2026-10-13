@@ -1,4 +1,5 @@
 import { getDB } from "../config/db.js";
+import { KEYCHAIN_REWARD_PRODUCT_ID, qualifiesForKeychain, merchandiseSubtotal, freeKeychainItem, availableKeychainVariant } from "./free-keychain-reward.service.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
@@ -97,9 +98,19 @@ export async function getCartByUserId(userId) {
 
   const data = doc.data() || {};
 
+  const items = (Array.isArray(data.items) ? data.items : []).filter((item) => !item.isFreeReward);
+  let rewardItem = null;
+  if (qualifiesForKeychain(merchandiseSubtotal(items))) {
+    try {
+      const product = await getProductByIdOrSlug(KEYCHAIN_REWARD_PRODUCT_ID);
+      const variant = availableKeychainVariant(product);
+      if (variant !== null) rewardItem = freeKeychainItem(product, variant);
+    } catch { /* Out-of-stock or unpublished reward is not promised. */ }
+  }
   return {
     userId,
-    items: Array.isArray(data.items) ? data.items : [],
+    items,
+    rewardItem,
     giftOptions: normalizeGiftOptions(data.giftOptions),
     updatedAt: data.updatedAt || nowIso(),
   };
