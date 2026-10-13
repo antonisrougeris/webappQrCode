@@ -23,9 +23,9 @@ test("gallery thumbnails use full resolution product images and do not fade", ()
   assert.match(pdp,/\.product-page \.product-thumbnail\s*\{[\s\S]*?opacity: 1;/);
 });
 
-test("desktop catalog fills the page with contained uncropped artwork", () => {
+test("desktop catalog fills the page with edge-to-edge artwork", () => {
   assert.match(catalog,/\.products-shop > \.container \{ width: min\(1440px/);
   assert.match(catalog,/\.products-shop \.products-grid \{ grid-template-columns:repeat\(4/);
-  assert.match(catalog,/\.products-shop \.product-media > img\.product-img\s*\{[\s\S]*?object-fit:contain;/);
-  assert.match(productsHtml,/components\.css\?v=20261013-catalog-clarity/);
+  assert.match(catalog,/\.products-shop \.product-media > img\.product-img\s*\{[\s\S]*?object-fit:\s*cover/);
+  assert.match(productsHtml,/components\.css\?v=20261013-catalog-cards/);
 });
