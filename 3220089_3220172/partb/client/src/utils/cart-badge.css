@@ -1,0 +1,34 @@
+/* Neutral black cart badge, shared across all desktop/mobile page headers. */
+.site-header .cart-link { position: relative; overflow: visible; }
+.site-header .cart-link .header__cart-count {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  pointer-events: none;
+  z-index: 3;
+}
+.site-header .cart-link .header__cart-count[hidden] { display:none!important; }
+.site-header .cart-link .count-bubble {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #111;
+  border: 1.5px solid #fff;
+  color: #fff;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 3px rgba(0,0,0,.10);
+}
+.site-header .cart-link.active .count-bubble,
+.site-header .cart-link:hover .count-bubble {background:#111;color:#fff;}
+@media (max-width:1050px) {
+  .site-header .cart-link .header__cart-count { top:-5px;right:-7px; }
+  .site-header .cart-link .count-bubble {min-width:16px;height:16px;font-size:9px;}
+}
