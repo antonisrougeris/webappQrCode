@@ -230,6 +230,7 @@ function setPayButtonState(): void {
 async function render(): Promise<void> {
   const cart = await getCart();
   const items: CartItem[] = cart?.items || [];
+  const earnedKeychain = cart?.rewardItem || null;
 
   const giftSection =
     document.getElementById("gift-options") as HTMLDetailsElement | null;
@@ -366,6 +367,20 @@ async function render(): Promise<void> {
     .join("");
 
   const discountedSubtotal = subtotal * (1 - discount / 100);
+  const eligibleKeychain = discountedSubtotal >= 80 ? earnedKeychain : null;
+  if (eligibleKeychain) {
+    const title = escapeHtml(eligibleKeychain.title || "NFC Keychain");
+    const image = escapeHtml(eligibleKeychain.image || "/assets/img/logo_Image.png");
+    container.insertAdjacentHTML("beforeend", `
+      <div class="checkout-item checkout-item--free-reward">
+        <div class="checkout-item__image-wrapper">
+          <img src="${image}" alt="${title}" /><span class="checkout-item__badge">1</span>
+        </div>
+        <div class="checkout-item__info"><p>${title}</p><small>Free gift with €80+ order</small></div>
+        <strong>FREE</strong>
+      </div>
+    `);
+  }
   const shipping =
     calculateShipping(
       discountedSubtotal
@@ -436,12 +451,12 @@ if (msg) {
     msg.textContent =
       `Add ${formatPrice(
         amountLeft
-      )} more to get a FREE sticker set`;
+      )} more to get a FREE NFC Keychain`;
 
   } else {
 
     msg.textContent =
-      "FREE Skanare sticker set added 🎁";
+      "FREE NFC Keychain included 🎁";
 
     msg.classList.add(
       "is-unlocked"
