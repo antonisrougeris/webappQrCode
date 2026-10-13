@@ -294,6 +294,7 @@ function renderCartItem(item: CartItem, index: number, catalog: Product[] = []):
     : 0;
   const qr = getCartItemQr(item);
   const itemKey = getCartItemKey(item, index);
+  const href = escapeHtml(productPath(item.slug || getCartItemProductId(item)));
 
   const sizeText = variant?.size ? `<p>${t("cart.size", "Size")}: ${variant.size}</p>` : "";
   const colorText = variant?.color ? `<p>${t("cart.color", "Color")}: ${variant.color}</p>` : "";
@@ -308,7 +309,7 @@ function renderCartItem(item: CartItem, index: number, catalog: Product[] = []):
           <span class="cart-stock-dot" aria-hidden="true"></span>
           ${t("cart.inStockReady", "In stock, ready to ship")}
         </p>
-        <h3>${title}</h3>
+        <h3><a class="cart-product-link" href="${href}">${escapeHtml(title)}</a></h3>
         ${sizeText}
         ${colorText}
         ${qrText}
@@ -497,10 +498,10 @@ async function renderCartFromState(
         .join("")}
       ${rewardItem ? `<div class="free-keychain-cart-reward">
         <span class="free-keychain-cart-reward__ribbon">${locale === "el" ? "ΔΩΡΕΑΝ ΔΩΡΟ" : "FREE GIFT UNLOCKED"}</span>
-        <img src="${escapeHtml(rewardItem.image || "/assets/img/logo_Image.png")}" alt="NFC Keychain" />
-        <div><strong>${locale === "el" ? "NFC Μπρελόκ" : "NFC Keychain"}</strong>
+        <a class="cart-product-link cart-product-link--image" href="${escapeHtml(productPath(rewardItem.slug || rewardItem.productId || "nfc-keychain"))}"><img src="${escapeHtml(rewardItem.image || "/assets/img/logo_Image.png")}" alt="NFC Keychain" /></a>
+        <div><strong><a class="cart-product-link" href="${escapeHtml(productPath(rewardItem.slug || rewardItem.productId || "nfc-keychain"))}">${locale === "el" ? "NFC Μπρελόκ" : "NFC Keychain"}</a></strong>
           <small>${locale === "el" ? "Προστέθηκε δωρεάν με αγορές από 80 €" : "Free with eligible €80+ order"}</small></div>
-        <strong class="free-keychain-cart-reward__price">FREE</strong>
+        <span class="free-keychain-cart-reward__pricing"><del>${formatPrice(Number(rewardItem.originalPrice || 0))}</del><strong class="free-keychain-cart-reward__price">FREE</strong></span>
       </div>` : ""}
     </section>
 
