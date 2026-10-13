@@ -421,7 +421,7 @@ body.gift-dialog-open {
 .cart-product-link:hover,.checkout-product-link:hover {text-decoration:underline;text-underline-offset:3px;}
 .cart-product-link:focus-visible,.checkout-product-link:focus-visible {outline:2px solid #111;outline-offset:3px;}
 .drawer-cart-item > .cart-product-link--image {display:block;align-self:start;min-width:0;}
-.drawer-cart-item > .cart-product-link--image img {display:block;width:100%;height:auto;}
+.drawer-cart-item > .cart-product-link--image img {display:block;width:92px;height:112px;object-fit:cover;}
 .free-keychain-cart-reward .cart-product-link--image img {display:block;width:64px;height:64px;object-fit:contain;border-radius:9px;background:#fff;}
 .free-keychain-cart-reward__pricing,.checkout-reward-pricing {display:flex;align-items:flex-end;flex-direction:column;justify-content:center;gap:3px;white-space:nowrap;}
 .free-keychain-cart-reward__pricing del,.checkout-reward-pricing del {font-size:12px;color:#888;font-weight:500;}
