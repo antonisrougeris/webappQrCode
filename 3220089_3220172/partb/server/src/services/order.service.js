@@ -7,10 +7,12 @@ import {
   localizeProduct,
 } from "./localization.service.js";
 import { COLLECTIONS } from "../constants/collections.js";
+import { isReadyQr } from "./stock-availability.service.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
 import {
   getCheckoutReservationMs,
+  getInventoryKey,
   isReservationActive,
   releaseInventoryHold,
   reserveInventoryHold,
@@ -518,7 +520,23 @@ orderItems.push({
     if (qualifiesForKeychain(discountedSubtotal) && rewardProductSnap.exists) {
       const rewardProduct = { id: rewardProductSnap.id, ...rewardProductSnap.data() };
       if (rewardProduct.active !== false) {
-        const rewardVariant = availableKeychainVariant(rewardProduct);
+        let rewardVariant = availableKeychainVariant(rewardProduct);
+        // Custom-QR inventory may reside in ready QR records while raw SKU stock is zero.
+        // Verify those ready records in the checkout transaction before offering the gift.
+        if (rewardVariant === null && rewardProduct.customQr) {
+          for (const candidate of Array.isArray(rewardProduct.variants) ? rewardProduct.variants : []) {
+            if (!candidate?.sku) continue;
+            const ready = await tx.get(
+              db.collection(COLLECTIONS.QR_CODES)
+                .where("status", "==", "available")
+                .where("inventoryKey", "==", getInventoryKey(rewardProduct.id, candidate))
+            );
+            if (ready.docs.some((doc) => isReadyQr(doc.data()))) {
+              rewardVariant = candidate;
+              break;
+            }
+          }
+        }
         if (rewardVariant !== null) {
           const localizedReward = localizeProduct(rewardProduct, locale);
           orderItems.push({
