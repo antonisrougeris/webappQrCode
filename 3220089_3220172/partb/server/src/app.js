@@ -42,6 +42,7 @@ import boxNowTestRoutes from "./routes/boxnow-test.routes.js";
 import boxNowRoutes from "./routes/boxnow.routes.js";
 import resendRoutes from "./routes/resend.routes.js";
 import contactRoutes from "./routes/contact.routes.js";
+import { startBoxNowShippingMonitor, stopBoxNowShippingMonitor } from "./services/boxnow-monitor.service.js";
 import {
   refreshStorefrontProductHtmlSafe,
   startStorefrontProductHtmlRefreshLoop,
@@ -262,10 +263,12 @@ startStorefrontProductHtmlRefreshLoop({
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
+  startBoxNowShippingMonitor();
 });
 
 async function shutdown(signal) {
   console.log(`Received ${signal}. Shutting down...`);
+  stopBoxNowShippingMonitor();
 
   server.close(async () => {
     await closeDB();

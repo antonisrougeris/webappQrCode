@@ -507,7 +507,7 @@ async function findBoxNowOrder(
 
 
 
-async function sendDeliveredOrderEmail(orderId) {
+export async function sendDeliveredOrderEmail(orderId) {
   const db = getDB();
   const ref = db
     .collection(COLLECTIONS.ORDERS)
