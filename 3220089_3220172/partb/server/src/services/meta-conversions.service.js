@@ -22,7 +22,7 @@ export function buildMetaPurchase(order, nowSeconds = Math.floor(Date.now() / 10
     : "";
   const items = Array.isArray(order.items) ? order.items : [];
   const contents = items.filter(item => item.productId && Number(item.quantity) > 0).map(item => ({
-    id: String(item.productId),
+    id: String(item.productId) + (item.variant?.sku ? "::" + String(item.variant.sku) : ""),
     quantity: Number(item.quantity),
     item_price: numeric(item.unitPrice ?? item.price ?? item.priceEUR)
   }));
