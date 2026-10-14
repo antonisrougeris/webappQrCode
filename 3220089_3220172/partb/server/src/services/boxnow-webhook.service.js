@@ -398,6 +398,50 @@ export async function getBoxNowStageParcel(parcelId) {
   return snap.exists ? { id: snap.id, ...snap.data() } : null;
 }
 
+
+/*
+ * An authenticated provider event must also belong to THIS paid
+ * production shipment. Never complete an order solely because the
+ * signed payload claims its orderNumber.
+ *
+ * The voucher can be referenced by shipping.boxnow.parcelIds,
+ * shipping.parcelId, or shipping.trackingNumber (legacy orders).
+ */
+export function isMatchingBoxNowProductionOrder(order, { orderNumber, parcelId }) {
+  if (!order || String(order.delivery || order.shipping?.provider || "")
+    .trim().toLowerCase() !== "boxnow") return false;
+
+  if (String(order.paymentStatus || "").trim().toLowerCase() !== "paid") return false;
+
+  const storedEnvironment = String(order.shipping?.boxnow?.environment || "")
+    .trim().toLowerCase();
+  if (storedEnvironment && storedEnvironment !== "production") return false;
+
+  const expectedOrderNumber = String(order.orderNumber || "").trim();
+  const claimedOrderNumber = String(orderNumber || "").trim();
+  if (claimedOrderNumber && expectedOrderNumber !== claimedOrderNumber) return false;
+
+  const incomingId = String(parcelId || "").trim();
+  if (!incomingId) return false;
+
+  const recordedIds = [
+    ...(Array.isArray(order.shipping?.boxnow?.parcelIds) ?
+      order.shipping.boxnow.parcelIds : []),
+    order.shipping?.parcelId,
+    order.shipping?.trackingNumber,
+  ].filter(Boolean).map(value => String(value).trim());
+
+  return recordedIds.includes(incomingId);
+}
+
+export function isBoxNowDeliveryCompletedEvent(event) {
+  return String(event || "").trim().toLowerCase() === "delivered";
+}
+
+export function appendBoxNowTrackingEvent(history, details) {
+  return [...(Array.isArray(history) ? history : []), details].slice(-30);
+}
+
 /* ==================================================
    ORDER LOOKUP
 ================================================== */
@@ -757,6 +801,18 @@ export async function processBoxNowWebhook({
         };
 
 
+        if (!isMatchingBoxNowProductionOrder(order, { orderNumber, parcelId })) {
+          console.warn("BOX NOW production webhook parcel/order mismatch", {
+            orderId: order.id,
+            orderNumber,
+            parcelId,
+            event,
+          });
+          // A 409 causes BOX NOW to retry if this is a legitimate early event
+          // arriving before the voucher was committed to Firestore.
+          throw new ApiError(409, "BOX NOW parcel does not match a paid production order");
+        }
+
         const previousEventTime =
           order.shipping
             ?.boxnow
@@ -846,6 +902,11 @@ export async function processBoxNowWebhook({
             parcelId ||
             null,
 
+          "shipping.boxnow.eventHistory": appendBoxNowTrackingEvent(
+            order.shipping?.boxnow?.eventHistory,
+            { event, eventTime, parcelId, messageId: messageId || null, receivedAt }
+          ),
+
           "shipping.boxnow.parcelState":
             data.parcelState ||
             null,
@@ -867,8 +928,7 @@ export async function processBoxNowWebhook({
          * Keep some useful timestamps.
          */
         if (
-          event ===
-          "delivered"
+          isBoxNowDeliveryCompletedEvent(event)
         ) {
           patch[
             "shipping.deliveredAt"
