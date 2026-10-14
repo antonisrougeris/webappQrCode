@@ -149,6 +149,7 @@ export async function checkoutCartForOwner({
   invoiceDetails = null,
   recoveryCode = "",
   termsAcceptance,
+  marketingConsent = false,
   tip,
 }) {
   if (!ownerId) throw new ApiError(401, "Missing checkout owner");
@@ -319,6 +320,7 @@ export async function checkoutCartForOwner({
               giftFee: giftFeeFor(giftOptions),
               tipAmount: requestedTipAmount,
               tipChoice: tip.choice,
+              marketingConsent: { granted: marketingConsent === true, version: 2, recordedAt: refreshedAt },
               termsAcceptance: {
                 ...termsAcceptance,
                 acceptedAt: refreshedAt,
