@@ -1,8 +1,10 @@
 /** GA4 ecommerce events: no tracking before explicit analytics consent. */
 import { loadGoogleAnalytics } from "../components/cookieConsent";
+import { hasAnalyticsConsent } from "./cookiePreferences";
+import { trackMetaEvent } from "./metaPixel";
 
 type EcommerceItem = { item_id: string; item_name?: string; price?: number; quantity?: number; item_variant?: string };
-const CONSENT_KEY = "skanare_cookie_consent";
+
 
 export function trackEcommerceEvent(
   eventName: "view_item" | "add_to_cart" | "begin_checkout" | "purchase",
@@ -10,7 +12,11 @@ export function trackEcommerceEvent(
   options: { value?: number; currency?: string; transaction_id?: string; shipping?: number; coupon?: string } = {}
 ): boolean {
   try {
-    if (localStorage.getItem(CONSENT_KEY) !== "accepted" || !items.length) return false;
+    if (!items.length) return false;
+    const eventMap = { view_item: "ViewContent", add_to_cart: "AddToCart", begin_checkout: "InitiateCheckout", purchase: "Purchase" } as const;
+    // Marketing tracking is completely independent of analytics opt-in.
+    if (eventName !== "purchase") trackMetaEvent(eventMap[eventName], items, { value: options.value, currency: options.currency });
+    if (!hasAnalyticsConsent()) return false;
     loadGoogleAnalytics();
     if (typeof window.gtag !== "function") return false;
     const value = options.value ?? items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
