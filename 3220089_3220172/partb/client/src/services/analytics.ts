@@ -8,11 +8,11 @@ export function trackEcommerceEvent(
   eventName: "view_item" | "add_to_cart" | "begin_checkout" | "purchase",
   items: EcommerceItem[],
   options: { value?: number; currency?: string; transaction_id?: string } = {}
-): void {
+): boolean {
   try {
-    if (localStorage.getItem(CONSENT_KEY) !== "accepted" || !items.length) return;
+    if (localStorage.getItem(CONSENT_KEY) !== "accepted" || !items.length) return false;
     loadGoogleAnalytics();
-    if (typeof window.gtag !== "function") return;
+    if (typeof window.gtag !== "function") return false;
     const value = options.value ?? items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
     window.gtag("event", eventName, {
       currency: options.currency || "EUR",
@@ -20,7 +20,9 @@ export function trackEcommerceEvent(
       items,
       ...(options.transaction_id ? { transaction_id: options.transaction_id } : {}),
     });
+    return true;
   } catch {
     // Analytics must never interfere with checkout or cart.
+    return false;
   }
 }
