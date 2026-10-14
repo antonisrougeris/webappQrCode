@@ -6,6 +6,9 @@ import {
   verifyBoxNowSignature,
   identifyBoxNowWebhookEnvironment,
   isValidBoxNowStageParcelId,
+  isMatchingBoxNowProductionOrder,
+  isBoxNowDeliveryCompletedEvent,
+  appendBoxNowTrackingEvent,
   shouldIgnoreBoxNowEvent,
 } from "../src/services/boxnow-webhook.service.js";
 
@@ -223,4 +226,59 @@ test("staging parcel ID validation accepts BOX NOW 10-digit tracking IDs", () =>
   assert.equal(isValidBoxNowStageParcelId("642345108"), false);
   assert.equal(isValidBoxNowStageParcelId("64234510878"), false);
   assert.equal(isValidBoxNowStageParcelId("642345108x"), false);
+});
+
+test("production event may complete only the matching paid production BOX NOW parcel", () => {
+  const order = {
+    orderNumber: "SK-EXAMPLE-1",
+    delivery: "boxnow",
+    paymentStatus: "paid",
+    shipping: {
+      status: "created",
+      parcelId: "6704219453",
+      boxnow: { environment: "production", parcelIds: ["6704219453"] },
+    },
+  };
+  assert.equal(isMatchingBoxNowProductionOrder(order, {
+    orderNumber: "SK-EXAMPLE-1", parcelId: "6704219453",
+  }), true);
+  assert.equal(isMatchingBoxNowProductionOrder(order, {
+    orderNumber: "SK-EXAMPLE-1", parcelId: "6423451087",
+  }), false);
+  assert.equal(isMatchingBoxNowProductionOrder(order, {
+    orderNumber: "SK-SOMEONE-ELSE", parcelId: "6704219453",
+  }), false);
+  assert.equal(isMatchingBoxNowProductionOrder({
+    ...order, paymentStatus: "pending",
+  }, { orderNumber: "SK-EXAMPLE-1", parcelId: "6704219453" }), false);
+  assert.equal(isMatchingBoxNowProductionOrder({
+    ...order, delivery: "courier",
+  }, { orderNumber: "SK-EXAMPLE-1", parcelId: "6704219453" }), false);
+  assert.equal(isMatchingBoxNowProductionOrder({
+    ...order, shipping: { ...order.shipping, boxnow: { environment: "stage", parcelIds: ["6704219453"] } },
+  }, { orderNumber: "SK-EXAMPLE-1", parcelId: "6704219453" }), false);
+});
+
+test("legacy paid BOX NOW orders can match stored parcelId without parcelIds array", () => {
+  assert.equal(isMatchingBoxNowProductionOrder({
+    orderNumber: "SK-LEGACY-1",
+    paymentStatus: "paid",
+    delivery: "boxnow",
+    shipping: { parcelId: "6704219453" },
+  }, { orderNumber: "SK-LEGACY-1", parcelId: "6704219453" }), true);
+});
+
+test("final-destination does not complete the order; only delivered does", () => {
+  assert.equal(isBoxNowDeliveryCompletedEvent("final-destination"), false);
+  assert.equal(isBoxNowDeliveryCompletedEvent("in-depot"), false);
+  assert.equal(isBoxNowDeliveryCompletedEvent("expired"), false);
+  assert.equal(isBoxNowDeliveryCompletedEvent("delivered"), true);
+});
+
+test("production event history is bounded to the last 30 entries", () => {
+  const previous = Array.from({ length: 30 }, (_, i) => ({ event: "in-depot", eventTime: i }));
+  const history = appendBoxNowTrackingEvent(previous, { event: "delivered", eventTime: 31 });
+  assert.equal(history.length, 30);
+  assert.equal(history[0].eventTime, 1);
+  assert.equal(history.at(-1).event, "delivered");
 });
