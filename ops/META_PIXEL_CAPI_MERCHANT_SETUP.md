@@ -41,3 +41,7 @@ Consent is editable at `https://skanare.com/cookie-policy` using **Change cookie
 - Production is only confirmed once the deployment workflow runs successfully, the public feed URL responds, and Meta Test Events confirms real events.
 - The Meta Pixel and CAPI are **inactive by design** until the respective credentials are configured.
 - Do NOT test Purchase with a fake success-page URL; use a confirmed Viva test/real payment and audit that the order status is actually `paid`.
+
+## Frontend rebuild after Meta Pixel variable setup
+
+After setting the repository Actions variable `VITE_META_PIXEL_ID`, a new **push to `main`** is required to rebuild the Vite frontend with that value. A manually dispatched `workflow_dispatch` run builds and validates but does **not** deploy: the `deploy` job is intentionally restricted to `push` events on `main`. Verify the `Deploy Production` job and Meta Test Events before considering the integration live. Keep the CAPI access token exclusively in the server environment.
