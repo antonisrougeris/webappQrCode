@@ -79,16 +79,17 @@ test("GA4 helper returns whether event was queued and never emits without consen
   const fn = toJs(topLevelFunctions(analytics, ["trackEcommerceEvent"]));
   const calls = [];
   const ctx = vm.createContext({
-    localStorage: { getItem: () => "rejected" },
+    hasAnalyticsConsent: () => false,
+    trackMetaEvent: () => false,
     loadGoogleAnalytics: () => {},
     window: { gtag: (...args) => calls.push(args) },
-    CONSENT_KEY: "skanare_cookie_consent"
+
   });
   vm.runInContext(fn, ctx);
   ctx.items = [{item_id: "tee", price: 12, quantity: 2}];
   assert.equal(vm.runInContext('trackEcommerceEvent("begin_checkout", items)',ctx), false);
   assert.equal(calls.length, 0);
-  ctx.localStorage.getItem = () => "accepted";
+  ctx.hasAnalyticsConsent = () => true;
   assert.equal(vm.runInContext('trackEcommerceEvent("begin_checkout", items)',ctx), true);
   assert.equal(calls.length, 1);
   assert.equal(calls[0][1], "begin_checkout");
