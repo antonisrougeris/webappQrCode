@@ -7,7 +7,7 @@ const CONSENT_KEY = "skanare_cookie_consent";
 export function trackEcommerceEvent(
   eventName: "view_item" | "add_to_cart" | "begin_checkout" | "purchase",
   items: EcommerceItem[],
-  options: { value?: number; currency?: string; transaction_id?: string } = {}
+  options: { value?: number; currency?: string; transaction_id?: string; shipping?: number; coupon?: string } = {}
 ): boolean {
   try {
     if (localStorage.getItem(CONSENT_KEY) !== "accepted" || !items.length) return false;
@@ -19,6 +19,8 @@ export function trackEcommerceEvent(
       value: Math.round(value * 100) / 100,
       items,
       ...(options.transaction_id ? { transaction_id: options.transaction_id } : {}),
+      ...(options.shipping !== undefined ? { shipping: options.shipping } : {}),
+      ...(options.coupon ? { coupon: options.coupon } : {}),
     });
     return true;
   } catch {

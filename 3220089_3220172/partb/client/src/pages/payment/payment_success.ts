@@ -1,3 +1,4 @@
+import { trackPaidPurchase, type PaidPurchaseOrder } from "../../services/purchase-analytics";
 import "../../i18n/auto";
 import { firebaseAuth } from "../../services/firebase";
 import { apiRequest } from "../../services/api";
@@ -6,6 +7,10 @@ import { locale, t } from "../../i18n/locale";
 interface Order {
   id: string;
   orderNumber?: string;
+  items?: PaidPurchaseOrder["items"];
+  subtotal?: number;
+  shippingCost?: number;
+  recoveryDiscount?: PaidPurchaseOrder["recoveryDiscount"];
   total?: number;
   currency?: string;
   paymentStatus?: string;
@@ -74,6 +79,8 @@ function waitForAuthReady(timeoutMs = 4000): Promise<boolean> {
   });
 }
 
+let lastConfirmedPaidOrder: Order | null = null;
+
 async function loadOrder(): Promise<void> {
   const container = document.getElementById("orderSummary");
   if (!container) return;
@@ -129,6 +136,13 @@ async function loadOrder(): Promise<void> {
       );
     }
 
+    // Only a backend-confirmed paid order can become an analytics purchase.
+    // Never report pending/failed payment, even on Viva's success redirect.
+    if (String(order.paymentStatus || "").trim().toLowerCase() === "paid") {
+      lastConfirmedPaidOrder = order;
+      trackPaidPurchase(order);
+    }
+
     container.innerHTML = `
       <div class="payment-summary-row">
         <span>${t("payment.orderNumber", "Order Number")}</span>
@@ -167,6 +181,9 @@ async function loadOrder(): Promise<void> {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  window.addEventListener("skanare:analytics-consent-accepted", () => {
+    if (lastConfirmedPaidOrder) trackPaidPurchase(lastConfirmedPaidOrder);
+  });
   const authed = await waitForAuthReady();
 
   console.log("Payment success auth:", {
