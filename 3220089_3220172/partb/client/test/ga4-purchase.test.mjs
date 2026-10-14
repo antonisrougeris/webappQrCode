@@ -87,7 +87,8 @@ test("one paid purchase is emitted once per browser even on refresh", () => {
   const {ctx,events}=context();
   // Production trackPaidPurchase derives time from Date.now(), so give a real-time fixture.
   ctx.input=order({payment:{transactionId:"tx",paidAt:new Date().toISOString()}});
-  assert.equal(vm.runInContext("trackPaidPurchase(input); trackPaidPurchase(input)",ctx),true);
+  assert.equal(vm.runInContext("trackPaidPurchase(input)",ctx),true);
+  assert.equal(vm.runInContext("trackPaidPurchase(input)",ctx),false);
   assert.equal(events.length,1);
   assert.equal(events[0].name,"purchase");
   assert.equal(events[0].options.transaction_id,"order_42");
