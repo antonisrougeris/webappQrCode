@@ -1331,6 +1331,7 @@ updateLockerValidity(false);
   invoiceDetails,
   recoveryCode,
   tip: tipDetails(),
+  marketingConsent: hasMarketingConsent(),
   termsAcceptance: {
     accepted: true,
     version: TERMS_VERSION,
