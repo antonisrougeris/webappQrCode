@@ -305,6 +305,13 @@ function setupVariantControls(
   const firstAvailable = variants.find(v => Number(v.stock || 0) > 0);
   let selectedColor = selectableColors.find(c => c.toLowerCase() === String(product.defaultColor || "").toLowerCase())
     || firstAvailable?.color || selectableColors[0];
+  // Merchant Center and other SKU-deep links must open on their advertised
+  // color/size. Ignore unknown SKUs rather than inventing a selectable item.
+  const requestedSku = getQueryParam("variant");
+  const linkedVariant = requestedSku
+    ? variants.find(v => String(v.sku || "") === requestedSku)
+    : undefined;
+  if (linkedVariant) selectedColor = String(linkedVariant.color || selectedColor);
   const variantsForColor = () =>
     variants.filter(
       v =>
@@ -322,7 +329,7 @@ function setupVariantControls(
   const sizesForColor = () =>
     unique(variantsForColor().map(v => v.size));
 
-  let selectedSize = "";
+  let selectedSize = linkedVariant && productHasSizes ? String(linkedVariant.size || "") : "";
 
   const getSelectedVariant = () => {
     const candidates = variantsForColor();
