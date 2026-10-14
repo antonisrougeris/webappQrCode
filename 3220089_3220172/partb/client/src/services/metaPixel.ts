@@ -1,7 +1,7 @@
 import { hasMarketingConsent } from "./cookiePreferences";
 
 export type MetaEventName = "ViewContent" | "AddToCart" | "InitiateCheckout" | "Purchase";
-export type MetaItem = { item_id: string; item_name?: string; price?: number; quantity?: number };
+export type MetaItem = { item_id: string; item_name?: string; price?: number; quantity?: number; item_sku?: string };
 type Pixel = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void; queue?: unknown[][];
   loaded?: boolean; version?: string;
@@ -46,16 +46,17 @@ export function trackMetaEvent(
   if (!loadMetaPixel() || !items.length) return false;
   const filtered = items.filter(item => item.item_id && Number(item.quantity || 1) > 0);
   if (!filtered.length) return false;
+  const ids = filtered.map(item => item.item_sku ? item.item_id + "::" + item.item_sku : item.item_id);
   const value = options.value ?? filtered.reduce((sum, item) =>
     sum + Number(item.price || 0) * Number(item.quantity || 1), 0);
   if (!Number.isFinite(value) || value < 0) return false;
   const eventID = options.eventId || crypto.randomUUID();
   try {
     window.fbq?.("track", event, {
-      content_type: "product",
-      content_ids: filtered.map(item => item.item_id),
-      contents: filtered.map(item => ({
-        id: item.item_id, quantity: Number(item.quantity || 1),
+      content_type: event === "ViewContent" ? "product_group" : "product",
+      content_ids: ids,
+      contents: filtered.map((item, index) => ({
+        id: ids[index], quantity: Number(item.quantity || 1),
         item_price: Number(item.price || 0)
       })),
       num_items: filtered.reduce((sum, item) => sum + Number(item.quantity || 1), 0),
