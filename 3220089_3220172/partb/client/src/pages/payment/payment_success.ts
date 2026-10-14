@@ -1,3 +1,4 @@
+import { pollForPaymentConfirmation, type PaymentConfirmation } from "../../services/payment-confirmation";
 import { trackPaidPurchase, type PaidPurchaseOrder } from "../../services/purchase-analytics";
 import "../../i18n/auto";
 import { firebaseAuth } from "../../services/firebase";
@@ -10,6 +11,7 @@ interface Order {
   items?: PaidPurchaseOrder["items"];
   subtotal?: number;
   shippingCost?: number;
+  recoveryDiscountAmount?: number;
   recoveryDiscount?: PaidPurchaseOrder["recoveryDiscount"];
   total?: number;
   currency?: string;
@@ -81,103 +83,115 @@ function waitForAuthReady(timeoutMs = 4000): Promise<boolean> {
 
 let lastConfirmedPaidOrder: Order | null = null;
 
+function showPaymentState(state: PaymentConfirmation<Order>["state"]): void {
+  const el = (selector: string): HTMLElement | null => document.querySelector<HTMLElement>(selector);
+  const heading = el(".payment-result h1");
+  const eyebrow = el(".payment-result__eyebrow");
+  const description = el(".payment-result__text");
+  const subtext = el(".payment-result__subtext");
+  const icon = el(".payment-result__icon");
+  const card = el(".payment-result");
+  card?.classList.toggle("payment-result--success", state === "paid");
+  if (icon) icon.style.display = state === "paid" ? "" : "none";
+
+  if (state === "paid") {
+    if (heading) heading.textContent = "Thank you for your order";
+    if (eyebrow) eyebrow.textContent = "Payment confirmed";
+    if (description) description.textContent = "Your payment was completed successfully. Your order is now being processed.";
+    if (subtext) subtext.textContent = "You can manage your active QR codes from your account.";
+    icon?.classList.add("payment-result__icon--success");
+  } else if (state === "failed") {
+    if (heading) heading.textContent = "Payment not completed";
+    if (eyebrow) eyebrow.textContent = "Payment status";
+    if (description) description.textContent = "The payment was not completed. No purchase has been recorded.";
+    if (subtext) subtext.textContent = "Return to checkout to try again, or contact us if you were charged.";
+    icon?.classList.remove("payment-result__icon--success");
+  } else {
+    if (heading) heading.textContent = "Checking your payment";
+    if (eyebrow) eyebrow.textContent = "Awaiting confirmation";
+    if (description) description.textContent = "We are waiting for confirmation from our payment provider. Please do not pay again yet.";
+    if (subtext) subtext.textContent = "If the payment has just completed, wait a moment or refresh this page.";
+    icon?.classList.remove("payment-result__icon--success");
+  }
+}
+
 async function loadOrder(): Promise<void> {
   const container = document.getElementById("orderSummary");
   if (!container) return;
 
   const lookup = getOrderLookup();
+  showPaymentState("pending");
 
   if (!lookup) {
-    container.innerHTML = `<p>Payment completed, but no order ID was provided.</p>`;
+    container.textContent = "No order reference was provided. Please check your account orders.";
     return;
   }
 
-  container.innerHTML = `<p>Loading your order...</p>`;
+  container.textContent = "Checking your payment status with Viva...";
 
-  try {
-    const path =
-      lookup.type === "id"
-        ? `/orders/${encodeURIComponent(lookup.value)}`
-        : `/orders/viva/${encodeURIComponent(lookup.value)}`;
+  const path = lookup.type === "id"
+    ? `/orders/${encodeURIComponent(lookup.value)}`
+    : `/orders/viva/${encodeURIComponent(lookup.value)}`;
 
-    let order: Order | null = null;
+  // This request is authenticated; the server verifies that the order belongs
+  // to the logged-in customer. URL parameters alone are not payment evidence.
+  const result = await pollForPaymentConfirmation<Order>(async () => {
+    const response = await apiRequest<{ order: Order }>(path);
+    if (!response?.order) throw new Error("Order not found");
+    return response.order;
+  });
 
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const res =
-        await apiRequest<{ order: Order }>(
-          path
-        );
-
-      order = res.order;
-
-      if (
-        String(
-          order.paymentStatus ||
-          order.status ||
-          ""
-        )
-          .trim()
-          .toLowerCase() === "paid"
-      ) {
-        break;
-      }
-
-      await new Promise((resolve) =>
-        window.setTimeout(
-          resolve,
-          1000
-        )
-      );
-    }
-
-    if (!order) {
-      throw new Error(
-        "Order could not be loaded"
-      );
-    }
-
-    // Only a backend-confirmed paid order can become an analytics purchase.
-    // Never report pending/failed payment, even on Viva's success redirect.
-    if (String(order.paymentStatus || "").trim().toLowerCase() === "paid") {
-      lastConfirmedPaidOrder = order;
-      trackPaidPurchase(order);
-    }
-
-    container.innerHTML = `
-      <div class="payment-summary-row">
-        <span>${t("payment.orderNumber", "Order Number")}</span>
-        <strong>${order.orderNumber || order.id}</strong>
-      </div>
-
-      <div class="payment-summary-row">
-        <span>${t("payment.amountPaid", "Amount Paid")}</span>
-        <strong>${formatPrice(order.total || 0, order.currency || "EUR")}</strong>
-      </div>
-
-      <div class="payment-summary-row">
-        <span>${t("payment.status", "Payment Status")}</span>
-        <strong>${order.paymentStatus || order.status || "paid"}</strong>
-      </div>
-
-      <div class="payment-summary-row">
-        <span>${t("payment.qrCreated", "QR Products Created")}</span>
-        <strong>${order.qrCodesCreated || 0}</strong>
-      </div>
-
-      <div class="payment-summary-row">
-        <span>${t("payment.date", "Date")}</span>
-        <strong>${formatDate(order.payment?.paidAt || order.createdAt)}</strong>
-      </div>
-    `;
-  } catch (error) {
-    console.error("Failed to load order:", error);
-
-    container.innerHTML = `
-      <p>${t("payment.successFallback", "Your payment was successful.")}</p>
-      <p>${t("payment.finalizing", "We are finalizing your order details. Please refresh in a few seconds.")}</p>
-      <p>${t("payment.orderReference", "Order reference")}: <strong>${lookup.value}</strong></p>
-    `;
+  showPaymentState(result.state);
+  const order = result.order;
+  if (result.state === "paid" && order) {
+    lastConfirmedPaidOrder = order;
+    trackPaidPurchase(order);
   }
+
+  if (result.state === "failed") {
+    container.textContent = "The payment is not marked as successful. Please review your order before attempting payment again.";
+    return;
+  }
+  if (result.state !== "paid" || !order) {
+    container.textContent = result.state === "unavailable"
+      ? "Unable to verify the payment at the moment. Please sign in and refresh to check your order."
+      : "Your payment is still pending confirmation. If you have been charged, please wait and refresh before attempting another payment.";
+    return;
+  }
+
+  // Render payment details only for a confirmed, paid order.
+  container.innerHTML = `
+    <div class="payment-summary-row">
+      <span>${t("payment.orderNumber", "Order Number")}</span>
+      <strong></strong>
+    </div>
+    <div class="payment-summary-row">
+      <span>${t("payment.amountPaid", "Amount Paid")}</span>
+      <strong></strong>
+    </div>
+    <div class="payment-summary-row">
+      <span>${t("payment.status", "Payment Status")}</span>
+      <strong></strong>
+    </div>
+    <div class="payment-summary-row">
+      <span>${t("payment.qrCreated", "QR Products Created")}</span>
+      <strong></strong>
+    </div>
+    <div class="payment-summary-row">
+      <span>${t("payment.date", "Date")}</span>
+      <strong></strong>
+    </div>
+  `;
+  // Use textContent for all order-sourced strings.
+  const values = [
+    String(order.orderNumber || order.id),
+    formatPrice(order.total || 0, order.currency || "EUR"),
+    String(order.paymentStatus || "paid"),
+    String(order.qrCodesCreated || 0),
+    formatDate(order.payment?.paidAt || order.createdAt)
+  ];
+  container.querySelectorAll<HTMLElement>(".payment-summary-row strong")
+    .forEach((element, index) => { element.textContent = values[index] || ""; });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
