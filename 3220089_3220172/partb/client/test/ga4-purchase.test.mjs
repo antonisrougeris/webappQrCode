@@ -51,7 +51,7 @@ test("never report pending or failed payment as purchase", () => {
     ctx.input=order({paymentStatus});
     assert.equal(vm.runInContext("buildPaidPurchaseEvent(input, "+now+")",ctx),null);
   }
-  assert.match(successPage, /order\.paymentStatus\s*\|\|\s*""/);
+  assert.match(successPage, /result\.state === "paid"/);
   assert.match(successPage,/trackPaidPurchase\(order\)/);
 });
 
