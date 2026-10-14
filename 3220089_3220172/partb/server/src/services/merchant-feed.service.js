@@ -19,11 +19,13 @@ function imagesFor(product, variant) {
   const c = (product.colorOptions || []).find(x =>
     String(x.name || "").toLowerCase() === String(variant?.color || "").toLowerCase()
   );
-  return [
-    ...(c?.images || []),
-    ...(product.images || []),
-    product.image
-  ].map(absoluteImage).filter(Boolean);
+  // Color-specific galleries must not mix black and white imagery.
+  // Admin product galleries often contain repeated entries from multiple
+  // color sets; never emit duplicate additional_image_link URLs.
+  const gallery = Array.isArray(c?.images) && c.images.length
+    ? c.images
+    : [...(product.images || []), product.image];
+  return [...new Set(gallery.map(absoluteImage).filter(Boolean))];
 }
 
 export function productToMerchantEntries(product) {
@@ -47,11 +49,17 @@ export function productToMerchantEntries(product) {
     const sku = String(variant?.sku || "").trim();
     if (variant && !sku) return []; // Google needs stable variant IDs.
     const id = variant ? group + "::" + sku : group;
+    // Google's item_group_id groups true sibling variants, not the one
+    // standalone NFC keychain. Each SKU keeps its existing stable ID.
+    const grouped = Boolean(variant && variants.length > 1);
+    // Deep-link the exact SKU so a Merchant Center visitor sees the same
+    // color/size as the Google listing instead of the default selection.
+    const landingUrl = sku ? url + "?variant=" + encodeURIComponent(sku) : url;
     const title = [product.title, variant?.color, variant?.size].filter(Boolean).join(" - ");
     const color = String(variant?.color || "").trim();
     const size = String(variant?.size || "").trim();
     return [{
-      id, group, title, description, url,
+      id, group, title, description, url: landingUrl, grouped,
       image: images[0], additionalImages: images.slice(1, 11),
       availability: Number.isFinite(stock) && stock > 0 ? "in_stock" : "out_of_stock",
       price: Math.round(regular * 100) / 100,
@@ -71,7 +79,7 @@ export function renderMerchantXml(products) {
       ["g:price", cash(entry.price)], ["g:brand", "Skanare"],
       ["g:identifier_exists", "no"], ["g:google_product_category", entry.apparel ? "Apparel & Accessories > Clothing > Shirts & Tops" : "Apparel & Accessories"],
       ...(entry.salePrice < entry.price ? [["g:sale_price", cash(entry.salePrice)]] : []),
-      ...(entry.variant ? [["g:item_group_id", entry.group]] : []),
+      ...(entry.grouped ? [["g:item_group_id", entry.group]] : []),
       ...(entry.apparel ? [["g:gender", "unisex"], ["g:age_group", "adult"]] : []),
       ...(entry.color ? [["g:color", entry.color]] : []),
       ...(entry.size ? [["g:size", entry.size]] : []),
