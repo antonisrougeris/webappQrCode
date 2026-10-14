@@ -1,4 +1,4 @@
-import { trackEcommerceEvent } from "../../services/analytics";
+import { trackEcommerceEvent, trackMetaEcommerceEvent } from "../../services/analytics";
 import { hasMarketingConsent } from "../../services/cookiePreferences";
 import "../cart/cart-enhancements.css";
 import "../../i18n/auto";
@@ -109,7 +109,8 @@ let discount = 0;
 let recoveryCode = "";
 let checkoutSubmitting = false;
 let checkoutHasItems = true;
-let beginCheckoutTracked = false;
+let beginCheckoutTrackedGa4 = false;
+let beginCheckoutTrackedMeta = false;
 
 /**
  * Track checkout when its REAL cart is loaded, independent of login/registration.
@@ -117,7 +118,7 @@ let beginCheckoutTracked = false;
  * If consent is not yet granted, retry on the consent-accepted event.
  */
 function trackBeginCheckout(cart: Cart | null | undefined): void {
-  if (beginCheckoutTracked) return;
+  if (beginCheckoutTrackedGa4 && beginCheckoutTrackedMeta) return;
   const items = (cart?.items || [])
     .filter(item => !item.isFreeReward && Boolean(item.productId) && Number(item.quantity) > 0)
     .map(item => ({
@@ -131,7 +132,12 @@ function trackBeginCheckout(cart: Cart | null | undefined): void {
       } : {})
     }));
   if (!items.length) return;
-  beginCheckoutTracked = trackEcommerceEvent("begin_checkout", items);
+  if (!beginCheckoutTrackedGa4) {
+    beginCheckoutTrackedGa4 = trackEcommerceEvent("begin_checkout", items);
+  }
+  if (!beginCheckoutTrackedMeta) {
+    beginCheckoutTrackedMeta = trackMetaEcommerceEvent("begin_checkout", items);
+  }
 }
 
 type TipChoice = "none" | "percent:5" | "percent:10" | "custom";
@@ -1036,6 +1042,9 @@ editCartButton?.addEventListener(
   });
 
   window.addEventListener("skanare:analytics-consent-accepted", () => {
+    void render();
+  });
+  window.addEventListener("skanare:marketing-consent-accepted", () => {
     void render();
   });
 
