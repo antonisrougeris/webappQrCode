@@ -35,3 +35,8 @@ body > .cookie-banner .cookie-preference {
 body > .cookie-banner .cookie-preference input { accent-color: #fff; width: 16px; height: 16px; }
 body > .cookie-banner .cookie-customize { background: transparent; }
 body > .cookie-banner .cookie-save { max-width: max-content; padding: 9px 16px; }
+
+@media (max-width: 600px) {
+  body > .cookie-banner .cookie-banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  body > .cookie-banner .cookie-banner-actions .cookie-btn { flex: 1 1 auto; min-width: 84px; }
+}
