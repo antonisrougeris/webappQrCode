@@ -1,3 +1,4 @@
+import { trackPaidPurchase, type PaidPurchaseOrder } from "../../services/purchase-analytics";
 import "../../i18n/auto";
 import { firebaseAuth } from "../../services/firebase";
 import { apiRequest } from "../../services/api";
@@ -6,6 +7,10 @@ import { locale, t } from "../../i18n/locale";
 interface Order {
   id: string;
   orderNumber?: string;
+  items?: PaidPurchaseOrder["items"];
+  subtotal?: number;
+  shippingCost?: number;
+  recoveryDiscount?: PaidPurchaseOrder["recoveryDiscount"];
   total?: number;
   currency?: string;
   paymentStatus?: string;
@@ -127,6 +132,12 @@ async function loadOrder(): Promise<void> {
       throw new Error(
         "Order could not be loaded"
       );
+    }
+
+    // Only a backend-confirmed paid order can become an analytics purchase.
+    // Never report pending/failed payment, even on Viva's success redirect.
+    if (String(order.paymentStatus || "").trim().toLowerCase() === "paid") {
+      trackPaidPurchase(order);
     }
 
     container.innerHTML = `
