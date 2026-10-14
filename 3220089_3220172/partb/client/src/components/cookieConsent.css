@@ -16,3 +16,22 @@
     overscroll-behavior: contain;
   }
 }
+
+/* Preferences stay within the existing cookie banner — never a second dialog. */
+body > .cookie-banner .cookie-banner-preferences[hidden] { display: none !important; }
+body > .cookie-banner .cookie-banner-preferences {
+  display: grid;
+  gap: 9px;
+  padding: 12px 0;
+}
+body > .cookie-banner .cookie-preference {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: inherit;
+}
+body > .cookie-banner .cookie-preference input { accent-color: #fff; width: 16px; height: 16px; }
+body > .cookie-banner .cookie-customize { background: transparent; }
+body > .cookie-banner .cookie-save { max-width: max-content; padding: 9px 16px; }
