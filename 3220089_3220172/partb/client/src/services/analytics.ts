@@ -11,14 +11,15 @@ export function trackEcommerceEvent(
   items: EcommerceItem[],
   options: { value?: number; currency?: string; transaction_id?: string; shipping?: number; coupon?: string } = {}
 ): boolean {
+  let metaSent = false;
   try {
     if (!items.length) return false;
     const eventMap = { view_item: "ViewContent", add_to_cart: "AddToCart", begin_checkout: "InitiateCheckout", purchase: "Purchase" } as const;
     // Marketing tracking is completely independent of analytics opt-in.
-    if (eventName !== "purchase") trackMetaEvent(eventMap[eventName], items, { value: options.value, currency: options.currency });
-    if (!hasAnalyticsConsent()) return false;
+    if (eventName !== "purchase") metaSent = trackMetaEvent(eventMap[eventName], items, { value: options.value, currency: options.currency });
+    if (!hasAnalyticsConsent()) return metaSent;
     loadGoogleAnalytics();
-    if (typeof window.gtag !== "function") return false;
+    if (typeof window.gtag !== "function") return metaSent;
     const value = options.value ?? items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
     window.gtag("event", eventName, {
       currency: options.currency || "EUR",
@@ -31,6 +32,6 @@ export function trackEcommerceEvent(
     return true;
   } catch {
     // Analytics must never interfere with checkout or cart.
-    return false;
+    return metaSent;
   }
 }
