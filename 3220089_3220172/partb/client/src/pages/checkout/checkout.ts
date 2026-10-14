@@ -1,4 +1,5 @@
 import { trackEcommerceEvent } from "../../services/analytics";
+import { hasMarketingConsent } from "../../services/cookiePreferences";
 import "../cart/cart-enhancements.css";
 import "../../i18n/auto";
 
