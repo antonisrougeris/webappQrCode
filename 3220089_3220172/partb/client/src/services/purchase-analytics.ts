@@ -11,6 +11,7 @@ export interface PaidPurchaseOrder {
   total?: number;
   subtotal?: number;
   shippingCost?: number;
+  recoveryDiscountAmount?: number;
   currency?: string;
   recoveryDiscount?: { code?: string } | null;
   payment?: { transactionId?: string; paidAt?: string };
@@ -69,6 +70,16 @@ export function buildPaidPurchaseEvent(
   const chargedTotal = validMoney(order.total);
   if (chargedTotal === null || chargedTotal <= 0) return null;
 
+  const rawSubtotal = validMoney(order.subtotal);
+  const discountAmount = validMoney(order.recoveryDiscountAmount) || 0;
+  const preDiscountMerchandise = (order.items || []).reduce((sum, item) => {
+    const quantity = Number(item.quantity);
+    const unit = validMoney(item.unitPrice ?? item.priceEUR ?? item.price);
+    return sum + (Number.isFinite(quantity) && quantity > 0 && unit !== null ? unit * quantity : 0);
+  }, 0);
+  const ratio = preDiscountMerchandise > 0
+    ? Math.min(1, Math.max(0, (preDiscountMerchandise - discountAmount) / preDiscountMerchandise))
+    : 1;
   const items = (order.items || []).flatMap(item => {
     const quantity = Number(item.quantity);
     const id = String(item.productId || "").trim();
@@ -79,14 +90,13 @@ export function buildPaidPurchaseEvent(
     return [{
       item_id: id,
       item_name: String(item.title || id),
-      price: unitPrice,
+      price: roundMoney(unitPrice * ratio),
       quantity,
       ...(variant ? { item_variant: variant } : {})
     }];
   });
   if (!items.length) return null;
 
-  const rawSubtotal = validMoney(order.subtotal);
   const value = rawSubtotal ?? roundMoney(items.reduce((sum, item) => sum + item.price * item.quantity, 0));
   const currency = String(order.currency || "EUR").toUpperCase();
   if (!/^[A-Z]{3}$/.test(currency)) return null;
