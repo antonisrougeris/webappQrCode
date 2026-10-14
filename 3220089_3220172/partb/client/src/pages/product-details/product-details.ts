@@ -1,4 +1,4 @@
-import { trackEcommerceEvent } from "../../services/analytics";
+import { trackEcommerceEvent, trackMetaEcommerceEvent } from "../../services/analytics";
 import "../../i18n/auto";
 /* 3220089_3220172 */
 
@@ -1442,10 +1442,12 @@ if (imageStage) {
 }
 
     // Purchase controls are initialized before any secondary network requests.
-    trackEcommerceEvent("view_item", [{
+    const viewedItem = [{
       item_id: String(product.id), item_name: String(product.title || ""),
       price: Number(product.priceEUR ?? product.price ?? 0), quantity: 1
-    }]);
+    }];
+    trackEcommerceEvent("view_item", viewedItem);
+    trackMetaEcommerceEvent("view_item", viewedItem);
     setupSizeGuideModal(product);
     const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
     setupMobileProductPurchase(addBtn);
