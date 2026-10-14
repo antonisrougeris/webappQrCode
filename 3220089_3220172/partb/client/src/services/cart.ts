@@ -1,4 +1,4 @@
-import { trackEcommerceEvent } from "./analytics";
+import { trackEcommerceEvent, trackMetaEcommerceEvent } from "./analytics";
 import { apiRequest } from "./api";
 import type { ProductVariant } from "./products";
 
@@ -49,13 +49,17 @@ export async function getCart():Promise<Cart> {
 export async function addCartItem(payload:AddToCartPayload):Promise<Cart> {
   const res=await apiRequest<{cart:Cart}>("/cart/items",{method:"POST",body:JSON.stringify(payload)});
   const item = res.cart.items?.find(entry => entry.productId === payload.productId);
-  if (item) trackEcommerceEvent("add_to_cart", [{
+  if (item) {
+    const eventItems = [{
     item_id: String(item.productId), item_name: item.title,
     price: Number(item.priceEUR ?? item.price ?? 0),
     quantity: Number(payload.quantity || 1),
     ...(item.variant?.sku ? { item_sku: String(item.variant.sku) } : {}),
     ...(item.variant ? { item_variant: [item.variant.color, item.variant.size].filter(Boolean).join(" / ") } : {})
-  }]);
+    }];
+    trackEcommerceEvent("add_to_cart", eventItems);
+    trackMetaEcommerceEvent("add_to_cart", eventItems);
+  }
   return res.cart;
 }
 export async function updateCartItem(itemId:string,payload:{quantity?:number;qrDestination?:string}):Promise<Cart> {
