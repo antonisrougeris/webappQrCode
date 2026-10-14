@@ -125,6 +125,7 @@ function trackBeginCheckout(cart: Cart | null | undefined): void {
       item_name: item.title,
       price: getCartItemUnitPrice(item),
       quantity: Number(item.quantity),
+      ...(item.variant?.sku ? { item_sku: String(item.variant.sku) } : {}),
       ...(item.variant ? {
         item_variant: [item.variant.color, item.variant.size].filter(Boolean).join(" / ")
       } : {})
