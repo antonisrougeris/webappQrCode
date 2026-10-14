@@ -24,6 +24,7 @@ test("begin_checkout lives in cart-render flow, never behind auth return flag", 
   const render = checkout.slice(checkout.indexOf("async function render()"), checkout.indexOf("function getRequiredFormString"));
   assert.match(render, /const cart = await getCart\(\);[\s\S]*?trackBeginCheckout\(cart\);/);
   assert.match(checkout, /skanare:analytics-consent-accepted/);
+  assert.match(checkout, /skanare:marketing-consent-accepted/);
   assert.match(consent, /dispatchEvent\(new Event\("skanare:analytics-consent-accepted"\)\)/);
 });
 
@@ -31,7 +32,9 @@ test("begin_checkout tracks once for populated carts and ignores empty carts", (
   const code = toJs(topLevelFunctions(checkout, ["trackBeginCheckout"]));
   const events = [];
   const ctx = vm.createContext({
-    beginCheckoutTracked: false,
+    beginCheckoutTrackedGa4: false,
+    beginCheckoutTrackedMeta: false,
+    trackMetaEcommerceEvent: () => false,
     getCartItemUnitPrice: item => item.price,
     trackEcommerceEvent: (name, items) => { events.push({ name, items }); return true; }
   });
@@ -69,7 +72,7 @@ test("consent rejection does not mark begin_checkout sent; it retries after acce
   vm.runInContext(code, ctx);
   vm.runInContext("trackBeginCheckout(cart)", ctx);
   assert.equal(events.length, 0);
-  assert.equal(ctx.beginCheckoutTracked, false);
+  assert.equal(ctx.beginCheckoutTrackedGa4, false);
   consented = true;
   vm.runInContext("trackBeginCheckout(cart); trackBeginCheckout(cart)", ctx);
   assert.equal(events.length, 1);
