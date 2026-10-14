@@ -207,10 +207,10 @@ export function verifyResendWebhook({
   return resend.webhooks.verify({
     payload: rawBody,
     headers: {
-      "svix-id": headers["svix-id"],
-      "svix-timestamp": headers["svix-timestamp"],
-      "svix-signature": headers["svix-signature"],
+      id: headers["svix-id"],
+      timestamp: headers["svix-timestamp"],
+      signature: headers["svix-signature"],
     },
-    secret: webhookSecret,
+    webhookSecret,
   });
 }
