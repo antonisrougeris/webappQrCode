@@ -39,6 +39,8 @@ function context(overrides={}) {
       setItem:(key,value)=>store.set(key,value)
     },
     trackEcommerceEvent:(name,items,options)=>{events.push({name,items,options});return true},
+    trackMetaEvent:()=>false,
+    purchaseMetaEventId:orderId=>"skanare_purchase_"+orderId,
     ...overrides
   });
   vm.runInContext(js,ctx);
