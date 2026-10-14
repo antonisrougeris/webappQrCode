@@ -79,6 +79,8 @@ function waitForAuthReady(timeoutMs = 4000): Promise<boolean> {
   });
 }
 
+let lastConfirmedPaidOrder: Order | null = null;
+
 async function loadOrder(): Promise<void> {
   const container = document.getElementById("orderSummary");
   if (!container) return;
@@ -137,6 +139,7 @@ async function loadOrder(): Promise<void> {
     // Only a backend-confirmed paid order can become an analytics purchase.
     // Never report pending/failed payment, even on Viva's success redirect.
     if (String(order.paymentStatus || "").trim().toLowerCase() === "paid") {
+      lastConfirmedPaidOrder = order;
       trackPaidPurchase(order);
     }
 
@@ -178,6 +181,9 @@ async function loadOrder(): Promise<void> {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  window.addEventListener("skanare:analytics-consent-accepted", () => {
+    if (lastConfirmedPaidOrder) trackPaidPurchase(lastConfirmedPaidOrder);
+  });
   const authed = await waitForAuthReady();
 
   console.log("Payment success auth:", {
