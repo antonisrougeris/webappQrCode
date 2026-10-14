@@ -53,6 +53,7 @@ export async function addCartItem(payload:AddToCartPayload):Promise<Cart> {
     item_id: String(item.productId), item_name: item.title,
     price: Number(item.priceEUR ?? item.price ?? 0),
     quantity: Number(payload.quantity || 1),
+    ...(item.variant?.sku ? { item_sku: String(item.variant.sku) } : {}),
     ...(item.variant ? { item_variant: [item.variant.color, item.variant.size].filter(Boolean).join(" / ") } : {})
   }]);
   return res.cart;

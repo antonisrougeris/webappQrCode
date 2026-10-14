@@ -3,6 +3,7 @@
  * Do not infer successful payment from a Viva success redirect or query string.
  */
 import { trackEcommerceEvent } from "./analytics";
+import { purchaseMetaEventId, trackMetaEvent } from "./metaPixel";
 
 export interface PaidPurchaseOrder {
   id: string;
@@ -35,6 +36,7 @@ export interface PaidPurchaseEvent {
     price: number;
     quantity: number;
     item_variant?: string;
+    item_sku?: string;
   }>;
   options: {
     value: number;
@@ -92,6 +94,7 @@ export function buildPaidPurchaseEvent(
       item_name: String(item.title || id),
       price: roundMoney(unitPrice * ratio),
       quantity,
+      ...(item.variant?.sku ? { item_sku: String(item.variant.sku) } : {}),
       ...(variant ? { item_variant: variant } : {})
     }];
   });
@@ -118,14 +121,30 @@ export function trackPaidPurchase(order: PaidPurchaseOrder | null | undefined): 
   try {
     const event = buildPaidPurchaseEvent(order);
     if (!event || !order) return false;
-    const key = "skanare_ga4_purchase:" + order.id;
-    if (localStorage.getItem(key) === "1") return false;
-    if (!trackEcommerceEvent("purchase", event.items, event.options)) return false;
-    // GA4 transaction_id provides an additional layer of deduplication.
-    localStorage.setItem(key, "1");
-    return true;
+    let sent = false;
+
+    const gaKey = "skanare_ga4_purchase:" + order.id;
+    if (localStorage.getItem(gaKey) !== "1" &&
+        trackEcommerceEvent("purchase", event.items, event.options)) {
+      localStorage.setItem(gaKey, "1");
+      sent = true;
+    }
+
+    // Meta uses the SAME stable event_id as the CAPI webhook for deduplication,
+    // regardless of whether the user accepted Google Analytics separately.
+    const metaKey = "skanare_meta_purchase:" + order.id;
+    if (localStorage.getItem(metaKey) !== "1" &&
+        trackMetaEvent("Purchase", event.items, {
+          value: event.options.value,
+          currency: event.options.currency,
+          eventId: purchaseMetaEventId(order.id)
+        })) {
+      localStorage.setItem(metaKey, "1");
+      sent = true;
+    }
+    return sent;
   } catch {
-    // Analytics must never interrupt the payment confirmation page.
+    // Marketing must never affect order confirmation or payment.
     return false;
   }
 }

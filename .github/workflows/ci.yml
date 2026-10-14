@@ -88,6 +88,7 @@ jobs:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_QR_REDIRECT_BASE_URL: ${{ vars.VITE_QR_REDIRECT_BASE_URL }}
           VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
+          VITE_META_PIXEL_ID: ${{ vars.VITE_META_PIXEL_ID }}
 
       - name: Verify SEO product prerendering
         run: |

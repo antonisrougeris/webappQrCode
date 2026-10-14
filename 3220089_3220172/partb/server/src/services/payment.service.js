@@ -1,3 +1,4 @@
+import { sendMetaPurchaseForPaidOrder } from "./meta-conversions.service.js";
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
@@ -1963,6 +1964,20 @@ export async function markOrderPaidFromVivaWebhook(payload) {
     }
   );
 
+
+  // No CAPI requests unless buyer opted into marketing before checkout.
+  // A Meta outage must NEVER cause Viva to retry an already-paid transaction.
+  if (paidOrderForEmail?.paymentStatus === "paid" && paidOrderForEmail?.marketingConsent?.granted) {
+    try {
+      const result = await sendMetaPurchaseForPaidOrder(paidOrderForEmail);
+      if (result.sent) {
+        await getDB().collection(COLLECTIONS.ORDERS).doc(paidOrderForEmail.id)
+          .set({ metaPurchase: { sentAt: nowIso(), eventId: "skanare_purchase_" + paidOrderForEmail.id } }, { merge: true });
+      }
+    } catch (error) {
+      console.warn("Meta CAPI temporarily unavailable", { orderId: paidOrderForEmail.id, message: error?.message });
+    }
+  }
 
   /* ==================================================
      BOX NOW

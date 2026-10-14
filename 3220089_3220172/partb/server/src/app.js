@@ -38,6 +38,7 @@ import reviewRoutes from "./routes/review.routes.js";
 import vivaRoutes from "./routes/viva.routes.js";
 import sitemapRoutes from "./routes/sitemap.routes.js";
 import seoProductRoutes from "./routes/seo-product.routes.js";
+import merchantRoutes from "./routes/merchant.routes.js";
 import boxNowTestRoutes from "./routes/boxnow-test.routes.js";
 import boxNowRoutes from "./routes/boxnow.routes.js";
 import resendRoutes from "./routes/resend.routes.js";
@@ -77,6 +78,7 @@ app.use(
           "https://apis.google.com",
           "https://www.gstatic.com",
           CONSENTED_ANALYTICS_SCRIPT_ORIGIN,
+          "https://connect.facebook.net",
         ],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'", "https:", "'unsafe-inline'"],
@@ -227,6 +229,7 @@ app.use("/api", apiLimiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/session", sessionRoutes);
 app.use("/api/products", productsRoutes);
+app.use("/api/merchant", merchantRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/orders", ordersRoutes);
