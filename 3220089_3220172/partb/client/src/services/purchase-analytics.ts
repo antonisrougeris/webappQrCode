@@ -36,6 +36,7 @@ export interface PaidPurchaseEvent {
     price: number;
     quantity: number;
     item_variant?: string;
+    item_sku?: string;
   }>;
   options: {
     value: number;
@@ -93,6 +94,7 @@ export function buildPaidPurchaseEvent(
       item_name: String(item.title || id),
       price: roundMoney(unitPrice * ratio),
       quantity,
+      ...(item.variant?.sku ? { item_sku: String(item.variant.sku) } : {}),
       ...(variant ? { item_variant: variant } : {})
     }];
   });
