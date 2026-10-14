@@ -4,7 +4,7 @@ import "../../i18n/auto";
 
 
 import { firebaseAuth } from "../../services/firebase";
-import { getCart, type CartItem } from "../../services/cart";
+import { getCart, type Cart, type CartItem } from "../../services/cart";
 import {
   checkout,
   validateRecoveryOffer,
@@ -108,6 +108,29 @@ let discount = 0;
 let recoveryCode = "";
 let checkoutSubmitting = false;
 let checkoutHasItems = true;
+let beginCheckoutTracked = false;
+
+/**
+ * Track checkout when its REAL cart is loaded, independent of login/registration.
+ * Avoid repeat events from auth changes, summary refreshes and cart redraws.
+ * If consent is not yet granted, retry on the consent-accepted event.
+ */
+function trackBeginCheckout(cart: Cart | null | undefined): void {
+  if (beginCheckoutTracked) return;
+  const items = (cart?.items || [])
+    .filter(item => !item.isFreeReward && Boolean(item.productId) && Number(item.quantity) > 0)
+    .map(item => ({
+      item_id: String(item.productId),
+      item_name: item.title,
+      price: getCartItemUnitPrice(item),
+      quantity: Number(item.quantity),
+      ...(item.variant ? {
+        item_variant: [item.variant.color, item.variant.size].filter(Boolean).join(" / ")
+      } : {})
+    }));
+  if (!items.length) return;
+  beginCheckoutTracked = trackEcommerceEvent("begin_checkout", items);
+}
 
 type TipChoice = "none" | "percent:5" | "percent:10" | "custom";
 function tipDetails(): { choice: TipChoice; customAmount?: number } {
@@ -233,6 +256,7 @@ function setPayButtonState(): void {
 async function render(): Promise<void> {
   const cart = await getCart();
   const items: CartItem[] = cart?.items || [];
+  trackBeginCheckout(cart);
   const earnedKeychain = cart?.rewardItem || null;
 
   const giftSection =
@@ -798,14 +822,6 @@ function restoreAfterAuth(): void {
 
   if (flag === "1") {
     restoreCheckoutDraft();
-  void getCart().then(cart => {
-    const items = (cart.items || []).filter(item => !item.isFreeReward).map(item => ({
-      item_id: String(item.productId), item_name: item.title,
-      price: Number(item.priceEUR ?? item.price ?? 0),
-      quantity: Number(item.quantity || 1)
-    }));
-    if (items.length) trackEcommerceEvent("begin_checkout", items);
-  }).catch(() => { /* checkout remains functional without analytics */ });
     localStorage.removeItem("skanare_returning_from_auth");
   }
 }
@@ -1014,6 +1030,10 @@ editCartButton?.addEventListener(
   });
 
   window.addEventListener("skanare:cart-updated", () => {
+    void render();
+  });
+
+  window.addEventListener("skanare:analytics-consent-accepted", () => {
     void render();
   });
 
