@@ -298,8 +298,12 @@ export async function runBoxNowShippingMonitor() {
       .where("shipping.boxnow.environment", "==", "production").get();
     const candidates = query.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       .filter(isMonitorCandidate)
-      .sort((a, b) => Date.parse(a.shipping?.monitor?.lastCheckedAt || "") -
-        Date.parse(b.shipping?.monitor?.lastCheckedAt || ""));
+      .sort((a, b) => {
+        const aChecked = Date.parse(a.shipping?.monitor?.lastCheckedAt || "");
+        const bChecked = Date.parse(b.shipping?.monitor?.lastCheckedAt || "");
+        return (Number.isFinite(aChecked) ? aChecked : 0) -
+          (Number.isFinite(bChecked) ? bChecked : 0);
+      });
     // Finite, low-concurrency polling; other orders are picked next run.
     const batch = candidates.slice(0, MAX_ORDERS);
     let processed = 0;
