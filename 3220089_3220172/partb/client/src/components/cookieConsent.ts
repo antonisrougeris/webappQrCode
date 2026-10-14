@@ -49,7 +49,7 @@ export function openCookiePreferences(): void {
 export function initCookieConsent(forceOpen = false): void {
   // Keep shared initialization safe even if a page runs its entrypoint in <head>.
   if (!document.body) {
-    document.addEventListener("DOMContentLoaded", initCookieConsent, { once: true });
+    document.addEventListener("DOMContentLoaded", () => initCookieConsent(forceOpen), { once: true });
     return;
   }
   if (initialized) return;
