@@ -10,9 +10,30 @@ const TRACKABLE = new Set([
   "accepted-for-return", ...RESOLVED,
 ]);
 
+// Once reviewed, only these final shipping states stop periodic API polling.
+export function isFinalizedBoxNowMonitorEvent(event) {
+  return ["cancelled", "canceled", "returned"].includes(String(event || "").trim().toLowerCase());
+}
+
+function normalizeTerminalEvent(event) {
+  const value = String(event || "").trim().toLowerCase();
+  return value === "canceled" ? "cancelled" : value;
+}
+
+export function isStoppedBoxNowMonitorOrder(order) {
+  const stoppedEvent = normalizeTerminalEvent(order?.shipping?.monitor?.terminalMonitoringEvent);
+  const currentEvent = normalizeTerminalEvent(
+    order?.shipping?.boxnow?.lastEvent || order?.shipping?.status
+  );
+  return Boolean(order?.shipping?.monitor?.terminalMonitoringStoppedAt) &&
+    isFinalizedBoxNowMonitorEvent(stoppedEvent) && stoppedEvent === currentEvent;
+}
+
 export function isMonitorCandidate(order) {
   if (!order || order.paymentStatus !== "paid" || order.delivery !== "boxnow") return false;
   if (order.shipping?.boxnow?.environment !== "production") return false;
+  // A newer webhook with a different carrier event automatically re-enables polling.
+  if (isStoppedBoxNowMonitorOrder(order)) return false;
   if (["cancelled", "completed"].includes(String(order.fulfillmentStatus || "").toLowerCase())) {
     return order.fulfillmentStatus === "completed"
       && order.completionSource === "boxnow_api_reconciliation"

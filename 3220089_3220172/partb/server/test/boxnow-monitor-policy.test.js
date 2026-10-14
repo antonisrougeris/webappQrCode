@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   isMonitorCandidate, extractBoxNowParcelSnapshot, shouldReconcileBoxNowEvent,
   needsBoxNowPickupAttention, shouldSendBoxNowPickupReminder, needsBoxNowReturnReview,
+  isFinalizedBoxNowMonitorEvent, isStoppedBoxNowMonitorOrder,
 } from "../src/services/boxnow-monitor-policy.js";
 
 const productionOrder = {
@@ -84,4 +85,80 @@ test("returned and missing shipments require admin review, not refunds", () => {
     assert.equal(needsBoxNowReturnReview(event), true);
   }
   assert.equal(needsBoxNowReturnReview("delivered"), false);
+});
+
+test("cancelled and returned production parcels stop after review-alert acknowledgment", () => {
+  for (const event of ["cancelled", "canceled", "returned"]) {
+    const order = {
+      ...productionOrder,
+      shipping: {
+        ...productionOrder.shipping,
+        status: event,
+        boxnow: { ...productionOrder.shipping.boxnow, lastEvent: event },
+        monitor: {
+          attentionRequired: true,
+          terminalMonitoringEvent: event,
+          terminalMonitoringStoppedAt: "2026-10-14T11:00:00Z",
+        },
+      },
+    };
+    assert.equal(isFinalizedBoxNowMonitorEvent(event), true);
+    assert.equal(isStoppedBoxNowMonitorOrder(order), true);
+    assert.equal(isMonitorCandidate(order), false);
+  }
+});
+
+test("no terminal marker means polling continues until the review alert is confirmed", () => {
+  const pending = {
+    ...productionOrder,
+    shipping: {
+      ...productionOrder.shipping,
+      status: "cancelled",
+      boxnow: { ...productionOrder.shipping.boxnow, lastEvent: "cancelled" },
+      monitor: { attentionRequired: true },
+    },
+  };
+  assert.equal(isMonitorCandidate(pending), true);
+  assert.equal(isMonitorCandidate({ ...pending, shipping: {
+    ...pending.shipping,
+    monitor: { ...pending.shipping.monitor, terminalMonitoringEvent: "cancelled" },
+  } }), true);
+});
+
+test("a newer webhook status automatically resumes polling", () => {
+  const base = {
+    ...productionOrder,
+    shipping: {
+      ...productionOrder.shipping,
+      status: "cancelled",
+      boxnow: { ...productionOrder.shipping.boxnow, lastEvent: "cancelled" },
+      monitor: { terminalMonitoringEvent: "cancelled",
+        terminalMonitoringStoppedAt: "2026-10-14T11:00:00Z" },
+    },
+  };
+  assert.equal(isMonitorCandidate(base), false);
+  const newer = { ...base, shipping: {
+    ...base.shipping,
+    status: "returned",
+    boxnow: { ...base.shipping.boxnow, lastEvent: "returned" },
+  } };
+  assert.equal(isStoppedBoxNowMonitorOrder(newer), false);
+  assert.equal(isMonitorCandidate(newer), true);
+});
+
+test("expired, missing, lost and locker pickup are still monitored", () => {
+  for (const event of ["expired", "missing", "lost", "final-destination"]) {
+    assert.equal(isFinalizedBoxNowMonitorEvent(event), false);
+    const order = {
+      ...productionOrder,
+      shipping: {
+        ...productionOrder.shipping,
+        status: event,
+        boxnow: { ...productionOrder.shipping.boxnow, lastEvent: event },
+        monitor: { attentionRequired: true, terminalMonitoringEvent: event,
+          terminalMonitoringStoppedAt: "2026-10-14T11:00:00Z" },
+      },
+    };
+    assert.equal(isMonitorCandidate(order), true);
+  }
 });
