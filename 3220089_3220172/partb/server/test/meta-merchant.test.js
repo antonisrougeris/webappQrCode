@@ -41,6 +41,41 @@ test("merchant XML includes SKU-level variants, stock, sales and escaped values"
   assert.ok(!xml.includes("access_token"));
 });
 
+test("variants deep-link their SKU and never repeat images or cross-color galleries", () => {
+  const product = {
+    ...products[0],
+    image: "https://skanare.com/assets/tee.webp",
+    images: ["https://skanare.com/assets/tee.webp", "https://skanare.com/assets/white.webp"],
+    colorOptions: [{name: "Black", images: [
+      "https://skanare.com/assets/black.webp",
+      "https://skanare.com/assets/black.webp",
+      "https://skanare.com/assets/black-detail.webp"
+    ]}]
+  };
+  const rows = productToMerchantEntries(product);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].url, "https://skanare.com/product/qr-tee?variant=TEE-BLK-M");
+  assert.equal(rows[0].image, "https://skanare.com/assets/black.webp");
+  assert.deepEqual(rows[0].additionalImages, ["https://skanare.com/assets/black-detail.webp"]);
+  assert.ok(!rows[0].additionalImages.includes("https://skanare.com/assets/tee.webp"));
+  const xml = renderMerchantXml([product]);
+  assert.equal((xml.match(/<g:additional_image_link>/g) || []).length, 2);
+  assert.match(xml, /<g:item_group_id>tee-001<\/g:item_group_id>/);
+});
+
+test("single NFC accessory has no apparel size or extraneous item group", () => {
+  const xml = renderMerchantXml([{
+    id: "nfc-keychain", slug: "nfc-tag-keychain", title: "NFC Tag Keychain",
+    category: "accessory", active: true, price: 9.9, stock: 15,
+    image: "https://skanare.com/assets/nfc.webp",
+    variants: [{ sku: "NFC-KEYCHAIN-BLACK", color: "Black", size: "", stock: 15 }]
+  }]);
+  assert.equal((xml.match(/<item>/g) || []).length, 1);
+  assert.doesNotMatch(xml, /<g:size>/);
+  assert.doesNotMatch(xml, /<g:item_group_id>/);
+  assert.match(xml, /variant=NFC-KEYCHAIN-BLACK/);
+});
+
 test("no catalog entry without real HTTPS product image", () => {
   const xml = renderMerchantXml([{ ...products[0], image: "", images: [], colorOptions: [] }]);
   assert.doesNotMatch(xml, /<item>/);
