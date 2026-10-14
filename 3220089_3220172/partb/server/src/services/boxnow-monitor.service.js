@@ -19,6 +19,7 @@ import {
   needsBoxNowPickupAttention,
   shouldSendBoxNowPickupReminder,
   needsBoxNowReturnReview,
+  isFinalizedBoxNowMonitorEvent,
 } from "./boxnow-monitor-policy.js";
 
 const JOB_COLLECTION = "operational_jobs";
@@ -77,33 +78,37 @@ function alertId(orderId, kind) {
 async function sendOnce(db, order, kind, { subject, html, to }) {
   if (!to) {
     console.warn("boxnow_monitor_alert_no_recipient", { orderId: order.id, kind });
-    return;
+    return false;
   }
   const ref = db.collection(ALERT_COLLECTION).doc(alertId(order.id, kind));
   const owner = crypto.randomUUID();
   const acquired = await db.runTransaction(async tx => {
     const snap = await tx.get(ref);
     const v = snap.exists ? snap.data() : {};
-    if (v.sentAt || Date.parse(v.leaseUntil || "") > Date.now()) return false;
+    if (v.sentAt) return "already_sent";
+    if (Date.parse(v.leaseUntil || "") > Date.now()) return "in_flight";
     tx.set(ref, {
       orderId: order.id, kind, owner,
       leaseUntil: new Date(Date.now() + ALERT_LEASE_MS).toISOString(),
       claimedAt: nowIso(),
     }, { merge: true });
-    return true;
+    return "acquired";
   });
-  if (!acquired) return;
+  if (acquired === "already_sent") return true;
+  if (acquired !== "acquired") return false;
   try {
     await sendEmail({
       from: process.env.EMAIL_ORDER || process.env.EMAIL_FROM,
       to, subject, html,
     });
     await ref.set({ sentAt: nowIso(), leaseUntil: nowIso(), owner: null }, { merge: true });
+    return true;
   } catch (error) {
     // Lease expires and next monitor run retries. Do not fail all remaining orders.
     console.error("boxnow_monitor_alert_failed", {
       orderId: order.id, kind, message: error.message,
     });
+    return false;
   }
 }
 
@@ -213,6 +218,49 @@ async function reconcile(db, order, snapshot) {
   return result;
 }
 
+// A terminal parcel is archived only AFTER its review alert was persisted.
+async function stopPollingAfterTerminalAlert(db, order, snapshot) {
+  if (!isFinalizedBoxNowMonitorEvent(snapshot.event)) return false;
+
+  const orderRef = db.collection(COLLECTIONS.ORDERS).doc(order.id);
+  const alertRef = db.collection(ALERT_COLLECTION).doc(
+    alertId(order.id, "return-review:" + snapshot.parcelId)
+  );
+  const stopped = await db.runTransaction(async tx => {
+    const [orderDoc, alertDoc] = await Promise.all([
+      tx.get(orderRef),
+      tx.get(alertRef),
+    ]);
+    if (!orderDoc.exists || !alertDoc.exists || !alertDoc.data()?.sentAt) return false;
+    const current = { id: orderDoc.id, ...orderDoc.data() };
+    if (!isMonitorCandidate(current) ||
+      !isMatchingBoxNowProductionOrder(current, {
+        orderNumber: current.orderNumber, parcelId: snapshot.parcelId,
+      })) return false;
+
+    const recordedEvent = String(
+      current.shipping?.boxnow?.lastEvent || current.shipping?.status || ""
+    ).trim().toLowerCase();
+    const normalizedRecorded = recordedEvent === "canceled" ? "cancelled" : recordedEvent;
+    const normalizedIncoming = snapshot.event === "canceled" ? "cancelled" : snapshot.event;
+    if (normalizedRecorded !== normalizedIncoming ||
+      !current.shipping?.monitor?.attentionRequired) return false;
+
+    tx.update(orderRef, {
+      "shipping.monitor.terminalMonitoringEvent": normalizedIncoming,
+      "shipping.monitor.terminalMonitoringStoppedAt": nowIso(),
+    });
+    return true;
+  });
+
+  if (stopped) {
+    console.info("boxnow_monitor_terminal_stopped", {
+      orderId: order.id, parcelId: snapshot.parcelId, event: snapshot.event,
+    });
+  }
+  return stopped;
+}
+
 async function processOrder(db, order) {
   // Retry a delivered email if a prior reconciliation committed successfully
   // but the email service failed. No provider API call needed.
@@ -256,12 +304,15 @@ async function processOrder(db, order) {
     });
   }
   if (needsBoxNowReturnReview(snapshot.event)) {
-    await sendOnce(db, order, "return-review:" + parcelId, {
+    const reviewAlertSent = await sendOnce(db, order, "return-review:" + parcelId, {
       to: process.env.ADMIN_EMAIL,
       subject: "SKANARE BOX NOW — Returned / uncollected parcel needs review",
       html: message(order, "BOX NOW parcel " + parcelId + " is " + snapshot.event +
         ". Confirm the physical return and review next steps. No automatic refund was issued."),
     });
+    if (reviewAlertSent && isFinalizedBoxNowMonitorEvent(snapshot.event)) {
+      await stopPollingAfterTerminalAlert(db, order, snapshot);
+    }
   }
   if (needsBoxNowPickupAttention(snapshot)) {
     await sendOnce(db, order, "pickup-delayed:" + parcelId, {

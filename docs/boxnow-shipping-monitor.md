@@ -9,7 +9,7 @@ The normal BOX NOW webhook path remains unchanged. The monitor is an independent
 - Starts ~2 minutes after server readiness and polls every 30 minutes; runs at most 40 eligible orders per cycle, prioritizing orders not recently checked.
 - Firestore lease `operational_jobs/boxnow_shipping_monitor` prevents overlapping scheduler instances.
 - Queries production BOX NOW orders from Firestore via the existing `shipping.boxnow.environment` index. Filters for paid BOX NOW orders only.
-- Logs: `boxnow_monitor_started`, `boxnow_monitor_completed`, `boxnow_monitor_reconciled`, `boxnow_monitor_lookup_failed`, `boxnow_monitor_alert_failed`.
+- Logs: `boxnow_monitor_started`, `boxnow_monitor_completed`, `boxnow_monitor_reconciled`, `boxnow_monitor_terminal_stopped`, `boxnow_monitor_lookup_failed`, `boxnow_monitor_alert_failed`.
 
 ## Reconciliation safety
 - Uses the existing authenticated BOX NOW API client `getBoxNowParcel`; never fetches stage parcels.
@@ -17,6 +17,9 @@ The normal BOX NOW webhook path remains unchanged. The monitor is an independent
 - Never accepts an API event older than or equal to the latest stored `shipping.boxnow.lastEventAt`.
 - `delivered`: `fulfillmentStatus=completed`, `completionSource=boxnow_api_reconciliation`, completed timestamps and existing delivered-order email function. A missing email is retried separately.
 - Terminal non-delivery (`returned`, `expired`, `cancelled`, `lost`, `missing`): writes `shipping.monitor.attentionRequired=true`; preserves fulfillment/payment and **never** refunds.
+- For **cancelled / returned** only, once the final event is recorded and the existing admin review-alert document has `sentAt`, store `shipping.monitor.terminalMonitoringEvent` and `shipping.monitor.terminalMonitoringStoppedAt`. Future 30-minute runs exclude that parcel. Existing sent alerts also qualify; no duplicate alert is generated.
+- If the admin email is missing, failed or still in-flight, polling continues until an alert is confirmed. `expired`, `missing`, and `lost` continue to be checked because their disposition may change.
+- Webhooks remain active independently; a newer, different provider event automatically re-enables monitoring. No refunds or payment-status changes are made.
 - `final-destination`: alerts admin if locker has been waiting >24 hours. A customer reminder is sent ONLY when the provider sends a parsable explicit pickup deadline and <24h remain; no guessed locker expiry or auto-extension.
 - Provider errors: after 3 consecutive attempts, email admin at most once per day. A provider-vs-Firestore change also generates a one-time admin notification.
 - Admin/recipient notifications use Firestore alert claims under `boxnow_shipping_monitor_alerts` and are retried after a 15-minute claim lease if sending fails.
