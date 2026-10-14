@@ -676,6 +676,7 @@ items: orderItems,
   shippingCost,
   total,
   currency: "EUR",
+  marketingConsent: { granted: marketingConsent === true, version: 2, recordedAt: createdAt },
   termsAcceptance: {
     ...termsAcceptance,
     acceptedAt: createdAt,
