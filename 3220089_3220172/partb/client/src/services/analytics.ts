@@ -3,7 +3,7 @@ import { loadGoogleAnalytics } from "../components/cookieConsent";
 import { hasAnalyticsConsent } from "./cookiePreferences";
 import { trackMetaEvent } from "./metaPixel";
 
-type EcommerceItem = { item_id: string; item_name?: string; price?: number; quantity?: number; item_variant?: string };
+type EcommerceItem = { item_id: string; item_name?: string; price?: number; quantity?: number; item_variant?: string; item_sku?: string };
 
 
 export function trackEcommerceEvent(
