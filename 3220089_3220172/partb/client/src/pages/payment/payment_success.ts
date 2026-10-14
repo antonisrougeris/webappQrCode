@@ -90,6 +90,9 @@ function showPaymentState(state: PaymentConfirmation<Order>["state"]): void {
   const description = el(".payment-result__text");
   const subtext = el(".payment-result__subtext");
   const icon = el(".payment-result__icon");
+  const card = el(".payment-result");
+  card?.classList.toggle("payment-result--success", state === "paid");
+  if (icon) icon.style.display = state === "paid" ? "" : "none";
 
   if (state === "paid") {
     if (heading) heading.textContent = "Thank you for your order";
