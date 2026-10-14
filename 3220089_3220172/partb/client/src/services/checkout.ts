@@ -49,6 +49,7 @@ export interface CheckoutPayload {
     choice: "none" | "percent:5" | "percent:10" | "custom";
     customAmount?: number;
   };
+  marketingConsent?: boolean;
   termsAcceptance: {
     accepted: true;
     version: "2026-09";
