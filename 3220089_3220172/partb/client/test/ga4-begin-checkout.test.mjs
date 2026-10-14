@@ -60,7 +60,9 @@ test("consent rejection does not mark begin_checkout sent; it retries after acce
   const events = [];
   let consented = false;
   const ctx = vm.createContext({
-    beginCheckoutTracked: false,
+    beginCheckoutTrackedGa4: false,
+    beginCheckoutTrackedMeta: false,
+    trackMetaEcommerceEvent: () => false,
     getCartItemUnitPrice: item => item.price,
     trackEcommerceEvent: (name, items) => {
       if (!consented) return false;
