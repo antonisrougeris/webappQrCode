@@ -1,27 +1,7 @@
 import { locale, localizedPath, t } from "../i18n/locale";
 import "./cookieConsent.css";
-
-const COOKIE_CONSENT_KEY = "skanare_cookie_consent";
-type CookieConsent = "accepted" | "rejected";
-let initialized = false;
-
-function getConsent(): CookieConsent | null {
-  try {
-    const stored = localStorage.getItem(COOKIE_CONSENT_KEY);
-    return stored === "accepted" || stored === "rejected" ? stored : null;
-  } catch {
-    // Privacy modes can disable storage. Ask on the current page instead.
-    return null;
-  }
-}
-
-function saveConsent(value: CookieConsent): void {
-  try {
-    localStorage.setItem(COOKIE_CONSENT_KEY, value);
-  } catch {
-    // A storage-restricted browser can still use the site normally.
-  }
-}
+import { hasAnalyticsConsent, getCookiePreferences, setCookiePreferences } from "../services/cookiePreferences";
+import { loadMetaPixel } from "../services/metaPixel";
 
 /**
  * Strict opt-in: no Google tag or analytics network request before acceptance.
@@ -33,6 +13,7 @@ export function loadGoogleAnalytics(): void {
     console.warn("Skanare analytics: valid VITE_GA_MEASUREMENT_ID is missing from the frontend build");
     return;
   }
+  if (!hasAnalyticsConsent()) return;
   if (document.querySelector('script[data-skanare-ga="true"]')) return;
 
   window.dataLayer = window.dataLayer || [];
@@ -59,7 +40,13 @@ export function loadGoogleAnalytics(): void {
   document.head.appendChild(script);
 }
 
-export function initCookieConsent(): void {
+export function openCookiePreferences(): void {
+  initialized = false;
+  document.querySelector(".cookie-banner")?.remove();
+  initCookieConsent(true);
+}
+
+export function initCookieConsent(forceOpen = false): void {
   // Keep shared initialization safe even if a page runs its entrypoint in <head>.
   if (!document.body) {
     document.addEventListener("DOMContentLoaded", initCookieConsent, { once: true });
@@ -68,12 +55,12 @@ export function initCookieConsent(): void {
   if (initialized) return;
   initialized = true;
 
-  const consent = getConsent();
-  if (consent === "accepted") {
-    loadGoogleAnalytics();
+  const consent = getCookiePreferences();
+  if (!forceOpen && consent) {
+    if (consent.analytics) loadGoogleAnalytics();
+    if (consent.marketing) loadMetaPixel();
     return;
   }
-  if (consent === "rejected") return;
 
   const banner = document.createElement("section");
   banner.className = "cookie-banner";
@@ -81,7 +68,9 @@ export function initCookieConsent(): void {
   banner.setAttribute("aria-label", t("cookies.label", "Cookie preferences"));
 
   const heading = t("cookies.heading", "Your privacy matters");
-  const description = t("cookies.description", "We use essential cookies and optional analytics to improve Skanare. Analytics runs only if you accept.");
+  const description = locale === "el"
+    ? "Χρησιμοποιούμε απαραίτητα cookies και, μόνο με τη συγκατάθεσή σου, analytics (Google) και διαφημιστικά cookies (Meta). Μπορείς να επιλέξεις."
+    : "We use essential cookies and, only with your permission, analytics (Google) and advertising cookies (Meta). You can choose.";
   const policy = t("cookies.policy", "Cookie Policy");
   const reject = t("cookies.reject", "Reject");
   const accept = t("cookies.accept", "Accept");
@@ -94,7 +83,13 @@ export function initCookieConsent(): void {
         <p></p>
         <a class="cookie-policy-link"></a>
       </div>
+      <div class="cookie-banner-preferences" hidden>
+        <label class="cookie-preference"><input type="checkbox" data-cookie-type="analytics"> <span>Google Analytics</span></label>
+        <label class="cookie-preference"><input type="checkbox" data-cookie-type="marketing"> <span>Meta advertising</span></label>
+        <button type="button" class="cookie-btn cookie-save"></button>
+      </div>
       <div class="cookie-banner-actions">
+        <button type="button" class="cookie-btn cookie-customize"></button>
         <button type="button" class="cookie-btn cookie-reject"></button>
         <button type="button" class="cookie-btn cookie-accept"></button>
       </div>
@@ -105,6 +100,15 @@ export function initCookieConsent(): void {
   const link = banner.querySelector<HTMLAnchorElement>(".cookie-policy-link");
   const acceptButton = banner.querySelector<HTMLButtonElement>(".cookie-accept");
   const rejectButton = banner.querySelector<HTMLButtonElement>(".cookie-reject");
+  const customizeButton = banner.querySelector<HTMLButtonElement>(".cookie-customize");
+  const saveButton = banner.querySelector<HTMLButtonElement>(".cookie-save");
+  const preferencesPanel = banner.querySelector<HTMLElement>(".cookie-banner-preferences");
+  const analyticsBox = banner.querySelector<HTMLInputElement>('[data-cookie-type="analytics"]');
+  const marketingBox = banner.querySelector<HTMLInputElement>('[data-cookie-type="marketing"]');
+  if (analyticsBox) analyticsBox.checked = consent?.analytics || false;
+  if (marketingBox) marketingBox.checked = consent?.marketing || false;
+  if (customizeButton) customizeButton.textContent = locale === "el" ? "Επιλογές" : "Customize";
+  if (saveButton) saveButton.textContent = locale === "el" ? "Αποθήκευση" : "Save choices";
 
   if (headingEl) headingEl.textContent = heading;
   if (descriptionEl) descriptionEl.textContent = description;
@@ -123,17 +127,32 @@ export function initCookieConsent(): void {
     window.setTimeout(() => banner.remove(), 300);
   }
 
-  acceptButton?.addEventListener("click", () => {
-    saveConsent("accepted");
-    loadGoogleAnalytics();
-    window.dispatchEvent(new Event("skanare:analytics-consent-accepted"));
+  function commitPreferences(analytics: boolean, marketing: boolean): void {
+    if (!setCookiePreferences({ analytics, marketing })) return;
+    if (analytics) {
+      loadGoogleAnalytics();
+      window.dispatchEvent(new Event("skanare:analytics-consent-accepted"));
+    }
+    if (marketing) {
+      loadMetaPixel();
+      window.dispatchEvent(new Event("skanare:marketing-consent-accepted"));
+    }
+    // Reload after withdrawal to prevent already loaded tags from tracking.
+    if ((consent?.analytics && !analytics) || (consent?.marketing && !marketing)) {
+      window.location.reload();
+      return;
+    }
     closeBanner();
-  }, { once: true });
+  }
 
-  rejectButton?.addEventListener("click", () => {
-    saveConsent("rejected");
-    closeBanner();
-  }, { once: true });
+  customizeButton?.addEventListener("click", () => {
+    if (preferencesPanel) preferencesPanel.hidden = !preferencesPanel.hidden;
+  });
+  saveButton?.addEventListener("click", () => {
+    commitPreferences(Boolean(analyticsBox?.checked), Boolean(marketingBox?.checked));
+  });
+  acceptButton?.addEventListener("click", () => commitPreferences(true, true));
+  rejectButton?.addEventListener("click", () => commitPreferences(false, false));
 }
 
 declare global {
