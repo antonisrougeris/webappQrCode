@@ -3,6 +3,8 @@ import "./cookieConsent.css";
 import { hasAnalyticsConsent, getCookiePreferences, setCookiePreferences } from "../services/cookiePreferences";
 import { loadMetaPixel } from "../services/metaPixel";
 
+let initialized = false;
+
 /**
  * Strict opt-in: no Google tag or analytics network request before acceptance.
  * Vite injects this value at frontend BUILD time (CI GitHub Actions variable).
