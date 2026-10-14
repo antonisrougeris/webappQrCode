@@ -112,6 +112,7 @@ export const checkoutSchema = z.object({
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["customAmount"], message: "Custom amount is only allowed for custom tips" });
     }
   }),
+  marketingConsent: z.boolean().optional().default(false),
   termsAcceptance: z.object({
     accepted: z.literal(true),
     version: z.literal("2026-09"),
