@@ -126,6 +126,7 @@ export function initCookieConsent(): void {
   acceptButton?.addEventListener("click", () => {
     saveConsent("accepted");
     loadGoogleAnalytics();
+    window.dispatchEvent(new Event("skanare:analytics-consent-accepted"));
     closeBanner();
   }, { once: true });
 
