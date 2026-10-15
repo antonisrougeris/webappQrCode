@@ -763,7 +763,20 @@
     "Save photo": "Αποθήκευση φωτογραφίας",
     "Selected QR photo": "Επιλεγμένη φωτογραφία QR",
     "Saving…": "Αποθήκευση…",
-    "Destination URL": "Σύνδεσμος προορισμού"
+    "Destination URL": "Σύνδεσμος προορισμού",
+    "Order summary": "Σύνοψη παραγγελίας",
+    "Shipping": "Μεταφορικά",
+    "Total savings (included)": "Συνολική εξοικονόμηση (περιλαμβάνεται)",
+    "Discount savings (included)": "Εξοικονόμηση από έκπτωση (περιλαμβάνεται)",
+    "Add discount": "Προσθήκη έκπτωσης",
+    "View full order details →": "Προβολή αναλυτικής παραγγελίας →",
+    "Gift packaging": "Συσκευασία δώρου",
+    "Tip": "Φιλοδώρημα",
+    "Terms of service": "Όροι χρήσης",
+    "Loading items…": "Φόρτωση προϊόντων…",
+    "Free gift with €80+ order": "Δωρεάν δώρο για παραγγελίες από 80 €",
+    "Order summary preview": "Προεπισκόπηση παραγγελίας",
+    "1 item": "1 προϊόν"
   },
   "messages": {
     "el": {
@@ -855,7 +868,20 @@
       "cookies.description": "Χρησιμοποιούμε απαραίτητα cookies και προαιρετικά analytics για να βελτιώνουμε το Skanare. Τα analytics ενεργοποιούνται μόνο αν αποδεχτείς.",
       "cookies.policy": "Πολιτική Cookies",
       "cookies.accept": "Αποδοχή",
-      "cookies.reject": "Απόρριψη"
+      "cookies.reject": "Απόρριψη",
+      "checkout.summary": "Σύνοψη παραγγελίας",
+      "checkout.shipping": "Μεταφορικά",
+      "checkout.totalSavings": "Συνολική εξοικονόμηση (περιλαμβάνεται)",
+      "checkout.vatIncluded": "Συμπεριλαμβάνεται ΦΠΑ 24%: {amount}",
+      "checkout.items": "προϊόντα",
+      "checkout.item": "προϊόν",
+      "checkout.addDiscount": "Προσθήκη έκπτωσης",
+      "checkout.viewFull": "Προβολή αναλυτικής παραγγελίας →",
+      "checkout.giftPackaging": "Συσκευασία δώρου",
+      "checkout.tip": "Φιλοδώρημα",
+      "checkout.freeGift": "Δωρεάν δώρο για παραγγελίες από 80 €",
+      "checkout.size": "Μέγεθος",
+      "checkout.shippingFree": "Δωρεάν"
     }
   }
 }
