@@ -599,6 +599,7 @@
       <button
         type="submit"
         class="checkout-page__btn"
+        data-checkout-pay-button
       >
         Pay with viva.com
       </button>
@@ -616,7 +617,29 @@
     <!-- =========================================
          RIGHT — ORDER SUMMARY
          ========================================= -->
-    <aside class="checkout-page__summary">
+    <aside class="checkout-page__summary" id="checkoutOrderSummary">
+      <!-- Mobile-only expander; desktop always displays the full existing summary. -->
+      <button
+        id="checkoutMobileSummaryToggle"
+        class="checkout-mobile-summary__toggle"
+        type="button"
+        aria-controls="checkoutMobileSummaryDetails"
+        aria-expanded="false"
+      >
+        <span class="checkout-mobile-summary__image-wrap" aria-hidden="true">
+          <img id="checkoutMobileSummaryImage" src="/assets/img/logo_Image.png" alt="" />
+          <span id="checkoutMobileSummaryBadge" class="checkout-mobile-summary__badge">0</span>
+        </span>
+        <span class="checkout-mobile-summary__heading">
+          <strong>Order summary</strong>
+          <small id="checkoutMobileSummaryCount">Loading items…</small>
+        </span>
+        <strong id="checkoutMobileSummaryTotal" class="checkout-mobile-summary__price">—</strong>
+        <svg class="checkout-mobile-summary__chevron" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      <div id="checkoutMobileSummaryDetails" class="checkout-mobile-summary__content">
 
       <div class="checkout-summary-heading">
         <h2>Your order</h2>
@@ -715,7 +738,22 @@
 
       
 
+      </div>
     </aside>
+
+    <!-- Mobile-only checkout footer: the SAME form and submission handler. -->
+    <div class="checkout-mobile-payment">
+      <button
+        id="checkoutMobilePay"
+        type="submit"
+        form="checkoutForm"
+        class="checkout-page__btn"
+        data-checkout-pay-button
+      >
+        Pay with viva.com
+      </button>
+      <div class="checkout-secure-note">Secure payment powered by viva.com</div>
+    </div>
 
   </div>
 
