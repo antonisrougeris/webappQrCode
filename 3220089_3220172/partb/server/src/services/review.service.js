@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
@@ -89,8 +90,10 @@ export async function createVerifiedReview(userId, productId, input) {
     ...completedOrderDoc.data(),
   };
 
+  const reviewId = `review_${crypto.createHash("sha256").update(`${userId}:${product.id}`).digest("hex").slice(0, 32)}`;
+  const reviewRef = db.collection(COLLECTIONS.REVIEWS).doc(reviewId);
   const review = {
-    id: createId("review"),
+    id: reviewId,
     productId: String(product.id),
     userId,
     name: input.name,
@@ -113,11 +116,7 @@ export async function createVerifiedReview(userId, productId, input) {
     );
   }
 
-  const rewardCode =
-    `REVIEW20-${completedOrder.id
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .slice(-8)
-      .toUpperCase()}`;
+  const rewardCode = `REVIEW20-${crypto.createHash("sha256").update(reviewId).digest("hex").slice(0, 12).toUpperCase()}`;
 
   const rewardCreatedAt = nowIso();
   const rewardExpiresAt =
@@ -145,14 +144,12 @@ export async function createVerifiedReview(userId, productId, input) {
 
   const rewardRef =
     recoveryOfferRef(reward.code, db);
-  const existingRewardSnap =
-    await rewardRef.get();
-  const rewardCreated =
-    !existingRewardSnap.exists;
-
   const productRef = db.collection(COLLECTIONS.PRODUCTS).doc(product.id);
   await db.runTransaction(async (transaction) => {
-    const productSnapshot = await transaction.get(productRef);
+    const [savedReview, productSnapshot, existingRewardSnap] = await Promise.all([
+      transaction.get(reviewRef), transaction.get(productRef), transaction.get(rewardRef),
+    ]);
+    if (savedReview.exists) throw new ApiError(409, "You have already reviewed this product.");
     if (!productSnapshot.exists) {
       throw new ApiError(404, "Product not found");
     }
@@ -161,12 +158,9 @@ export async function createVerifiedReview(userId, productId, input) {
       ? productSnapshot.data().reviews
       : [];
 
-    transaction.set(
-      db.collection(COLLECTIONS.REVIEWS).doc(review.id),
-      review
-    );
+    transaction.set(reviewRef, review);
 
-    if (rewardCreated) {
+    if (!existingRewardSnap.exists) {
       transaction.set(
         rewardRef,
         reward
@@ -178,7 +172,7 @@ export async function createVerifiedReview(userId, productId, input) {
     });
   });
 
-  if (rewardCreated) {
+  {
     try {
       await sendEmail({
       from:
@@ -210,12 +204,12 @@ export async function createVerifiedReview(userId, productId, input) {
 
   return {
     review,
-    reward: rewardCreated
-      ? {
-          code: reward.code,
-          discountPercent: reward.discountPercent,
-          expiresAt: reward.expiresAt,
-        }
-      : null,
+    reward: { code: reward.code, discountPercent: reward.discountPercent, expiresAt: reward.expiresAt },
   };
+}
+/** Authenticated status never exposes customer information to other users. */
+export async function getMyReviewedProductIds(userId) {
+  if (!userId) throw new ApiError(401, "Sign in required");
+  const snapshot = await getDB().collection(COLLECTIONS.REVIEWS).where("userId", "==", userId).get();
+  return [...new Set(snapshot.docs.map(doc => String(doc.data().productId || "")).filter(Boolean))];
 }
