@@ -966,165 +966,74 @@ function renderCustomerOrders(
       })
       .join("");
 }
-async function loadUserAccountDashboard(): Promise<void> {
+let customerDashboardRevision = 0;
 
-  const dashboard =
-    document.getElementById(
-      "userDashboardHero"
-    );
+async function loadUserAccountDashboard(expectedUid: string, revision: number): Promise<void> {
+  const dashboard = document.getElementById("userDashboardHero");
+  const defaultHero = document.getElementById("defaultHero");
+  const qrGrid = document.getElementById("userQrGrid") as HTMLElement | null;
+  const qrSection = document.getElementById("userQrSection");
+  const ordersContainer = document.getElementById("userOrdersList");
 
-  const defaultHero =
-    document.getElementById(
-      "defaultHero"
-    );
+  const isCurrentUser = () =>
+    customerDashboardRevision === revision &&
+    firebaseAuth.currentUser?.uid === expectedUid;
 
-  const qrGrid =
-    document.getElementById(
-      "userQrGrid"
-    ) as HTMLElement | null;
-
-  const qrSection =
-    document.getElementById(
-      "userQrSection"
-    );
-
+  // Keep the authenticated view visible while its data loads. A failed API
+  // response does not imply logout or that the customer has no orders.
+  dashboard?.classList.remove("hidden");
+  defaultHero?.classList.add("hidden");
+  if (ordersContainer) ordersContainer.textContent = "Loading your orders...";
 
   try {
+    const [ordersResult, qrResult] = await Promise.allSettled([
+      getOrders(),
+      getMyQrCodes(),
+    ]);
+    if (!isCurrentUser()) return;
 
-    /*
-     * Orders and QR are loaded independently.
-     * If one endpoint fails, the other part
-     * of the account dashboard can still work.
-     */
+    const ordersFailed = ordersResult.status === "rejected";
+    const qrFailed = qrResult.status === "rejected";
+    if (ordersFailed) console.error("Failed to load customer orders:", ordersResult.reason);
+    if (qrFailed) console.error("Failed to load customer QR codes:", qrResult.reason);
 
-    const [
-      ordersResult,
-      qrResult,
-    ] =
-      await Promise.allSettled([
-        getOrders(),
-        getMyQrCodes(),
-      ]);
+    const rawOrders: any = ordersResult.status === "fulfilled"
+      ? ordersResult.value : [];
+    const orders: any[] = Array.isArray(rawOrders)
+      ? rawOrders
+      : Array.isArray(rawOrders?.orders) ? rawOrders.orders : [];
+    const qrCodes: QrCode[] = qrResult.status === "fulfilled" &&
+      Array.isArray(qrResult.value) ? qrResult.value : [];
 
-
-    const rawOrders: any =
-      ordersResult.status ===
-      "fulfilled"
-        ? ordersResult.value
-        : [];
-
-
-    const orders: any[] =
-      Array.isArray(rawOrders)
-        ? rawOrders
-        : Array.isArray(
-            rawOrders?.orders
-          )
-          ? rawOrders.orders
-          : [];
-
-
-    const qrCodes: QrCode[] =
-      qrResult.status ===
-      "fulfilled" &&
-      Array.isArray(
-        qrResult.value
-      )
-        ? qrResult.value
-        : [];
-
-
-    const hasAccountData =
-      orders.length > 0 ||
-      qrCodes.length > 0;
-
-
-    /*
-     * No orders and no QR:
-     * show normal marketing homepage.
-     */
-
-    if (!hasAccountData) {
-
-      dashboard?.classList.add(
-        "hidden"
-      );
-
-      defaultHero?.classList.remove(
-        "hidden"
-      );
-
-      return;
-    }
-
-
-    /*
-     * Customer has activity:
-     * show customer dashboard.
-     */
-
-    dashboard?.classList.remove(
-      "hidden"
-    );
-
-    defaultHero?.classList.add(
-      "hidden"
-    );
-
-
-    /*
-     * Orders
-     */
-
-    renderCustomerOrders(
-      orders
-    );
-
-
-    /*
-     * QR codes
-     */
-
-    if (
-      qrGrid &&
-      qrCodes.length
-    ) {
-
-      qrSection?.classList.remove(
-        "hidden"
-      );
-
-      await renderQrDashboard(
-        qrGrid,
-        qrCodes.slice(0, 2)
-      );
-
+    if (ordersFailed && ordersContainer) {
+      ordersContainer.textContent = "Unable to load orders right now. Please refresh to retry.";
     } else {
-
-      qrSection?.classList.add(
-        "hidden"
-      );
-
-      if (qrGrid) {
-        qrGrid.innerHTML = "";
-      }
+      renderCustomerOrders(orders);
     }
 
+    if (qrGrid && qrCodes.length) {
+      qrSection?.classList.remove("hidden");
+      await renderQrDashboard(qrGrid, qrCodes.slice(0, 2));
+    } else {
+      qrSection?.classList.add("hidden");
+      if (qrGrid) qrGrid.innerHTML = "";
+    }
 
+    // Preserve existing empty-account homepage for genuinely empty results,
+    // but do not mistake an API outage for an empty customer account.
+    if (isCurrentUser() && !ordersFailed && !qrFailed &&
+        orders.length === 0 && qrCodes.length === 0) {
+      dashboard?.classList.add("hidden");
+      defaultHero?.classList.remove("hidden");
+    }
   } catch (error) {
-
-    console.error(
-      "Failed to load customer dashboard:",
-      error
-    );
-
-    dashboard?.classList.add(
-      "hidden"
-    );
-
-    defaultHero?.classList.remove(
-      "hidden"
-    );
+    if (!isCurrentUser()) return;
+    console.error("Failed to load customer dashboard:", error);
+    if (ordersContainer) {
+      ordersContainer.textContent = "Unable to load your account right now. Please refresh to retry.";
+    }
+    dashboard?.classList.remove("hidden");
+    defaultHero?.classList.add("hidden");
   }
 }
 
@@ -1268,17 +1177,12 @@ document.addEventListener("DOMContentLoaded", () => {
     "accessory"
   );
 
- firebaseAuth.onAuthStateChanged(
-  (user) => {
-
-    if (user) {
-
-      void loadUserAccountDashboard();
-
-      return;
-    }
-
-    resetLoggedOutHomepageState();
+ firebaseAuth.onAuthStateChanged((user) => {
+  const revision = ++customerDashboardRevision;
+  if (user) {
+    void loadUserAccountDashboard(user.uid, revision);
+    return;
   }
-);
+  resetLoggedOutHomepageState();
+});
 });
