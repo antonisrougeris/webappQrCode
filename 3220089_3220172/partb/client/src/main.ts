@@ -8,6 +8,7 @@ import { renderProducts } from "./components/renderProducts";
 import { getProducts } from "./services/products";
 import { updateCartBadge } from "./utils/cart-badge";
 import { firebaseAuth } from "./services/firebase";
+import { apiRequest } from "./services/api";
 import { getMyQrCodes, type QrCode } from "./services/qr";
 import { enhanceQrDestinationEditors } from "./components/qrDestinationEditor";
 
@@ -565,8 +566,32 @@ function customerReturnWindowOpen(order: any): boolean {
   return age >= 0 && age <= fourteenDaysMs;
 }
 
+type OrderReturn = {
+  id: string;
+  orderId: string;
+  returnNumber?: string;
+  status?: string;
+  boxnow?: { parcelId?: string | null };
+};
+
+async function getCustomerReturns(): Promise<OrderReturn[]> {
+  const response = await apiRequest<{ returns?: OrderReturn[] }>("/returns");
+  return Array.isArray(response?.returns) ? response.returns : [];
+}
+
+function getActiveOrderReturn(order: any, requests: OrderReturn[]): OrderReturn | undefined {
+  const orderId = String(order?.id || "");
+  // Newest active return takes precedence. Cancelled and rejected requests
+  // are not active and should not prevent a new eligible return.
+  return requests.find(request =>
+    request.orderId === orderId &&
+    !["cancelled", "rejected"].includes(String(request.status || "").toLowerCase())
+  );
+}
+
 function renderCustomerOrders(
-  orders: any[]
+  orders: any[],
+  returns: OrderReturn[] = []
 ): void {
 
   const container =
@@ -812,9 +837,39 @@ function renderCustomerOrders(
           order?.shipping?.provider === "boxnow" ||
           order?.delivery === "boxnow";
 
+        // Delivery tracking is no longer relevant once the parcel is delivered.
+        // A customer return has its OWN parcel and tracking lifecycle.
         const canShowTracking =
+          status !== "completed" &&
           Boolean(trackingNumber || trackingUrl) &&
-          (isBoxNow || status === "shipped" || status === "completed");
+          (isBoxNow || status === "shipped");
+
+        const activeReturn = status === "completed"
+          ? getActiveOrderReturn(order, returns)
+          : undefined;
+        const returnParcelId = String(activeReturn?.boxnow?.parcelId || "").trim();
+        const returnTrackingUrl = /^\\d{10}$/.test(returnParcelId)
+          ? `https://boxnow.gr/?track=${encodeURIComponent(returnParcelId)}`
+          : "";
+        const returnStatus = String(activeReturn?.status || "requested").replaceAll("_", " ");
+        const returnTracking = activeReturn
+          ? `
+            <div class="account-order__tracking account-order__return" data-return-tracking>
+              <div class="account-order__tracking-info">
+                <span>Return ${accountEscapeHtml(activeReturn.returnNumber || "")}</span>
+                <strong>${accountEscapeHtml(returnStatus)}</strong>
+                ${returnParcelId ? `<span class="account-order__parcel-status">BOX NOW return: ${accountEscapeHtml(returnParcelId)}</span>` : ""}
+              </div>
+              <a
+                href="/returns?returnId=${encodeURIComponent(activeReturn.id)}"
+                class="account-order__tracking-link"
+              >View return ↗</a>
+              ${returnTrackingUrl
+                ? `<a href="${accountEscapeHtml(returnTrackingUrl)}" target="_blank" rel="noopener noreferrer" class="account-order__tracking-link">Track return ↗</a>`
+                : ""}
+            </div>
+          `
+          : "";
 
 
         const tracking =
@@ -943,8 +998,9 @@ function renderCustomerOrders(
             ${progress}
 
             ${tracking}
+            ${returnTracking}
 
-            ${customerReturnWindowOpen(order)
+            ${!activeReturn && customerReturnWindowOpen(order)
               ? `
                 <div class="account-order__tracking account-order__return">
                   <div class="account-order__tracking-info">
@@ -986,9 +1042,10 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
   if (ordersContainer) ordersContainer.textContent = "Loading your orders...";
 
   try {
-    const [ordersResult, qrResult] = await Promise.allSettled([
+    const [ordersResult, qrResult, returnsResult] = await Promise.allSettled([
       getOrders(),
       getMyQrCodes(),
+      getCustomerReturns(),
     ]);
     if (!isCurrentUser()) return;
 
@@ -996,6 +1053,10 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
     const qrFailed = qrResult.status === "rejected";
     if (ordersFailed) console.error("Failed to load customer orders:", ordersResult.reason);
     if (qrFailed) console.error("Failed to load customer QR codes:", qrResult.reason);
+    if (returnsResult.status === "rejected") {
+      console.error("Failed to load customer returns:", returnsResult.reason);
+    }
+    const returns = returnsResult.status === "fulfilled" ? returnsResult.value : [];
 
     const rawOrders: any = ordersResult.status === "fulfilled"
       ? ordersResult.value : [];
@@ -1008,7 +1069,7 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
     if (ordersFailed && ordersContainer) {
       ordersContainer.textContent = "Unable to load orders right now. Please refresh to retry.";
     } else {
-      renderCustomerOrders(orders);
+      renderCustomerOrders(orders, returns);
     }
 
     if (qrGrid && qrCodes.length) {

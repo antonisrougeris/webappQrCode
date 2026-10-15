@@ -281,7 +281,8 @@ function setupSizeGuideModal(product: Product): void {
 /** Only exact color AND size may be selected. Never match by size alone. */
 function setupVariantControls(
   product: Product,
-  onColorChanged: (color: string) => void
+  onColorChanged: (color: string) => void,
+  onSizeSelected?: () => void
 ): () => ProductVariant | undefined {
   const wrapper = document.getElementById("variantControls") as HTMLElement | null;
   const sizeOptions = document.getElementById("sizeOptions");
@@ -465,6 +466,9 @@ function setupVariantControls(
     if (!button || button.disabled) return;
     selectedSize = button.dataset.size || "";
     redraw();
+    // Desktop Add to cart may be waiting for this exact variant selection.
+    // Mobile uses its own size picker and forwards its own cart click.
+    onSizeSelected?.();
   });
   colorOptions?.addEventListener("click", event => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-product-color]");
@@ -1456,7 +1460,30 @@ if (imageStage) {
     trackEcommerceEvent("view_item", viewedItem);
     trackMetaEcommerceEvent("view_item", viewedItem);
     setupSizeGuideModal(product);
-    const getSelectedVariant = setupVariantControls(product, switchGalleryForColor);
+    let pendingDesktopAddToCart = false;
+    let sizePromptTimeout: number | undefined;
+    const getSelectedVariant = setupVariantControls(
+      product,
+      switchGalleryForColor,
+      () => {
+        if (!pendingDesktopAddToCart) return;
+        pendingDesktopAddToCart = false;
+        if (sizePromptTimeout !== undefined) {
+          window.clearTimeout(sizePromptTimeout);
+          sizePromptTimeout = undefined;
+        }
+        // Selection has already synchronously updated the SKU and stock.
+        // Reuse the existing cart handler exactly once (no duplicate writes).
+        if (window.matchMedia("(min-width: 601px)").matches && addBtn && !addBtn.disabled) {
+          addBtn.textContent = t("product.addToCart", "Add to cart");
+          addBtn.click();
+        }
+      }
+    );
+    // Changing the selected color cancels an unfinished purchase intent.
+    document.getElementById("productColorOptions")?.addEventListener("click", () => {
+      pendingDesktopAddToCart = false;
+    });
     setupMobileProductPurchase(addBtn);
     const accessoryMode = product.category === "accessory";
     const accessoryQuantity = document.getElementById("mobileAccessoryQuantity");
@@ -1489,6 +1516,12 @@ if (imageStage) {
           requiresSizeSelection &&
           !selectedVariant
         ) {
+          // On desktop, a size click completes the original Add to cart action.
+          // The existing mobile picker already handles this independently.
+          pendingDesktopAddToCart = window.matchMedia("(min-width: 601px)").matches;
+          if (sizePromptTimeout !== undefined) {
+            window.clearTimeout(sizePromptTimeout);
+          }
           const originalText =
             addBtn.textContent ||
             "Add to cart";
@@ -1505,9 +1538,11 @@ if (imageStage) {
               block: "center",
             });
 
-          window.setTimeout(() => {
-            addBtn.textContent =
-              originalText;
+          sizePromptTimeout = window.setTimeout(() => {
+            sizePromptTimeout = undefined;
+            if (!pendingDesktopAddToCart) {
+              addBtn.textContent = originalText;
+            }
           }, 1200);
 
           return;
