@@ -111,3 +111,67 @@
     font-size: 11px;
   }
 }
+
+/* Refinements ONLY for narrow-screen checkout. */
+@media (min-width: 761px) {
+  .checkout-mobile-top, .checkout-mobile-discount, .checkout-mobile-legal { display: none !important; }
+}
+@media (max-width: 760px) {
+  .checkout-mobile-top {
+    order: 0;
+    width: 100%;
+    box-sizing: border-box;
+    background: #f7f7f7;
+    border-block: 1px solid #e9e9e9;
+    margin: -12px 0 2px;
+    padding: 0 12px;
+  }
+  .checkout-mobile-top__toggle {
+    display: flex;
+    width: 100%;
+    min-height: 49px;
+    border: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 0;
+    font: inherit;
+    background: transparent;
+    color: #161616;
+    cursor: pointer;
+  }
+  .checkout-mobile-top__label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; }
+  .checkout-mobile-top__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .checkout-mobile-top__toggle > strong { font-size: 14px; font-weight: 750; white-space: nowrap; }
+  .checkout-mobile-top__details { padding: 8px 0 15px; border-top: 1px solid #e5e5e5; }
+  .checkout-mobile-top__details[hidden], .checkout-mobile-top__breakdown > div[hidden] { display: none !important; }
+  .checkout-mobile-top__item, .checkout-mobile-top__breakdown > div {
+    display: flex; align-items: start; justify-content: space-between; gap: 18px;
+    padding: 7px 0; font-size: 12px;
+  }
+  .checkout-mobile-top__item > span { min-width: 0; overflow-wrap: anywhere; }
+  .checkout-mobile-top__item strong { flex-shrink: 0; }
+  .checkout-mobile-top__grand-total { border-top: 1px solid #ddd; margin-top: 5px; padding-top: 12px !important; }
+  .checkout-mobile-top__view-full {
+    background: transparent; border: 0; padding: 9px 0 0; color: #222;
+    text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 12px;
+  }
+  .checkout-mobile-discount {
+    display: inline-flex; align-items: center; gap: 7px; width: max-content; max-width: 100%;
+    padding: 10px 13px; margin: 2px 0 4px; border: 1px solid #e2e2e2;
+    border-radius: 24px; background: #fff; color: #151515;
+    font-size: 13px; font-weight: 650; cursor: pointer;
+  }
+  .checkout-mobile-discount:focus-visible, .checkout-mobile-top__toggle:focus-visible {
+    outline: 2px solid #111; outline-offset: 3px;
+  }
+  .checkout-page__summary .checkout-summary-footer { display: none !important; }
+  .checkout-mobile-legal {
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+    gap: 8px 14px; margin: 18px 0 8px; padding: 0 4px;
+  }
+  .checkout-mobile-legal a {
+    font-size: 11px; line-height: 1.7; color: #555; text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
