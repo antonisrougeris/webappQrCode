@@ -236,27 +236,41 @@ function calculateShipping(
 }
 
 function setPayButtonState(): void {
-  const button = document.querySelector<HTMLButtonElement>(
-    "#checkoutForm button[type='submit']"
-  );
-
-  if (!button) return;
-
   const user = firebaseAuth.currentUser;
+  document.querySelectorAll<HTMLButtonElement>("[data-checkout-pay-button]").forEach(button => {
+    button.disabled = !checkoutHasItems || checkoutSubmitting;
+    button.textContent = !checkoutHasItems
+      ? "Add products to continue"
+      : checkoutSubmitting
+        ? "Preparing payment..."
+        : !user
+          ? "Sign in to pay with viva.com"
+          : "Pay with viva.com";
+  });
+}
 
-  if (!checkoutHasItems) {
-    button.disabled = true;
-    button.textContent = "Add products to continue";
-    return;
-  }
+function updateMobileOrderSummary(items: CartItem[], total: number): void {
+  const badge = document.getElementById("checkoutMobileSummaryBadge");
+  const count = document.getElementById("checkoutMobileSummaryCount");
+  const price = document.getElementById("checkoutMobileSummaryTotal");
+  const image = document.getElementById("checkoutMobileSummaryImage") as HTMLImageElement | null;
+  const quantity = items.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0);
+  if (badge) { badge.textContent = String(quantity); badge.hidden = quantity === 0; }
+  if (count) count.textContent = quantity === 1 ? "1 item" : `${quantity} items`;
+  if (price) price.textContent = formatPrice(total);
+  if (image) image.src = getCartItemImage(items[0] || {} as CartItem);
+}
 
-  button.disabled = checkoutSubmitting;
-
-  if (!user) {
-    button.textContent = "Sign in to pay with viva.com";
-  } else {
-    button.textContent = "Pay with viva.com";
-  }
+function setupMobileOrderSummary(): void {
+  const toggle = document.getElementById("checkoutMobileSummaryToggle") as HTMLButtonElement | null;
+  const details = document.getElementById("checkoutMobileSummaryDetails");
+  const summary = document.getElementById("checkoutOrderSummary");
+  if (!toggle || !details || !summary) return;
+  toggle.addEventListener("click", () => {
+    const expanded = toggle.getAttribute("aria-expanded") !== "true";
+    toggle.setAttribute("aria-expanded", String(expanded));
+    summary.classList.toggle("is-mobile-expanded", expanded);
+  });
 }
 
 
@@ -354,6 +368,7 @@ async function render(): Promise<void> {
     document.getElementById("shipping")!.textContent = formatPrice(0);
     document.getElementById("total")!.textContent = formatPrice(0);
     updateTip(0);
+    updateMobileOrderSummary([], 0);
 
     document
       .getElementById("giftFeeRow")
@@ -457,6 +472,7 @@ async function render(): Promise<void> {
   }
 
   document.getElementById("total")!.textContent = formatPrice(total);
+  updateMobileOrderSummary(items, total);
 
   const msg =
   document.getElementById(
@@ -838,6 +854,7 @@ function restoreAfterAuth(): void {
 document.addEventListener("DOMContentLoaded", () => {
   restoreAfterAuth();
   restoreCheckoutDraft();
+  setupMobileOrderSummary();
   const recoveryParam =
     new URLSearchParams(window.location.search).get("code")?.trim() ||
     localStorage.getItem(RECOVERY_CODE_KEY)?.trim();
@@ -1183,8 +1200,7 @@ if (!user) {
 
   if (checkoutSubmitting) return;
   checkoutSubmitting = true;
-  const authButton = formEl.querySelector<HTMLButtonElement>("button[type='submit']");
-  if (authButton) authButton.disabled = true;
+  setPayButtonState();
 
   let authPath: string;
   try {
@@ -1194,7 +1210,7 @@ if (!user) {
       ? "Δεν ήταν δυνατός ο έλεγχος του λογαριασμού. Δοκιμάστε ξανά σε λίγο. Τα στοιχεία σας έχουν αποθηκευτεί."
       : "We couldn't check your account. Please try again shortly. Your checkout details are saved.");
     checkoutSubmitting = false;
-    if (authButton) authButton.disabled = false;
+    setPayButtonState();
     return;
   }
 
@@ -1212,7 +1228,7 @@ if (!user) {
 
   // Leave a usable form in the browser's back/forward cache.
   checkoutSubmitting = false;
-  if (authButton) authButton.disabled = false;
+  setPayButtonState();
   window.location.href =
     localizedPath(
       `${authPath}?${payload}`,
@@ -1228,12 +1244,7 @@ if (checkoutSubmitting) {
 
 checkoutSubmitting = true;
 
-const submitButton = document.querySelector<HTMLButtonElement>(
-  "#checkoutForm button[type='submit']"
-);
-
-submitButton && (submitButton.disabled = true);
-submitButton && (submitButton.textContent = "Preparing payment...");
+setPayButtonState();
 
       try {
         const me = await getMe();
@@ -1363,7 +1374,6 @@ updateLockerValidity(false);
         setFlashToast(error instanceof Error ? error.message : "Checkout failed.");
       } finally {
         checkoutSubmitting = false;
-        submitButton && (submitButton.disabled = false);
         setPayButtonState();
       }
     });
