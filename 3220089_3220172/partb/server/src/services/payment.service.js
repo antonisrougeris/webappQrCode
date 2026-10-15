@@ -1,4 +1,5 @@
 import { sendMetaPurchaseForPaidOrder } from "./meta-conversions.service.js";
+import { sendAdminPush } from "./admin-push.service.js";
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
@@ -613,6 +614,7 @@ async function processPaidBoxNowShipping(orderId) {
 
 export async function markOrderPaidFromVivaWebhook(payload) {
   let paidOrderForEmail = null;
+  let newlyPaidOrder = null;
 
   const data = getEventData(payload);
 
@@ -1860,6 +1862,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
     }
 
 
+    newlyPaidOrder = order;
     paidOrderForEmail = {
       ...order,
 
@@ -1964,6 +1967,10 @@ export async function markOrderPaidFromVivaWebhook(payload) {
     }
   );
 
+
+  if (newlyPaidOrder) {
+    await sendAdminPush({ title: "New paid order", body: `Order ${newlyPaidOrder.orderNumber || newlyPaidOrder.id} · €${Number(newlyPaidOrder.total || 0).toFixed(2)}`, url: "/admin?view=orders" });
+  }
 
   // No CAPI requests unless buyer opted into marketing before checkout.
   // A Meta outage must NEVER cause Viva to retry an already-paid transaction.

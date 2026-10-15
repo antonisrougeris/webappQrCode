@@ -6,6 +6,7 @@ import {
 } from "firebase/auth";
 
 import { firebaseAuth } from "../../services/firebase";
+import { enableAdminPush, disableAdminPush } from "../../services/adminPush";
 import { initPasswordVisibility } from "../../utils/password-visibility";
 
 /* =========================================================
@@ -173,7 +174,9 @@ onAuthStateChanged(firebaseAuth, async (user) => {
     loginSection?.classList.add("hidden");
     app?.classList.remove("hidden");
 
-    await loadDashboard();
+    const initialView = new URLSearchParams(location.search).get("view");
+    if (initialView && ["orders", "messages"].includes(initialView)) openView(initialView);
+    else await loadDashboard();
   } catch (error: any) {
     console.error(error);
     await signOut(firebaseAuth);
@@ -184,7 +187,20 @@ onAuthStateChanged(firebaseAuth, async (user) => {
   }
 });
 
+document.getElementById("enableAdminPush")?.addEventListener("click", async () => {
+  const status = document.getElementById("adminPushStatus");
+  if (status) status.textContent = "Enabling…";
+  try { const message = await enableAdminPush(adminApi); if (status) status.textContent = message; }
+  catch (error) { if (status) status.textContent = error instanceof Error ? error.message : "Could not enable push"; }
+});
+document.getElementById("disableAdminPush")?.addEventListener("click", async () => {
+  const status = document.getElementById("adminPushStatus");
+  try { const message = await disableAdminPush(adminApi); if (status) status.textContent = message; }
+  catch (error) { if (status) status.textContent = error instanceof Error ? error.message : "Could not disable push"; }
+});
+
 logoutButton?.addEventListener("click", async () => {
+  try { await disableAdminPush(adminApi); } catch (error) { console.warn("Push unregistration failed", error); }
   await signOut(firebaseAuth);
 });
 

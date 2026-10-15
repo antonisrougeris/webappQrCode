@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   createVerifiedReview,
   getReviewsForProduct,
+  getMyReviewedProductIds,
 } from "../services/review.service.js";
 import { parseOrThrow } from "../utils/validators.js";
 
@@ -27,3 +28,4 @@ export const createReview = asyncHandler(async (req, res) => {
   );
   return ok(res, result, 201);
 });
+export const myReviewedProducts = asyncHandler(async (req, res) => ok(res, { productIds: await getMyReviewedProductIds(req.user.uid) }));

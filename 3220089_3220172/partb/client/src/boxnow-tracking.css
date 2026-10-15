@@ -54,3 +54,9 @@
     display: none !important;
   }
 }
+
+/* Post-delivery thank-you and review reward. */
+.account-order__review-reminder { margin-top:16px; padding:18px; border:1px solid #dfe6d8; border-radius:12px; background:#f8fbf5; color:#202920; }
+.account-order__review-reminder > strong { display:block; font-size:16px; }
+.account-order__review-reminder p { margin:8px 0 12px; line-height:1.55; font-size:14px; }
+.account-order__review-reminder a { display:inline-flex; font-weight:700; }

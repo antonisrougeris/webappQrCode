@@ -16,7 +16,7 @@ import {
 import { addCartItem } from "../../services/cart";
 import { firebaseAuth } from "../../services/firebase";
 import { getOrders } from "../../services/orders";
-import { createProductReview, getProductReviews } from "../../services/reviews";
+import { createProductReview, getProductReviews, getMyReviewedProductIds } from "../../services/reviews";
 
 import { showToast } from "../../utils/toast.ts";
 import { locale, productPath, t } from "../../i18n/locale";
@@ -146,7 +146,12 @@ async function setupReviewForm(productId: string): Promise<void> {
     return;
   }
 
-  const orders = await getOrders();
+  const [orders, reviewedProductIds] = await Promise.all([getOrders(), getMyReviewedProductIds()]);
+  if (reviewedProductIds.includes(String(productId))) {
+    form.hidden = true;
+    eligibility.textContent = "Thank you! You have already reviewed this product.";
+    return;
+  }
   const hasPurchased = orders.some(
     (order) =>
       order.paymentStatus === "paid" &&
@@ -185,6 +190,7 @@ async function setupReviewForm(productId: string): Promise<void> {
         rating: Number(data.get("rating") || 0),
         comment: String(data.get("comment") || "").trim(),
       });
+      form.hidden = true;
       const reviews = await getProductReviews(productId);
       renderReviews(reviews);
       form.reset();
@@ -195,6 +201,10 @@ async function setupReviewForm(productId: string): Promise<void> {
           ? `Your verified review was added. Your 20% code is ${result.reward.code} (also sent by email).`
           : "Your verified review was added.";
     } catch (error) {
+      if (error instanceof Error && /already reviewed/i.test(error.message)) {
+        form.hidden = true;
+        eligibility.textContent = "You have already reviewed this product.";
+      }
       showToast(error instanceof Error ? error.message : "Failed to submit review.");
     } finally {
       if (button) button.disabled = false;
