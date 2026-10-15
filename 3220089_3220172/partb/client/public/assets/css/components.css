@@ -16545,3 +16545,12 @@ body > div iframe[src*="boxnow"] {
 @media (prefers-reduced-motion: reduce) {
   .home-hero__primary, .home-hero__secondary { transition: none; }
 }
+
+/* Polished monochrome primary hero action without extra decoration. */
+.home-hero__primary { border-radius: 7px; letter-spacing: .045em; font-weight: 750; }
+.home-hero__primary:hover { border-color: #111; background: #242424; color: #fff; }
+@media (max-width: 640px) {
+  .home-hero__primary { min-height: 50px; font-size: 12px; box-shadow: 0 3px 9px rgba(0,0,0,.08); }
+  .home-hero__primary span { margin-left: 2px; font-size: 15px; }
+  .home-hero__secondary { text-decoration-thickness: 1px; }
+}
