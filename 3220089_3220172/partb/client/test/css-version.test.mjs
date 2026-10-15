@@ -1,21 +1,28 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { versionStylesheetLinks, CSS_VERSION } from "../scripts/version-css.mjs";
+import { versionStylesheetLinks, fingerprintedStylesheetName } from "../scripts/version-css.mjs";
 
-test("versions all local stylesheet hrefs and replaces stale query versions", () => {
+test("content fingerprint changes if and only if CSS bytes change", () => {
+  const a = fingerprintedStylesheetName("components.css", Buffer.from(".a{color:red}"));
+  const b = fingerprintedStylesheetName("components.css", Buffer.from(".a{color:blue}"));
+  assert.match(a, /^components\.[a-f0-9]{12}\.css$/);
+  assert.notEqual(a,b);
+  assert.equal(a, fingerprintedStylesheetName("components.css", Buffer.from(".a{color:red}")));
+});
+
+test("built pages reference immutable files rather than stale ?v= URLs", () => {
+  const names = { "components.css":"components.abcdef012345.css", "layout.css":"layout.123456abcdef.css" };
   const html = [
-    '<link rel="stylesheet" href="/assets/css/reset.css">',
-    '<link rel="stylesheet" href="/assets/css/theme.css?v=old">',
-    '<link rel="stylesheet" href="/assets/css/layout.css">',
-    '<link rel="stylesheet" href="/assets/css/components.css?v=20261010-photo">',
-    '<link rel="stylesheet" href="./returns.css?v=2.2">',
+    '<link rel="stylesheet" href="/assets/css/components.css?v=20261012-header-menu-1">',
+    '<link href="/assets/css/layout.css?v=older#theme" rel="stylesheet">',
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter">',
+    '<link rel="stylesheet" href="/assets/index.123.css">',
   ].join("\n");
-  const result = versionStylesheetLinks(html);
-  for (const name of ["reset", "theme", "layout", "components"]) {
-    assert.ok(result.includes(`/assets/css/${name}.css?v=${CSS_VERSION}`));
-  }
-  assert.ok(result.includes(`./returns.css?v=${CSS_VERSION}`));
-  assert.ok(result.includes("https://fonts.googleapis.com/css?family=Inter"));
-  assert.equal(versionStylesheetLinks(result), result);
+  const result=versionStylesheetLinks(html,names);
+  assert.match(result,/components\.abcdef012345\.css/);
+  assert.match(result,/layout\.123456abcdef\.css#theme/);
+  assert.doesNotMatch(result,/20261012-header-menu-1/);
+  assert.match(result,/https:\/\/fonts.googleapis.com/);
+  assert.match(result,/\/assets\/index\.123\.css/);
+  assert.equal(versionStylesheetLinks(result,names),result);
 });
