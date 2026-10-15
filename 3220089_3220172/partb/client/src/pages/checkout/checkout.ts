@@ -1,6 +1,7 @@
 import { trackEcommerceEvent, trackMetaEcommerceEvent } from "../../services/analytics";
 import { hasMarketingConsent } from "../../services/cookiePreferences";
 import "../cart/cart-enhancements.css";
+import "./mobile-checkout-footer.css";
 import "../../i18n/auto";
 
 
