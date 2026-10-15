@@ -52,7 +52,7 @@ async function initGuestSession(): Promise<void> {
 
 function initCountdown(): void {
   const bar = document.getElementById("comingSoonBar");
-  const targetDate = new Date("2026-10-15T00:00:00").getTime(); // 12 μέρες από σήμερα
+  const targetDate = new Date("2026-11-25T00:00:00").getTime(); // 25 November 2026, local time
 
   function pad(n: number): string {
     return n.toString().padStart(2, "0");
