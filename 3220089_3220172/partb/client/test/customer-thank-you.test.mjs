@@ -12,7 +12,7 @@ test("thank-you is standalone above orders and never injected into order cards",
   assert.match(css, /\.customer-thank-you\[hidden\]/);
 });
 test("completed order review invitation switches to contact after review", () => {
-  assert.match(home, /filter\(order => getCustomerOrderStatus\(order\) === "completed"\)/);
+  assert.match(home, /const completed = getCustomerOrderStatus\(latestOrder\) === "completed"/);
   assert.match(home, /reviewedIds\.has\(id\)/);
   assert.match(home, /#productReviews/);
   assert.match(home, /20% off/);
@@ -24,4 +24,13 @@ test("dashboard fetches reviews with other data and cleans up when signed out", 
   assert.match(home, /reviewedIds = reviewsResult\.status === "fulfilled" \? reviewsResult\.value : null/);
   assert.match(home, /renderCustomerThankYou\(orders, reviewedIds\)/);
   assert.match(home, /resetLoggedOutHomepageState[\s\S]*thankYouPanel\.hidden = true/);
+});
+
+test("all paid orders show Contact before delivery; latest order determines state", () => {
+  assert.match(home, /const latestOrder = \[\.\.\.orders\]\.sort/);
+  assert.match(home, /if \(!latestOrder\) \{/);
+  assert.match(home, /const eligibleItem = completed && reviewedIds !== null/);
+  assert.match(home, /action\.href = "\/contact"/);
+  assert.doesNotMatch(home, /if \(!completedOrders\.length\)/);
+  assert.match(home, /Have a question about your order or need any help/);
 });
