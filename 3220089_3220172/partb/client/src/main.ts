@@ -84,8 +84,10 @@ function initCountdown(): void {
     if (secondsEl) secondsEl.textContent = pad(seconds);
   }
 
-  tick();
+  // Initialize the interval before running the first tick: when the
+  // countdown has expired, tick() must be able to clear it safely.
   const interval = setInterval(tick, 1000);
+  tick();
 }
 
 function initPromoPopup(): void {
