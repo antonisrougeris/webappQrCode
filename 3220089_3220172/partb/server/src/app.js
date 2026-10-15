@@ -35,6 +35,7 @@ import returnsRoutes from "./routes/returns.routes.js";
 import qrRoutes from "./routes/qr.routes.js";
 import qrPhotoRoutes from "./routes/qr-photo.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import adminPushRoutes from "./routes/admin-push.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import vivaRoutes from "./routes/viva.routes.js";
 import sitemapRoutes from "./routes/sitemap.routes.js";
@@ -240,6 +241,7 @@ app.use("/api/returns", returnsRoutes);
 app.use("/api/qr-codes", qrRoutes);
 app.use("/api/qr-photo", qrPhotoRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/push", adminPushRoutes);
 app.use("/api/reviews", reviewRoutes);
 if (process.env.NODE_ENV !== "production") {
   app.use("/api/test-boxnow", boxNowTestRoutes);
