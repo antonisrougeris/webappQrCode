@@ -35,3 +35,7 @@ export async function createProductReview(
   );
   return response;
 }
+export async function getMyReviewedProductIds(): Promise<string[]> {
+  const data = await apiRequest<{ productIds?: string[] }>("/reviews/mine");
+  return Array.isArray(data.productIds) ? data.productIds : [];
+}
