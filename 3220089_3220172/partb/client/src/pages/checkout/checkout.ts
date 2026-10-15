@@ -218,6 +218,45 @@ function getCartItemUnitPrice(item: CartItem): number {
   return typeof item.price === "number" ? item.price : 0;
 }
 
+function discountedLinePrice(item: CartItem): number {
+  const regularLine = getCartItemUnitPrice(item) * Number(item.quantity || 0);
+  return Math.round(regularLine * (1 - discount / 100) * 100) / 100;
+}
+function originalLinePrice(item: CartItem): number | null {
+  const unit = getCartItemUnitPrice(item);
+  const original = Number(item.originalPrice);
+  const regularLine = unit * Number(item.quantity || 0);
+  const beforeDiscount = Number.isFinite(original) && original > unit + 0.001
+    ? original * Number(item.quantity || 0) : regularLine;
+  return beforeDiscount > discountedLinePrice(item) + 0.001 ? beforeDiscount : null;
+}
+function includedVat(total: number): number {
+  return Math.round(Math.max(0, total) * 24 / 124 * 100) / 100;
+}
+function updateCheckoutSavings(items: CartItem[], subtotal: number, discountedSubtotal: number, total: number): void {
+  const productSavings = items.reduce((sum, item) => {
+    const original = originalLinePrice(item);
+    return sum + (original === null ? 0 : original - getCartItemUnitPrice(item) * Number(item.quantity || 0));
+  }, 0);
+  const couponSavings = Math.max(0, Math.round((subtotal - discountedSubtotal) * 100) / 100);
+  const savings = Math.round((productSavings + couponSavings) * 100) / 100;
+  for (const [row, label, amount] of [
+    ["checkoutDiscountSavingsRow", "checkoutDiscountSavingsLabel", "checkoutDiscountSavingsAmount"],
+    ["checkoutMobileTopDiscountRow", "checkoutMobileTopDiscountLabel", "checkoutMobileTopDiscountAmount"],
+  ]) {
+    const node = document.getElementById(row);
+    if (node) node.hidden = savings <= 0;
+    const labelNode = document.getElementById(label);
+    if (labelNode) labelNode.textContent = "Total savings (included)";
+    const amountNode = document.getElementById(amount);
+    if (amountNode) amountNode.textContent = "−" + formatPrice(savings);
+  }
+  for (const id of ["checkoutTaxNote", "checkoutMobileTopTaxNote"]) {
+    const node = document.getElementById(id);
+    if (node) node.textContent = "Including " + formatPrice(includedVat(total)) + " in VAT (24%)";
+  }
+}
+
 function getCartItemVariant(item: CartItem) {
   return item.variant || null;
 }
@@ -335,7 +374,15 @@ function appendMobileTopProduct(
     free.textContent = "FREE";
     cost.append(free);
   } else {
-    cost.textContent = formatPrice(getCartItemUnitPrice(item) * Number(item.quantity || 0));
+    const original = originalLinePrice(item);
+    if (original !== null) {
+      const old = document.createElement("del");
+      old.textContent = formatPrice(original);
+      cost.append(old);
+    }
+    const current = document.createElement("strong");
+    current.textContent = formatPrice(discountedLinePrice(item));
+    cost.append(current);
   }
 
   row.append(imageLink, info, cost);
@@ -513,6 +560,7 @@ async function render(): Promise<void> {
     updateTip(0);
     updateMobileOrderSummary([], 0);
     updateMobileTopSummary([], 0, 0, 0, 0, 0);
+    updateCheckoutSavings([], 0, 0, 0);
 
     document
       .getElementById("giftFeeRow")
@@ -542,6 +590,7 @@ async function render(): Promise<void> {
       const quantity = Number(item.quantity || 0);
       const href = escapeHtml(productPath(item.slug || item.productId));
 
+      const original = originalLinePrice(item);
       return `
         <div class="checkout-item">
           <div class="checkout-item__image-wrapper">
@@ -555,7 +604,7 @@ async function render(): Promise<void> {
             ${qr ? `<small>${qr}</small>` : ""}
           </div>
 
-          <strong>${formatPrice(itemTotal)}</strong>
+          <span class="checkout-item__price">${original !== null ? `<del>${formatPrice(original)}</del>` : ""}<strong>${formatPrice(discountedLinePrice(item))}</strong></span>
         </div>
       `;
     })
@@ -618,6 +667,12 @@ async function render(): Promise<void> {
   document.getElementById("total")!.textContent = formatPrice(total);
   updateMobileOrderSummary(items, total);
   updateMobileTopSummary(items, discountedSubtotal, shipping, giftFee, tipAmount, total, eligibleKeychain);
+  updateCheckoutSavings(items, subtotal, discountedSubtotal, total);
+  if (window.location.hash === "#checkoutMobilePay" && window.matchMedia("(max-width: 760px)").matches) {
+    window.requestAnimationFrame(() => {
+      document.getElementById("checkoutMobilePay")?.scrollIntoView({ block: "end", behavior: "instant" });
+    });
+  }
 
   const msg =
   document.getElementById(
@@ -1331,7 +1386,7 @@ if (!user) {
 
   const redirectTarget =
     normalizeRoutePath(
-      window.location.pathname,
+      window.location.pathname + (window.matchMedia?.("(max-width: 760px)")?.matches ? "#checkoutMobilePay" : ""),
       "/checkout"
     );
 
