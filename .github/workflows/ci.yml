@@ -213,8 +213,13 @@ jobs:
             exit 1
           fi
 
-          grep -q 'components.css?v=20261012-header-menu-1' dist/el/index.html || {
-            echo "ERROR: shared CSS cache-buster was not refreshed"
+          CSS_FILE="$(sed -nE 's/.*href="\/assets\/css\/(components\.[a-f0-9]{12}\.css)".*/\1/p' dist/el/index.html | head -1)"
+          test -n "$CSS_FILE" && test -f "dist/assets/css/$CSS_FILE" || {
+            echo "ERROR: Greek homepage is missing the content-hashed stylesheet"
+            exit 1
+          }
+          grep -Fq "/assets/css/$CSS_FILE" dist/index.html || {
+            echo "ERROR: English and Greek homepages disagree on the deployed CSS version"
             exit 1
           }
 
