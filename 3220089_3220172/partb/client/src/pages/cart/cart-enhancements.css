@@ -498,3 +498,9 @@ body.gift-dialog-open {
   .cart-free-shipping-unlocked {gap:8px;padding:11px;}
   .cart-free-shipping-unlocked strong {font-size:11px;}
 }
+
+/* Only mobile cart uses interactive swipe translation. */
+@media (max-width: 760px) {
+  #cartDrawer.cart-swipe-dragging { transition: none !important; }
+  #cartDrawer .cart-header { touch-action: pan-y; }
+}
