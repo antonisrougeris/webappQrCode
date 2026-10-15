@@ -126,10 +126,15 @@
         <div id="checkoutMobileTopItems" class="checkout-mobile-top__items"></div>
         <div class="checkout-mobile-top__breakdown">
           <div><span>Subtotal</span><span id="checkoutMobileTopSubtotal">—</span></div>
+          <div id="checkoutMobileTopDiscountRow" class="checkout-discount-savings" hidden>
+            <span id="checkoutMobileTopDiscountLabel">Discount savings (included)</span>
+            <strong id="checkoutMobileTopDiscountAmount"></strong>
+          </div>
           <div><span>Shipping</span><span id="checkoutMobileTopShipping">—</span></div>
           <div id="checkoutMobileTopGiftRow" hidden><span>Gift packaging</span><span id="checkoutMobileTopGift">—</span></div>
           <div id="checkoutMobileTopTipRow" hidden><span>Tip</span><span id="checkoutMobileTopTip">—</span></div>
           <div class="checkout-mobile-top__grand-total"><strong>Total</strong><strong id="checkoutMobileTopTotalExpanded">—</strong></div>
+          <p id="checkoutMobileTopTaxNote" class="checkout-tax-note"></p>
         </div>
         <button type="button" class="checkout-mobile-top__view-full" id="checkoutMobileTopViewFull">View full order details →</button>
       </div>
@@ -723,6 +728,10 @@
 
         <span id="subtotal"></span>
       </div>
+      <div id="checkoutDiscountSavingsRow" class="checkout-line checkout-discount-savings" hidden>
+        <span id="checkoutDiscountSavingsLabel">Discount savings (included)</span>
+        <strong id="checkoutDiscountSavingsAmount"></strong>
+      </div>
 
 
       <p
@@ -752,9 +761,8 @@
         <span>Total</span>
 
         <strong id="total"></strong>
-
-        
       </div>
+      <p id="checkoutTaxNote" class="checkout-tax-note"></p>
       <div class="checkout-summary-footer">
   <a href="/refund-policy">
     Refund policy
