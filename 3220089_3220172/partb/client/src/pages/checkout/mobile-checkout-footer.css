@@ -213,3 +213,14 @@
   .checkout-mobile-top__item-price del { color: #777; font-size: 10px; }
   .checkout-mobile-top__item-price strong { font-size: 11px; }
 }
+
+/* Prices and VAT use the same cart figures as the checkout total. */
+.checkout-item__price { display: grid; gap: 3px; justify-items: end; align-self: center; white-space: nowrap; }
+.checkout-item__price del, .checkout-mobile-top__item-price del { color: #777; font-size: 11px; font-weight: 400; }
+.checkout-item__price strong { font-size: 13px; font-weight: 700; }
+.checkout-discount-savings { color: #16683d; }
+.checkout-discount-savings strong { color: #16683d; }
+.checkout-tax-note { margin: -3px 0 16px; text-align: right; font-size: 11px; line-height: 1.5; color: #737373; }
+.checkout-mobile-top__breakdown .checkout-tax-note { margin: 0 0 6px; text-align: right; }
+.checkout-mobile-top__item-price { gap: 3px; }
+[hidden].checkout-discount-savings { display: none !important; }
