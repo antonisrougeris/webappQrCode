@@ -1,4 +1,5 @@
 import { sendEmail } from "../services/email.service.js";
+import { sendAdminPush } from "../services/admin-push.service.js";
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { createId, nowIso } from "../utils/ids.js";
@@ -49,6 +50,8 @@ export async function submitContactForm(req, res, next) {
       createdAt,
       updatedAt: createdAt,
     });
+
+    await sendAdminPush({ title: "New contact message", body: `From ${body.name}`, url: "/admin?view=messages" });
 
     const to =
       process.env.CONTACT_EMAIL_TO ||
