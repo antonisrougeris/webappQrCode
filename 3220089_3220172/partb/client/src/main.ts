@@ -592,8 +592,7 @@ function getActiveOrderReturn(order: any, requests: OrderReturn[]): OrderReturn 
 
 function renderCustomerOrders(
   orders: any[],
-  returns: OrderReturn[] = [],
-  reviewedProductIds: string[] = []
+  returns: OrderReturn[] = []
 ): void {
 
   const container =
@@ -739,16 +738,6 @@ function renderCustomerOrders(
             ? order.items
             : [];
 
-
-        const reviewLink = items.map((item: any) => {
-          const id = String(item?.productId || item?.id || "");
-          const slug = String(item?.slug || id);
-          if (!id || !/^[a-z0-9_-]+$/i.test(slug) || reviewedProductIds.includes(id)) return "";
-          return `<a class="account-order__tracking-link" href="/product/${encodeURIComponent(slug)}#productReviews">Leave a review →</a>`;
-        }).filter(Boolean).join("");
-        const reviewReminder = status === "completed" && reviewLink
-          ? `<div class="account-order__review-reminder" data-review-reminder><strong>Thank you so much for your order! ❤️</strong><p>Enjoying your Skanare products? Leave a review and get <strong>20% off</strong> your next order. Your personal discount code will be sent by email after your review.</p>${reviewLink}</div>`
-          : "";
 
         const products =
   items
@@ -1011,7 +1000,6 @@ function renderCustomerOrders(
 
             ${tracking}
             ${returnTracking}
-            ${reviewReminder}
 
             ${!activeReturn && customerReturnWindowOpen(order)
               ? `
@@ -1035,6 +1023,51 @@ function renderCustomerOrders(
       })
       .join("");
 }
+/**
+ * One persistent, standalone thank-you panel for delivered orders. The
+ * review invitation changes to a Contact CTA once every purchased product
+ * with a valid review URL has already been reviewed.
+ */
+function renderCustomerThankYou(orders: any[], reviewedProductIds: string[] | null): void {
+  const panel = document.getElementById("customerThankYou");
+  const message = document.getElementById("customerThankYouMessage");
+  const action = document.getElementById("customerThankYouAction") as HTMLAnchorElement | null;
+  if (!panel || !message || !action) return;
+
+  const completedOrders = orders
+    .filter(order => getCustomerOrderStatus(order) === "completed")
+    .sort((a, b) => (Date.parse(String(b?.completedAt || b?.createdAt || "")) || 0)
+      - (Date.parse(String(a?.completedAt || a?.createdAt || "")) || 0));
+
+  if (!completedOrders.length) {
+    panel.hidden = true;
+    return;
+  }
+
+  // Never assume a review is missing if its status request failed.
+  const reviewedIds = reviewedProductIds === null ? null : new Set(reviewedProductIds.map(String));
+  const eligibleItem = reviewedIds === null ? null : completedOrders
+    .flatMap(order => Array.isArray(order?.items) ? order.items : [])
+    .find(item => {
+      const id = String(item?.productId || item?.id || "").trim();
+      const slug = String(item?.slug || id).trim();
+      return id && !reviewedIds.has(id) && /^[a-z0-9][a-z0-9_-]*$/i.test(slug);
+    });
+
+  if (eligibleItem) {
+    const slug = String(eligibleItem.slug || eligibleItem.productId || eligibleItem.id).trim();
+    message.textContent = "Enjoying your Skanare products? Leave a review and get 20% off your next order. Your personal discount code will be sent to your email after you submit your review.";
+    action.href = `/product/${encodeURIComponent(slug)}#productReviews`;
+    action.textContent = "Leave a review →";
+  } else {
+    message.textContent = "Enjoying your Skanare products? Have a question about your order or need any help? Send us a message through our contact form and we'll be happy to help.";
+    action.href = "/contact";
+    action.textContent = "Contact us →";
+  }
+
+  panel.hidden = false;
+}
+
 let customerDashboardRevision = 0;
 
 async function loadUserAccountDashboard(expectedUid: string, revision: number): Promise<void> {
@@ -1043,6 +1076,8 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
   const qrGrid = document.getElementById("userQrGrid") as HTMLElement | null;
   const qrSection = document.getElementById("userQrSection");
   const ordersContainer = document.getElementById("userOrdersList");
+  const thankYouPanel = document.getElementById("customerThankYou");
+  if (thankYouPanel) thankYouPanel.hidden = true;
 
   const isCurrentUser = () =>
     customerDashboardRevision === revision &&
@@ -1055,10 +1090,11 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
   if (ordersContainer) ordersContainer.textContent = "Loading your orders...";
 
   try {
-    const [ordersResult, qrResult, returnsResult] = await Promise.allSettled([
+    const [ordersResult, qrResult, returnsResult, reviewsResult] = await Promise.allSettled([
       getOrders(),
       getMyQrCodes(),
       getCustomerReturns(),
+      getMyReviewedProductIds(),
     ]);
     if (!isCurrentUser()) return;
 
@@ -1070,7 +1106,9 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
       console.error("Failed to load customer returns:", returnsResult.reason);
     }
     const returns = returnsResult.status === "fulfilled" ? returnsResult.value : [];
-    const reviewsResult = (await Promise.allSettled([getMyReviewedProductIds()]))[0];
+    if (reviewsResult.status === "rejected") {
+      console.warn("Could not load customer review status:", reviewsResult.reason);
+    }
     const reviewedIds = reviewsResult.status === "fulfilled" ? reviewsResult.value : null;
 
     const rawOrders: any = ordersResult.status === "fulfilled"
@@ -1084,7 +1122,8 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
     if (ordersFailed && ordersContainer) {
       ordersContainer.textContent = "Unable to load orders right now. Please refresh to retry.";
     } else {
-      renderCustomerOrders(orders, returns, reviewedIds || orders.flatMap((o: any) => (o.items || []).map((item: any) => String(item.productId || item.id || ""))));
+      renderCustomerOrders(orders, returns);
+      renderCustomerThankYou(orders, reviewedIds);
     }
 
     if (qrGrid && qrCodes.length) {
@@ -1117,6 +1156,8 @@ function resetLoggedOutHomepageState(): void {
   const dashboardHero = document.getElementById("userDashboardHero");
   const defaultHero = document.getElementById("defaultHero");
   const grid = document.getElementById("userQrGrid");
+  const thankYouPanel = document.getElementById("customerThankYou");
+  if (thankYouPanel) thankYouPanel.hidden = true;
 
   dashboardHero?.classList.add("hidden");
   defaultHero?.classList.remove("hidden");
@@ -1261,4 +1302,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   resetLoggedOutHomepageState();
 });
+});
+
+// Refresh reviewed-product status when Back restores the homepage from BFCache.
+window.addEventListener("pageshow", event => {
+  if (!event.persisted || !firebaseAuth.currentUser) return;
+  const revision = ++customerDashboardRevision;
+  void loadUserAccountDashboard(firebaseAuth.currentUser.uid, revision);
 });
