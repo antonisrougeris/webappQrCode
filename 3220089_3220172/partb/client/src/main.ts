@@ -9,6 +9,7 @@ import { getProducts } from "./services/products";
 import { updateCartBadge } from "./utils/cart-badge";
 import { firebaseAuth } from "./services/firebase";
 import { apiRequest } from "./services/api";
+import { getMyReviewedProductIds } from "./services/reviews";
 import { getMyQrCodes, type QrCode } from "./services/qr";
 import { enhanceQrDestinationEditors } from "./components/qrDestinationEditor";
 
@@ -591,7 +592,8 @@ function getActiveOrderReturn(order: any, requests: OrderReturn[]): OrderReturn 
 
 function renderCustomerOrders(
   orders: any[],
-  returns: OrderReturn[] = []
+  returns: OrderReturn[] = [],
+  reviewedProductIds: string[] = []
 ): void {
 
   const container =
@@ -737,6 +739,16 @@ function renderCustomerOrders(
             ? order.items
             : [];
 
+
+        const reviewLink = items.map((item: any) => {
+          const id = String(item?.productId || item?.id || "");
+          const slug = String(item?.slug || id);
+          if (!id || !/^[a-z0-9_-]+$/i.test(slug) || reviewedProductIds.includes(id)) return "";
+          return `<a class="account-order__tracking-link" href="/product/${encodeURIComponent(slug)}#productReviews">Leave a review →</a>`;
+        }).filter(Boolean).join("");
+        const reviewReminder = status === "completed" && reviewLink
+          ? `<div class="account-order__review-reminder" data-review-reminder><strong>Thank you so much for your order! ❤️</strong><p>Enjoying your Skanare products? Leave a review and get <strong>20% off</strong> your next order. Your personal discount code will be sent by email after your review.</p>${reviewLink}</div>`
+          : "";
 
         const products =
   items
@@ -999,6 +1011,7 @@ function renderCustomerOrders(
 
             ${tracking}
             ${returnTracking}
+            ${reviewReminder}
 
             ${!activeReturn && customerReturnWindowOpen(order)
               ? `
@@ -1057,6 +1070,8 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
       console.error("Failed to load customer returns:", returnsResult.reason);
     }
     const returns = returnsResult.status === "fulfilled" ? returnsResult.value : [];
+    const reviewsResult = (await Promise.allSettled([getMyReviewedProductIds()]))[0];
+    const reviewedIds = reviewsResult.status === "fulfilled" ? reviewsResult.value : null;
 
     const rawOrders: any = ordersResult.status === "fulfilled"
       ? ordersResult.value : [];
@@ -1069,7 +1084,7 @@ async function loadUserAccountDashboard(expectedUid: string, revision: number): 
     if (ordersFailed && ordersContainer) {
       ordersContainer.textContent = "Unable to load orders right now. Please refresh to retry.";
     } else {
-      renderCustomerOrders(orders, returns);
+      renderCustomerOrders(orders, returns, reviewedIds || orders.flatMap((o: any) => (o.items || []).map((item: any) => String(item.productId || item.id || ""))));
     }
 
     if (qrGrid && qrCodes.length) {
