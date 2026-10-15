@@ -11,7 +11,7 @@ test("desktop and both mobile summaries show already-included VAT",()=>{
 });
 test("product strike-through uses actual originalPrice while coupon is separately summarized",()=>{
  assert.match(code,/Number\(item\.originalPrice\)/);
- assert.match(code,/original > current \+ 0\.001/);
+ assert.match(code,/beforeDiscount > discountedLinePrice\(item\) \+ 0\.001/);
  assert.match(code,/checkout-item__price/);
  assert.match(code,/cost\.append\(old\)/);
  assert.match(code,/Total savings \(included\)/);
