@@ -16,7 +16,7 @@ test("completed order review invitation switches to contact after review", () =>
   assert.match(home, /reviewedIds\.has\(id\)/);
   assert.match(home, /#productReviews/);
   assert.match(home, /20% off/);
-  assert.match(home, /action\.href = "\/contact"/);
+  assert.match(home, /action\.href = localizedPath\("\/contact", locale\)/);
   assert.match(home, /Contact us/);
 });
 test("dashboard fetches reviews with other data and cleans up when signed out", () => {
@@ -30,7 +30,7 @@ test("all paid orders show Contact before delivery; latest order determines stat
   assert.match(home, /const latestOrder = \[\.\.\.orders\]\.sort/);
   assert.match(home, /if \(!latestOrder\) \{/);
   assert.match(home, /const eligibleItem = completed && reviewedIds !== null/);
-  assert.match(home, /action\.href = "\/contact"/);
+  assert.match(home, /action\.href = localizedPath\("\/contact", locale\)/);
   assert.doesNotMatch(home, /if \(!completedOrders\.length\)/);
   assert.match(home, /Have a question about your order or need any help/);
 });
