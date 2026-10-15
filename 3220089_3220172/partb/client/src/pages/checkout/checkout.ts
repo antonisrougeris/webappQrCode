@@ -218,10 +218,17 @@ function getCartItemUnitPrice(item: CartItem): number {
   return typeof item.price === "number" ? item.price : 0;
 }
 
+function discountedLinePrice(item: CartItem): number {
+  const regularLine = getCartItemUnitPrice(item) * Number(item.quantity || 0);
+  return Math.round(regularLine * (1 - discount / 100) * 100) / 100;
+}
 function originalLinePrice(item: CartItem): number | null {
+  const unit = getCartItemUnitPrice(item);
   const original = Number(item.originalPrice);
-  const current = getCartItemUnitPrice(item);
-  return Number.isFinite(original) && original > current + 0.001 ? original * Number(item.quantity || 0) : null;
+  const regularLine = unit * Number(item.quantity || 0);
+  const beforeDiscount = Number.isFinite(original) && original > unit + 0.001
+    ? original * Number(item.quantity || 0) : regularLine;
+  return beforeDiscount > discountedLinePrice(item) + 0.001 ? beforeDiscount : null;
 }
 function includedVat(total: number): number {
   return Math.round(Math.max(0, total) * 24 / 124 * 100) / 100;
@@ -374,7 +381,7 @@ function appendMobileTopProduct(
       cost.append(old);
     }
     const current = document.createElement("strong");
-    current.textContent = formatPrice(getCartItemUnitPrice(item) * Number(item.quantity || 0));
+    current.textContent = formatPrice(discountedLinePrice(item));
     cost.append(current);
   }
 
@@ -597,7 +604,7 @@ async function render(): Promise<void> {
             ${qr ? `<small>${qr}</small>` : ""}
           </div>
 
-          <span class="checkout-item__price">${original !== null ? `<del>${formatPrice(original)}</del>` : ""}<strong>${formatPrice(itemTotal)}</strong></span>
+          <span class="checkout-item__price">${original !== null ? `<del>${formatPrice(original)}</del>` : ""}<strong>${formatPrice(discountedLinePrice(item))}</strong></span>
         </div>
       `;
     })
