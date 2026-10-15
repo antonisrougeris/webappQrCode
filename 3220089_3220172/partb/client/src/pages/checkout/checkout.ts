@@ -661,6 +661,11 @@ async function render(): Promise<void> {
   updateMobileOrderSummary(items, total);
   updateMobileTopSummary(items, discountedSubtotal, shipping, giftFee, tipAmount, total, eligibleKeychain);
   updateCheckoutSavings(items, subtotal, discountedSubtotal, total);
+  if (window.location.hash === "#checkoutMobilePay" && window.matchMedia("(max-width: 760px)").matches) {
+    window.requestAnimationFrame(() => {
+      document.getElementById("checkoutMobilePay")?.scrollIntoView({ block: "end", behavior: "instant" });
+    });
+  }
 
   const msg =
   document.getElementById(
