@@ -20,8 +20,8 @@ test("product strike-through uses actual originalPrice while coupon is separatel
 test("mobile returns to payment button after authentication and rendering",()=>{
  assert.match(code,/#checkoutMobilePay/);
  assert.match(code,/window\.matchMedia\?\./);
- assert.match(code,/window\.location\.hash === "#checkoutMobilePay"/);
- assert.match(code,/scrollIntoView\(\{ block: "end", behavior: "instant" \}\)/);
+ assert.match(code,/resumePayment/);
+ assert.match(code,/window\.scrollTo\(/);
 });
 
 test("both collapsed mobile summaries show discounted and original totals",()=>{
