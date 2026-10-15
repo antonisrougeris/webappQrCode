@@ -230,6 +230,23 @@ function originalLinePrice(item: CartItem): number | null {
     ? original * Number(item.quantity || 0) : regularLine;
   return beforeDiscount > discountedLinePrice(item) + 0.001 ? beforeDiscount : null;
 }
+function checkoutOriginalTotal(items: CartItem[], displayedTotal: number): number {
+  const savings = items.reduce((sum, item) => {
+    const original = originalLinePrice(item);
+    const discounted = discountedLinePrice(item);
+    return sum + (original === null ? 0 : Math.max(0, original - discounted));
+  }, 0);
+  return Math.round((displayedTotal + savings) * 100) / 100;
+}
+function updateCheckoutPreviewTotals(items: CartItem[], total: number): void {
+  const original = checkoutOriginalTotal(items, total);
+  for (const id of ["checkoutMobileTopOriginalTotal", "checkoutMobileSummaryOriginalTotal"]) {
+    const node = document.getElementById(id);
+    if (!node) continue;
+    node.hidden = original <= total + 0.005;
+    node.textContent = node.hidden ? "" : formatPrice(original);
+  }
+}
 function includedVat(total: number): number {
   return Math.round(Math.max(0, total) * 24 / 124 * 100) / 100;
 }
@@ -299,6 +316,7 @@ function updateMobileOrderSummary(items: CartItem[], total: number): void {
   if (count) count.textContent = quantity === 1 ? "1 item" : `${quantity} items`;
   if (price) price.textContent = formatPrice(total);
   if (image) image.src = getCartItemImage(items[0] || {} as CartItem);
+  updateCheckoutPreviewTotals(items, total);
 }
 
 /**
@@ -400,6 +418,7 @@ function updateMobileTopSummary(
 ): void {
   const put = (id: string, value: string) => { const node = document.getElementById(id); if (node) node.textContent = value; };
   put("checkoutMobileTopTotal", formatPrice(total));
+  updateCheckoutPreviewTotals(items, total);
   put("checkoutMobileTopTotalExpanded", formatPrice(total));
   put("checkoutMobileTopSubtotal", formatPrice(subtotal));
   put("checkoutMobileTopShipping", shipping === 0 ? "Free" : formatPrice(shipping));
