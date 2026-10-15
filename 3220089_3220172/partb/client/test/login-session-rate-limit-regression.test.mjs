@@ -14,11 +14,15 @@ test("login uses persistent Firebase auth and blocks overlapping login methods",
   assert.match(login, /setAuthInProgress\(false\)/);
 });
 
-test("Google sign-in does not discard a verified Firebase user on transient API failures", () => {
+test("Google sign-in preserves Firebase identity even if backend profile sync fails", () => {
   assert.match(google, /browserLocalPersistence/);
-  assert.match(google, /429\|502\|503\|504/);
   assert.match(google, /isTransientBackendError\(error\)/);
-  assert.match(google, /if \(!isTransientBackendError\(error\)\)/);
+  assert.match(google, /const profile = await getMe\(\)/);
+  assert.match(google, /profile\?\.uid === result\.user\.uid/);
+  const syncStart = google.indexOf("const token = await result.user.getIdToken(true)");
+  const syncEnd = google.indexOf("export function signInWithGoogleAccount", syncStart);
+  assert.ok(syncStart >= 0 && syncEnd > syncStart);
+  assert.doesNotMatch(google.slice(syncStart, syncEnd), /signOut\(firebaseAuth\)/);
 });
 
 test("overlapping cart reads are shared and mutations invalidate pending snapshots", () => {
