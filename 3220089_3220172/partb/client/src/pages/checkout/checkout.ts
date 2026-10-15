@@ -262,7 +262,95 @@ function updateMobileOrderSummary(items: CartItem[], total: number): void {
   if (image) image.src = getCartItemImage(items[0] || {} as CartItem);
 }
 
-function updateMobileTopSummary(items: CartItem[], subtotal: number, shipping: number, gift: number, tip: number, total: number): void {
+/**
+ * Build the compact mobile preview from the same cart item images and variant
+ * details used by the full order summary. Use DOM nodes/textContent for product
+ * metadata instead of injecting values as HTML.
+ */
+function appendMobileTopProduct(
+  container: HTMLElement,
+  item: CartItem,
+  freeReward = false
+): void {
+  const row = document.createElement("div");
+  row.className = "checkout-mobile-top__item";
+
+  const imageLink = document.createElement("a");
+  imageLink.className = "checkout-mobile-top__item-image";
+  imageLink.href = productPath(item.slug || item.productId);
+  imageLink.setAttribute("aria-label", getCartItemTitle(item));
+
+  const image = document.createElement("img");
+  image.src = getCartItemImage(item);
+  image.alt = getCartItemTitle(item);
+  image.loading = "lazy";
+  image.decoding = "async";
+  image.addEventListener("error", () => {
+    if (!image.src.endsWith("/assets/img/logo_Image.png")) {
+      image.src = "/assets/img/logo_Image.png";
+    }
+  }, { once: true });
+  imageLink.append(image);
+
+  const quantity = document.createElement("span");
+  quantity.className = "checkout-mobile-top__item-quantity";
+  quantity.textContent = String(freeReward ? 1 : Number(item.quantity || 0));
+  imageLink.append(quantity);
+
+  const info = document.createElement("div");
+  info.className = "checkout-mobile-top__item-info";
+  const title = document.createElement("span");
+  title.className = "checkout-mobile-top__item-title";
+  title.textContent = getCartItemTitle(item);
+  info.append(title);
+
+  const variant = getCartItemVariant(item);
+  const details = [variant?.color, variant?.size].filter(Boolean).join(" / ");
+  if (details) {
+    const variantLine = document.createElement("small");
+    variantLine.textContent = details;
+    info.append(variantLine);
+  }
+  if (freeReward) {
+    const freeLabel = document.createElement("small");
+    freeLabel.textContent = "Free gift with €80+ order";
+    info.append(freeLabel);
+  } else if (getCartItemQr(item)) {
+    const qrLine = document.createElement("small");
+    qrLine.className = "checkout-mobile-top__item-qr";
+    qrLine.textContent = getCartItemQr(item);
+    info.append(qrLine);
+  }
+
+  const cost = document.createElement("span");
+  cost.className = "checkout-mobile-top__item-price";
+  if (freeReward) {
+    const original = Number(item.originalPrice || 0);
+    if (original > 0) {
+      const oldPrice = document.createElement("del");
+      oldPrice.textContent = formatPrice(original);
+      cost.append(oldPrice);
+    }
+    const free = document.createElement("strong");
+    free.textContent = "FREE";
+    cost.append(free);
+  } else {
+    cost.textContent = formatPrice(getCartItemUnitPrice(item) * Number(item.quantity || 0));
+  }
+
+  row.append(imageLink, info, cost);
+  container.append(row);
+}
+
+function updateMobileTopSummary(
+  items: CartItem[],
+  subtotal: number,
+  shipping: number,
+  gift: number,
+  tip: number,
+  total: number,
+  freeReward: CartItem | null = null
+): void {
   const put = (id: string, value: string) => { const node = document.getElementById(id); if (node) node.textContent = value; };
   put("checkoutMobileTopTotal", formatPrice(total));
   put("checkoutMobileTopTotalExpanded", formatPrice(total));
@@ -278,14 +366,11 @@ function updateMobileTopSummary(items: CartItem[], subtotal: number, shipping: n
   if (itemsContainer) {
     itemsContainer.replaceChildren();
     for (const item of items) {
-      const row = document.createElement("div");
-      row.className = "checkout-mobile-top__item";
-      const name = document.createElement("span");
-      name.textContent = `${getCartItemTitle(item)} × ${Number(item.quantity || 0)}`;
-      const amount = document.createElement("strong");
-      amount.textContent = formatPrice(getCartItemUnitPrice(item) * Number(item.quantity || 0));
-      row.append(name, amount);
-      itemsContainer.append(row);
+      appendMobileTopProduct(itemsContainer, item);
+    }
+    // Match the free NFC gift shown by the existing full order summary.
+    if (freeReward) {
+      appendMobileTopProduct(itemsContainer, freeReward, true);
     }
   }
 }
@@ -532,7 +617,7 @@ async function render(): Promise<void> {
 
   document.getElementById("total")!.textContent = formatPrice(total);
   updateMobileOrderSummary(items, total);
-  updateMobileTopSummary(items, discountedSubtotal, shipping, giftFee, tipAmount, total);
+  updateMobileTopSummary(items, discountedSubtotal, shipping, giftFee, tipAmount, total, eligibleKeychain);
 
   const msg =
   document.getElementById(
