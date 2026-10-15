@@ -2,6 +2,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
+  setPersistence,
+  browserLocalPersistence,
 } from "firebase/auth";
 
 import { firebaseAuth } from "./firebase";
@@ -98,6 +100,9 @@ async function runGoogleAuth(): Promise<AuthUser> {
     prompt: "select_account",
   });
 
+  // Firebase must preserve the session when navigating between full-page routes.
+  await setPersistence(firebaseAuth, browserLocalPersistence);
+
   const result = await signInWithPopup(
     firebaseAuth,
     provider
@@ -129,9 +134,12 @@ async function runGoogleAuth(): Promise<AuthUser> {
       lastName,
     });
   } catch (error) {
-    // Firebase may already consider the user signed in even when our backend
-    // sync fails. Roll that state back so a retry starts cleanly.
-    await signOut(firebaseAuth).catch(() => undefined);
+    // A temporary backend outage must not silently undo a successful Google
+    // authentication. Keep the Firebase session for a later API retry.
+    // Other account-sync failures still roll the new session back.
+    if (!isTransientGatewayError(error)) {
+      await signOut(firebaseAuth).catch(() => undefined);
+    }
     throw new Error(googleAuthErrorMessage(error));
   }
 }
