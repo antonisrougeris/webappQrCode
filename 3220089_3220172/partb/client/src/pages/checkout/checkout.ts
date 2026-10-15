@@ -1204,7 +1204,7 @@ if (!user) {
   const authButton = formEl.querySelector<HTMLButtonElement>("button[type='submit']");
   if (authButton) authButton.disabled = true;
   // Keep the external mobile submit button in sync with the guest hand-off.
-  document.querySelectorAll<HTMLButtonElement>("[data-checkout-pay-button]").forEach(button => { button.disabled = true; });
+  if (typeof document !== "undefined") document.querySelectorAll<HTMLButtonElement>("[data-checkout-pay-button]").forEach(button => { button.disabled = true; });
 
   let authPath: string;
   try {
@@ -1215,7 +1215,7 @@ if (!user) {
       : "We couldn't check your account. Please try again shortly. Your checkout details are saved.");
     checkoutSubmitting = false;
     if (authButton) authButton.disabled = false;
-    document.querySelectorAll<HTMLButtonElement>("[data-checkout-pay-button]").forEach(button => { button.disabled = false; });
+    if (typeof document !== "undefined") document.querySelectorAll<HTMLButtonElement>("[data-checkout-pay-button]").forEach(button => { button.disabled = false; });
     return;
   }
 
@@ -1234,7 +1234,7 @@ if (!user) {
   // Leave a usable form in the browser's back/forward cache.
   checkoutSubmitting = false;
   if (authButton) authButton.disabled = false;
-  document.querySelectorAll<HTMLButtonElement>("[data-checkout-pay-button]").forEach(button => { button.disabled = false; });
+  if (typeof document !== "undefined") document.querySelectorAll<HTMLButtonElement>("[data-checkout-pay-button]").forEach(button => { button.disabled = false; });
   window.location.href =
     localizedPath(
       `${authPath}?${payload}`,
