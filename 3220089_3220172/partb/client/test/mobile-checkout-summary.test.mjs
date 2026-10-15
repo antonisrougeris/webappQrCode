@@ -53,3 +53,14 @@ test("mobile policy links follow Viva note, desktop links remain in original sum
   assert.match(css, /\.checkout-page__summary \.checkout-summary-footer \{ display: none !important; \}/);
   assert.match(css, /@media \(min-width: 761px\)/);
 });
+
+test("expanded top summary displays the actual product photos and variant information", () => {
+  assert.match(code, /function appendMobileTopProduct\(/);
+  assert.match(code, /image\.src = getCartItemImage\(item\)/);
+  assert.match(code, /image\.loading = "lazy"/);
+  assert.match(code, /quantity\.textContent = String\(freeReward \? 1 : Number\(item\.quantity \|\| 0\)\)/);
+  assert.match(code, /variant\?\.color, variant\?\.size/);
+  assert.match(code, /appendMobileTopProduct\(itemsContainer, item\)/);
+  assert.match(code, /appendMobileTopProduct\(itemsContainer, freeReward, true\)/);
+  assert.match(css, /\.checkout-mobile-top__item-image img/);
+});
