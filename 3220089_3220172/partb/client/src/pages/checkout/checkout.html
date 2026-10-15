@@ -4,6 +4,30 @@
   <meta charset="UTF-8" />
   <title>Skanare - Checkout</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Avoid browser's premature hash jump during checkout auth return. -->
+  <script>
+    (function () {
+      if (!window.matchMedia("(max-width: 760px)").matches) return;
+      var url = new URL(window.location.href);
+      if (url.hash === "#checkoutMobilePay") {
+        url.hash = "";
+        url.searchParams.set("resumePayment", "1");
+        history.replaceState(history.state, "", url.pathname + url.search);
+      }
+      if (url.searchParams.get("resumePayment") !== "1") return;
+      document.documentElement.classList.add("checkout-resume-pending");
+      if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+      // A failed script or network request must never leave checkout invisible.
+      setTimeout(function () {
+        document.documentElement.classList.remove("checkout-resume-pending");
+      }, 8000);
+    }());
+  </script>
+  <style>
+    @media (max-width: 760px) {
+      html.checkout-resume-pending .checkout-page__container { visibility: hidden; }
+    }
+  </style>
   <link rel="icon" type="image/webp" href="/assets/img/logo_Image.png">
 
   <link rel="stylesheet" href="/assets/css/reset.css" />
