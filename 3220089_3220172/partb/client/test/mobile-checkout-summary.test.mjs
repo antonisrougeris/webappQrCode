@@ -38,7 +38,7 @@ test("mobile order total mirrors discounted total including shipping and tips", 
 test("mobile top order bar precedes checkout form and mirrors final totals", () => {
   assert.ok(html.indexOf('id="checkoutMobileTopToggle"') < html.indexOf('id="checkoutForm"'));
   assert.match(html, /id="checkoutMobileTopDetails" hidden/);
-  assert.match(code, /updateMobileTopSummary\(items, discountedSubtotal, shipping, giftFee, tipAmount, total\)/);
+  assert.match(code, /updateMobileTopSummary\(items, discountedSubtotal, shipping, giftFee, tipAmount, total, eligibleKeychain\)/);
   assert.match(code, /updateMobileTopSummary\(\[\], 0, 0, 0, 0, 0\)/);
 });
 test("discount shortcut opens lower summary and focuses the existing discount field", () => {
