@@ -19,6 +19,7 @@ import {
 } from "../../services/cart";
 import { getProducts, getColorImages, type Product } from "../../services/products";
 import "./cart-enhancements.css";
+import { installMobileCartSwipe } from "./cart-swipe";
 
 initNav();
 initMobileMenu();
@@ -1102,10 +1103,16 @@ return;
   });
 }
 
+let resetCartSwipe: (() => void) | null = null;
+let cartCloseTimer: number | null = null;
+
 function openCartDrawer(): void {
   const drawer = document.getElementById("cartDrawer");
   const overlay = document.getElementById("cartOverlay");
 
+  if (cartCloseTimer !== null) window.clearTimeout(cartCloseTimer);
+  cartCloseTimer = null;
+  resetCartSwipe?.();
   drawer?.classList.remove("hidden");
   overlay?.classList.remove("hidden");
   document.body.classList.add("cart-open");
@@ -1127,10 +1134,13 @@ function closeCartDrawer(): void {
     new CustomEvent("skanare:cart-updated")
   );
 
-  setTimeout(() => {
+  if (cartCloseTimer !== null) window.clearTimeout(cartCloseTimer);
+  cartCloseTimer = window.setTimeout(() => {
     drawer?.classList.add("hidden");
     overlay?.classList.add("hidden");
-  }, 250);
+    resetCartSwipe?.();
+    cartCloseTimer = null;
+  }, 280);
 }
 
 function setupCartDrawer(): void {
@@ -1148,6 +1158,12 @@ function setupCartDrawer(): void {
   root.dataset
     .cartDrawerDelegated =
     "true";
+
+  const swipeDrawer = document.getElementById("cartDrawer");
+  const swipeOverlay = document.getElementById("cartOverlay");
+  if (swipeDrawer && swipeOverlay) {
+    resetCartSwipe = installMobileCartSwipe(swipeDrawer, swipeOverlay, closeCartDrawer);
+  }
 
   document.addEventListener(
     "click",
