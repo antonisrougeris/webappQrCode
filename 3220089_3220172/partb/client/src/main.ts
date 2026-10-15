@@ -1024,9 +1024,10 @@ function renderCustomerOrders(
       .join("");
 }
 /**
- * One persistent, standalone thank-you panel for delivered orders. The
- * review invitation changes to a Contact CTA once every purchased product
- * with a valid review URL has already been reviewed.
+ * One persistent thank-you banner above Orders, based on the most recently
+ * placed paid order. All orders show Contact immediately; a completed order
+ * with an unreviewed product temporarily offers a verified review reward.
+ * After the review, the same banner returns to the Contact message.
  */
 function renderCustomerThankYou(orders: any[], reviewedProductIds: string[] | null): void {
   const panel = document.getElementById("customerThankYou");
@@ -1034,25 +1035,33 @@ function renderCustomerThankYou(orders: any[], reviewedProductIds: string[] | nu
   const action = document.getElementById("customerThankYouAction") as HTMLAnchorElement | null;
   if (!panel || !message || !action) return;
 
-  const completedOrders = orders
-    .filter(order => getCustomerOrderStatus(order) === "completed")
-    .sort((a, b) => (Date.parse(String(b?.completedAt || b?.createdAt || "")) || 0)
-      - (Date.parse(String(a?.completedAt || a?.createdAt || "")) || 0));
+  // The customer order API returns paid orders. Don't show the banner for
+  // accounts without an order, and don't use an older completed order to
+  // override the support message for a newly placed order.
+  const latestOrder = [...orders].sort((a, b) =>
+    (Date.parse(String(b?.createdAt || "")) || 0) -
+    (Date.parse(String(a?.createdAt || "")) || 0)
+  )[0];
 
-  if (!completedOrders.length) {
+  if (!latestOrder) {
     panel.hidden = true;
     return;
   }
 
-  // Never assume a review is missing if its status request failed.
-  const reviewedIds = reviewedProductIds === null ? null : new Set(reviewedProductIds.map(String));
-  const eligibleItem = reviewedIds === null ? null : completedOrders
-    .flatMap(order => Array.isArray(order?.items) ? order.items : [])
-    .find(item => {
-      const id = String(item?.productId || item?.id || "").trim();
-      const slug = String(item?.slug || id).trim();
-      return id && !reviewedIds.has(id) && /^[a-z0-9][a-z0-9_-]*$/i.test(slug);
-    });
+  const completed = getCustomerOrderStatus(latestOrder) === "completed";
+  // If status couldn't be fetched, don't accidentally offer a duplicate
+  // review/reward. The server is authoritative about review eligibility.
+  const reviewedIds = reviewedProductIds === null
+    ? null
+    : new Set(reviewedProductIds.map(String));
+
+  const eligibleItem = completed && reviewedIds !== null
+    ? (Array.isArray(latestOrder.items) ? latestOrder.items : []).find((item: any) => {
+        const id = String(item?.productId || item?.id || "").trim();
+        const slug = String(item?.slug || id).trim();
+        return id && !reviewedIds.has(id) && /^[a-z0-9][a-z0-9_-]*$/i.test(slug);
+      })
+    : null;
 
   if (eligibleItem) {
     const slug = String(eligibleItem.slug || eligibleItem.productId || eligibleItem.id).trim();
@@ -1060,7 +1069,7 @@ function renderCustomerThankYou(orders: any[], reviewedProductIds: string[] | nu
     action.href = `/product/${encodeURIComponent(slug)}#productReviews`;
     action.textContent = "Leave a review →";
   } else {
-    message.textContent = "Enjoying your Skanare products? Have a question about your order or need any help? Send us a message through our contact form and we'll be happy to help.";
+    message.textContent = "Have a question about your order or need any help? Send us a message through our contact form and we'll be happy to help.";
     action.href = "/contact";
     action.textContent = "Contact us →";
   }
