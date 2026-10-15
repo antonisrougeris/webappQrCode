@@ -16512,3 +16512,36 @@ body > div iframe[src*="boxnow"] {
     text-align: center;
   }
 }
+
+/* Homepage hero: one dominant CTA, quieter explanation, less mobile friction. */
+.home-hero__secondary {
+  min-height: 44px;
+  padding: 0 5px;
+  border: 0;
+  background: transparent;
+  color: #474741;
+  font-size: 12px;
+  letter-spacing: .02em;
+  text-transform: none;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-color: #aaa9a2;
+}
+.home-hero__secondary:hover { border: 0; background: transparent; color: #080808; text-decoration-color: currentColor; }
+.home-hero__secondary-arrow { font-size: 15px; line-height: 1; text-decoration: none; }
+.home-hero__primary:focus-visible,
+.home-hero__secondary:focus-visible { outline: 3px solid #777; outline-offset: 4px; }
+@media (max-width: 640px) {
+  .home-hero__inner { gap: 23px; padding-top: 22px; padding-bottom: 34px; }
+  .home-hero__eyebrow { margin-bottom: 12px; }
+  .home-hero__title { font-size: clamp(40px, 11.4vw, 53px); line-height: .98; letter-spacing: -.055em; }
+  .home-hero__description { margin-top: 14px; font-size: 13px; line-height: 1.57; max-width: 42ch; }
+  .home-hero__actions { margin-top: 19px; gap: 7px; }
+  .home-hero__primary { min-height: 51px; width: 100%; border-radius: 5px; font-size: 12px; }
+  .home-hero__secondary { width: max-content; max-width: 100%; min-height: 40px; padding: 2px 0; justify-content: flex-start; align-self: center; }
+  .home-hero__image { border-radius: 22px; box-shadow: 0 13px 33px rgba(0,0,0,.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-hero__primary, .home-hero__secondary { transition: none; }
+}
