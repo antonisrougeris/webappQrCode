@@ -648,7 +648,7 @@ function renderCustomerOrders(
             ? ""
             : `
               <div
-                class="account-order__progress"
+                class="account-order__progress${status === "completed" ? " is-fully-complete" : ""}"
                 aria-label="Order progress"
               >
 

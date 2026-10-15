@@ -6,6 +6,7 @@ import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
 import { sendEmail } from "./email.service.js";
 import { brandedEmailTemplate } from "./email-template.service.js";
+import { getDeliveredOrderReviewUrl } from "./order-review-link.service.js";
 import { processBoxNowReturnWebhookEvent } from "./returns.service.js";
 
 
@@ -541,6 +542,8 @@ export async function sendDeliveredOrderEmail(orderId) {
     order.customer?.firstName || ""
   ).trim();
 
+  const reviewUrl = getDeliveredOrderReviewUrl(order);
+
   await sendEmail({
     from:
       process.env.EMAIL_ORDER ||
@@ -565,7 +568,7 @@ export async function sendDeliveredOrderEmail(orderId) {
         </p>
         <p style="margin:22px 0;">
           <a
-            href="https://skanare.com/products"
+            href="${reviewUrl}"
             style="display:inline-block;background:#111;color:#fff;padding:14px 20px;text-decoration:none;border-radius:999px;"
           >
             Leave a review

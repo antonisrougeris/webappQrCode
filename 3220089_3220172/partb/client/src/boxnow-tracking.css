@@ -17,3 +17,40 @@
     overflow-wrap: anywhere;
   }
 }
+
+
+/*
+ * The completion track must reach the final dot on desktop.
+ * Mobile uses one connector per interval instead of a full-height
+ * background line; this prevents the line dangling below COMPLETED.
+ * Keep this in Vite-imported CSS so its hashed asset bypasses stale
+ * cached public components.css on real phones.
+ */
+.account-order__progress.is-fully-complete::before {
+  background: #111;
+}
+
+@media (max-width: 640px) {
+  .account-order__progress::before {
+    display: none;
+  }
+
+  .account-order__progress .account-order__step:not(:last-child)::after {
+    content: "";
+    display: block !important;
+    position: absolute;
+    top: 7px;
+    left: 6px;
+    width: 2px;
+    height: 100%;
+    background: #d9d9d4;
+  }
+
+  .account-order__progress .account-order__step.is-complete:not(:last-child)::after {
+    background: #111;
+  }
+
+  .account-order__progress .account-order__step:last-child::after {
+    display: none !important;
+  }
+}
