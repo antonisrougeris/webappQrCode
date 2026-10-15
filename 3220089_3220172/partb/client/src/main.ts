@@ -54,7 +54,7 @@ async function initGuestSession(): Promise<void> {
 
 function initCountdown(): void {
   const bar = document.getElementById("comingSoonBar");
-  const targetDate = new Date("2026-11-25T00:00:00").getTime(); // 25 November 2026, local time
+  const targetDate = new Date("2026-10-21T00:00:00+03:00").getTime(); // Five-day countdown from 15 October 2026 (Greece time)
 
   function pad(n: number): string {
     return n.toString().padStart(2, "0");
