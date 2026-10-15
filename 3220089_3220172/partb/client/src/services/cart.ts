@@ -43,10 +43,26 @@ export interface AddToCartPayload {
   variant?: ProductVariant | null;
   qrDestination?: string;
 }
-export async function getCart():Promise<Cart> {
-  const res=await apiRequest<{cart:Cart}>("/cart"); return res.cart;
+// Share overlapping header/cart-drawer reads. A mutation always invalidates this
+// in-flight snapshot so a later read does not replace the newly updated cart.
+let pendingCartRead: Promise<Cart> | null = null;
+
+export function getCart(): Promise<Cart> {
+  if (!pendingCartRead) {
+    const request = apiRequest<{ cart: Cart }>("/cart").then(res => res.cart);
+    const pending = request.finally(() => {
+      if (pendingCartRead === pending) pendingCartRead = null;
+    });
+    pendingCartRead = pending;
+  }
+  return pendingCartRead;
+}
+
+function invalidatePendingCartRead(): void {
+  pendingCartRead = null;
 }
 export async function addCartItem(payload:AddToCartPayload):Promise<Cart> {
+  invalidatePendingCartRead();
   const res=await apiRequest<{cart:Cart}>("/cart/items",{method:"POST",body:JSON.stringify(payload)});
   const item = res.cart.items?.find(entry => entry.productId === payload.productId);
   if (item) {
@@ -63,18 +79,22 @@ export async function addCartItem(payload:AddToCartPayload):Promise<Cart> {
   return res.cart;
 }
 export async function updateCartItem(itemId:string,payload:{quantity?:number;qrDestination?:string}):Promise<Cart> {
+  invalidatePendingCartRead();
   const res=await apiRequest<{cart:Cart}>(`/cart/items/${encodeURIComponent(itemId)}`,{method:"PATCH",body:JSON.stringify(payload)});return res.cart;
 }
 export async function removeCartItem(itemId:string):Promise<Cart> {
+  invalidatePendingCartRead();
   const res=await apiRequest<{cart:Cart}>(`/cart/items/${encodeURIComponent(itemId)}`,{method:"DELETE"});return res.cart;
 }
 export async function transferCartToGuest():Promise<Cart> {
+  invalidatePendingCartRead();
   const res=await apiRequest<{cart:Cart}>("/cart/transfer-to-guest",{method:"POST"});return res.cart;
 }
 
 export async function updateCartGiftOptions(
   payload: GiftOptions
 ): Promise<Cart> {
+  invalidatePendingCartRead();
   const res = await apiRequest<{cart:Cart}>("/cart/gift-options", {
     method: "PATCH",
     body: JSON.stringify(payload),
