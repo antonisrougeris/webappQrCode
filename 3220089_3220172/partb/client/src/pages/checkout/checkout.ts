@@ -17,6 +17,7 @@ import {
   type CountryCode,
 } from "libphonenumber-js";
 const CHECKOUT_DRAFT_KEY = "skanare_checkout_draft";
+const TERMS_AUTH_HANDOFF_KEY = "skanare_checkout_terms_auth_handoff";
 const RECOVERY_CODE_KEY = "skanare_recovery_code";
 const PREMIUM_GIFT_PRICE = 1.5;
 const TERMS_VERSION = "2026-09" as const;
@@ -1168,7 +1169,23 @@ editCartButton?.addEventListener(
   // Browser-native required validation fires "invalid" before "submit".
   termsCheckbox?.addEventListener("invalid", () => setTermsError(true));
   termsCheckbox?.addEventListener("change", () => setTermsError(false));
-  if (termsCheckbox) termsCheckbox.checked = false;
+  // Terms are never part of the persistent draft. Restore a single explicit
+  // acceptance only after the shopper leaves checkout for authentication.
+  if (termsCheckbox) {
+    termsCheckbox.checked = false;
+    try {
+      const raw = sessionStorage.getItem(TERMS_AUTH_HANDOFF_KEY);
+      sessionStorage.removeItem(TERMS_AUTH_HANDOFF_KEY);
+      if (raw) {
+        const handoff = JSON.parse(raw) as { version?: string; checked?: boolean; savedAt?: number };
+        if (handoff.version === TERMS_VERSION && handoff.checked === true &&
+            Number.isFinite(handoff.savedAt) && Date.now() - Number(handoff.savedAt) >= 0 &&
+            Date.now() - Number(handoff.savedAt) < 30 * 60 * 1000) {
+          termsCheckbox.checked = true;
+        }
+      }
+    } catch { /* Storage can be blocked: leave the box unchecked. */ }
+  }
 
   checkoutForm?.querySelectorAll<HTMLInputElement>('input[name="tipChoice"]').forEach((input) => {
     input.addEventListener("change", () => {
@@ -1472,6 +1489,15 @@ if (!user) {
   checkoutSubmitting = false;
   if (authButton) authButton.disabled = false;
   if (typeof document !== "undefined") document.querySelectorAll<HTMLButtonElement>("[data-checkout-pay-button]").forEach(button => { button.disabled = false; });
+  // One-time, short-lived handoff: preserve the buyer's actual Terms choice
+  // through login, registration and email verification, not future orders.
+  try {
+    sessionStorage.setItem(TERMS_AUTH_HANDOFF_KEY, JSON.stringify({
+      version: TERMS_VERSION,
+      checked: Boolean(termsCheckbox?.checked),
+      savedAt: Date.now(),
+    }));
+  } catch { /* Auth must still work without session storage. */ }
   window.location.href =
     localizedPath(
       `${authPath}?${payload}`,
