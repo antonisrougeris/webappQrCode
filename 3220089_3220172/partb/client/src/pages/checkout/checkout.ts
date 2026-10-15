@@ -24,6 +24,7 @@ import { setFlashToast, showToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
 import {
   locale,
+  t,
   localizedPath,
   productPath,
 } from "../../i18n/locale";
@@ -264,13 +265,13 @@ function updateCheckoutSavings(items: CartItem[], subtotal: number, discountedSu
     const node = document.getElementById(row);
     if (node) node.hidden = savings <= 0;
     const labelNode = document.getElementById(label);
-    if (labelNode) labelNode.textContent = "Total savings (included)";
+    if (labelNode) labelNode.textContent = t("checkout.totalSavings", "Total savings (included)");
     const amountNode = document.getElementById(amount);
     if (amountNode) amountNode.textContent = "−" + formatPrice(savings);
   }
   for (const id of ["checkoutTaxNote", "checkoutMobileTopTaxNote"]) {
     const node = document.getElementById(id);
-    if (node) node.textContent = "Including " + formatPrice(includedVat(total)) + " in VAT (24%)";
+    if (node) node.textContent = locale === "el" ? "Συμπεριλαμβάνεται ΦΠΑ 24%: " + formatPrice(includedVat(total)) : "Including " + formatPrice(includedVat(total)) + " in VAT (24%)";
   }
 }
 
@@ -313,7 +314,7 @@ function updateMobileOrderSummary(items: CartItem[], total: number): void {
   const image = document.getElementById("checkoutMobileSummaryImage") as HTMLImageElement | null;
   const quantity = items.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0);
   if (badge) { badge.textContent = String(quantity); badge.hidden = quantity === 0; }
-  if (count) count.textContent = quantity === 1 ? "1 item" : `${quantity} items`;
+  if (count) count.textContent = quantity === 1 ? (locale === "el" ? "1 προϊόν" : "1 item") : `${quantity} ${locale === "el" ? "προϊόντα" : "items"}`;
   if (price) price.textContent = formatPrice(total);
   if (image) image.src = getCartItemImage(items[0] || {} as CartItem);
   updateCheckoutPreviewTotals(items, total);
@@ -370,7 +371,7 @@ function appendMobileTopProduct(
   }
   if (freeReward) {
     const freeLabel = document.createElement("small");
-    freeLabel.textContent = "Free gift with €80+ order";
+    freeLabel.textContent = t("checkout.freeGift", "Free gift with €80+ order");
     info.append(freeLabel);
   } else if (getCartItemQr(item)) {
     const qrLine = document.createElement("small");
@@ -421,7 +422,7 @@ function updateMobileTopSummary(
   updateCheckoutPreviewTotals(items, total);
   put("checkoutMobileTopTotalExpanded", formatPrice(total));
   put("checkoutMobileTopSubtotal", formatPrice(subtotal));
-  put("checkoutMobileTopShipping", shipping === 0 ? "Free" : formatPrice(shipping));
+  put("checkoutMobileTopShipping", shipping === 0 ? t("checkout.shippingFree", "Free") : formatPrice(shipping));
   const giftRow = document.getElementById("checkoutMobileTopGiftRow");
   const tipRow = document.getElementById("checkoutMobileTopTipRow");
   if (giftRow) giftRow.hidden = gift <= 0;
