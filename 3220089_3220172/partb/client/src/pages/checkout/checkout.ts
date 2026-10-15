@@ -580,6 +580,7 @@ async function render(): Promise<void> {
     updateMobileOrderSummary([], 0);
     updateMobileTopSummary([], 0, 0, 0, 0, 0);
     updateCheckoutSavings([], 0, 0, 0);
+    restoreMobilePaymentPosition();
 
     document
       .getElementById("giftFeeRow")
@@ -687,11 +688,7 @@ async function render(): Promise<void> {
   updateMobileOrderSummary(items, total);
   updateMobileTopSummary(items, discountedSubtotal, shipping, giftFee, tipAmount, total, eligibleKeychain);
   updateCheckoutSavings(items, subtotal, discountedSubtotal, total);
-  if (window.location.hash === "#checkoutMobilePay" && window.matchMedia("(max-width: 760px)").matches) {
-    window.requestAnimationFrame(() => {
-      document.getElementById("checkoutMobilePay")?.scrollIntoView({ block: "end", behavior: "instant" });
-    });
-  }
+  restoreMobilePaymentPosition();
 
   const msg =
   document.getElementById(
@@ -1058,6 +1055,26 @@ function normalizeRoutePath(
     ) ||
     fallback
   );
+}
+
+let mobileResumeFinished = false;
+function restoreMobilePaymentPosition(): void {
+  if (mobileResumeFinished || !window.matchMedia("(max-width: 760px)").matches) return;
+  if (new URLSearchParams(window.location.search).get("resumePayment") !== "1") return;
+  mobileResumeFinished = true;
+  // Settle after the cart and any offer update. Use ONE centered positioning.
+  window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+    const button = document.getElementById("checkoutMobilePay");
+    if (button) {
+      const position = button.getBoundingClientRect().top + window.scrollY
+        - (window.innerHeight - button.getBoundingClientRect().height) * 0.57;
+      window.scrollTo({ top: Math.max(0, position), behavior: "instant" });
+    }
+    document.documentElement.classList.remove("checkout-resume-pending");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("resumePayment");
+    history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+  }));
 }
 
 function restoreAfterAuth(): void {
