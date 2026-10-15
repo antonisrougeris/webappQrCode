@@ -200,6 +200,7 @@ document.getElementById("disableAdminPush")?.addEventListener("click", async () 
 });
 
 logoutButton?.addEventListener("click", async () => {
+  try { await disableAdminPush(adminApi); } catch (error) { console.warn("Push unregistration failed", error); }
   await signOut(firebaseAuth);
 });
 
