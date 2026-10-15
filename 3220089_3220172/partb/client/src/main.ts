@@ -1070,7 +1070,7 @@ function renderCustomerThankYou(orders: any[], reviewedProductIds: string[] | nu
     action.href = `/product/${encodeURIComponent(slug)}#productReviews`;
     action.textContent = translatePhrase("Leave a review →");
   } else {
-    message.textContent = "Have a question about your order or need any help? Send us a message through our contact form and we'll be happy to help.";
+    message.textContent = translatePhrase("Have a question about your order or need any help? Send us a message through our contact form and we'll be happy to help.");
     action.href = localizedPath("/contact", locale);
     action.textContent = translatePhrase("Contact us →");
   }
