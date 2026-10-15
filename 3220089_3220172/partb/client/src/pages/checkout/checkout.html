@@ -60,8 +60,8 @@
   
       <nav id="mainNav" class="main-nav" aria-label="Main navigation">
         <div class="nav-left">
-          <a href="#tshirts">QR Clothing</a>
-          <a href="#accessories">QR Accessories</a>
+          <a href="/products?category=tshirt">QR Clothing</a>
+          <a href="/products?category=accessory">QR Accessories</a>
         </div>
   
         <div class="nav-right">
@@ -120,7 +120,10 @@
             <path d="m5 8 5 5 5-5"/>
           </svg>
         </span>
-        <strong id="checkoutMobileTopTotal">—</strong>
+        <span class="checkout-mobile-summary__totals">
+          <del id="checkoutMobileTopOriginalTotal" hidden>—</del>
+          <strong id="checkoutMobileTopTotal">—</strong>
+        </span>
       </button>
       <div class="checkout-mobile-top__details" id="checkoutMobileTopDetails" hidden>
         <div id="checkoutMobileTopItems" class="checkout-mobile-top__items"></div>
@@ -133,8 +136,13 @@
           <div><span>Shipping</span><span id="checkoutMobileTopShipping">—</span></div>
           <div id="checkoutMobileTopGiftRow" hidden><span>Gift packaging</span><span id="checkoutMobileTopGift">—</span></div>
           <div id="checkoutMobileTopTipRow" hidden><span>Tip</span><span id="checkoutMobileTopTip">—</span></div>
-          <div class="checkout-mobile-top__grand-total"><strong>Total</strong><strong id="checkoutMobileTopTotalExpanded">—</strong></div>
-          <p id="checkoutMobileTopTaxNote" class="checkout-tax-note"></p>
+          <div class="checkout-mobile-top__grand-total">
+            <div class="checkout-total__label">
+              <strong>Total</strong>
+              <p id="checkoutMobileTopTaxNote" class="checkout-tax-note"></p>
+            </div>
+            <strong id="checkoutMobileTopTotalExpanded">—</strong>
+          </div>
         </div>
         <button type="button" class="checkout-mobile-top__view-full" id="checkoutMobileTopViewFull">View full order details →</button>
       </div>
@@ -673,7 +681,10 @@
           <strong>Order summary</strong>
           <small id="checkoutMobileSummaryCount">Loading items…</small>
         </span>
-        <strong id="checkoutMobileSummaryTotal" class="checkout-mobile-summary__price">—</strong>
+        <span class="checkout-mobile-summary__totals">
+          <del id="checkoutMobileSummaryOriginalTotal" hidden>—</del>
+          <strong id="checkoutMobileSummaryTotal" class="checkout-mobile-summary__price">—</strong>
+        </span>
         <svg class="checkout-mobile-summary__chevron" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <path d="m6 9 6 6 6-6" />
         </svg>
@@ -758,11 +769,12 @@
       </div>
 
       <div class="checkout-total">
-        <span>Total</span>
-
+        <div class="checkout-total__label">
+          <span>Total</span>
+          <p id="checkoutTaxNote" class="checkout-tax-note"></p>
+        </div>
         <strong id="total"></strong>
       </div>
-      <p id="checkoutTaxNote" class="checkout-tax-note"></p>
       <div class="checkout-summary-footer">
   <a href="/refund-policy">
     Refund policy
