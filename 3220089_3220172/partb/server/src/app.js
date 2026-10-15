@@ -87,7 +87,9 @@ app.use(
         frameSrc: ["'self'", "https:"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
-        // Meta Pixel may fall back to a form POST to its tracking endpoint.\n        // Allow only that specific destination; retain same-origin form submissions.\n        formAction: ["'self'", "https://www.facebook.com/tr/"],
+        // Permit the Meta Pixel's form-submit fallback only to its tracking endpoint.
+        // Normal checkout and other forms remain restricted to this site.
+        formAction: ["'self'", "https://www.facebook.com/tr/"],
         frameAncestors: ["'self'"],
       },
     },
