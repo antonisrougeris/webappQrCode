@@ -3,6 +3,8 @@ import "../../i18n/auto";
 
 import {
   signInWithEmailAndPassword,
+  setPersistence,
+  browserLocalPersistence,
 } from "firebase/auth";
 
 import { initNav } from "../../components/initNav";
@@ -29,6 +31,14 @@ initPasswordVisibility();
 const form = document.getElementById("loginForm") as HTMLFormElement | null;
 const statusEl = document.getElementById("status");
 const googleBtn = document.querySelector<HTMLButtonElement>(".auth-google");
+const emailSubmitBtn = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+let authInProgress = false;
+
+function setAuthInProgress(inProgress: boolean): void {
+  authInProgress = inProgress;
+  if (googleBtn) googleBtn.disabled = inProgress;
+  if (emailSubmitBtn) emailSubmitBtn.disabled = inProgress;
+}
 
 const registerLink = document.getElementById(
   "registerLink"
@@ -134,8 +144,11 @@ function goToRedirect(delay = 800): void {
   setTimeout(() => {
     const redirect = getRedirectUrl();
 
-    // 🔥 optional safety: restore checkout flag
-    localStorage.setItem("skanare_returning_from_auth", "1");
+    // Browser privacy settings can disable localStorage. Navigation must
+    // still complete after a successful authentication.
+    try {
+      localStorage.setItem("skanare_returning_from_auth", "1");
+    } catch { /* continue with the redirect even when storage is unavailable */ }
 
     window.location.href = localizedPath(
       redirect,
@@ -170,6 +183,11 @@ if (form) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    // Password managers can auto-submit a filled email form while Google
+    // sign-in is in progress. Never run both authentication flows together.
+    if (authInProgress) return;
+    setAuthInProgress(true);
+
     if (statusEl) statusEl.textContent = "Logging in...";
 
     const formData = new FormData(form);
@@ -177,6 +195,7 @@ if (form) {
     const password = String(formData.get("password") || "");
 
     try {
+      await setPersistence(firebaseAuth, browserLocalPersistence);
       // 1. Firebase Auth login
       const credentials = await signInWithEmailAndPassword(
         firebaseAuth,
@@ -217,6 +236,8 @@ if (form) {
       if (statusEl) {
         statusEl.textContent = err?.message || "Login failed";
       }
+    } finally {
+      setAuthInProgress(false);
     }
   });
 }
@@ -225,9 +246,8 @@ googleBtn?.addEventListener("click", async (event) => {
   event.preventDefault();
   event.stopPropagation();
 
-  if (googleBtn.disabled) return;
-
-  googleBtn.disabled = true;
+  if (authInProgress) return;
+  setAuthInProgress(true);
 
   // Browser password managers can leave autofilled credentials in the
   // email/password form. Google authentication must never consume or submit
@@ -251,6 +271,6 @@ googleBtn?.addEventListener("click", async (event) => {
       statusEl.textContent = googleAuthErrorMessage(err);
     }
   } finally {
-    googleBtn.disabled = false;
+    setAuthInProgress(false);
   }
 });
