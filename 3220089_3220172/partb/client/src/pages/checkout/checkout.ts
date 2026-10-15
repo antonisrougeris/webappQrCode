@@ -262,6 +262,63 @@ function updateMobileOrderSummary(items: CartItem[], total: number): void {
   if (image) image.src = getCartItemImage(items[0] || {} as CartItem);
 }
 
+function updateMobileTopSummary(items: CartItem[], subtotal: number, shipping: number, gift: number, tip: number, total: number): void {
+  const put = (id: string, value: string) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+  put("checkoutMobileTopTotal", formatPrice(total));
+  put("checkoutMobileTopTotalExpanded", formatPrice(total));
+  put("checkoutMobileTopSubtotal", formatPrice(subtotal));
+  put("checkoutMobileTopShipping", shipping === 0 ? "Free" : formatPrice(shipping));
+  const giftRow = document.getElementById("checkoutMobileTopGiftRow");
+  const tipRow = document.getElementById("checkoutMobileTopTipRow");
+  if (giftRow) giftRow.hidden = gift <= 0;
+  if (tipRow) tipRow.hidden = tip <= 0;
+  put("checkoutMobileTopGift", formatPrice(gift));
+  put("checkoutMobileTopTip", formatPrice(tip));
+  const itemsContainer = document.getElementById("checkoutMobileTopItems");
+  if (itemsContainer) {
+    itemsContainer.replaceChildren();
+    for (const item of items) {
+      const row = document.createElement("div");
+      row.className = "checkout-mobile-top__item";
+      const name = document.createElement("span");
+      name.textContent = `${getCartItemTitle(item)} × ${Number(item.quantity || 0)}`;
+      const amount = document.createElement("strong");
+      amount.textContent = formatPrice(getCartItemUnitPrice(item) * Number(item.quantity || 0));
+      row.append(name, amount);
+      itemsContainer.append(row);
+    }
+  }
+}
+
+function openMobileFullOrder(focusDiscount = false): void {
+  const summary = document.getElementById("checkoutOrderSummary");
+  const toggle = document.getElementById("checkoutMobileSummaryToggle");
+  if (!summary || !toggle) return;
+  summary.classList.add("is-mobile-expanded");
+  toggle.setAttribute("aria-expanded", "true");
+  if (focusDiscount) {
+    const input = document.getElementById("discountInput") as HTMLInputElement | null;
+    input?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Delayed focus avoids mobile keyboard obscuring the input while scrolling.
+    window.setTimeout(() => input?.focus({ preventScroll: true }), 180);
+  } else {
+    summary.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function setupMobileTopSummary(): void {
+  const toggle = document.getElementById("checkoutMobileTopToggle");
+  const details = document.getElementById("checkoutMobileTopDetails");
+  toggle?.addEventListener("click", () => {
+    if (!details) return;
+    const expanded = toggle.getAttribute("aria-expanded") !== "true";
+    toggle.setAttribute("aria-expanded", String(expanded));
+    details.hidden = !expanded;
+  });
+  document.getElementById("checkoutMobileTopViewFull")?.addEventListener("click", () => openMobileFullOrder());
+  document.getElementById("checkoutMobileAddDiscount")?.addEventListener("click", () => openMobileFullOrder(true));
+}
+
 function setupMobileOrderSummary(): void {
   const toggle = document.getElementById("checkoutMobileSummaryToggle") as HTMLButtonElement | null;
   const details = document.getElementById("checkoutMobileSummaryDetails");
@@ -370,6 +427,7 @@ async function render(): Promise<void> {
     document.getElementById("total")!.textContent = formatPrice(0);
     updateTip(0);
     updateMobileOrderSummary([], 0);
+    updateMobileTopSummary([], 0, 0, 0, 0, 0);
 
     document
       .getElementById("giftFeeRow")
@@ -474,6 +532,7 @@ async function render(): Promise<void> {
 
   document.getElementById("total")!.textContent = formatPrice(total);
   updateMobileOrderSummary(items, total);
+  updateMobileTopSummary(items, discountedSubtotal, shipping, giftFee, tipAmount, total);
 
   const msg =
   document.getElementById(
@@ -856,6 +915,7 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreAfterAuth();
   restoreCheckoutDraft();
   setupMobileOrderSummary();
+  setupMobileTopSummary();
   const recoveryParam =
     new URLSearchParams(window.location.search).get("code")?.trim() ||
     localStorage.getItem(RECOVERY_CODE_KEY)?.trim();

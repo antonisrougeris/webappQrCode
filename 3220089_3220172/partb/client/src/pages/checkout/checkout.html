@@ -111,6 +111,30 @@
 
   <div class="checkout-page__container">
 
+    <!-- Quiet Shopify-style mobile summary at the very top of checkout. -->
+    <section class="checkout-mobile-top" aria-label="Order summary preview">
+      <button id="checkoutMobileTopToggle" class="checkout-mobile-top__toggle" type="button"
+        aria-expanded="false" aria-controls="checkoutMobileTopDetails">
+        <span class="checkout-mobile-top__label">Order summary
+          <svg viewBox="0 0 20 20" aria-hidden="true" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="m5 8 5 5 5-5"/>
+          </svg>
+        </span>
+        <strong id="checkoutMobileTopTotal">—</strong>
+      </button>
+      <div class="checkout-mobile-top__details" id="checkoutMobileTopDetails" hidden>
+        <div id="checkoutMobileTopItems" class="checkout-mobile-top__items"></div>
+        <div class="checkout-mobile-top__breakdown">
+          <div><span>Subtotal</span><span id="checkoutMobileTopSubtotal">—</span></div>
+          <div><span>Shipping</span><span id="checkoutMobileTopShipping">—</span></div>
+          <div id="checkoutMobileTopGiftRow" hidden><span>Gift packaging</span><span id="checkoutMobileTopGift">—</span></div>
+          <div id="checkoutMobileTopTipRow" hidden><span>Tip</span><span id="checkoutMobileTopTip">—</span></div>
+          <div class="checkout-mobile-top__grand-total"><strong>Total</strong><strong id="checkoutMobileTopTotalExpanded">—</strong></div>
+        </div>
+        <button type="button" class="checkout-mobile-top__view-full" id="checkoutMobileTopViewFull">View full order details →</button>
+      </div>
+    </section>
+
     <!-- =========================================
          LEFT — CUSTOMER + DELIVERY
          ========================================= -->
@@ -596,6 +620,16 @@
         </p>
       </div>
 
+      <!-- Mobile-only shortcut, does not submit the form. -->
+      <button type="button" id="checkoutMobileAddDiscount" class="checkout-mobile-discount">
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor"
+          stroke-width="1.65" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.8 2.5H5.5a3 3 0 0 0-3 3v5.3l6.8 6.7a2 2 0 0 0 2.8 0l5.4-5.4a2 2 0 0 0 0-2.8z"/>
+          <circle cx="6.9" cy="7" r="1"/>
+        </svg>
+        Add discount
+      </button>
+
       <button
         type="submit"
         class="checkout-page__btn"
@@ -753,6 +787,12 @@
         Pay with viva.com
       </button>
       <div class="checkout-secure-note">Secure payment powered by viva.com</div>
+      <!-- Mobile legal links live below payment, not inside the accordion. -->
+      <nav class="checkout-mobile-legal" aria-label="Checkout policies">
+        <a href="/refund-policy">Refund policy</a>
+        <a href="/terms">Terms of service</a>
+        <a href="/contact">Contact information</a>
+      </nav>
     </div>
 
   </div>
