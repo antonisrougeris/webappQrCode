@@ -220,7 +220,13 @@
 .checkout-item__price strong { font-size: 13px; font-weight: 700; }
 .checkout-discount-savings { color: #16683d; }
 .checkout-discount-savings strong { color: #16683d; }
-.checkout-tax-note { margin: -3px 0 16px; text-align: right; font-size: 11px; line-height: 1.5; color: #737373; }
-.checkout-mobile-top__breakdown .checkout-tax-note { margin: 0 0 6px; text-align: right; }
+.checkout-tax-note { margin: 3px 0 0; text-align: left; font-size: 11px; line-height: 1.5; color: #737373; }
+.checkout-mobile-top__breakdown .checkout-tax-note { margin: 4px 0 0; text-align: left; }
 .checkout-mobile-top__item-price { gap: 3px; }
 [hidden].checkout-discount-savings { display: none !important; }
+
+.checkout-total__label { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.checkout-mobile-summary__totals { display: grid; gap: 2px; justify-items: end; align-items: center; min-width: 0; flex-shrink: 0; }
+.checkout-mobile-summary__totals del { font-size: 10px; font-weight: 400; color: #777; white-space: nowrap; }
+.checkout-mobile-summary__totals del[hidden] { display: none; }
+.checkout-mobile-top__grand-total .checkout-total__label { gap: 0; }

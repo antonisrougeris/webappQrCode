@@ -23,3 +23,20 @@ test("mobile returns to payment button after authentication and rendering",()=>{
  assert.match(code,/window\.location\.hash === "#checkoutMobilePay"/);
  assert.match(code,/scrollIntoView\(\{ block: "end", behavior: "instant" \}\)/);
 });
+
+test("both collapsed mobile summaries show discounted and original totals",()=>{
+  for (const id of ["checkoutMobileTopOriginalTotal","checkoutMobileSummaryOriginalTotal"])
+    assert.ok(html.includes('id="'+id+'"'));
+  assert.match(code,/function checkoutOriginalTotal\(/);
+  assert.match(code,/updateCheckoutPreviewTotals\(items, total\)/);
+});
+test("VAT is inside total label and tax note aligns left",()=>{
+  assert.match(html,/class="checkout-total__label"[\s\S]*?id="checkoutTaxNote"/);
+  assert.match(html,/class="checkout-total__label"[\s\S]*?id="checkoutMobileTopTaxNote"/);
+  assert.match(css,/\.checkout-tax-note \{[^}]*text-align: left/);
+});
+test("checkout header links route to actual categories",()=>{
+  assert.match(html,/href="\/products\?category=tshirt"/);
+  assert.match(html,/href="\/products\?category=accessory"/);
+  assert.doesNotMatch(html,/href="#tshirts"/);
+});
