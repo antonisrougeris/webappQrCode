@@ -1379,7 +1379,7 @@ if (!user) {
 
   const redirectTarget =
     normalizeRoutePath(
-      window.location.pathname + (window.matchMedia?.("(max-width: 760px)").matches ? "#checkoutMobilePay" : ""),
+      window.location.pathname + (window.matchMedia?.("(max-width: 760px)")?.matches ? "#checkoutMobilePay" : ""),
       "/checkout"
     );
 
