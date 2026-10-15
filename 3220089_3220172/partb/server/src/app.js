@@ -15,6 +15,7 @@ import { optionalAuth } from "./middleware/auth.js";
 import { requestContext } from "./middleware/requestContext.js";
 import {
   apiLimiter,
+  storefrontReadLimiter,
   authLimiter,
   sensitiveAuthLimiter,
   checkoutLimiter,
@@ -226,7 +227,7 @@ app.use("/api/auth/reset-password", sensitiveAuthLimiter);
 app.use("/api/auth", authLimiter);
 app.use("/api/checkout", checkoutLimiter);
 app.use("/api/admin", adminLimiter);
-app.use("/api", apiLimiter);
+app.use("/api", storefrontReadLimiter, apiLimiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/session", sessionRoutes);

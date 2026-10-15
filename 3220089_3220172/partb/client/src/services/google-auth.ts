@@ -2,6 +2,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
+  setPersistence,
+  browserLocalPersistence,
 } from "firebase/auth";
 
 import { firebaseAuth } from "./firebase";
@@ -41,14 +43,15 @@ function googleAuthErrorMessage(error: unknown): string {
     : "Google sign-in failed";
 }
 
-function isTransientGatewayError(error: unknown): boolean {
+function isTransientBackendError(error: unknown): boolean {
   const message = String(
     error instanceof Error
       ? error.message
       : (error as any)?.message || error || ""
   );
-
-  return /\b(502|503|504)\b/.test(message);
+  // Both overloaded APIs and connectivity failures can happen after Google
+  // successfully authenticates the account. They must not sign the user out.
+  return /\b(429|502|503|504)\b|too many requests|failed to fetch|networkerror|network request failed/i.test(message);
 }
 
 async function syncGoogleUser(params: {
@@ -73,7 +76,7 @@ async function syncGoogleUser(params: {
     } catch (error) {
       lastError = error;
 
-      if (!isTransientGatewayError(error) || attempt === 3) {
+      if (!isTransientBackendError(error) || attempt === 3) {
         throw error;
       }
 
@@ -97,6 +100,9 @@ async function runGoogleAuth(): Promise<AuthUser> {
   provider.setCustomParameters({
     prompt: "select_account",
   });
+
+  // Firebase must preserve the session when navigating between full-page routes.
+  await setPersistence(firebaseAuth, browserLocalPersistence);
 
   const result = await signInWithPopup(
     firebaseAuth,
@@ -129,9 +135,12 @@ async function runGoogleAuth(): Promise<AuthUser> {
       lastName,
     });
   } catch (error) {
-    // Firebase may already consider the user signed in even when our backend
-    // sync fails. Roll that state back so a retry starts cleanly.
-    await signOut(firebaseAuth).catch(() => undefined);
+    // A temporary backend outage must not silently undo a successful Google
+    // authentication. Keep the Firebase session for a later API retry.
+    // Other account-sync failures still roll the new session back.
+    if (!isTransientBackendError(error)) {
+      await signOut(firebaseAuth).catch(() => undefined);
+    }
     throw new Error(googleAuthErrorMessage(error));
   }
 }
