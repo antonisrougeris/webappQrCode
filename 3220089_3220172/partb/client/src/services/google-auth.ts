@@ -7,7 +7,7 @@ import {
 } from "firebase/auth";
 
 import { firebaseAuth } from "./firebase";
-import { login, type AuthUser } from "./api";
+import { getMe, login, type AuthUser } from "./api";
 
 let googleAuthPromise: Promise<AuthUser> | null = null;
 
@@ -51,7 +51,7 @@ function isTransientBackendError(error: unknown): boolean {
   );
   // Both overloaded APIs and connectivity failures can happen after Google
   // successfully authenticates the account. They must not sign the user out.
-  return /\b(429|502|503|504)\b|too many requests|failed to fetch|networkerror|network request failed/i.test(message);
+  return /\b(408|429|500|502|503|504)\b|too many requests|failed to fetch|networkerror|network request failed/i.test(message);
 }
 
 async function syncGoogleUser(params: {
@@ -135,13 +135,34 @@ async function runGoogleAuth(): Promise<AuthUser> {
       lastName,
     });
   } catch (error) {
-    // A temporary backend outage must not silently undo a successful Google
-    // authentication. Keep the Firebase session for a later API retry.
-    // Other account-sync failures still roll the new session back.
-    if (!isTransientBackendError(error)) {
-      await signOut(firebaseAuth).catch(() => undefined);
+    // The popup already authenticated the user with Firebase. NEVER sign out
+    // an authenticated Google user just because /api/auth/login failed:
+    // the old code made the orders appear briefly and then disappear.
+    //
+    // After logout an old CSRF cookie can sometimes reject the POST while
+    // a read-only /auth/me request still works. Only accept a profile for
+    // the same Firebase UID and email; never use a stale account's profile.
+    if (firebaseAuth.currentUser?.uid === result.user.uid) {
+      try {
+        const profile = await getMe();
+        if (
+          profile?.uid === result.user.uid &&
+          String(profile.email || "").toLowerCase() === email.toLowerCase()
+        ) {
+          return profile;
+        }
+      } catch {
+        // An unavailable profile endpoint must not destroy Firebase auth.
+      }
     }
-    throw new Error(googleAuthErrorMessage(error));
+
+    console.warn("Google authentication succeeded but account sync failed", {
+      reason: googleAuthErrorMessage(error),
+    });
+    throw new Error(
+      "Google sign-in succeeded, but your account details could not be loaded. " +
+      "You are still signed in. Please retry in a moment."
+    );
   }
 }
 
