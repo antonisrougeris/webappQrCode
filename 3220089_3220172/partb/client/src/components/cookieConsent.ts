@@ -91,7 +91,7 @@ export function initCookieConsent(forceOpen = false): void {
         <button type="button" class="cookie-btn cookie-save"></button>
       </div>
       <div class="cookie-banner-actions">
-        <button type="button" class="cookie-btn cookie-customize"></button>
+        
         <button type="button" class="cookie-btn cookie-reject"></button>
         <button type="button" class="cookie-btn cookie-accept"></button>
       </div>
@@ -102,15 +102,16 @@ export function initCookieConsent(forceOpen = false): void {
   const link = banner.querySelector<HTMLAnchorElement>(".cookie-policy-link");
   const acceptButton = banner.querySelector<HTMLButtonElement>(".cookie-accept");
   const rejectButton = banner.querySelector<HTMLButtonElement>(".cookie-reject");
-  const customizeButton = banner.querySelector<HTMLButtonElement>(".cookie-customize");
+
   const saveButton = banner.querySelector<HTMLButtonElement>(".cookie-save");
   const preferencesPanel = banner.querySelector<HTMLElement>(".cookie-banner-preferences");
   const analyticsBox = banner.querySelector<HTMLInputElement>('[data-cookie-type="analytics"]');
   const marketingBox = banner.querySelector<HTMLInputElement>('[data-cookie-type="marketing"]');
   if (analyticsBox) analyticsBox.checked = consent?.analytics || false;
   if (marketingBox) marketingBox.checked = consent?.marketing || false;
-  if (customizeButton) customizeButton.textContent = locale === "el" ? "Επιλογές" : "Customize";
+
   if (saveButton) saveButton.textContent = locale === "el" ? "Αποθήκευση" : "Save choices";
+  if (forceOpen && preferencesPanel) preferencesPanel.hidden = false;
 
   if (headingEl) headingEl.textContent = heading;
   if (descriptionEl) descriptionEl.textContent = description;
@@ -147,9 +148,7 @@ export function initCookieConsent(forceOpen = false): void {
     closeBanner();
   }
 
-  customizeButton?.addEventListener("click", () => {
-    if (preferencesPanel) preferencesPanel.hidden = !preferencesPanel.hidden;
-  });
+
   saveButton?.addEventListener("click", () => {
     commitPreferences(Boolean(analyticsBox?.checked), Boolean(marketingBox?.checked));
   });

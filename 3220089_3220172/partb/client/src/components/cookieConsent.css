@@ -40,3 +40,24 @@ body > .cookie-banner .cookie-save { max-width: max-content; padding: 9px 16px; 
   body > .cookie-banner .cookie-banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
   body > .cookie-banner .cookie-banner-actions .cookie-btn { flex: 1 1 auto; min-width: 84px; }
 }
+
+/* Compact, readable, two-action mobile banner; independent of legacy CSS. */
+@media (max-width: 600px) {
+  body > .cookie-banner { left: 12px !important; right: 12px !important; bottom: max(10px, env(safe-area-inset-bottom)) !important; }
+  body > .cookie-banner .cookie-banner-inner {
+    padding: 12px 14px !important; border-radius: 14px !important;
+    max-height: min(60dvh, 350px); overflow-y: auto;
+  }
+  body > .cookie-banner .cookie-banner-icon { display: none !important; }
+  body > .cookie-banner .cookie-banner-content strong { font-size: 13px; margin-bottom: 3px; }
+  body > .cookie-banner .cookie-banner-content p { font-size: 11px; line-height: 1.4; margin-bottom: 5px; }
+  body > .cookie-banner .cookie-policy-link { font-size: 11px; }
+  body > .cookie-banner .cookie-banner-actions {
+    display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 8px !important; margin-top: 11px !important;
+  }
+  body > .cookie-banner .cookie-banner-actions .cookie-btn {
+    width: 100%; min-width: 0; min-height: 38px; padding: 7px 10px;
+    font-size: 12px; border-radius: 9px; flex: none;
+  }
+}

@@ -1,4 +1,5 @@
 import "./i18n/auto";
+import { locale, translatePhrase, localizedPath } from "./i18n/locale";
 import "./boxnow-tracking.css";
 /* 3220089_3220172 */
 
@@ -864,9 +865,9 @@ function renderCustomerOrders(
               <a
                 href="/returns?returnId=${encodeURIComponent(activeReturn.id)}"
                 class="account-order__tracking-link"
-              >View return ↗</a>
+              >${translatePhrase("View return ↗")}</a>
               ${returnTrackingUrl
-                ? `<a href="${accountEscapeHtml(returnTrackingUrl)}" target="_blank" rel="noopener noreferrer" class="account-order__tracking-link">Track return ↗</a>`
+                ? `<a href="${accountEscapeHtml(returnTrackingUrl)}" target="_blank" rel="noopener noreferrer" class="account-order__tracking-link">${translatePhrase("Track return ↗")}</a>`
                 : ""}
             </div>
           `
@@ -1005,14 +1006,14 @@ function renderCustomerOrders(
               ? `
                 <div class="account-order__tracking account-order__return">
                   <div class="account-order__tracking-info">
-                    <span>Need to send something back?</span>
-                    <strong>Start a self-service return</strong>
+                    <span>${translatePhrase("Need to send something back?")}</span>
+                    <strong>${translatePhrase("Start a self-service return")}</strong>
                   </div>
                   <a
                     href="/returns?orderId=${encodeURIComponent(order?.id || "")}"
                     class="account-order__tracking-link account-order__return-link"
                   >
-                    Return items →
+                    ${translatePhrase("Return items →")}
                   </a>
                 </div>
               `
@@ -1065,13 +1066,13 @@ function renderCustomerThankYou(orders: any[], reviewedProductIds: string[] | nu
 
   if (eligibleItem) {
     const slug = String(eligibleItem.slug || eligibleItem.productId || eligibleItem.id).trim();
-    message.textContent = "Enjoying your Skanare products? Leave a review and get 20% off your next order. Your personal discount code will be sent to your email after you submit your review.";
+    message.textContent = translatePhrase("Enjoying your Skanare products? Leave a review and get 20% off your next order. Your personal discount code will be sent to your email after you submit your review.");
     action.href = `/product/${encodeURIComponent(slug)}#productReviews`;
-    action.textContent = "Leave a review →";
+    action.textContent = translatePhrase("Leave a review →");
   } else {
-    message.textContent = "Have a question about your order or need any help? Send us a message through our contact form and we'll be happy to help.";
-    action.href = "/contact";
-    action.textContent = "Contact us →";
+    message.textContent = translatePhrase("Have a question about your order or need any help? Send us a message through our contact form and we'll be happy to help.");
+    action.href = localizedPath("/contact", locale);
+    action.textContent = translatePhrase("Contact us →");
   }
 
   panel.hidden = false;
