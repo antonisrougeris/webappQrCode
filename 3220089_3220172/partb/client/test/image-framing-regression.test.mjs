@@ -10,9 +10,9 @@ test("thumbnail image fills its complete desktop frame",()=>{
  assert.match(pdp,/\.product-page \.product-info #productColorOptions \.product-color-swatch__preview\s*\{[\s\S]*?object-fit:\s*cover/);
 });
 test("catalog uses full-card photographs without blank letterboxing",()=>{
- assert.match(shop,/product-card--accessory/);
- assert.match(catalog,/\.products-shop \.product-media > img\.product-img\s*\{[\s\S]*?position:\s*absolute/);
- assert.match(catalog,/\.products-shop \.product-card--accessory \.product-media > img\.product-img/);
+ assert.match(shop,/import \{ renderProducts \} from/);
+ assert.match(catalog,/\.products-shop \.product-media > img\.product-image\s*\{[\s\S]*?position:\s*absolute/);
+ assert.match(catalog,/\.products-shop \.product-media > img\.product-image\s*\{[\s\S]*?object-fit:\s*cover/);
 });
 test("cart previews retain their links, use unfiltered original imagery",()=>{
  assert.match(cart,/\.drawer-cart-item > \.cart-product-link--image img\s*\{[\s\S]*?object-fit:\s*cover/);
