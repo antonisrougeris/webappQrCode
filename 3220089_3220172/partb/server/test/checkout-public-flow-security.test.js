@@ -42,8 +42,8 @@ test("all storefront discount badges show amounts instead of percentages", () =>
     assert.doesNotMatch(source, /-\$\{discountPercent\}%/, file);
   }
   const catalog = read(client + "src/pages/products/products.ts");
-  assert.match(catalog, /import \\{ renderProducts \\} from/);
-  assert.match(catalog, /renderProducts\\(grid, filtered/);
+  assert.ok(catalog.includes("import { renderProducts } from"));
+  assert.ok(catalog.includes("renderProducts(grid, filtered"));
   assert.doesNotMatch(catalog, /-\\$\\{discountPercent\\}%/);
   const cart = read(client + "src/pages/cart/cart.ts");
   assert.match(cart, /drawer-cart-price__savings/);
