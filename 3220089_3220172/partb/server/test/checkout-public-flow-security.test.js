@@ -32,7 +32,6 @@ test("checkout routing uses a protected backend lookup and keeps lead capture se
 test("all storefront discount badges show amounts instead of percentages", () => {
   const checked = [
     client + "src/components/renderProducts.ts",
-    client + "src/pages/products/products.ts",
     client + "src/pages/product-details/product-details.ts",
     client + "scripts/prerender-products.mjs",
     server + "src/services/storefront-seo-html.service.js",
@@ -42,6 +41,10 @@ test("all storefront discount badges show amounts instead of percentages", () =>
     assert.match(source, /Math\.round\(\(originalPrice - /, file);
     assert.doesNotMatch(source, /-\$\{discountPercent\}%/, file);
   }
+  const catalog = read(client + "src/pages/products/products.ts");
+  assert.ok(catalog.includes("import { renderProducts } from"));
+  assert.ok(catalog.includes("renderProducts(grid, filtered"));
+  assert.doesNotMatch(catalog, /-\\$\\{discountPercent\\}%/);
   const cart = read(client + "src/pages/cart/cart.ts");
   assert.match(cart, /drawer-cart-price__savings/);
   assert.match(cart, /item\.originalPrice/);
