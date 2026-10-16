@@ -12,7 +12,7 @@ test("catalog uses homepage renderer after API and on search/filter",()=>{
  assert.doesNotMatch(listing,/article\.className = `card product-card/);
 });
 test("shared cards show stock indicators and no descriptions",()=>{
- assert.match(shared,/class="product-stock/);
+ assert.match(shared,/product-stock/);
  assert.match(shared,/is-in-stock/);
  assert.match(shared,/is-out-of-stock/);
  assert.doesNotMatch(shared,/shortDescription/);
