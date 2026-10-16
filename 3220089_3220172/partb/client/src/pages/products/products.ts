@@ -7,6 +7,8 @@ import { updateCartBadge } from "../../utils/cart-badge";
 import { getProducts, type Product } from "../../services/products";
 import { renderProducts } from "../../components/renderProducts";
 
+function normalize(value: unknown): string { return String(value ?? "").trim().toLowerCase(); }
+
 initNav();
 initMobileMenu();
 updateCartBadge();
@@ -48,7 +50,7 @@ function applyClientFilters(
       normalize(product.title).includes(q) ||
       normalize(product.shortDescription).includes(q) ||
       normalize(product.description).includes(q) ||
-      normalize(product.tags?.join(" ")).includes(q);
+      normalize((product as Product & { tags?: string[] }).tags?.join(" ")).includes(q);
 
     const matchesCategory =
       state.category === "All" || product.category === state.category;
