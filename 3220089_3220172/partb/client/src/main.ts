@@ -1,6 +1,7 @@
 import "./i18n/auto";
 import { locale, translatePhrase, localizedPath } from "./i18n/locale";
 import "./boxnow-tracking.css";
+import { initOfferToast } from "./components/offerToast";
 /* 3220089_3220172 */
 
 import { initNav } from "./components/initNav";
@@ -53,113 +54,7 @@ async function initGuestSession(): Promise<void> {
   }
 }
 
-function initCountdown(): void {
-  const bar = document.getElementById("comingSoonBar");
-  const targetDate = new Date("2026-10-21T00:00:00+03:00").getTime(); // Five-day countdown from 15 October 2026 (Greece time)
-
-  function pad(n: number): string {
-    return n.toString().padStart(2, "0");
-  }
-
-  function tick(): void {
-    const now = Date.now();
-    const diff = targetDate - now;
-
-    if (diff <= 0) {
-      bar?.remove(); 
-      clearInterval(interval);
-      return;
-    }
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((diff / (1000 * 60)) % 60);
-    const seconds = Math.floor((diff / 1000) % 60);
-
-    const daysEl = document.getElementById("cs-days");
-    const hoursEl = document.getElementById("cs-hours");
-    const minutesEl = document.getElementById("cs-minutes");
-    const secondsEl = document.getElementById("cs-seconds");
-
-    if (daysEl) daysEl.textContent = pad(days);
-    if (hoursEl) hoursEl.textContent = pad(hours);
-    if (minutesEl) minutesEl.textContent = pad(minutes);
-    if (secondsEl) secondsEl.textContent = pad(seconds);
-  }
-
-  // Initialize the interval before running the first tick: when the
-  // countdown has expired, tick() must be able to clear it safely.
-  const interval = setInterval(tick, 1000);
-  tick();
-}
-
-function initPromoPopup(): void {
-  const overlay = document.getElementById("promoOverlay");
-  const closeBtn = document.getElementById("promoClose");
-  const copyBtn = document.getElementById("promoCopyBtn") as HTMLButtonElement | null;
-  const codeEl = document.getElementById("promoCode");
-
-  if (!overlay || !closeBtn || !copyBtn || !codeEl) return;
-
-  const STORAGE_KEY = "skanare_promo_dismissed";
-
-  function closePromo(): void {
-    overlay?.classList.add("hidden");
-    document.body.classList.remove("cart-open");
-    try {
-      sessionStorage.setItem(STORAGE_KEY, "1");
-    } catch {
-      // ignore storage errors (private browsing etc.)
-    }
-  }
-
-  let alreadyDismissed = false;
-  try {
-    alreadyDismissed = sessionStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    alreadyDismissed = false;
-  }
-
-  if (!alreadyDismissed) {
-    setTimeout(() => {
-      overlay.classList.remove("hidden");
-    }, 1500);
-  }
-
-  closeBtn.addEventListener("click", closePromo);
-
-  overlay.addEventListener("click", (event) => {
-    if (event.target === overlay) closePromo();
-  });
-
-  copyBtn.addEventListener("click", async () => {
-    const code = codeEl.textContent?.trim() || "";
-
-    try {
-      await navigator.clipboard.writeText(code);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = code;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
-
-    const originalText = copyBtn.textContent || "Copy code";
-    copyBtn.textContent = "Copied!";
-    copyBtn.classList.add("copied");
-
-    setTimeout(() => {
-      copyBtn.textContent = originalText;
-      copyBtn.classList.remove("copied");
-    }, 1500);
-  });
-}
-
-initPromoPopup();
-
-initCountdown();
+initOfferToast();
 
 
 initNav();
