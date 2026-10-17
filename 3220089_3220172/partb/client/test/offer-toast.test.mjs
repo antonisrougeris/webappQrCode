@@ -24,3 +24,20 @@ test("coupon matches store checkout and all browsing pages share toast",()=>{
   assert.match(shop,/initOfferToast\(\)/);
   assert.match(product,/initOfferToast\(\)/);
 });
+
+test("offer appears top left with visible 15-to-0 deadline counter",()=>{
+  const css=readFileSync("src/components/offerToast.css","utf8");
+  assert.match(css,/\.offer-toast\{top:max\(/);
+  assert.match(css,/bottom:auto/);
+  assert.match(toast,/OFFER_VISIBLE_SECONDS = 15/);
+  assert.match(toast,/class="offer-toast__timer"/);
+  assert.match(toast,/Math\.ceil\(\(deadline - Date\.now\(\)\) \/ 1000\)/);
+  assert.match(toast,/remaining === 0\) dismiss\(toast\)/);
+  assert.match(toast,/window\.setInterval\(updateCountdown, 250\)/);
+  assert.doesNotMatch(toast,/toast\.matches\(":hover"\)/);
+});
+test("copy succeeds then immediately dismisses while failed copy remains actionable",()=>{
+  assert.match(toast,/if \(copied\) \{[\s\S]*?dismiss\(toast\)/);
+  assert.match(toast,/button\.disabled = false/);
+  assert.match(toast,/window\.clearInterval\(countdownTimer\)/);
+});
