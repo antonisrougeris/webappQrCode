@@ -4,10 +4,10 @@ import "./offerToast.css";
 /**
  * A lightweight, non-modal offer for people browsing products.
  * The existing store checkout validates SKANARE10 as the active 10% code.
- * Show once per tab/session after 40 seconds across eligible pages.
+ * Show once per tab/session after 30 seconds across eligible pages.
  */
 export const OFFER_CODE = "SKANARE10";
-export const OFFER_DELAY_MS = 40_000;
+export const OFFER_DELAY_MS = 30_000;
 export const OFFER_VISIBLE_SECONDS = 15;
 const START_KEY = "skanare_offer_session_started_v1";
 const SHOWN_KEY = "skanare_offer_toast_shown_v1";
@@ -38,6 +38,7 @@ export function initOfferToast(): void {
   const greek = locale === "el";
   let retryTimer: number | undefined;
   let countdownTimer: number | undefined;
+  let copiedDismissTimer: number | undefined;
   let activeKeyHandler: ((event: KeyboardEvent) => void) | null = null;
   let closed = false;
 
@@ -46,6 +47,7 @@ export function initOfferToast(): void {
     closed = true;
     if (retryTimer !== undefined) window.clearTimeout(retryTimer);
     if (countdownTimer !== undefined) window.clearInterval(countdownTimer);
+    if (copiedDismissTimer !== undefined) window.clearTimeout(copiedDismissTimer);
     if (activeKeyHandler) document.removeEventListener("keydown", activeKeyHandler);
     activeKeyHandler = null;
     toast.classList.remove("offer-toast--visible");
@@ -73,8 +75,17 @@ export function initOfferToast(): void {
       field.remove();
     }
     if (copied) {
-      // No confirmation overlay: the successful Copy action dismisses immediately.
-      dismiss(toast);
+      // Show a clear success confirmation for a full second before closing.
+      // Stop the 15s timer too, so a copy near 0s never closes early.
+      if (countdownTimer !== undefined) {
+        window.clearInterval(countdownTimer);
+        countdownTimer = undefined;
+      }
+      button.textContent = greek ? "Αντιγράφηκε ✓" : "Copied ✓";
+      button.classList.add("offer-toast__copy--done");
+      const counter = toast.querySelector<HTMLElement>(".offer-toast__timer");
+      if (counter) counter.textContent = "✓";
+      copiedDismissTimer = window.setTimeout(() => dismiss(toast), 1100);
     } else {
       button.disabled = false;
       button.textContent = greek ? "Επίλεξε κωδικό" : "Select code";
