@@ -1,5 +1,6 @@
 import { trackEcommerceEvent, trackMetaEcommerceEvent } from "../../services/analytics";
 import "../../i18n/auto";
+import { initOfferToast } from "../../components/offerToast";
 /* 3220089_3220172 */
 
 import { initNav } from "../../components/initNav";
@@ -24,6 +25,7 @@ import { locale, productPath, t } from "../../i18n/locale";
 
 initNav();
 initMobileMenu();
+initOfferToast();
 void updateCartBadge();
 
 let selectedVariantStock = 0;
