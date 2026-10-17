@@ -1,4 +1,5 @@
 import "../../i18n/auto";
+import { initOfferToast } from "../../components/offerToast";
 /* 3220089_3220172  2025 */
 
 import { initNav } from "../../components/initNav";
@@ -11,6 +12,7 @@ function normalize(value: unknown): string { return String(value ?? "").trim().t
 
 initNav();
 initMobileMenu();
+initOfferToast();
 updateCartBadge();
 
 function getStateFromURL(): { q: string; category: string } {
