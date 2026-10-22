@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { createCanvas, loadImage } from "canvas";
 import { generatePrintSheet } from "../src/utils/generatePrintSheet.js";
 import { generateDtfComponentArtwork } from "../src/utils/generateDtfComponent.js";
+import { makeSkanareWordmark, resolveNeckPrintAsset } from "../src/utils/printArtworkAssets.js";
+import fs from "node:fs";
 
 test("standalone neck DTF has no size and uses exact 7cm x 300DPI",async()=>{
   const image=await loadImage(await generateDtfComponentArtwork({type:"neck",color:"white"}));
@@ -46,6 +48,24 @@ test("real stock-generated QR artwork fits full A3 for each common design",async
       const image=await loadImage(bytes);
       assert.equal(image.width,3508);
       assert.equal(image.height,4961);
+    }
+  }
+});
+
+test("SKANARE print logo generated from text in black or white, independent of client/public logo PNG",async()=>{
+  for(const color of ["white","black"]){
+    const bytes=makeSkanareWordmark(color,7);
+    const image=await loadImage(bytes);
+    assert.equal(image.width,Math.round(7/2.54*300));
+    assert.ok(image.height>100);
+    assert.ok(bytes.length>1000);
+  }
+});
+test("neck labels resolve without process.cwd paths and packaging includes each variant",()=>{
+  for(const color of ["black","white"]){
+    for(const size of ["s","m","l","xl"]){
+      const file=resolveNeckPrintAsset(color,size);
+      assert.equal(fs.existsSync(file),true);
     }
   }
 });
