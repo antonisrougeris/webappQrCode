@@ -10,6 +10,8 @@ import { generatePrintQrImage } from "../utils/generatePrintQrImage.js";
 
 
 import { generatePrintSheet } from "../utils/generatePrintSheet.js";
+import { generateDtfComponentArtwork } from "../utils/generateDtfComponent.js";
+import { ensureOrderDtfPlan, componentKey } from "./dtf-inventory.service.js";
 import { getBoxNowOrderLabel } from "./boxnow.service.js";
 
 
@@ -316,8 +318,21 @@ export async function sendPaidOrderEmails(order) {
       .where("orderId", "==", freshOrder.id)
       .get();
 
+    const productionPlan = await ensureOrderDtfPlan(
+      freshOrder.id, qrSnap.docs.map(doc=>({id:doc.id,...doc.data()})), {db}
+    );
+    const missingParts = new Map();
+    for(const part of productionPlan.missing || []){
+      const key=componentKey(part);
+      const existing=missingParts.get(key);
+      missingParts.set(key,{...part,quantity:(existing?.quantity||0)+1});
+    }
+
     for (const doc of qrSnap.docs) {
       const qr = doc.data();
+      // Preprinted A3 and physically-confirmed modular QR already exist.
+      // Do not reprint or overwrite their unique QR artwork.
+      if (["preprinted","modular_qr"].includes(qr.fulfillmentMode)) continue;
       const qrUrl = `${QR_BASE_URL}/${qr.shortId}`;
 
       const qrBuffer = await generatePrintQrImage(
@@ -369,6 +384,14 @@ export async function sendPaidOrderEmails(order) {
       });
     }
 
+    for(const item of missingParts.values()){
+      const buffer=await generateDtfComponentArtwork(item);
+      const filename=`DTF-${item.type}-${item.color}-${item.size||"base"}-${componentKey(item).slice(-24)}.png`;
+      const uploaded=await uploadQrToStorage(freshOrder.id,buffer);
+      downloadLinks.push(uploaded.url);
+      attachments.push({filename,content:buffer});
+    }
+
     // BOX NOW voucher is fetched on demand and attached only
     // when a real delivery was created. Voucher failure must
     // not block the admin order email.
@@ -412,7 +435,12 @@ export async function sendPaidOrderEmails(order) {
 
         <hr/>
 
-        <h3>QR Downloads</h3>
+        <h3>DTF Production Plan</h3>
+        <p>Full A3 ready / QR-only printed transfers are not regenerated.</p>
+        <ul>${(productionPlan.components || []).map(part=>
+          `<li>${escapeHtml(part.type)} (${escapeHtml(part.color)}) ${escapeHtml(part.size||part.text||"")} · ${part.source==="physical_stock"?"PICK PHYSICAL TRANSFER":"PRINT REQUIRED"}</li>`
+        ).join("")}</ul>
+        <h3>QR / Missing DTF Artwork Downloads</h3>
         ${downloadLinks
           .map(
             (link) =>
