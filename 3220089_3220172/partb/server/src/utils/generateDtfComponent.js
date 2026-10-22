@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createCanvas, loadImage, registerFont } from "canvas";
 import { componentSpec, normalizeSize } from "../services/dtf-inventory.service.js";
+import { makeSkanareWordmark, resolveNeckPrintAsset } from "./printArtworkAssets.js";
 
 const DPI=300;
 registerFont(path.join(process.cwd(),"fonts","DejaVuSans-Bold.ttf"),{family:"PrintFont"});
@@ -11,12 +12,13 @@ const output=canvas=>canvas.toBuffer("image/png", { resolution: DPI });
 
 export async function generateDtfComponentArtwork(spec) {
   const safe=componentSpec(spec.type,spec.color,{size:spec.size,text:spec.text});
-  if (safe.type === "logo" || safe.type === "neck") {
-    const file=safe.type==="logo" ? `logo-${safe.color}.png` : `neck-label-${safe.color}-l.png`;
-    const image=await loadImage(await fs.readFile(path.join(assets,file)));
-    // The size letter is printed separately. Remove the bottom letter region.
-    // Existing 590x281 neck artwork has its size below the slogan.
-    const sourceHeight=safe.type==="neck" ? Math.round(image.height*0.73) : image.height;
+  if (safe.type === "logo") {
+    return makeSkanareWordmark(safe.color, 7);
+  }
+  if (safe.type === "neck") {
+    const image=await loadImage(await fs.readFile(resolveNeckPrintAsset(safe.color,"l")));
+    // Remove lower size letter from the stock neck design.
+    const sourceHeight=Math.round(image.height*0.73);
     const width=px(7);
     const height=Math.ceil(width*sourceHeight/image.width);
     const canvas=createCanvas(width,height);
