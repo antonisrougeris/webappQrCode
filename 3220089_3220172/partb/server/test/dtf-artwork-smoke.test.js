@@ -4,9 +4,9 @@ import { createCanvas, loadImage } from "canvas";
 import { generatePrintSheet } from "../src/utils/generatePrintSheet.js";
 import { generateDtfComponentArtwork } from "../src/utils/generateDtfComponent.js";
 
-test("standalone neck DTF has no size and uses exact 8cm x 300DPI",async()=>{
+test("standalone neck DTF has no size and uses exact 7cm x 300DPI",async()=>{
   const image=await loadImage(await generateDtfComponentArtwork({type:"neck",color:"white"}));
-  assert.equal(image.width,Math.round(8/2.54*300));
+  assert.equal(image.width,Math.round(7/2.54*300));
   assert.ok(image.height>150);
 });
 test("standalone size, slogan and SKANARE logo generate on transparent PNG backgrounds",async()=>{
@@ -31,4 +31,21 @@ test("A3 XXL (previously missing label asset) renders 300DPI side-by-side neck/l
   assert.equal(image.width,3508);
   assert.equal(image.height,4961);
   assert.ok(png.length>10000);
+});
+
+test("real stock-generated QR artwork fits full A3 for each common design",async()=>{
+  const { generatePrintQrImage }=await import("../src/utils/generatePrintQrImage.js");
+  for(const shirtColor of ["White","Black"]){
+    for(const shirtSize of ["S","L"]){
+      const ink=shirtColor==="Black"?"#ffffff":"#000000";
+      const qr=await generatePrintQrImage("https://go.skanare.com/jBJQ3J",{
+        qrColor:ink,textColor:ink,textPrint:"SCAN TO DISCOVER",
+        textPosition:"bottom",size:3540,
+      });
+      const bytes=await generatePrintSheet({qrBuffer:qr,shirtColor,shirtSize});
+      const image=await loadImage(bytes);
+      assert.equal(image.width,3508);
+      assert.equal(image.height,4961);
+    }
+  }
 });
