@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { createCanvas, loadImage } from "canvas";
 import { generateDtfComponentArtwork } from "./generateDtfComponent.js";
+import { makeSkanareWordmark, resolveNeckPrintAsset } from "./printArtworkAssets.js";
 
 // ============================================================
 // PRINT SETTINGS
@@ -215,65 +216,14 @@ export async function generatePrintSheet({
   // 4. SELECT ASSETS
   // ----------------------------------------------------------
 
-  const logoFile =
-    getLogoFile(printColor);
-
-  const neckLabelFile =
-    getNeckLabelFile(
-      printColor,
-      normalizedSize
-    );
-
-  // ----------------------------------------------------------
-  // 5. ASSET PATHS
-  // ----------------------------------------------------------
-
-  const assetsBasePath = path.resolve(
-    process.cwd(),
-    "../client/public/assets/print"
-  );
-
-  const logoPath = path.join(
-    assetsBasePath,
-    logoFile
-  );
-
-  const neckLabelPath = path.join(
-    assetsBasePath,
-    neckLabelFile
-  );
-
-  // ----------------------------------------------------------
-  // 6. VALIDATE FILES
-  // ----------------------------------------------------------
-
-  console.log("PRINT ASSETS:", {
-    shirtColor: normalizedColor,
-    shirtSize: normalizedSize,
-    printColor,
-    logoFile,
-    neckLabelFile,
-    qrWidthCm: QR_WIDTH_CM,
-    logoPath,
-    neckLabelPath,
-  });
-
-  assertFileExists(logoPath, "Logo");
-  // An XXL neck label did not exist in the legacy asset set: generate it from\n  // the size-less master and a separate 2XL transfer instead of failing.
-
-  // ----------------------------------------------------------
-  // 7. LOAD IMAGES
-  // ----------------------------------------------------------
-
+  // The SKANARE wordmark is drawn from text, not from an image path.
+  // Neck labels are loaded from packaged backend assets in production.
   const qrImage = await loadImage(qrBuffer);
-
-  const logoImage = await loadImage(
-    fs.readFileSync(logoPath)
-  );
-
+  const logoImage = await loadImage(makeSkanareWordmark(printColor, LOGO_WIDTH_CM));
   let neckLabelImage;
-  if (fs.existsSync(neckLabelPath)) {
-    neckLabelImage=await loadImage(fs.readFileSync(neckLabelPath));
+  if (normalizedSize !== "2XL") {
+    const neckLabelPath = resolveNeckPrintAsset(printColor, normalizedSize);
+    neckLabelImage = await loadImage(fs.readFileSync(neckLabelPath));
   } else {
     const neck=await loadImage(await generateDtfComponentArtwork({type:"neck",color:printColor}));
     const size=await loadImage(await generateDtfComponentArtwork({type:"size",color:printColor,size:normalizedSize}));
