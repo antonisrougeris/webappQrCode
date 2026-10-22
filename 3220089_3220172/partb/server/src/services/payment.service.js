@@ -925,10 +925,9 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       const color = ["black","μαύρο","μαυρο"].includes(shirt) ? "white"
         : ["white","λευκό","λευκο","άσπρο","ασπρο"].includes(shirt) ? "black" : null;
       if (!color || !item.variant?.size) return null;
-      const requestedWidth = String(item.variant?.size || "").trim().toUpperCase() === "S" ? 27.5 : 28;
       const doc = modularAvailable.find(doc =>
         doc.data().modularPrintColor === color &&
-        doc.data().modularQrWidthCm === requestedWidth &&
+        doc.data().modularQrWidthCm === 28 &&
         !consumedModularPaths.has(doc.ref.path)
       );
       if (doc) consumedModularPaths.add(doc.ref.path);
