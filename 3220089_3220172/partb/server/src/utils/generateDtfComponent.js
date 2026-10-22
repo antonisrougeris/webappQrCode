@@ -17,7 +17,7 @@ export async function generateDtfComponentArtwork(spec) {
     // The size letter is printed separately. Remove the bottom letter region.
     // Existing 590x281 neck artwork has its size below the slogan.
     const sourceHeight=safe.type==="neck" ? Math.round(image.height*0.73) : image.height;
-    const width=px(safe.type==="neck"?8:7);
+    const width=px(7);
     const height=Math.ceil(width*sourceHeight/image.width);
     const canvas=createCanvas(width,height);
     const ctx=canvas.getContext("2d");
