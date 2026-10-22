@@ -66,6 +66,8 @@ export const updateDtfPhysicalStock=asyncHandler(async(req,res)=>{
 
 export const generateModularQrStock=asyncHandler(async(req,res)=>{
   const quantity=safeQuantity(req.body?.quantity);
+  // Avoid proxy/request timeouts during heavy 300DPI uploads.
+  if(quantity>12) throw new ApiError(400,"Generate up to 12 unique QR transfers per batch");
   const color=safeColor(req.body?.color);
   const widthCm=req.body?.qrWidthCm===27.5 ? 27.5 : req.body?.qrWidthCm===28 ? 28 : Number(req.body?.qrWidthCm || 28);
   if (![27.5,28].includes(widthCm)) throw new ApiError(400,"Choose QR width 27.5cm (S) or 28cm (M-XXL)");
