@@ -21,7 +21,7 @@ test("standalone size, slogan and SKANARE logo generate on transparent PNG backg
     const bytes=await generateDtfComponentArtwork(spec);
     assert.ok(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
     const img=await loadImage(bytes);
-    assert.ok(img.width>300 && img.height>100);
+    assert.ok(img.width>20 && img.height>20, "artwork must contain positive visible ink");
   }
 });
 test("A3 XXL (previously missing label asset) renders 300DPI side-by-side neck/logo",async()=>{
@@ -79,4 +79,28 @@ test("brand slogans keep the intended two lines on print QR artwork",async()=>{
     const img=await loadImage(qr);
     assert.ok(img.height>img.width,"two-line QR print must be taller than wide");
   }
+});
+
+test("DTF standalone component sizing follows the A3 print proportions", async () => {
+  const { cropDtfRegion } = await import("../src/utils/generateDtfComponent.js");
+  for (const ink of ["white", "black"]) {
+    const logo = await loadImage(await generateDtfComponentArtwork({ type: "logo", color: ink }));
+    const neck = await loadImage(await generateDtfComponentArtwork({ type: "neck", color: ink }));
+    assert.equal(logo.width, Math.round(7 / 2.54 * 300));
+    assert.equal(neck.width, Math.round(6 / 2.54 * 300));
+    const xl = await loadImage(await generateDtfComponentArtwork({ type: "size", color: ink, size: "XL" }));
+    const small = await loadImage(await generateDtfComponentArtwork({ type: "size", color: ink, size: "S" }));
+    const xxl = await loadImage(await generateDtfComponentArtwork({ type: "size", color: ink, size: "2XL" }));
+    for (const img of [xl, small, xxl]) {
+      assert.ok(img.height > 20 && img.height < Math.round(1.5 / 2.54 * 300), "size transfer must remain neck-label sized");
+      assert.ok(img.width < Math.round(3 / 2.54 * 300), "size transfer must be compact");
+    }
+    for (const phrase of ["SCAN TO DISCOVER", "WANNA RIDE WITH ME"]) {
+      const slogan = await loadImage(await generateDtfComponentArtwork({ type: "text", color: ink, text: phrase }));
+      assert.ok(slogan.width < Math.round(28 / 2.54 * 300), "text ink must not exceed the 28cm QR artwork");
+      assert.ok(slogan.height > Math.round(4 / 2.54 * 300), "two-line text has full A3-scale line spacing");
+      assert.ok(slogan.height < Math.round(9 / 2.54 * 300), "text excludes the QR image");
+    }
+  }
+  assert.equal(typeof cropDtfRegion, "function");
 });
