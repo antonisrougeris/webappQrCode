@@ -6,9 +6,9 @@ import { generateDtfComponentArtwork } from "../src/utils/generateDtfComponent.j
 import { makeSkanareWordmark, resolveNeckPrintAsset } from "../src/utils/printArtworkAssets.js";
 import fs from "node:fs";
 
-test("standalone neck DTF has no size and uses exact 7cm x 300DPI",async()=>{
+test("standalone neck DTF has no size and uses exact 6cm x 300DPI",async()=>{
   const image=await loadImage(await generateDtfComponentArtwork({type:"neck",color:"white"}));
-  assert.equal(image.width,Math.round(7/2.54*300));
+  assert.equal(image.width,Math.round(6/2.54*300));
   assert.ok(image.height>150);
 });
 test("standalone size, slogan and SKANARE logo generate on transparent PNG backgrounds",async()=>{
@@ -67,5 +67,16 @@ test("neck labels resolve without process.cwd paths and packaging includes each 
       const file=resolveNeckPrintAsset(color,size);
       assert.equal(fs.existsSync(file),true);
     }
+  }
+});
+
+test("brand slogans keep the intended two lines on print QR artwork",async()=>{
+  const { generatePrintQrImage }=await import("../src/utils/generatePrintQrImage.js");
+  for (const phrase of ["SCAN TO DISCOVER","WANNA RIDE WITH ME"]) {
+    const qr=await generatePrintQrImage("https://go.skanare.com/TEST-QR",{
+      qrColor:"#000000",textPrint:phrase,size:1200,
+    });
+    const img=await loadImage(qr);
+    assert.ok(img.height>img.width,"two-line QR print must be taller than wide");
   }
 });
