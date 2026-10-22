@@ -1,4 +1,8 @@
 import { Router } from "express";
+import {
+ listDtfStock, generateDtfPrintBatch, updateDtfPhysicalStock,
+ generateModularQrStock, confirmModularQrPrinted,
+} from "../controllers/dtf.controller.js";
 import multer from "multer";
 
 import {
@@ -312,6 +316,11 @@ router.post(
   "/inventory/generate",
   generateAdminQrStock
 );
+router.get("/inventory/dtf", listDtfStock);
+router.post("/inventory/dtf/print", generateDtfPrintBatch);
+router.post("/inventory/dtf/physical", updateDtfPhysicalStock);
+router.post("/inventory/dtf/qr", generateModularQrStock);
+router.post("/inventory/dtf/qr/confirm", confirmModularQrPrinted);
 
 
 /* =========================

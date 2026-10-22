@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { createCanvas, loadImage } from "canvas";
+import { generateDtfComponentArtwork } from "./generateDtfComponent.js";
 
 // ============================================================
 // PRINT SETTINGS
@@ -23,12 +24,12 @@ const QR_WIDTH_BY_SIZE_CM = {
 
 // Fixed print sizes (cm)
 const LOGO_WIDTH_CM = 7;
-const NECK_LABEL_WIDTH_CM = 4.5;
+const NECK_LABEL_WIDTH_CM = 8;
 
 // Spacing (pixels)
 const TOP_MARGIN = 20;
 const QR_TO_LOGO_GAP = 20;
-const LOGO_TO_NECK_GAP = 20;
+const LOGO_TO_NECK_GAP = 35;
 
 // Helpers
 const cmToPx = (cm) => (cm / 2.54) * DPI;
@@ -258,7 +259,7 @@ export async function generatePrintSheet({
   });
 
   assertFileExists(logoPath, "Logo");
-  assertFileExists(neckLabelPath, "Neck label");
+  // An XXL neck label did not exist in the legacy asset set: generate it from\n  // the size-less master and a separate 2XL transfer instead of failing.
 
   // ----------------------------------------------------------
   // 7. LOAD IMAGES
@@ -270,9 +271,18 @@ export async function generatePrintSheet({
     fs.readFileSync(logoPath)
   );
 
-  const neckLabelImage = await loadImage(
-    fs.readFileSync(neckLabelPath)
-  );
+  let neckLabelImage;
+  if (fs.existsSync(neckLabelPath)) {
+    neckLabelImage=await loadImage(fs.readFileSync(neckLabelPath));
+  } else {
+    const neck=await loadImage(await generateDtfComponentArtwork({type:"neck",color:printColor}));
+    const size=await loadImage(await generateDtfComponentArtwork({type:"size",color:printColor,size:normalizedSize}));
+    const combined=createCanvas(neck.width,neck.height+size.height);
+    const combinedCtx=combined.getContext("2d");
+    combinedCtx.drawImage(neck,0,0);
+    combinedCtx.drawImage(size,(combined.width-size.width)/2,neck.height);
+    neckLabelImage=await loadImage(combined.toBuffer("image/png",{resolution:DPI}));
+  }
 
   // ----------------------------------------------------------
   // 8. CREATE A3 CANVAS
@@ -315,36 +325,32 @@ export async function generatePrintSheet({
     QR_TO_LOGO_GAP;
 
   // ==========================================================
-  // SKANARE LOGO
+  // LOGO + NECK LABEL IN ONE ROW (SAVE DTF TRANSFER SPACE)
   // ==========================================================
-
+  const logoWidthPx = cmToPx(LOGO_WIDTH_CM);
+  const neckWidthPx = cmToPx(NECK_LABEL_WIDTH_CM);
+  const rowWidth = logoWidthPx + LOGO_TO_NECK_GAP + neckWidthPx;
+  if (rowWidth > A3_WIDTH) {
+    throw new Error("Logo and neck label do not fit A3 width");
+  }
+  const rowStartX = centerX - rowWidth / 2;
   const logoDimensions = drawImageAtWidth({
     ctx,
     image: logoImage,
-    centerX,
+    centerX: rowStartX + logoWidthPx / 2,
     y: currentY,
     widthCm: LOGO_WIDTH_CM,
     label: "LOGO",
   });
-
-  currentY +=
-    logoDimensions.height +
-    LOGO_TO_NECK_GAP;
-
-  // ==========================================================
-  // NECK LABEL
-  // ==========================================================
-
   const neckDimensions = drawImageAtWidth({
     ctx,
     image: neckLabelImage,
-    centerX,
+    centerX: rowStartX + logoWidthPx + LOGO_TO_NECK_GAP + neckWidthPx / 2,
     y: currentY,
     widthCm: NECK_LABEL_WIDTH_CM,
     label: "NECK LABEL",
   });
-
-  currentY += neckDimensions.height;
+  currentY += Math.max(logoDimensions.height, neckDimensions.height);
 
   // ==========================================================
   // FINAL VALIDATION
@@ -377,5 +383,5 @@ export async function generatePrintSheet({
   // RETURN PNG
   // ==========================================================
 
-  return canvas.toBuffer("image/png");
+  return canvas.toBuffer("image/png", { resolution: DPI });
 }
