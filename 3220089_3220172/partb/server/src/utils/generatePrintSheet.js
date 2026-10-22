@@ -373,5 +373,5 @@ export async function generatePrintSheet({
   // RETURN PNG
   // ==========================================================
 
-  return canvas.toBuffer("image/png");
+  return canvas.toBuffer("image/png", { resolution: DPI });
 }
