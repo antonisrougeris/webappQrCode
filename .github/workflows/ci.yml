@@ -313,6 +313,15 @@ jobs:
           cp -a scripts deploy-package/
           cp -a assets deploy-package/
           cp -a fonts deploy-package/
+          # Print assets live under client/public in source, not under deployed
+          # client/dist. Bundle the required neck-label masters with the server.
+          mkdir -p deploy-package/assets/print
+          cp ../client/public/assets/print/neck-label-*.png deploy-package/assets/print/
+          for ink in white black; do
+            for size in s m l xl; do
+              test -s "deploy-package/assets/print/neck-label-$ink-$size.png" || exit 1
+            done
+          done
           cp package.json package-lock.json deploy-package/
 
       - name: Upload backend artifact
@@ -439,6 +448,9 @@ jobs:
           test -f "$NEW_RELEASE/server/src/app.js"
           test -f "$NEW_RELEASE/server/package.json"
           test -r "$NEW_RELEASE/server/.env"
+          test -s "$NEW_RELEASE/server/assets/print/neck-label-black-l.png"
+          test -s "$NEW_RELEASE/server/assets/print/neck-label-white-l.png"
+          test -s "$NEW_RELEASE/server/fonts/DejaVuSans-Bold.ttf"
 
           # Atomic application release switch
           ln -sfn "$NEW_RELEASE" /srv/skanare/current
