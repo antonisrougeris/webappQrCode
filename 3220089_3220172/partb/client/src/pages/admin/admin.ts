@@ -2919,10 +2919,13 @@ function selectedDtfSpec() {
   return {
     type:dtfType?.value||"qr",color:dtfColor?.value||"white",
     size:dtfSize?.value||"M",text:(dtfText?.value||"").trim(),
+    qrWidthCm:Number((document.getElementById("dtfQrWidth") as HTMLSelectElement|null)?.value||28),
   };
 }
 function refreshDtfInputs(){
   const type=dtfType?.value;
+  const width=document.getElementById("dtfQrWidthField");
+  if(width)width.hidden=type!=="qr";
   const size=document.getElementById("dtfSizeField");
   const text=document.getElementById("dtfTextField");
   if(size)size.hidden=type!=="size";
