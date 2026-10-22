@@ -56,7 +56,7 @@ test("consumes ONLY physically confirmed parts, reports shortages and is idempot
 });
 test("A3 sheet prints enlarged neck label next to logo; QR retains per-size dimensions",()=>{
   const sheet=fs.readFileSync(new URL("../src/utils/generatePrintSheet.js",import.meta.url),"utf8");
-  assert.match(sheet,/NECK_LABEL_WIDTH_CM = 7/);
+  assert.match(sheet,/NECK_LABEL_WIDTH_CM = 6/);
   assert.match(sheet,/rowStartX \+ logoWidthPx \+ LOGO_TO_NECK_GAP/);
   assert.match(sheet,/Math\.max\(logoDimensions\.height, neckDimensions\.height\)/);
   assert.match(sheet,/S: 27\.5/);
