@@ -436,10 +436,16 @@ export async function sendPaidOrderEmails(order) {
         <hr/>
 
         <h3>DTF Production Plan</h3>
-        <p>Full A3 ready / QR-only printed transfers are not regenerated.</p>
+        <p>Full A3 and QR-only physical transfers are not regenerated.</p>
+        <p>Artwork attachments below are templates: print the required number
+          of copies listed in the next section, not just one.</p>
         <ul>${(productionPlan.components || []).map(part=>
           `<li>${escapeHtml(part.type)} (${escapeHtml(part.color)}) ${escapeHtml(part.size||part.text||"")} · ${part.source==="physical_stock"?"PICK PHYSICAL TRANSFER":"PRINT REQUIRED"}</li>`
         ).join("")}</ul>
+        <h3>Missing physical DTF transfers — print quantities</h3>
+        <ul>${[...missingParts.values()].map(part=>`<li>${escapeHtml(part.type)} /
+          ${escapeHtml(part.color)} /
+          ${escapeHtml(part.size||part.text||"base")}: <strong>${part.quantity} transfer(s)</strong></li>`).join("")}</ul>
         <h3>QR / Missing DTF Artwork Downloads</h3>
         ${downloadLinks
           .map(
