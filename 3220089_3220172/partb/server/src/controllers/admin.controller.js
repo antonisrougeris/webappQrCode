@@ -2824,6 +2824,7 @@ export const generateAdminQrStock =
           .EMAIL_FROM;
 
 
+      let emailWarning = null;
       if (
         adminEmail &&
         from &&
@@ -2865,7 +2866,8 @@ export const generateAdminQrStock =
             .join("");
 
 
-        await sendEmail({
+        try {
+          await sendEmail({
           from,
 
           to:
@@ -2909,11 +2911,18 @@ export const generateAdminQrStock =
         });
 
 
+        } catch (error) {
+          // Printing files and unique IDs already exist in Storage/Firestore.
+          // A failed notification must not return 500 and cause duplicate stock on retry.
+          emailWarning = "QR stock generated, but print email could not be sent. Download files from the returned print links.";
+          console.error("QR stock generated but admin email failed:", error);
+        }
+
         const emailSentAt =
           nowIso();
 
 
-        for (
+        if (!emailWarning) for (
           const item
           of created
         ) {
@@ -2958,6 +2967,7 @@ export const generateAdminQrStock =
             created.length,
 
           inventoryKey,
+          emailWarning,
 
           created:
             created.map(
