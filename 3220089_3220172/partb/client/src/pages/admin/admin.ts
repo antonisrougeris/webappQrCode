@@ -2902,3 +2902,116 @@ function escapeHtml(value: any): string {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+
+/* =========================================================
+   MODULAR DTF ARTWORK + PHYSICAL STOCK
+   ========================================================= */
+const dtfModal=document.getElementById("dtfModal");
+const dtfType=document.getElementById("dtfType") as HTMLSelectElement | null;
+const dtfColor=document.getElementById("dtfColor") as HTMLSelectElement | null;
+const dtfSize=document.getElementById("dtfSize") as HTMLSelectElement | null;
+const dtfText=document.getElementById("dtfText") as HTMLInputElement | null;
+const dtfQuantity=document.getElementById("dtfQuantity") as HTMLInputElement | null;
+const dtfPrintForm=document.getElementById("dtfPrintForm") as HTMLFormElement | null;
+
+function selectedDtfSpec() {
+  return {
+    type:dtfType?.value||"qr",color:dtfColor?.value||"white",
+    size:dtfSize?.value||"M",text:(dtfText?.value||"").trim(),
+  };
+}
+function refreshDtfInputs(){
+  const type=dtfType?.value;
+  const size=document.getElementById("dtfSizeField");
+  const text=document.getElementById("dtfTextField");
+  if(size)size.hidden=type!=="size";
+  if(text)text.hidden=type!=="text";
+}
+function closeDtfModal(){
+  dtfModal?.classList.add("hidden");
+  dtfModal?.setAttribute("aria-hidden","true");
+}
+async function refreshDtfInventory(){
+  const list=document.getElementById("dtfInventoryList");
+  const pending=document.getElementById("dtfPendingList");
+  if(!list||!pending)return;
+  try{
+    const data=await adminApi("/inventory/dtf");
+    const components=Array.isArray(data.components)?data.components:[];
+    list.innerHTML=components.length
+      ? components.map((x:any)=>`<div class="dtf-stock-row">
+          <span><strong>${escapeHtml(x.type)}</strong> · ${escapeHtml(x.color)} · ${escapeHtml(x.size||x.text||"")}</span>
+          <span><strong>${Number(x.physicalQuantity||0)}</strong> physical</span>
+        </div>`).join("")
+      : "<p>Zero physical transfers registered.</p>";
+    const rows=Array.isArray(data.pendingQr)?data.pendingQr:[];
+    pending.innerHTML=rows.length
+      ? rows.map((x:any)=>`<div class="dtf-stock-row">
+          <span><strong>${escapeHtml(x.shortId)}</strong> · ${escapeHtml(x.printColor)} ink</span>
+          <span><a href="${escapeHtml(x.printFileUrl||"#")}" target="_blank" rel="noopener">Artwork</a>
+          <button type="button" data-confirm-dtf-qr="${escapeHtml(x.id)}" class="admin-secondary-button">Mark physically printed</button></span>
+        </div>`).join("")
+      : "<p>No QR transfers awaiting physical print confirmation.</p>";
+  }catch(error){
+    setInlineStatus(document.getElementById("dtfStatus"),errorMessage(error),"error");
+  }
+}
+document.querySelectorAll<HTMLButtonElement>("[data-open-dtf]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    const mode=button.dataset.openDtf||"qr";
+    if(dtfType)dtfType.value=mode==="qr"?"qr":mode==="component"?"neck":dtfType.value;
+    refreshDtfInputs();
+    dtfModal?.classList.remove("hidden");
+    dtfModal?.setAttribute("aria-hidden","false");
+    setInlineStatus(document.getElementById("dtfStatus"),"");
+    void refreshDtfInventory();
+  });
+});
+document.querySelectorAll("[data-close-dtf]").forEach(button=>button.addEventListener("click",closeDtfModal));
+dtfType?.addEventListener("change",refreshDtfInputs);
+refreshDtfInputs();
+dtfPrintForm?.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const spec=selectedDtfSpec();
+  const quantity=Number(dtfQuantity?.value);
+  const status=document.getElementById("dtfStatus");
+  if(!Number.isSafeInteger(quantity)||quantity<1||quantity>100){setInlineStatus(status,"Quantity must be 1–100.","error");return;}
+  if(spec.type==="text"&&!spec.text){setInlineStatus(status,"Enter the fixed slogan to print.","error");return;}
+  const submit=document.getElementById("dtfPrintSubmit") as HTMLButtonElement|null;
+  if(submit)submit.disabled=true;
+  try {
+    const result=await adminApi(spec.type==="qr"?"/inventory/dtf/qr":"/inventory/dtf/print",{
+      method:"POST",body:JSON.stringify({...spec,quantity}),
+    });
+    setInlineStatus(status,`Created ${result.count||result.quantity} artwork transfer(s); print links emailed to admin. Physical stock is not counted until confirmed.`,"success");
+    await refreshDtfInventory();
+  }catch(error){setInlineStatus(status,errorMessage(error),"error");}
+  finally{if(submit)submit.disabled=false;}
+});
+document.getElementById("dtfPendingList")?.addEventListener("click",async event=>{
+  const target=event.target as HTMLElement;
+  const button=target.closest<HTMLButtonElement>("[data-confirm-dtf-qr]");
+  const qrId=button?.dataset.confirmDtfQr;
+  if(!qrId)return;
+  if(!window.confirm("Confirm the physical DTF QR transfer is printed, received and ready to use?"))return;
+  if(button)button.disabled=true;
+  try {
+    await adminApi("/inventory/dtf/qr/confirm",{method:"POST",body:JSON.stringify({qrId})});
+    setInlineStatus(document.getElementById("dtfStatus"),"Unique QR is now available physical stock.","success");
+    await refreshDtfInventory();
+  }catch(error){setInlineStatus(document.getElementById("dtfStatus"),errorMessage(error),"error");if(button)button.disabled=false;}
+});
+document.getElementById("dtfPhysicalSave")?.addEventListener("click",async ()=>{
+  const spec=selectedDtfSpec();
+  if(spec.type==="qr"){setInlineStatus(document.getElementById("dtfStatus"),"QRs must be confirmed individually above.","error");return;}
+  const physicalQuantity=Number((document.getElementById("dtfPhysicalQuantity") as HTMLInputElement|null)?.value);
+  if(!Number.isSafeInteger(physicalQuantity)||physicalQuantity<0){setInlineStatus(document.getElementById("dtfStatus"),"Invalid physical quantity.","error");return;}
+  if(!window.confirm("Save the actual physically counted DTF quantity?"))return;
+  try{
+    await adminApi("/inventory/dtf/physical",{method:"POST",body:JSON.stringify({...spec,physicalQuantity})});
+    setInlineStatus(document.getElementById("dtfStatus"),"Physical DTF quantity saved.","success");
+    await refreshDtfInventory();
+  }catch(error){setInlineStatus(document.getElementById("dtfStatus"),errorMessage(error),"error");}
+});
+
