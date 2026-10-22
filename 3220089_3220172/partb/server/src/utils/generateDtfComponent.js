@@ -6,7 +6,7 @@ import { componentSpec, normalizeSize } from "../services/dtf-inventory.service.
 const DPI=300;
 const px=cm=>Math.round(cm/2.54*DPI);
 const assets=path.resolve(process.cwd(),"../client/public/assets/print");
-const output=canvas=>canvas.toBuffer("image/png");
+const output=canvas=>canvas.toBuffer("image/png", { resolution: DPI });
 
 export async function generateDtfComponentArtwork(spec) {
   const safe=componentSpec(spec.type,spec.color,{size:spec.size,text:spec.text});
