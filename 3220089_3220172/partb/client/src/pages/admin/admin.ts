@@ -2979,7 +2979,7 @@ dtfPrintForm?.addEventListener("submit",async event=>{
   const spec=selectedDtfSpec();
   const quantity=Number(dtfQuantity?.value);
   const status=document.getElementById("dtfStatus");
-  if(!Number.isSafeInteger(quantity)||quantity<1||quantity>100){setInlineStatus(status,"Quantity must be 1–100.","error");return;}
+  if(!Number.isSafeInteger(quantity)||quantity<1||quantity>(spec.type==="qr"?12:100)){setInlineStatus(status,spec.type==="qr"?"For QR-only transfers, create up to 12 per batch; repeat for more.":"Quantity must be 1–100.","error");return;}
   if(spec.type==="text"&&!spec.text){setInlineStatus(status,"Enter the fixed slogan to print.","error");return;}
   const submit=document.getElementById("dtfPrintSubmit") as HTMLButtonElement|null;
   if(submit)submit.disabled=true;
