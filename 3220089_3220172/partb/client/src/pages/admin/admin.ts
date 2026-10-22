@@ -2737,8 +2737,8 @@ stockForm?.addEventListener("submit", async (event) => {
 
     setInlineStatus(
       statusEl,
-      `Created ${Number(result?.count ?? result?.created?.length ?? quantity)} QR stock item(s).`,
-      "success"
+      `Created ${Number(result?.count ?? result?.created?.length ?? quantity)} QR stock item(s).${result?.emailWarning ? " " + result.emailWarning : ""}`,
+      result?.emailWarning ? "error" : "success"
     );
 
     await Promise.all([loadProducts(), loadQr().catch(() => undefined)]);
