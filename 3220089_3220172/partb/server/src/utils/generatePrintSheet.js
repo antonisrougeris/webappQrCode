@@ -25,7 +25,7 @@ const QR_WIDTH_BY_SIZE_CM = {
 
 // Fixed print sizes (cm)
 const LOGO_WIDTH_CM = 7;
-const NECK_LABEL_WIDTH_CM = 7;
+const NECK_LABEL_WIDTH_CM = 6;
 
 // Spacing (pixels)
 const TOP_MARGIN = 20;

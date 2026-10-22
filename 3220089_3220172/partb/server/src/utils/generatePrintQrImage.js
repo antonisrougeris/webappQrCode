@@ -52,7 +52,19 @@ export async function generatePrintQrImage(url, config = {}) {
     const hasText = text.length > 0;
     const measureCanvas = createCanvas(10, 10);
     const measureCtx = measureCanvas.getContext("2d");
-    const lines = hasText ? wrapText(measureCtx, text.toUpperCase(), maxTextWidth) : [];
+    // Production T-shirt slogans have intentional two-line typography.
+    // Measure using the actual print font, not the canvas default 10px font.
+    measureCtx.font = `bold ${fontSize}px "PrintFont"`;
+    const normalizedText = text.toUpperCase().replace(/\\s+/g, " ").trim();
+    const fixedLines = {
+      "SCAN TO DISCOVER": ["SCAN TO", "DISCOVER"],
+      "WANNA RIDE WITH ME": ["WANNA RIDE", "WITH ME"],
+    };
+    const lines = !hasText ? [] : (fixedLines[normalizedText] ||
+      wrapText(measureCtx, normalizedText, maxTextWidth));
+    if (lines.some(line => measureCtx.measureText(line).width > maxTextWidth)) {
+      throw new Error("QR slogan exceeds printable width");
+    }
     const textBlockHeight = hasText ? lines.length * lineHeight : 0;
 
     const canvasWidth = qrW + padding * 2;
