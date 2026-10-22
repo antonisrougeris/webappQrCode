@@ -35,9 +35,9 @@ export const listDtfStock = asyncHandler(async(req,res)=>{
   const db=getDB();
   const [components, pending]=await Promise.all([
     getDtfInventory(db),
-    db.collection("qrCodes").where("fulfillmentMode","==","modular_qr").where("status","==","awaiting_print").limit(100).get(),
+    db.collection("qrCodes").where("fulfillmentMode","==","modular_qr").limit(1000).get(),
   ]);
-  res.json({success:true,components,pendingQr:pending.docs.map(doc=>({id:doc.id,shortId:doc.data().shortId,printColor:doc.data().modularPrintColor,printFileUrl:doc.data().printFileUrl,createdAt:doc.data().createdAt}))});
+  res.json({success:true,components,pendingQr:pending.docs.filter(doc=>doc.data().status==="awaiting_print").slice(0,100).map(doc=>({id:doc.id,shortId:doc.data().shortId,printColor:doc.data().modularPrintColor,qrWidthCm:doc.data().modularQrWidthCm,printFileUrl:doc.data().printFileUrl,createdAt:doc.data().createdAt}))});
 });
 
 export const generateDtfPrintBatch=asyncHandler(async(req,res)=>{
