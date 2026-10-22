@@ -1,9 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createCanvas, loadImage } from "canvas";
+import { createCanvas, loadImage, registerFont } from "canvas";
 import { componentSpec, normalizeSize } from "../services/dtf-inventory.service.js";
 
 const DPI=300;
+registerFont(path.join(process.cwd(),"fonts","DejaVuSans-Bold.ttf"),{family:"PrintFont"});
 const px=cm=>Math.round(cm/2.54*DPI);
 const assets=path.resolve(process.cwd(),"../client/public/assets/print");
 const output=canvas=>canvas.toBuffer("image/png", { resolution: DPI });
@@ -29,7 +30,7 @@ export async function generateDtfComponentArtwork(spec) {
     const canvas=createCanvas(px(3),px(2.2));
     const ctx=canvas.getContext("2d");
     ctx.fillStyle=safe.color==="white"?"#ffffff":"#000000";
-    ctx.font=`bold ${px(1.5)}px sans-serif`;
+    ctx.font=`bold ${px(1.5)}px "PrintFont"`;
     ctx.textAlign="center";
     ctx.textBaseline="middle";
     ctx.fillText(size,canvas.width/2,canvas.height/2);
@@ -41,7 +42,7 @@ export async function generateDtfComponentArtwork(spec) {
     ctx.fillStyle=safe.color==="white"?"#ffffff":"#000000";
     ctx.textAlign="center";
     ctx.textBaseline="middle";
-    ctx.font=`bold ${px(2.6)}px sans-serif`;
+    ctx.font=`bold ${px(2.8)}px "PrintFont"`;
     const words=safe.text.split(" ");
     const lines=[];let line="";
     for (const word of words) {
