@@ -69,8 +69,7 @@ export const generateModularQrStock=asyncHandler(async(req,res)=>{
   // Avoid proxy/request timeouts during heavy 300DPI uploads.
   if(quantity>12) throw new ApiError(400,"Generate up to 12 unique QR transfers per batch");
   const color=safeColor(req.body?.color);
-  const widthCm=req.body?.qrWidthCm===27.5 ? 27.5 : req.body?.qrWidthCm===28 ? 28 : Number(req.body?.qrWidthCm || 28);
-  if (![27.5,28].includes(widthCm)) throw new ApiError(400,"Choose QR width 27.5cm (S) or 28cm (M-XXL)");
+  const widthCm=28; // Unified QR-only DTF size for all T-shirt sizes.
   const db=getDB();
   const publicBase=process.env.QR_PUBLIC_BASE_URL || "https://go.skanare.com";
   const created=[];
@@ -95,7 +94,7 @@ export const generateModularQrStock=asyncHandler(async(req,res)=>{
         qrColor:color==="white"?"#ffffff":"#000000",textPrint:"",size:3540,
       });
       const sourceImage=await loadImage(source);
-      const sidePx=Math.round(widthCm/2.54*300);
+      const sidePx=Math.round(28/2.54*300);
       const exact=createCanvas(sidePx,sidePx);
       exact.getContext("2d").drawImage(sourceImage,0,0,sidePx,sidePx);
       const uploaded=await uploadQrToStorage(`dtf-qr-${data.id}`,exact.toBuffer("image/png", { resolution: 300 }));
