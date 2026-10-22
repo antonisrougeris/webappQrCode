@@ -19,7 +19,7 @@ export async function generateDtfComponentArtwork(spec) {
     const image=await loadImage(await fs.readFile(resolveNeckPrintAsset(safe.color,"l")));
     // Remove lower size letter from the stock neck design.
     const sourceHeight=Math.round(image.height*0.73);
-    const width=px(7);
+    const width=px(6);
     const height=Math.ceil(width*sourceHeight/image.width);
     const canvas=createCanvas(width,height);
     const ctx=canvas.getContext("2d");
@@ -45,6 +45,10 @@ export async function generateDtfComponentArtwork(spec) {
     ctx.textAlign="center";
     ctx.textBaseline="middle";
     ctx.font=`bold ${px(2.8)}px "PrintFont"`;
+    const fixedLines = {
+      "SCAN TO DISCOVER": ["SCAN TO", "DISCOVER"],
+      "WANNA RIDE WITH ME": ["WANNA RIDE", "WITH ME"],
+    };
     const words=safe.text.split(" ");
     const lines=[];let line="";
     for (const word of words) {
@@ -52,6 +56,7 @@ export async function generateDtfComponentArtwork(spec) {
       if(line && ctx.measureText(candidate).width>canvas.width*0.91){lines.push(line);line=word;}else line=candidate;
     }
     if(line)lines.push(line);
+    if (fixedLines[safe.text]) lines.splice(0, lines.length, ...fixedLines[safe.text]);
     if(lines.length>2)throw new Error("DTF slogan is too long for a two-line print");
     const gap=px(2.1);
     lines.forEach((value,i)=>ctx.fillText(value,canvas.width/2,canvas.height/2+(i-(lines.length-1)/2)*gap,canvas.width*.92));
