@@ -1358,3 +1358,12 @@ button {
     flex-direction: column;
   }
 }
+
+/* Modular DTF production controls, designed for long inventory identifiers. */
+.dtf-stock-row{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e7e7e4;font-size:13px}
+.dtf-stock-row span{min-width:0;overflow-wrap:anywhere}
+.dtf-stock-row span:last-child{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dtf-stock-row .admin-secondary-button{padding:8px 10px;min-height:36px;font-size:12px}
+#dtfModal .admin-modal__body{max-height:min(75vh,800px);overflow-y:auto}
+#dtfModal [hidden]{display:none!important}
+@media(max-width:640px){.dtf-stock-row{align-items:flex-start;flex-direction:column}.dtf-stock-row span:last-child{width:100%}#dtfModal .admin-form-grid{grid-template-columns:1fr}}
