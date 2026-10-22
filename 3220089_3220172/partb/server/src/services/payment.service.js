@@ -907,6 +907,32 @@ export async function markOrderPaidFromVivaWebhook(payload) {
         : null;
 
 
+    // Modular QR transfers are already physically printed but not tied to a SKU.
+    // Read them before transaction writes and allocate each unique QR at most once.
+    const modularSnapshot = await tx.get(
+      db.collection(COLLECTIONS.QR_CODES)
+        .where("fulfillmentMode", "==", "modular_qr")
+        .limit(1000)
+    );
+    const modularAvailable = modularSnapshot.docs.filter(doc => {
+      const qr = doc.data();
+      return qr.status === "available" && Boolean(qr.physicalConfirmedAt)
+        && Boolean(qr.printFileUrl) && qr.printStatus === "uploaded";
+    });
+    const consumedModularPaths = new Set();
+    function chooseModularQr(item) {
+      const shirt = String(item.variant?.color || "").trim().toLowerCase();
+      const color = ["black","μαύρο","μαυρο"].includes(shirt) ? "white"
+        : ["white","λευκό","λευκο","άσπρο","ασπρο"].includes(shirt) ? "black" : null;
+      if (!color || !item.variant?.size) return null;
+      const doc = modularAvailable.find(doc =>
+        doc.data().modularPrintColor === color &&
+        !consumedModularPaths.has(doc.ref.path)
+      );
+      if (doc) consumedModularPaths.add(doc.ref.path);
+      return doc || null;
+    }
+
     if (holds) {
       if (
         order.inventoryReservationState !==
@@ -1057,6 +1083,14 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           i < hold.fallbackQuantity;
           i += 1
         ) {
+          const modular = chooseModularQr(item);
+          if (modular) {
+            qrAssignments.push({
+              type: "modular", ref: modular.ref, item, sku,
+              inventoryKey: key, qrConfig: buildQrConfig(item),
+            });
+            continue;
+          }
           const qrId =
             createId("qr");
 
@@ -1197,6 +1231,14 @@ export async function markOrderPaidFromVivaWebhook(payload) {
                   buildQrConfig(item),
               });
             } else {
+              const modular=chooseModularQr(item);
+              if (modular) {
+                qrAssignments.push({
+                  type:"modular",ref:modular.ref,item,sku,
+                  inventoryKey:key,qrConfig:buildQrConfig(item),
+                });
+                continue;
+              }
               const qrId =
                 createId("qr");
 
@@ -1315,7 +1357,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       }
 
       for (const assignment of qrAssignments) {
-        if (assignment.type !== "new") continue;
+        if (assignment.type !== "new" && assignment.type !== "modular") continue;
 
         const itemId = String(assignment.item?.id || "");
 
@@ -1704,7 +1746,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
       if (
         assignment.type ===
-        "existing"
+        "existing" || assignment.type === "modular"
       ) {
         tx.update(
           assignment.ref,
@@ -1755,8 +1797,8 @@ export async function markOrderPaidFromVivaWebhook(payload) {
             photo: null,
 
             fulfillmentMode:
-              "preprinted",
-
+              assignment.type === "modular" ? "modular_qr" : "preprinted",
+            qrConfig: assignment.qrConfig,
             assignedAt:
               paidAt,
 
