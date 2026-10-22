@@ -96,7 +96,7 @@ export const generateModularQrStock=asyncHandler(async(req,res)=>{
       const sidePx=Math.round(widthCm/2.54*300);
       const exact=createCanvas(sidePx,sidePx);
       exact.getContext("2d").drawImage(sourceImage,0,0,sidePx,sidePx);
-      const uploaded=await uploadQrToStorage(`dtf-qr-${data.id}`,exact.toBuffer("image/png"));
+      const uploaded=await uploadQrToStorage(`dtf-qr-${data.id}`,exact.toBuffer("image/png", { resolution: 300 }));
       await db.collection("qrCodes").doc(data.id).set({
         status:"awaiting_print",printStatus:"uploaded",printFileUrl:uploaded.url,
         printGeneratedAt:nowIso(),updatedAt:nowIso(),
