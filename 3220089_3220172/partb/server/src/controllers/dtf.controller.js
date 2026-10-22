@@ -1,4 +1,5 @@
 import { getDB } from "../config/db.js";
+import { createCanvas, loadImage } from "canvas";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
@@ -66,6 +67,8 @@ export const updateDtfPhysicalStock=asyncHandler(async(req,res)=>{
 export const generateModularQrStock=asyncHandler(async(req,res)=>{
   const quantity=safeQuantity(req.body?.quantity);
   const color=safeColor(req.body?.color);
+  const widthCm=req.body?.qrWidthCm===27.5 ? 27.5 : req.body?.qrWidthCm===28 ? 28 : Number(req.body?.qrWidthCm || 28);
+  if (![27.5,28].includes(widthCm)) throw new ApiError(400,"Choose QR width 27.5cm (S) or 28cm (M-XXL)");
   const db=getDB();
   const publicBase=process.env.QR_PUBLIC_BASE_URL || "https://go.skanare.com";
   const created=[];
@@ -76,7 +79,7 @@ export const generateModularQrStock=asyncHandler(async(req,res)=>{
       const date=nowIso();
       writeQrShortIdReservation(tx,reservationRef,{qrId:id,shortId,createdAt:date});
       tx.set(db.collection("qrCodes").doc(id),{
-        id,shortId,status:"generating",modularPrintColor:color,
+        id,shortId,status:"generating",modularPrintColor:color,modularQrWidthCm:widthCm,
         printStatus:"pending",fulfillmentMode:"modular_qr",
         targetUrl:"https://skanare.com",linkUrl:"https://skanare.com",
         destinationType:"link",qrConfig:{qrColor:color==="white"?"#ffffff":"#000000",textColor:color==="white"?"#ffffff":"#000000",textPrint:""},
@@ -86,11 +89,14 @@ export const generateModularQrStock=asyncHandler(async(req,res)=>{
     });
     try {
       // A single, unique, scannable QR for DTF per meter; no slogan/neck/logo.
-      const image=await generatePrintQrImage(data.url,{
-        qrColor:color==="white"?"#ffffff":"#000000",textPrint:"",
-        size:3307, // approx 28cm wide at 300DPI before existing QR quiet-zone trim
+      const source=await generatePrintQrImage(data.url,{
+        qrColor:color==="white"?"#ffffff":"#000000",textPrint:"",size:3540,
       });
-      const uploaded=await uploadQrToStorage(`dtf-qr-${data.id}`,image);
+      const sourceImage=await loadImage(source);
+      const sidePx=Math.round(widthCm/2.54*300);
+      const exact=createCanvas(sidePx,sidePx);
+      exact.getContext("2d").drawImage(sourceImage,0,0,sidePx,sidePx);
+      const uploaded=await uploadQrToStorage(`dtf-qr-${data.id}`,exact.toBuffer("image/png"));
       await db.collection("qrCodes").doc(data.id).set({
         status:"awaiting_print",printStatus:"uploaded",printFileUrl:uploaded.url,
         printGeneratedAt:nowIso(),updatedAt:nowIso(),
@@ -103,7 +109,7 @@ export const generateModularQrStock=asyncHandler(async(req,res)=>{
   }
   if(created.length) await adminNotification(
     `DTF unique QR batch: ${color} x${created.length}`,
-    `<h2>QR-only DTF batch</h2><p>Unique QR identifiers; do not duplicate one transfer across multiple garments.</p><p>Ink: ${color}</p><p><strong>Stock is NOT available until the printed transfers are received and confirmed in Admin.</strong></p>
+    `<h2>QR-only DTF batch</h2><p>Unique QR identifiers; do not duplicate one transfer across multiple garments.</p><p>Ink: ${color}, QR transfer width: ${widthCm}cm at 300DPI</p><p><strong>Stock is NOT available until the printed transfers are received and confirmed in Admin.</strong></p>
      ${created.map(q=>`<p>${q.shortId}: <a href="${q.printUrl}">Download print artwork</a></p>`).join("")}`
   );
   res.status(201).json({success:true,count:created.length,created});
