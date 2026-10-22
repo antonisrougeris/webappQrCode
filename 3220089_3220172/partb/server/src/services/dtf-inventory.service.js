@@ -58,7 +58,7 @@ export async function ensureOrderDtfPlan(orderId, qrDocs, {db=getDB()}={}) {
   const orderRef=db.collection("orders").doc(String(orderId));
   const needed = [];
   for (const qr of qrDocs) {
-    if (!["modular_qr","made_to_order"].includes(qr.fulfillmentMode)) continue;
+    if (qr.fulfillmentMode !== "modular_qr") continue;
     if (!qr.variant?.size || !["S","M","L","XL","2XL","XXL"].includes(String(qr.variant.size).toUpperCase())) continue;
     for (const spec of neededComponents(qr)) needed.push({...spec, qrId:qr.id});
   }
