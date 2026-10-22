@@ -1,0 +1,34 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createCanvas, loadImage } from "canvas";
+import { generatePrintSheet } from "../src/utils/generatePrintSheet.js";
+import { generateDtfComponentArtwork } from "../src/utils/generateDtfComponent.js";
+
+test("standalone neck DTF has no size and uses exact 8cm x 300DPI",async()=>{
+  const image=await loadImage(await generateDtfComponentArtwork({type:"neck",color:"white"}));
+  assert.equal(image.width,Math.round(8/2.54*300));
+  assert.ok(image.height>150);
+});
+test("standalone size, slogan and SKANARE logo generate on transparent PNG backgrounds",async()=>{
+  const cases=[
+    {type:"logo",color:"black"},
+    {type:"size",color:"white",size:"XXL"},
+    {type:"text",color:"black",text:"SCAN TO DISCOVER"},
+  ];
+  for(const spec of cases){
+    const bytes=await generateDtfComponentArtwork(spec);
+    assert.ok(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
+    const img=await loadImage(bytes);
+    assert.ok(img.width>300 && img.height>100);
+  }
+});
+test("A3 XXL (previously missing label asset) renders 300DPI side-by-side neck/logo",async()=>{
+  const qr=createCanvas(64,64);
+  const ctx=qr.getContext("2d");
+  ctx.fillStyle="#000";ctx.fillRect(6,6,52,52);
+  const png=await generatePrintSheet({qrBuffer:qr.toBuffer("image/png"),shirtColor:"White",shirtSize:"XXL"});
+  const image=await loadImage(png);
+  assert.equal(image.width,3508);
+  assert.equal(image.height,4961);
+  assert.ok(png.length>10000);
+});
