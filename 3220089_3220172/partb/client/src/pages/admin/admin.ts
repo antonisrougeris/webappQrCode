@@ -2963,7 +2963,7 @@ async function refreshDtfInventory(){
 document.querySelectorAll<HTMLButtonElement>("[data-open-dtf]").forEach(button=>{
   button.addEventListener("click",()=>{
     const mode=button.dataset.openDtf||"qr";
-    if(dtfType)dtfType.value=mode==="qr"?"qr":mode==="component"?"neck":dtfType.value;
+    if(dtfType)dtfType.value=mode==="qr"?"qr":mode==="component"?"neck":"logo";
     refreshDtfInputs();
     dtfModal?.classList.remove("hidden");
     dtfModal?.setAttribute("aria-hidden","false");
