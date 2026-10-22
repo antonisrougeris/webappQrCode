@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { createCanvas, loadImage } from "canvas";
+import { generateDtfComponentArtwork } from "./generateDtfComponent.js";
 
 // ============================================================
 // PRINT SETTINGS
@@ -258,7 +259,7 @@ export async function generatePrintSheet({
   });
 
   assertFileExists(logoPath, "Logo");
-  assertFileExists(neckLabelPath, "Neck label");
+  // An XXL neck label did not exist in the legacy asset set: generate it from\n  // the size-less master and a separate 2XL transfer instead of failing.
 
   // ----------------------------------------------------------
   // 7. LOAD IMAGES
@@ -270,9 +271,18 @@ export async function generatePrintSheet({
     fs.readFileSync(logoPath)
   );
 
-  const neckLabelImage = await loadImage(
-    fs.readFileSync(neckLabelPath)
-  );
+  let neckLabelImage;
+  if (fs.existsSync(neckLabelPath)) {
+    neckLabelImage=await loadImage(fs.readFileSync(neckLabelPath));
+  } else {
+    const neck=await loadImage(await generateDtfComponentArtwork({type:"neck",color:printColor}));
+    const size=await loadImage(await generateDtfComponentArtwork({type:"size",color:printColor,size:normalizedSize}));
+    const combined=createCanvas(neck.width,neck.height+size.height);
+    const combinedCtx=combined.getContext("2d");
+    combinedCtx.drawImage(neck,0,0);
+    combinedCtx.drawImage(size,(combined.width-size.width)/2,neck.height);
+    neckLabelImage=await loadImage(combined.toBuffer("image/png",{resolution:DPI}));
+  }
 
   // ----------------------------------------------------------
   // 8. CREATE A3 CANVAS
