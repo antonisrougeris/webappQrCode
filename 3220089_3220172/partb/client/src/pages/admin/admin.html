@@ -434,7 +434,10 @@
               <p class="product-toolbar-note">Made-to-order stock is set per size / option. Ready physical QR stock is created separately with “Add QR stock”.</p>
             </div>
             <div class="admin-actions">
-              <button id="openAddStockButton" class="admin-secondary-button" type="button">+ Add QR stock</button>
+              <button id="openAddStockButton" class="admin-secondary-button" type="button">+ Add ready A3 QR</button>
+              <button class="admin-secondary-button" type="button" data-open-dtf="qr">+ QR-only DTF</button>
+              <button class="admin-secondary-button" type="button" data-open-dtf="component">+ Logo / Neck / Text / Size</button>
+              <button class="admin-secondary-button" type="button" data-open-dtf="inventory">DTF Physical Stock</button>
               <button id="addProductButton" class="admin-primary-button" type="button">+ Add product</button>
             </div>
           </div>
@@ -716,6 +719,55 @@
     </section>
   </div>
 
+  <!-- DTF printing and physically confirmed transfer inventory -->
+  <div id="dtfModal" class="admin-modal-shell hidden" aria-hidden="true">
+    <div class="admin-modal__backdrop" data-close-dtf></div>
+    <section class="admin-modal__panel" role="dialog" aria-modal="true" aria-labelledby="dtfModalTitle" style="width:min(740px,96vw)">
+      <header class="admin-modal__header">
+        <div><span class="admin-eyebrow">DTF production · 300 DPI</span><h2 id="dtfModalTitle">Modular DTF prints</h2></div>
+        <button type="button" class="admin-icon-button" data-close-dtf aria-label="Close">✕</button>
+      </header>
+      <div class="admin-modal__body">
+        <p class="admin-muted">Printed files are not physical stock. Confirm received QR sheets or record actual component quantities separately.</p>
+        <form id="dtfPrintForm">
+          <div class="admin-form-grid">
+            <label class="admin-field"><span>What to print</span><select id="dtfType">
+              <option value="qr">Unique QR codes only</option>
+              <option value="logo">SKANARE logo only</option>
+              <option value="neck">Neck · NOT JUST A BRAND A CODE (no size)</option>
+              <option value="text">Fixed slogan / QR text only</option>
+              <option value="size">Size letter only</option>
+            </select></label>
+            <label class="admin-field"><span>DTF print ink color (contrasts with shirt)</span><select id="dtfColor">
+              <option value="white">White ink · for black garments</option>
+              <option value="black">Black ink · for white garments</option>
+            </select></label>
+          </div>
+          <div class="admin-form-grid">
+            <label class="admin-field" id="dtfSizeField"><span>Size</span><select id="dtfSize">
+              <option>S</option><option>M</option><option>L</option><option>XL</option><option value="2XL">XXL</option>
+            </select></label>
+            <label class="admin-field" id="dtfTextField"><span>Fixed text (for example SCAN TO DISCOVER)</span><input id="dtfText" maxlength="90" placeholder="SCAN TO DISCOVER"/></label>
+          </div>
+          <label class="admin-field"><span>Transfers to print (each QR is individually unique)</span><input id="dtfQuantity" type="number" min="1" max="100" value="1" step="1" required/></label>
+          <p class="admin-muted">QR-only transfers become usable only after they are physically printed and marked as received. Static artwork is delivered by email and must be counted manually once delivered.</p>
+          <p id="dtfStatus" class="admin-inline-status" aria-live="polite"></p>
+          <button id="dtfPrintSubmit" class="admin-primary-button" type="submit">Create artwork &amp; email</button>
+        </form>
+        <div class="admin-detail-group" style="margin-top:24px">
+          <h3>QR transfers waiting to be printed</h3>
+          <div id="dtfPendingList" class="admin-muted">Loading…</div>
+        </div>
+        <div class="admin-detail-group" style="margin-top:24px">
+          <h3>Physical component stock (actually received)</h3>
+          <div id="dtfInventoryList" class="admin-muted">Loading…</div>
+          <p class="admin-muted">Set the actual count only after physical inspection. Use the print form above to create any missing item type.</p>
+          <label class="admin-field"><span>Set physical quantity for selected component</span><input id="dtfPhysicalQuantity" type="number" min="0" max="100000" step="1" value="0"/></label>
+          <button type="button" id="dtfPhysicalSave" class="admin-secondary-button">Save actual physical count</button>
+        </div>
+      </div>
+    </section>
+  </div>
   <script type="module" src="./admin.ts"></script>
 </body>
 </html>
