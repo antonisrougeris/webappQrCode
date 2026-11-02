@@ -20,7 +20,7 @@ import { getOrders } from "../../services/orders";
 import { createProductReview, getProductReviews, getMyReviewedProductIds } from "../../services/reviews";
 
 import { showToast } from "../../utils/toast.ts";
-import { estimateTshirtSize, SKANARE_TSHIRT_SIZES, type FitPreference } from "./size-guide-fit";
+import { estimateTshirtFit, SKANARE_TSHIRT_SIZES, type FitPreference } from "./size-guide-fit";
 import { locale, productPath, t } from "../../i18n/locale";
 
 
@@ -312,7 +312,7 @@ function setupSizeGuideModal(product: Product): void {
     const checkedFit = form.querySelector<HTMLInputElement>('input[name="sizeGuideFit"]:checked');
     const fit = (checkedFit?.value || "regular") as FitPreference;
     const estimate = heightInput.value.trim() && weightInput.value.trim()
-      ? estimateTshirtSize(height, weight, fit) : null;
+      ? estimateTshirtFit(height, weight, fit) : null;
     if (!result || !resultDescription || !resultSize) return;
     result.hidden = false;
     if (!estimate) {
@@ -322,18 +322,24 @@ function setupSizeGuideModal(product: Product): void {
         : "We can't give a useful suggestion from these details. Please compare the chart with a T-shirt you own.";
       return;
     }
-    const dimensions = SKANARE_TSHIRT_SIZES.find(entry => entry.size === estimate);
-    recommended = estimate;
-    resultSize.textContent = estimate;
-    resultDescription.textContent = greek
+    const dimensions = SKANARE_TSHIRT_SIZES.find(entry => entry.size === estimate.size);
+    recommended = estimate.size;
+    resultSize.textContent = estimate.size;
+    const baseDescription = greek
       ? `Ενδεικτική εφαρμογή · Πλάτος ${dimensions?.widthCm} εκ. / Μήκος ${dimensions?.lengthCm} εκ.`
       : `Estimated fit · Width ${dimensions?.widthCm} cm / Length ${dimensions?.lengthCm} cm`;
+    const alternativeDescription = estimate.alternative
+      ? (greek
+        ? ` Είσαι κοντά σε δύο μεγέθη: δες και το ${estimate.alternative} στον πίνακα.`
+        : ` You're between two sizes: also compare ${estimate.alternative} in the chart.`)
+      : "";
+    resultDescription.textContent = baseDescription + alternativeDescription;
     modal.querySelectorAll<HTMLTableCellElement>("#sizeGuideMeasurements tr").forEach(row => {
-      const index = SKANARE_TSHIRT_SIZES.findIndex(item => item.size === estimate) + 1;
+      const index = SKANARE_TSHIRT_SIZES.findIndex(item => item.size === estimate.size) + 1;
       row.children[index]?.setAttribute("data-suggested-size", "");
     });
     const available = Array.from(document.querySelectorAll<HTMLButtonElement>("#sizeOptions [data-size]"))
-      .some(option => String(option.dataset.size || "").toUpperCase() === estimate && !option.disabled);
+      .some(option => String(option.dataset.size || "").toUpperCase() === estimate.size && !option.disabled);
     if (applyButton) applyButton.hidden = !available;
     if (!available) {
       resultDescription.textContent += greek
