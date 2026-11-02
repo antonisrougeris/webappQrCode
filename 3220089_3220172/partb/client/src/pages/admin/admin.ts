@@ -1800,24 +1800,7 @@ function renderProducts() {
 
   grid.innerHTML = currentProducts
     .map((product: any) => {
-      const variants = Array.isArray(product.variants) ? product.variants : [];
       const active = product.active !== false;
-
-      const madeToOrderTotal = variants.reduce(
-        (sum: number, variant: any) => sum + Math.max(0, Number(variant.stock || 0)),
-        0
-      );
-
-      const readyQrCodes = currentQrCodes.filter(
-        (qr: any) => qr.productId === product.id && qr.status === "available"
-      );
-
-      const readyBySku = new Map<string, number>();
-      readyQrCodes.forEach((qr: any) => {
-        const sku = String(qr.sku || qr.variant?.sku || "");
-        if (!sku) return;
-        readyBySku.set(sku, (readyBySku.get(sku) || 0) + 1);
-      });
 
       return `
         <article class="admin-product ${active ? "" : "is-inactive"}">
