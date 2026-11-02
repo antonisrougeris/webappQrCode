@@ -29,3 +29,21 @@ test("2XL aliases and color variants share correct physical key",()=>{
  assert.equal(blankKey({color:"Green",size:"L"}),null);
  assert.equal(isSharedTshirt({category:"NFC"},variant),false);
 });
+
+
+test("physically applied A3 only is sellable as a finished garment",async()=>{
+ const {isAvailableFinishedGood,finishedKey,getSharedReservationSplit}=await import("../src/services/shared-blank-inventory.service.js");
+ const qr={status:"available",fulfillmentMode:"preprinted",finishedGoodStatus:"available",
+   physicalAppliedAt:"2026-11-02T14:00:00.000Z",printFileUrl:"https://example.com/qr.png"};
+ assert.equal(isAvailableFinishedGood(qr),true);
+ assert.equal(isAvailableFinishedGood({...qr,physicalAppliedAt:null}),false);
+ assert.equal(isAvailableFinishedGood({...qr,fulfillmentMode:"modular_qr"}),false);
+ assert.equal(finishedKey("scan","SKU-BLACK-L"),"scan::SKU-BLACK-L");
+ const future=new Date(Date.now()+600000).toISOString();
+ const holds=[{id:"a",expiresAt:future,quantity:2,blankQuantity:1,finishedQuantity:1,productId:"scan",sku:"large"},
+  {id:"b",expiresAt:future,quantity:1,blankQuantity:1,finishedQuantity:0,productId:"ride",sku:"large"}];
+ const result=getSharedReservationSplit(holds);
+ assert.equal(result.blankReserved,2);
+ assert.equal(result.finishedReservedBySku.get("scan::large"),1);
+ assert.equal(getSharedReservationSplit(holds,{excludeIds:new Set(["a"])}).blankReserved,1);
+});

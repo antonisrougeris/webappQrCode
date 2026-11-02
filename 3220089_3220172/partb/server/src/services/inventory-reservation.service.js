@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { BLANK_COLLECTION, blankIdFromReservationKey, sharedInventoryKey, sharedAvailable } from "./shared-blank-inventory.service.js";
+import { BLANK_COLLECTION, blankIdFromReservationKey, sharedInventoryKey, sharedAvailable, isAvailableFinishedGood, finishedKey, getSharedReservationSplit } from "./shared-blank-inventory.service.js";
 
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
@@ -197,10 +197,12 @@ export async function reserveInventoryHold({
       .collection(COLLECTIONS.INVENTORY_HOLDS)
       .doc(reservationDocId(inventoryKey));
 
-    const [holdSnap, readyCount, blankSnap] = await Promise.all([
+    const [holdSnap, readyCount, blankSnap, finishedSnap] = await Promise.all([
       tx.get(holdRef),
       sharedKey ? Promise.resolve(0) : readyQrCountInTransaction(tx, db, product, variant),
       sharedKey ? tx.get(db.collection(BLANK_COLLECTION).doc(blankIdFromReservationKey(sharedKey))) : Promise.resolve(null),
+      sharedKey ? tx.get(db.collection(COLLECTIONS.QR_CODES)
+        .where("status","==","available").where("inventoryKey","==",finishedKey(product.id,variant.sku))) : Promise.resolve(null),
     ]);
     if (sharedKey && !blankSnap?.exists) throw new ApiError(409, "Blank inventory is not initialized");
 
@@ -209,23 +211,25 @@ export async function reserveInventoryHold({
       nowMs
     );
 
-    const reservedByOthers = reservedQuantity(activeHolds, {
-      excludeHoldId: holdId,
-      nowMs,
-    });
-
-    const baseStock = sharedKey
-      ? sharedAvailable(blankSnap.data())
-      : rawFallbackStock(product, variant) + readyCount;
-
-    const availableForThisHold =
-      baseStock - reservedByOthers;
-
-    if (availableForThisHold < qty) {
-      throw new ApiError(
-        409,
-        "Not enough stock for the selected size/color"
-      );
+    // During checkout promotion, transfer the cart hold atomically to avoid
+    // double-counting the same customer's reservation.
+    const cartHoldId=phase==="checkout"?String(orderItemId):null;
+    const ownCart=activeHolds.find(h=>String(h.id)===cartHoldId &&
+       h.phase==="cart" && String(h.ownerId)===String(ownerId) &&
+       String(h.productId)===String(product.id) && String(h.sku)===String(variant?.sku||""));
+    const exclusions=new Set([String(holdId),...(ownCart?[cartHoldId]:[])]);
+    const reservedByOthers=reservedQuantity(activeHolds,{excludeHoldId:holdId,nowMs});
+    const breakdown=getSharedReservationSplit(activeHolds,{excludeIds:exclusions,nowMs});
+    const readyFinished=sharedKey ? finishedSnap.docs.filter(doc=>isAvailableFinishedGood(doc.data())).length : 0;
+    const keyFinished=finishedKey(product.id,variant?.sku||"");
+    const freeFinished=Math.max(0,readyFinished-(breakdown.finishedReservedBySku.get(keyFinished)||0));
+    const freeBlank=sharedKey?Math.max(0,sharedAvailable(blankSnap.data())-breakdown.blankReserved):0;
+    const finishedQuantity=sharedKey?Math.min(qty,freeFinished):0;
+    const blankQuantity=sharedKey?qty-finishedQuantity:qty;
+    const baseStock=sharedKey?freeFinished+freeBlank:rawFallbackStock(product,variant)+readyCount;
+    const availableForThisHold=sharedKey?freeFinished+freeBlank:baseStock-reservedByOthers;
+    if(availableForThisHold<qty || (sharedKey && blankQuantity>freeBlank)){
+      throw new ApiError(409,"Not enough stock for the selected size/color");
     }
 
     const nextHold = {
@@ -242,6 +246,7 @@ export async function reserveInventoryHold({
       sku: String(variant?.sku || ""),
       inventoryKey,
       quantity: qty,
+      ...(sharedKey ? {finishedQuantity,blankQuantity} : {}),
       phase,
       expiresAt,
       updatedAt,
@@ -249,7 +254,7 @@ export async function reserveInventoryHold({
 
     const nextHolds = [
       ...activeHolds.filter(
-        (hold) => String(hold.id) !== String(holdId)
+        (hold) => !exclusions.has(String(hold.id))
       ),
       nextHold,
     ];
@@ -273,6 +278,7 @@ export async function reserveInventoryHold({
       productId: product.id,
       sku: String(variant?.sku || ""),
       quantity: qty,
+      ...(sharedKey ? {finishedQuantity,blankQuantity} : {}),
       phase,
       orderId: orderId ? String(orderId) : null,
       expiresAt,
@@ -337,6 +343,19 @@ export async function readActiveReservationCounts(db = getDB()) {
   }
 
   return counts;
+}
+
+export async function readSharedHoldBreakdown(db=getDB()){
+ const snapshot=await db.collection(COLLECTIONS.INVENTORY_HOLDS).get();
+ const blank=new Map(),finished=new Map(),now=Date.now();
+ for(const doc of snapshot.docs){
+  const key=String(doc.data()?.inventoryKey||"");
+  if(!key.startsWith("blank::"))continue;
+  const split=getSharedReservationSplit(doc.data()?.holds||[],{nowMs:now});
+  blank.set(key,split.blankReserved);
+  for(const [k,n] of split.finishedReservedBySku)finished.set(k,(finished.get(k)||0)+n);
+ }
+ return {blank,finished};
 }
 
 export function isReservationActive(expiresAt, nowMs = Date.now()) {

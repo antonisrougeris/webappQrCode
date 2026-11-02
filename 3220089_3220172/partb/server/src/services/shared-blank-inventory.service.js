@@ -66,3 +66,27 @@ export function blankNewRow(id, quantity = 0) {
   const [color,size] = id.split("__");
   return {color,size,onHand:quantity,committedPhysical:0,virtualLimit:0,backorderOpen:0,updatedAt:nowIso()};
 }
+
+/** A finished garment is a preprinted unique QR already physically applied to a shirt.
+ * Uploaded artwork or a loose A3 DTF transfer is NOT a finished garment.
+ */
+export function isAvailableFinishedGood(qr) {
+ return qr?.fulfillmentMode === "preprinted" && qr?.finishedGoodStatus === "available" &&
+   qr?.status === "available" && Boolean(qr?.physicalAppliedAt) && Boolean(qr?.printFileUrl);
+}
+export function finishedKey(productId,sku) {
+ return `${String(productId)}::${String(sku)}`;
+}
+export function getSharedReservationSplit(holds, {excludeIds = new Set(), nowMs=Date.now()}={}) {
+ const blankReserved=holds.reduce((sum,h)=>{
+  if(excludeIds.has(String(h.id)) || !(Date.parse(String(h.expiresAt||""))>nowMs))return sum;
+  return sum+Number(h.blankQuantity??h.quantity??0);
+ },0);
+ const finishedReservedBySku=new Map();
+ for(const h of holds){
+  if(excludeIds.has(String(h.id)) || !(Date.parse(String(h.expiresAt||""))>nowMs))continue;
+  const key=finishedKey(h.productId,h.sku);
+  finishedReservedBySku.set(key,(finishedReservedBySku.get(key)||0)+Number(h.finishedQuantity||0));
+ }
+ return {blankReserved,finishedReservedBySku};
+}
