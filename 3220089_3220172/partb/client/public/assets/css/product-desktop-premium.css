@@ -412,8 +412,31 @@
  .product-page .pdp-desktop-help-links {order:13;}
 }
 .pdp-product-information__facts[hidden] {display:none!important;}
-.pdp-product-information__facts {margin:0 0 13px;padding:0 0 0 18px;color:#4d4d4d;}
-.pdp-product-information__facts li {margin:0 0 8px;line-height:1.5;font-size:13px;}
+.pdp-product-information__facts {
+  list-style: none;
+  margin: 0 0 13px;
+  padding: 0 0 0 2px;
+  color: #4d4d4d;
+}
+.pdp-product-information__facts li {
+  position: relative;
+  list-style: none;
+  margin: 0 0 9px;
+  padding-left: 16px;
+  line-height: 1.55;
+  font-size: 13px;
+}
+.pdp-product-information__facts li:last-child { margin-bottom: 0; }
+.pdp-product-information__facts li::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: .67em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #252525;
+}
 
 
 /* Desktop purchase order: highlights -> colour -> details -> QR -> size -> quantity -> delivery -> CTA */
