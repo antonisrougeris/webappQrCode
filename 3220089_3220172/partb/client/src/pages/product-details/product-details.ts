@@ -20,6 +20,7 @@ import { getOrders } from "../../services/orders";
 import { createProductReview, getProductReviews, getMyReviewedProductIds } from "../../services/reviews";
 
 import { showToast } from "../../utils/toast.ts";
+import { estimateTshirtSize, SKANARE_TSHIRT_SIZES, type FitPreference } from "./size-guide-fit";
 import { locale, productPath, t } from "../../i18n/locale";
 
 
@@ -224,17 +225,25 @@ function setupSizeGuideModal(product: Product): void {
   const button = document.getElementById("sizeGuideButton") as HTMLButtonElement | null;
   const mobileButton = document.getElementById("mobileSizeGuideButton") as HTMLButtonElement | null;
   const modal = document.getElementById("sizeGuideModal");
-  const image = document.getElementById("sizeGuideImage") as HTMLImageElement | null;
   const title = document.getElementById("sizeGuideModalTitle");
   const closeButton = document.getElementById("sizeGuideClose") as HTMLButtonElement | null;
-
+  const form = document.getElementById("sizeGuideFitForm") as HTMLFormElement | null;
+  const heightInput = document.getElementById("sizeGuideHeight") as HTMLInputElement | null;
+  const weightInput = document.getElementById("sizeGuideWeight") as HTMLInputElement | null;
+  const result = document.getElementById("sizeGuideResult");
+  const resultSize = document.getElementById("sizeGuideResultSize");
+  const resultDescription = document.getElementById("sizeGuideResultDescription");
+  const applyButton = document.getElementById("sizeGuideApply") as HTMLButtonElement | null;
+  const greek = locale === "el";
+  const label = (id: string, en: string, el: string) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = greek ? el : en;
+  };
   const hasSizes =
     product.category === "tshirt" &&
-    (product.variants || []).some(
-      (variant) => String(variant.size || "").trim().length > 0
-    );
+    (product.variants || []).some(variant => String(variant.size || "").trim().length > 0);
 
-  if (!button || !modal || !image || !hasSizes) {
+  if (!button || !modal || !form || !heightInput || !weightInput || !hasSizes) {
     if (button) button.hidden = true;
     if (mobileButton) mobileButton.hidden = true;
     return;
@@ -242,50 +251,130 @@ function setupSizeGuideModal(product: Product): void {
 
   button.hidden = false;
   if (mobileButton) mobileButton.hidden = false;
+  label("sizeGuideEyebrow", "SKANARE FIT GUIDE", "SKANARE ΟΔΗΓΟΣ ΕΦΑΡΜΟΓΗΣ");
+  label("sizeGuideSubtitle", "Find your fit in a few seconds.", "Βρες εύκολα την εφαρμογή που σου ταιριάζει.");
+  label("sizeGuideHeightLabel", "Height (cm)", "Ύψος (εκ.)");
+  label("sizeGuideWeightLabel", "Weight (kg)", "Βάρος (κιλά)");
+  label("sizeGuideFitLabel", "How do you like it to fit?", "Πώς προτιμάς να σου κάθεται;");
+  label("sizeGuideFitFitted", "Fitted", "Στενό");
+  label("sizeGuideFitRegular", "Regular", "Κανονικό");
+  label("sizeGuideFitRelaxed", "Relaxed", "Άνετο");
+  label("sizeGuideEstimate", "Find my size →", "Βρες το μέγεθός μου →");
+  label("sizeGuideChartTitle", "Actual T-shirt measurements", "Πραγματικές διαστάσεις μπλούζας");
+  label("sizeGuideChartUnit", "cm · measured flat", "εκ. · σε επίπεδη επιφάνεια");
+  label("sizeGuideColumnLabel", "Size", "Μέγεθος");
+  label("sizeGuideLengthLabel", "Length (B)", "Μήκος (B)");
+  label("sizeGuideWidthLabel", "Width (A)", "Πλάτος (A)");
+  label("sizeGuideMeasureToggle", "How to measure", "Πώς μετράμε");
+  label("sizeGuideMeasureCopy",
+    "A: Chest width, from seam to seam. B: Shoulder to bottom hem. Compare with a T-shirt you own.",
+    "Α: Πλάτος στο στήθος, από ραφή σε ραφή. Β: Από τον ώμο ως το τελείωμα. Σύγκρινε με μια μπλούζα σου.");
+  label("sizeGuideDisclaimer",
+    "This is an approximate suggestion, not a guaranteed fit. Compare the garment measurements above. 2XL? Contact us for measurements. Height and weight aren't saved.",
+    "Η πρόταση είναι ενδεικτική, όχι εγγύηση εφαρμογής. Σύγκρινε τις διαστάσεις με μία μπλούζα σου. Για 2XL, επικοινώνησε μαζί μας. Δεν αποθηκεύουμε ύψος ή βάρος.");
+  label("sizeGuideResultLabel", "OUR SUGGESTION", "Η ΠΡΟΤΑΣΗ ΜΑΣ");
+  label("sizeGuideApply", "Choose size", "Επίλεξε μέγεθος");
+  label("sizeGuideDiagramTitle", "T-shirt width and length measurements", "Μετρήσεις πλάτους και μήκους μπλούζας");
+
+  let previousFocus: HTMLElement | null = null;
+  let recommended: string | null = null;
+  const resetResult = () => {
+    recommended = null;
+    if (result) result.hidden = true;
+    if (applyButton) applyButton.hidden = true;
+    modal.querySelectorAll<HTMLElement>("[data-suggested-size]").forEach(cell => {
+      cell.removeAttribute("data-suggested-size");
+    });
+  };
 
   const close = () => {
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
     document.body.classList.remove("size-guide-open");
-    button.focus();
+    (previousFocus || button).focus();
   };
 
   const open = () => {
-    image.src =
-      locale === "el"
-        ? "/assets/img/size-guide-tshirt-el.svg"
-        : "/assets/img/size-guide-tshirt-en.svg";
-    image.alt =
-      locale === "el"
-        ? "SKANARE οδηγός μεγεθών T-shirt"
-        : "SKANARE T-shirt size guide";
-
-    if (title) {
-      title.textContent =
-        locale === "el"
-          ? "Οδηγός μεγεθών"
-          : "Size guide";
-    }
-
+    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : button;
+    if (title) title.textContent = greek ? "Βρες το μέγεθός σου" : "Find your size";
+    resetResult();
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("size-guide-open");
-    closeButton?.focus();
+    heightInput.focus();
   };
+
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    resetResult();
+    const height = Number(heightInput.value);
+    const weight = Number(weightInput.value);
+    const checkedFit = form.querySelector<HTMLInputElement>('input[name="sizeGuideFit"]:checked');
+    const fit = (checkedFit?.value || "regular") as FitPreference;
+    const estimate = heightInput.value.trim() && weightInput.value.trim()
+      ? estimateTshirtSize(height, weight, fit) : null;
+    if (!result || !resultDescription || !resultSize) return;
+    result.hidden = false;
+    if (!estimate) {
+      resultSize.textContent = greek ? "Χρειάζονται μετρήσεις" : "Check measurements";
+      resultDescription.textContent = greek
+        ? "Δεν μπορούμε να προτείνουμε με ασφάλεια μέγεθος με αυτά τα στοιχεία. Σύγκρινε τον πίνακα με μια μπλούζα σου."
+        : "We can't give a useful suggestion from these details. Please compare the chart with a T-shirt you own.";
+      return;
+    }
+    const dimensions = SKANARE_TSHIRT_SIZES.find(entry => entry.size === estimate);
+    recommended = estimate;
+    resultSize.textContent = estimate;
+    resultDescription.textContent = greek
+      ? `Ενδεικτική εφαρμογή · Πλάτος ${dimensions?.widthCm} εκ. / Μήκος ${dimensions?.lengthCm} εκ.`
+      : `Estimated fit · Width ${dimensions?.widthCm} cm / Length ${dimensions?.lengthCm} cm`;
+    modal.querySelectorAll<HTMLTableCellElement>("#sizeGuideMeasurements tr").forEach(row => {
+      const index = SKANARE_TSHIRT_SIZES.findIndex(item => item.size === estimate) + 1;
+      row.children[index]?.setAttribute("data-suggested-size", "");
+    });
+    const available = Array.from(document.querySelectorAll<HTMLButtonElement>("#sizeOptions [data-size]"))
+      .some(option => String(option.dataset.size || "").toUpperCase() === estimate && !option.disabled);
+    if (applyButton) applyButton.hidden = !available;
+    if (!available) {
+      resultDescription.textContent += greek
+        ? " · Δεν είναι διαθέσιμο αυτή τη στιγμή στο επιλεγμένο χρώμα."
+        : " · Not available in the selected color right now.";
+    }
+  });
+
+  applyButton?.addEventListener("click", () => {
+    if (!recommended) return;
+    const option = Array.from(document.querySelectorAll<HTMLButtonElement>("#sizeOptions [data-size]"))
+      .find(candidate => String(candidate.dataset.size || "").toUpperCase() === recommended && !candidate.disabled);
+    if (!option) return;
+    option.click();
+    close();
+  });
 
   button.addEventListener("click", open);
   mobileButton?.addEventListener("click", open);
   closeButton?.addEventListener("click", close);
-  modal
-    .querySelector<HTMLElement>("[data-size-guide-close]")
-    ?.addEventListener("click", close);
-
-  document.addEventListener("keydown", (event) => {
-    if (
-      event.key === "Escape" &&
-      !modal.classList.contains("hidden")
-    ) {
+  modal.querySelector<HTMLElement>("[data-size-guide-close]")?.addEventListener("click", close);
+  document.addEventListener("keydown", event => {
+    if (modal.classList.contains("hidden")) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
       close();
+    }
+    if (event.key === "Tab") {
+      const controls = Array.from(modal.querySelectorAll<HTMLElement>(
+        'button:not([hidden]):not(:disabled),input:not([hidden]):not(:disabled),summary'
+      )).filter(element => element.getClientRects().length > 0);
+      if (!controls.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
   });
 }

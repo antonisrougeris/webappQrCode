@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="/assets/css/components.css?v=20261013-mobile-cookie-toast-shipping" />
   <link rel="stylesheet" href="/assets/css/product-mobile-immersive.css?v=20261013-benefit-row" />
   <link rel="stylesheet" href="/assets/css/product-desktop-premium.css?v=20261013-fullbleed" />
+  <link rel="stylesheet" href="/assets/css/size-guide-fit.css" />
   <!-- Intentionally unique file URL: bypass older Android/Samsung CSS caches. -->
   <link rel="stylesheet" href="/assets/css/product-mobile-android-price-v2-20261013.css" />
   <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="5001afeb-b9df-4288-92c2-6febe12a2a03";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
@@ -981,27 +982,82 @@
 
   <div id="sizeGuideModal" class="size-guide-modal hidden" aria-hidden="true">
     <div class="size-guide-modal__backdrop" data-size-guide-close></div>
-    <section class="size-guide-modal__panel" role="dialog" aria-modal="true" aria-labelledby="sizeGuideModalTitle">
+    <section class="size-guide-modal__panel" role="dialog" aria-modal="true" aria-labelledby="sizeGuideModalTitle" aria-describedby="sizeGuideSubtitle">
       <header class="size-guide-modal__header">
-        <h2 id="sizeGuideModalTitle">Size guide</h2>
+        <div>
+          <span id="sizeGuideEyebrow" class="size-guide-modal__eyebrow">SKANARE FIT GUIDE</span>
+          <h2 id="sizeGuideModalTitle">Find your size</h2>
+        </div>
         <button id="sizeGuideClose" class="size-guide-modal__close" type="button" aria-label="Close size guide">×</button>
       </header>
-      <img id="sizeGuideImage" class="size-guide-modal__image" src="" alt="Skanare T-shirt size guide" />
+      <div class="size-guide-modal__content">
+        <p id="sizeGuideSubtitle" class="size-guide-modal__subtitle">Your fit, without the guesswork.</p>
+        <form id="sizeGuideFitForm" class="size-fit-form" novalidate>
+          <div class="size-fit-form__fields">
+            <label class="size-fit-form__field" for="sizeGuideHeight">
+              <span id="sizeGuideHeightLabel">Height <small>(cm)</small></span>
+              <input id="sizeGuideHeight" name="height" type="number" min="145" max="205" step="1" inputmode="numeric" autocomplete="off" placeholder="175" required />
+            </label>
+            <label class="size-fit-form__field" for="sizeGuideWeight">
+              <span id="sizeGuideWeightLabel">Weight <small>(kg)</small></span>
+              <input id="sizeGuideWeight" name="weight" type="number" min="40" max="150" step="1" inputmode="numeric" autocomplete="off" placeholder="75" required />
+            </label>
+          </div>
+          <fieldset class="size-fit-form__fit">
+            <legend id="sizeGuideFitLabel">How do you like it to fit?</legend>
+            <div class="size-fit-form__choices">
+              <label><input type="radio" name="sizeGuideFit" value="fitted" /><span id="sizeGuideFitFitted">Fitted</span></label>
+              <label><input type="radio" name="sizeGuideFit" value="regular" checked /><span id="sizeGuideFitRegular">Regular</span></label>
+              <label><input type="radio" name="sizeGuideFit" value="relaxed" /><span id="sizeGuideFitRelaxed">Relaxed</span></label>
+            </div>
+          </fieldset>
+          <button id="sizeGuideEstimate" class="size-fit-form__submit" type="submit">Find my size <span aria-hidden="true">→</span></button>
+        </form>
+        <div id="sizeGuideResult" class="size-fit-result" role="status" aria-live="polite" hidden>
+          <div class="size-fit-result__copy">
+            <span id="sizeGuideResultLabel" class="size-fit-result__eyebrow">OUR SUGGESTION</span>
+            <strong id="sizeGuideResultSize" class="size-fit-result__size"></strong>
+            <span id="sizeGuideResultDescription" class="size-fit-result__detail"></span>
+          </div>
+          <button id="sizeGuideApply" type="button" class="size-fit-result__apply" hidden>Choose size</button>
+        </div>
+        <div class="size-guide-chart">
+          <div class="size-guide-chart__heading">
+            <h3 id="sizeGuideChartTitle">Actual T-shirt measurements</h3>
+            <span id="sizeGuideChartUnit">cm · measured flat</span>
+          </div>
+          <div class="size-guide-chart__scroll">
+            <table id="sizeGuideMeasurements">
+              <thead><tr><th id="sizeGuideColumnLabel" scope="col">Size</th><th scope="col">S</th><th scope="col">M</th><th scope="col">L</th><th scope="col">XL</th></tr></thead>
+              <tbody>
+                <tr><th id="sizeGuideLengthLabel" scope="row">Length (B)</th><td>64</td><td>70</td><td>72</td><td>74</td></tr>
+                <tr><th id="sizeGuideWidthLabel" scope="row">Width (A)</th><td>48</td><td>50</td><td>53</td><td>56</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <details id="sizeGuideHowToMeasure" class="size-guide-chart__howto">
+            <summary id="sizeGuideMeasureToggle">How to measure</summary>
+            <div class="size-guide-chart__diagram">
+              <svg viewBox="0 0 180 145" role="img" aria-labelledby="sizeGuideDiagramTitle">
+                <title id="sizeGuideDiagramTitle">T-shirt length and width measurements</title>
+                <path d="M51 19 69 10h42l18 9 27 26-24 22-12-12v70c0 9-5 13-14 13H74c-9 0-14-4-14-13V55L48 67 24 45z" fill="#fff" stroke="#999" stroke-width="1.7" />
+                <path d="M69 10q21 22 42 0" fill="none" stroke="#bbb" stroke-width="1.5"/>
+                <path d="M60 70h60m-49-47v102" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+                <path d="m60 70 7-4v8zm60 0-7-4v8zM71 23l-4 7h8zm0 102-4-7h8z" fill="#111"/>
+                <text x="90" y="63" font-size="11" font-weight="bold" text-anchor="middle">A</text>
+                <text x="78" y="103" font-size="11" font-weight="bold">B</text>
+              </svg>
+              <p id="sizeGuideMeasureCopy">A: Measure across the chest from seam to seam. B: Measure from shoulder to hem. Compare with a T-shirt you own.</p>
+            </div>
+          </details>
+          <p id="sizeGuideDisclaimer" class="size-guide-modal__note">Height and weight give an approximate suggestion, not a guaranteed fit. Compare the measurements above. For 2XL measurements, contact us. We don't store these details.</p>
+        </div>
+      </div>
     </section>
   </div>
 
   <style>
     .size-guide-button{border:0;background:transparent;padding:0;font:inherit;text-decoration:underline;cursor:pointer;color:inherit}
-    .size-guide-modal{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px}
-    .size-guide-modal.hidden{display:none}
-    .size-guide-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(3px)}
-    .size-guide-modal__panel{position:relative;z-index:1;width:min(760px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.28)}
-    .size-guide-modal__header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eee}
-    .size-guide-modal__header h2{margin:0;font-size:18px}
-    .size-guide-modal__close{width:38px;height:38px;border:0;border-radius:999px;background:#f2f2f2;font-size:26px;line-height:1;cursor:pointer}
-    .size-guide-modal__image{display:block;width:100%;height:auto}
-    body.size-guide-open{overflow:hidden}
-    @media(max-width:600px){.size-guide-modal{padding:8px}.size-guide-modal__panel{width:100%;max-height:96vh;border-radius:14px}}
   </style>
 
   <div id="cartOverlay" class="cart-overlay hidden"></div>
