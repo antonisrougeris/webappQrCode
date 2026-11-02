@@ -1,3 +1,4 @@
+import { BLANK_COLLECTION, JOB_COLLECTION, blankIdFromReservationKey, isSharedReservationKey, planSharedAllocation } from "./shared-blank-inventory.service.js";
 import { sendMetaPurchaseForPaidOrder } from "./meta-conversions.service.js";
 import { sendAdminPush } from "./admin-push.service.js";
 import { getDB } from "../config/db.js";
@@ -1464,7 +1465,41 @@ export async function markOrderPaidFromVivaWebhook(payload) {
         }
       }
 
+      const sharedLines = [];
+      const sharedKeys = new Set();
       for (const item of order.items || []) {
+        const reservation = reservationByItem.get(String(item.id));
+        const blankId = blankIdFromReservationKey(reservation?.inventoryKey);
+        if (!blankId) continue;
+        sharedLines.push({item,blankId,quantity:Number(item.quantity)});
+        sharedKeys.add(blankId);
+      }
+      const sharedRefs = new Map([...sharedKeys].map(id=>[id,db.collection(BLANK_COLLECTION).doc(id)]));
+      const sharedSnaps = new Map(await Promise.all([...sharedRefs].map(async ([id,ref])=>[id,await tx.get(ref)])));
+      const sharedBalances = new Map([...sharedSnaps].map(([id,snap])=>[id,snap.exists?{...snap.data()}:null]));
+      for (const {item,blankId,quantity} of sharedLines) {
+        const balance = sharedBalances.get(blankId);
+        if (!balance) throw new ApiError(409,"Shared blank stock not initialized");
+        let allocation;
+        try { allocation = planSharedAllocation(balance,quantity); }
+        catch { throw new ApiError(409,"Shared blank capacity exhausted before payment"); }
+        balance.committedPhysical=Number(balance.committedPhysical||0)+allocation.physical;
+        balance.backorderOpen=Number(balance.backorderOpen||0)+allocation.virtual;
+        tx.create(db.collection(JOB_COLLECTION).doc(`${order.id}__${item.id}`),{
+          orderId:order.id,orderNumber:order.orderNumber,orderItemId:item.id,
+          productId:item.productId,productTitle:item.title,sku:item.sku,
+          variant:item.variant,quantity,blankId,
+          physicalAllocated:allocation.physical,virtualAllocated:allocation.virtual,
+          status:allocation.virtual>0?"awaiting_blank":"to_prepare",
+          qrDestination:item.qrDestination||null,createdAt:paidAt,updatedAt:paidAt
+        });
+      }
+      for (const [id,balance] of sharedBalances) {
+        tx.update(sharedRefs.get(id),{committedPhysical:Number(balance.committedPhysical||0),backorderOpen:Number(balance.backorderOpen||0),updatedAt:paidAt});
+      }
+
+      for (const item of order.items || []) {
+        if (isSharedReservationKey(reservationByItem.get(String(item.id))?.inventoryKey)) continue;
         const requiredFallback =
           Number(
             fallbackByItem.get(String(item.id)) || 0
