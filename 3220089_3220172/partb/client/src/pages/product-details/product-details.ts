@@ -231,7 +231,6 @@ function setupSizeGuideModal(product: Product): void {
   const heightInput = document.getElementById("sizeGuideHeight") as HTMLInputElement | null;
   const weightInput = document.getElementById("sizeGuideWeight") as HTMLInputElement | null;
   const result = document.getElementById("sizeGuideResult");
-  const resultLabel = document.getElementById("sizeGuideResultLabel");
   const resultSize = document.getElementById("sizeGuideResultSize");
   const resultDescription = document.getElementById("sizeGuideResultDescription");
   const applyButton = document.getElementById("sizeGuideApply") as HTMLButtonElement | null;
