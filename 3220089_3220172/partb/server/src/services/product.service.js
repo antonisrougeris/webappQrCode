@@ -174,7 +174,7 @@ export async function listProductsService({category, q, featured, limit, locale 
       withDefaultGallery(
         applyActiveReservations(
           availabilityForProduct(product, ready),
-          reserved, sharedEnabled, blankRows,finishedCounts,sharedHolds,finishedCounts,sharedHolds
+          reserved, sharedEnabled, blankRows, finishedCounts, sharedHolds
         )
       ),
       locale
@@ -204,13 +204,15 @@ export async function getProductByIdOrSlug(idOrSlug, { locale = "en" } = {}) {
   const [ready, reserved, sharedEnabled] = await Promise.all([
     readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
   ]);
-  const blankRows = sharedEnabled ? await readSharedBlankRows(db) : new Map();
+  const [blankRows, finishedCounts, sharedHolds] = sharedEnabled
+    ? await Promise.all([readSharedBlankRows(db), readFinishedCounts(db), readSharedHoldBreakdown(db)])
+    : [new Map(), new Map(), { blank: new Map(), finished: new Map() }];
 
   return localizeProduct(
     withDefaultGallery(
       applyActiveReservations(
         availabilityForProduct(product, ready),
-        reserved, sharedEnabled, blankRows
+        reserved, sharedEnabled, blankRows, finishedCounts, sharedHolds
       )
     ),
     locale
