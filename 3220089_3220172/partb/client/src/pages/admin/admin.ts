@@ -1839,37 +1839,8 @@ function renderProducts() {
               ${adminMerchandisingLabel(product.merchandisingTag) ? ` · ${escapeHtml(adminMerchandisingLabel(product.merchandisingTag))}` : ""}
             </div>
 
-            <div class="admin-product__stock-box">
-              <div class="admin-product__stock-row">
-                <span>Made-to-order stock</span>
-                <strong>${madeToOrderTotal}</strong>
-              </div>
-
-              ${variants.length ? `
-                <div class="admin-product__variant-list">
-                  ${variants.map((variant: any) => {
-                    const ready = readyBySku.get(String(variant.sku || "")) || 0;
-                    const label = [variant.size || "One size", variant.color || ""].filter(Boolean).join(" · ");
-
-                    return `
-                      <div class="admin-product__variant">
-                        <span>${escapeHtml(label)}</span>
-                        <span>made-to-order ${Number(variant.stock || 0)} · ready QR ${ready}</span>
-                      </div>
-                    `;
-                  }).join("")}
-                </div>
-              ` : `<div class="admin-muted" style="margin-top:8px">No sellable size / option configured.</div>`}
-
-              <div class="admin-product__stock-row" style="margin-top:12px;padding-top:10px;border-top:1px solid #eeeeea">
-                <span>Ready QR stock</span>
-                <strong>${readyQrCodes.length}</strong>
-              </div>
-            </div>
-
             <div class="admin-product__actions">
-              <button class="admin-primary-button" type="button" data-add-qr-stock="${escapeHtml(product.id)}" ${active ? "" : "disabled"}>Add QR stock</button>
-              <button class="admin-secondary-button" type="button" data-edit-product="${escapeHtml(product.id)}">Edit</button>
+                            <button class="admin-secondary-button" type="button" data-edit-product="${escapeHtml(product.id)}">Edit</button>
               ${
                 active
                   ? `<button class="admin-danger-button" type="button" data-archive-product="${escapeHtml(product.id)}">Archive</button>`
