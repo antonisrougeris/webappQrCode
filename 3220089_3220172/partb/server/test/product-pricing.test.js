@@ -5,12 +5,16 @@ import {
   calculateDiscountedPrice,
   decorateProductPricing,
   normalizeDiscountPercent,
+  normalizeDiscountAmount,
+  calculateProductDiscountedPrice,
+  getEffectiveUnitPrice,
   normalizeMerchandisingTag,
 } from "../src/services/product-pricing.service.js";
 
-test("discount percent is bounded and rounded", () => {
+test("discount percent supports decimals", () => {
   assert.equal(normalizeDiscountPercent(-20), 0);
-  assert.equal(normalizeDiscountPercent(12.6), 13);
+  assert.equal(normalizeDiscountPercent(12.6), 12.6);
+  assert.equal(normalizeDiscountPercent(12.345), 12.35);
   assert.equal(normalizeDiscountPercent(500), 90);
 });
 
@@ -65,4 +69,16 @@ test("unknown merchandising tag is treated as none", () => {
     normalizeMerchandisingTag("whatever"),
     "none"
   );
+});
+
+test("fixed euro and fractional percent discounts match checkout and storefront",()=>{
+ const raw={price:29.90,discountType:"amount",discountAmount:10};
+ assert.equal(normalizeDiscountAmount(10.129),10.13);
+ assert.equal(calculateProductDiscountedPrice(29.9,raw),19.9);
+ assert.equal(getEffectiveUnitPrice(raw),19.9);
+ const shown=decorateProductPricing(raw);
+ assert.equal(shown.price,19.9);
+ assert.equal(shown.originalPrice,29.9);
+ assert.equal(shown.onSale,true);
+ assert.equal(calculateProductDiscountedPrice(25,{discountType:"percent",discountPercent:12.5}),21.88);
 });

@@ -614,6 +614,16 @@ function setupVariantControls(
     }
   };
   desktopSizeViewport.addEventListener("change", onViewportChange);
+  window.addEventListener("skanare:stock-updated", (event: Event) => {
+    const current=(event as CustomEvent<Product>).detail;
+    if(current?.id!==product.id)return;
+    for(const v of variants) {
+      const fresh=current.variants?.find(x=>String(x.sku)===String(v.sku));
+      if(fresh)v.stock=Number(fresh.stock||0);
+    }
+    product.stock=Number(current.stock||0);
+    redraw();
+  });
   wrapper.hidden = false;
   onColorChanged(selectedColor);
   redraw();
@@ -1631,6 +1641,7 @@ if (imageStage) {
       if (!(product.variants || []).length) addBtn.disabled = !isInStock(product);
 
       addBtn.addEventListener("click", async () => {
+        await refreshProductStock();
         const selectedVariant =
           getSelectedVariant();
 
@@ -1768,12 +1779,33 @@ if (imageStage) {
         } catch (error: any) {
           console.error("Failed to add product to cart:", error);
           showToast(error?.message || "Failed to add product to cart.");
+          void refreshProductStock();
           addBtn.disabled = false;
           addBtn.textContent = "Add to cart";
         }
       });
     }
 
+    // Refresh availability on focus, periodically, and immediately before cart writes.
+    // The authoritative reservation check still runs atomically in the backend.
+    let stockFetchInFlight=false;
+    let lastStockFetch=Date.now();
+    const refreshProductStock=async()=>{
+      if(stockFetchInFlight||document.hidden)return;
+      stockFetchInFlight=true;
+      try{
+        const latest=await getProductById(id);
+        if(latest){
+          window.dispatchEvent(new CustomEvent<Product>("skanare:stock-updated",{detail:latest}));
+          lastStockFetch=Date.now();
+        }
+      }catch(error){console.warn("Stock refresh failed; checkout will revalidate",error);}
+      finally{stockFetchInFlight=false;}
+    };
+    const onStockFocus=()=>{if(!document.hidden&&Date.now()-lastStockFetch>1500)void refreshProductStock();};
+    window.addEventListener("focus",onStockFocus);
+    document.addEventListener("visibilitychange",onStockFocus);
+    window.setInterval(()=>{if(!document.hidden&&Date.now()-lastStockFetch>=10000)void refreshProductStock();},10000);
     // Non-critical requests run AFTER cart handlers are attached. Neither
     // reviews nor recommendations should delay the size picker / CTA.
     void (async () => {

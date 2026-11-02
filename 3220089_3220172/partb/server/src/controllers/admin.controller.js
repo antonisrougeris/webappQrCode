@@ -1758,17 +1758,13 @@ export const createAdminProduct =
         );
       }
 
-      const discountPercent =
-        Math.min(
-          90,
-          Math.max(
-            0,
-            cleanInteger(
-              req.body?.discountPercent,
-              0
-            )
-          )
-        );
+      const discountPercent = Number(req.body?.discountPercent || 0);
+      const discountType = req.body?.discountType === "amount" ? "amount" : "percent";
+      const discountAmount = Number(req.body?.discountAmount || 0);
+      if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 90 ||
+          !Number.isFinite(discountAmount) || discountAmount < 0 ||
+          (discountType === "amount" && discountAmount >= price))
+        throw new ApiError(400,"Invalid discount value");
 
       const merchandisingTagRaw =
         cleanString(
@@ -1892,7 +1888,9 @@ export const createAdminProduct =
 
         price,
 
-        discountPercent,
+        discountPercent:Math.round(discountPercent*100)/100,
+        discountType,
+        discountAmount:Math.round(discountAmount*100)/100,
 
         merchandisingTag,
 
@@ -2161,11 +2159,7 @@ export const updateAdminProduct =
         req.body?.discountPercent !==
         undefined
       ) {
-        const discountPercent =
-          cleanInteger(
-            req.body.discountPercent,
-            0
-          );
+        const discountPercent = Number(req.body.discountPercent);
 
         if (
           discountPercent < 0 ||
@@ -2177,10 +2171,26 @@ export const updateAdminProduct =
           );
         }
 
-        update.discountPercent =
-          discountPercent;
+        update.discountPercent = Math.round(discountPercent*100)/100;
       }
 
+
+      if(req.body?.discountType!==undefined){
+        if(!["percent","amount"].includes(req.body.discountType))
+          throw new ApiError(400,"Unknown discount type");
+        update.discountType=req.body.discountType;
+      }
+      if(req.body?.discountAmount!==undefined){
+        const amount=Number(req.body.discountAmount);
+        if(!Number.isFinite(amount)||amount<0)
+          throw new ApiError(400,"Invalid EUR discount");
+        update.discountAmount=Math.round(amount*100)/100;
+      }
+      const finalMode=update.discountType??previous.discountType??"percent";
+      const finalAmount=update.discountAmount??Number(previous.discountAmount||0);
+      const finalPrice=update.price??Number(previous.price||0);
+      if(finalMode==="amount"&&finalAmount>=finalPrice&&finalAmount>0)
+        throw new ApiError(400,"Fixed discount must be less than regular price");
 
       if (
         req.body?.merchandisingTag !==

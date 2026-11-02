@@ -17,9 +17,22 @@ export function normalizeDiscountPercent(value) {
     90,
     Math.max(
       0,
-      Math.round(number)
+      Math.round(number * 100) / 100
     )
   );
+}
+
+export function normalizeDiscountAmount(value) {
+  const amount=Number(value);
+  return Number.isFinite(amount)&&amount>0?Math.round(amount*100)/100:0;
+}
+
+export function calculateProductDiscountedPrice(basePrice,product) {
+  const regular=Number(basePrice);
+  if(!Number.isFinite(regular)||regular<=0)return 0;
+  if(product?.discountType==="amount")
+    return Math.max(0,Math.round((regular-normalizeDiscountAmount(product?.discountAmount))*100)/100);
+  return calculateDiscountedPrice(regular,product?.discountPercent);
 }
 
 export function normalizeMerchandisingTag(value) {
@@ -83,10 +96,7 @@ export function getEffectiveUnitPrice(
       0
   );
 
-  return calculateDiscountedPrice(
-    basePrice,
-    product?.discountPercent
-  );
+  return calculateProductDiscountedPrice(basePrice,product);
 }
 
 export function decorateProductPricing(product) {
@@ -108,11 +118,11 @@ export function decorateProductPricing(product) {
       product?.discountPercent
     );
 
-  const price =
-    calculateDiscountedPrice(
-      safeOriginalPrice,
-      discountPercent
-    );
+  const discountType=product?.discountType==="amount"?"amount":"percent";
+  const discountAmount=normalizeDiscountAmount(product?.discountAmount);
+  const price=calculateProductDiscountedPrice(safeOriginalPrice,product);
+  const displayDiscountPercent=discountType==="amount"&&safeOriginalPrice>0
+    ?Math.round((safeOriginalPrice-price)/safeOriginalPrice*10000)/100:discountPercent;
 
   const merchandisingTag =
     normalizeMerchandisingTag(
@@ -128,14 +138,13 @@ export function decorateProductPricing(product) {
 
     // Preserve the regular price so UIs can show a crossed-out comparison.
     originalPrice:
-      discountPercent > 0
+      price < safeOriginalPrice
         ? safeOriginalPrice
         : price,
 
-    discountPercent,
-    onSale:
-      discountPercent > 0 &&
-      price < safeOriginalPrice,
+    discountPercent:displayDiscountPercent,
+    discountType, discountAmount,
+    onSale:price<safeOriginalPrice,
 
     merchandisingTag,
 

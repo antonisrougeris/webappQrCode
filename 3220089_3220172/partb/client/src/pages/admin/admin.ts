@@ -1769,14 +1769,28 @@ async function loadProducts() {
   renderProducts();
 }
 
+function refreshProductDiscountPreview() {
+ const type=inputValue("productDiscountType")==="amount"?"amount":"percent";
+ const price=Number(inputValue("productPrice")||0);
+ const value=Number(inputValue("productDiscountPercent")||0);
+ const field=document.getElementById("productDiscountPercent") as HTMLInputElement|null;
+ const label=document.getElementById("productDiscountValueLabel");
+ if(field){field.max=type==="percent"?"90":String(Math.max(0,price));field.step="0.01";}
+ if(label)label.textContent=type==="amount"?"Discount (€)":"Discount (%)";
+ const reduced=type==="amount"?Math.max(0,price-value):price*(1-value/100);
+ setText("productDiscountPreview",Number.isFinite(reduced)&&reduced>=0?"New price: "+formatMoney(Math.round(reduced*100)/100):"");
+}
+["productDiscountType","productDiscountPercent","productPrice"].forEach(id=>document.getElementById(id)?.addEventListener("input",refreshProductDiscountPreview));
+
 function renderAdminProductPrice(product: any): string {
   const regular = Number(product?.price || 0);
-  const discount = Math.min(90, Math.max(0, Number(product?.discountPercent || 0)));
+  const amountMode=product?.discountType==="amount";
+  const discount=amountMode?Number(product?.discountAmount||0):Math.min(90,Math.max(0,Number(product?.discountPercent||0)));
   if (!discount) {
     return `<div class="admin-product__pricing"><strong>${formatMoney(regular)}</strong></div>`;
   }
-  const sale = Math.round(regular * (1 - discount / 100) * 100) / 100;
-  return `<div class="admin-product__pricing"><span class="admin-product__old-price">${formatMoney(regular)}</span><strong>${formatMoney(sale)}</strong><span class="admin-product__sale">-${discount}%</span></div>`;
+  const sale=Math.max(0,Math.round((amountMode?regular-discount:regular*(1-discount/100))*100)/100);
+  return `<div class="admin-product__pricing"><span class="admin-product__old-price">${formatMoney(regular)}</span><strong>${formatMoney(sale)}</strong><span class="admin-product__sale">-${amountMode?formatMoney(discount):discount+"%"}</span></div>`;
 }
 
 function adminMerchandisingLabel(value: unknown): string {
@@ -1887,7 +1901,9 @@ function openProductModal(product: any = null) {
 
   setInputValue("productPrice", product?.price ?? "");
   setInputValue("productCurrency", product?.currency || "EUR");
-  setInputValue("productDiscountPercent", product?.discountPercent ?? 0);
+  setInputValue("productDiscountType", product?.discountType === "amount" ? "amount" : "percent");
+  setInputValue("productDiscountPercent", product?.discountType === "amount" ? (product?.discountAmount ?? 0) : (product?.discountPercent ?? 0));
+  refreshProductDiscountPreview();
   setInputValue("productMerchandisingTag", product?.merchandisingTag || "none");
   setChecked("productFeatured", Boolean(product?.featured));
   setChecked("productActive", product?.active !== false);
@@ -1952,7 +1968,9 @@ function resetProductForm() {
   setChecked("productFeatured", false);
   setChecked("productActive", true);
   setChecked("productCustomQr", true);
+  setInputValue("productDiscountType", "percent");
   setInputValue("productDiscountPercent", 0);
+  refreshProductDiscountPreview();
   setInputValue("productMerchandisingTag", "none");
 
   setInputValue("productCurrency", "EUR");
@@ -2519,7 +2537,9 @@ function collectProductPayload() {
     category: inputValue("productCategory") || "General",
     price: Number(inputValue("productPrice") || 0),
     currency: inputValue("productCurrency") || "EUR",
-    discountPercent: Math.min(90, Math.max(0, Math.round(Number(inputValue("productDiscountPercent") || 0)))),
+    discountType: inputValue("productDiscountType") === "amount" ? "amount" : "percent",
+    discountPercent: inputValue("productDiscountType") === "amount" ? 0 : Math.round(Number(inputValue("productDiscountPercent") || 0)*100)/100,
+    discountAmount: inputValue("productDiscountType") === "amount" ? Math.round(Number(inputValue("productDiscountPercent") || 0)*100)/100 : 0,
     merchandisingTag: inputValue("productMerchandisingTag") || "none",
     featured: checked("productFeatured"),
     active: checked("productActive"),
