@@ -7,12 +7,12 @@ const css=readFileSync("public/assets/css/size-guide-fit.css","utf8");
 const logic=readFileSync("src/pages/product-details/size-guide-fit.ts","utf8");
 const page=readFileSync("src/pages/product-details/product-details.ts","utf8");
 
-test("merchant supplied S-XL dimensions are represented in height/weight guide",()=>{
+test("merchant supplied S-2XL dimensions are represented in height/weight guide",()=>{
   assert.match(logic,/size: "S", lengthCm: 64, widthCm: 48/);
   assert.match(logic,/size: "M", lengthCm: 70, widthCm: 50/);
   assert.match(logic,/size: "L", lengthCm: 72, widthCm: 53/);
   assert.match(logic,/size: "XL", lengthCm: 74, widthCm: 56/);
-  assert.doesNotMatch(logic,/size: "2XL", lengthCm:/);
+  assert.match(logic,/size: "2XL", lengthCm: 76, widthCm: 59/);
   assert.match(html,/<th id="sizeGuideLengthLabel"[^>]*>Length \(B\)<\/th><td>64<\/td><td>70<\/td><td>72<\/td><td>74<\/td>/);
   assert.match(html,/<th id="sizeGuideWidthLabel"[^>]*>Width \(A\)<\/th><td>48<\/td><td>50<\/td><td>53<\/td><td>56<\/td>/);
 });
@@ -36,4 +36,21 @@ test("only gives an approximate recommendation and cannot select missing/out-of-
   assert.match(page,/Δεν αποθηκεύουμε ύψος ή βάρος/);
   assert.match(page,/Η πρόταση είναι ενδεικτική/);
   assert.match(page,/previousFocus/);
+});
+
+test("desktop defaults to an in-stock S but mobile keeps its original no-size state",()=>{
+  assert.match(page,/window\.matchMedia\("\(min-width: 821px\)"\)/);
+  assert.match(page,/const desktopDefaultSize/);
+  assert.match(page,/Number\(variant\.stock \|\| 0\) > 0/);
+  assert.match(page,/let hasExplicitSizeSelection = Boolean\(linkedVariant && productHasSizes\)/);
+  assert.match(page,/!hasExplicitSizeSelection && productHasSizes/);
+  assert.match(page,/selectedSize = desktopDefaultSize\(\)/);
+  assert.match(page,/hasExplicitSizeSelection = true/);
+});
+test("popup has all five size columns and never scrolls horizontally",()=>{
+  assert.match(html,/<th scope="col">XL<\/th><th scope="col">2XL<\/th>/);
+  assert.match(css,/#sizeGuideMeasurements\{[^}]*table-layout:fixed/);
+  assert.match(css,/\.size-guide-chart__scroll\{[^}]*overflow:hidden/);
+  assert.match(css,/\.size-guide-modal__panel\{[^}]*overflow-x:hidden/);
+  assert.match(css,/@media\(max-width:410px\)/);
 });

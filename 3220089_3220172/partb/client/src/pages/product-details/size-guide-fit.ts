@@ -9,6 +9,7 @@ export const SKANARE_TSHIRT_SIZES = [
   { size: "M", lengthCm: 70, widthCm: 50 },
   { size: "L", lengthCm: 72, widthCm: 53 },
   { size: "XL", lengthCm: 74, widthCm: 56 },
+  { size: "2XL", lengthCm: 76, widthCm: 59 },
 ] as const;
 
 export type TshirtSize = (typeof SKANARE_TSHIRT_SIZES)[number]["size"];
@@ -16,7 +17,7 @@ export type FitPreference = "fitted" | "regular" | "relaxed";
 
 /**
  * No training data or size-return statistics are available for this brand.
- * Never claim a probability/AI accuracy or invent measurements for 2XL.
+ * Never claim a probability/AI accuracy; all sizes use merchant-supplied garment measurements.
  */
 export function estimateTshirtSize(
   heightCm: number,
