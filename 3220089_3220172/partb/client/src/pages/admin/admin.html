@@ -233,6 +233,7 @@
         <button class="admin-nav__item" data-view="orders" type="button"><span class="admin-nav__icon">▤</span>Orders</button>
         <button class="admin-nav__item" data-view="returns" type="button"><span class="admin-nav__icon">↩</span>Returns</button>
         <button class="admin-nav__item" data-view="messages" type="button"><span class="admin-nav__icon">✉</span><span>Messages</span><span id="messagesBadge" class="nav-badge" hidden></span></button>
+        <button class="admin-nav__item" data-view="inventory" type="button">Inventory &amp; Production</button>
         <button class="admin-nav__item" data-view="products" type="button"><span class="admin-nav__icon">□</span>Products</button>
         <button class="admin-nav__item" data-view="discounts" type="button"><span class="admin-nav__icon">%</span>Discount Codes</button>
         <button class="admin-nav__item" data-view="customers" type="button"><span class="admin-nav__icon">♙</span>Customers</button>
@@ -445,6 +446,20 @@
         </div>
       </section>
 
+      <section id="view-inventory" class="admin-view hidden">
+        <div class="admin-section">
+          <h2>Inventory &amp; Production</h2>
+          <p>Shared physical blanks and backorder capacity across all T-shirt designs.</p>
+          <p id="sharedInventoryStatus" role="status"></p>
+          <div id="sharedActivationPanel"></div>
+          <h3>Blank T-Shirts</h3>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Color / Size</th><th>On hand</th><th>Committed</th><th>Available</th><th>Virtual limit</th><th>Backorders</th><th>Sellable</th><th>Actions</th></tr></thead><tbody id="sharedBlanksBody"></tbody></table></div>
+          <h3>Production Queue</h3>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order</th><th>Product</th><th>Blank</th><th>Physical / Virtual</th><th>Status</th><th>Action</th></tr></thead><tbody id="sharedJobsBody"></tbody></table></div>
+          <h3>QR-only transfers</h3><div id="sharedQrList"></div>
+          <button type="button" class="admin-secondary-button" id="refreshSharedInventory">Refresh inventory</button>
+        </div>
+      </section>
       <!-- DISCOUNT CODES -->
       <section id="view-discounts" class="admin-view hidden">
         <div class="admin-section">

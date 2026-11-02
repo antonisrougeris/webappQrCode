@@ -1,4 +1,7 @@
 import { Router } from "express";
+import { getSharedBlankInventory, initializeBlankInventory, enableSharedBlankInventory,
+ setBlankVirtualLimit, receiveBlankStock, allocateProductionBlank, startProductionJob,
+ completeProductionJob } from "../controllers/shared-blank.controller.js";
 import {
  listDtfStock, generateDtfPrintBatch, updateDtfPhysicalStock,
  generateModularQrStock, confirmModularQrPrinted,
@@ -316,6 +319,14 @@ router.post(
   "/inventory/generate",
   generateAdminQrStock
 );
+router.get("/inventory/shared", getSharedBlankInventory);
+router.post("/inventory/shared/initialize", initializeBlankInventory);
+router.post("/inventory/shared/activate", enableSharedBlankInventory);
+router.post("/inventory/shared/virtual", setBlankVirtualLimit);
+router.post("/inventory/shared/receive", receiveBlankStock);
+router.post("/inventory/shared/jobs/:id/allocate", allocateProductionBlank);
+router.post("/inventory/shared/jobs/:id/start", startProductionJob);
+router.post("/inventory/shared/jobs/:id/complete", completeProductionJob);
 router.get("/inventory/dtf", listDtfStock);
 router.post("/inventory/dtf/print", generateDtfPrintBatch);
 router.post("/inventory/dtf/physical", updateDtfPhysicalStock);

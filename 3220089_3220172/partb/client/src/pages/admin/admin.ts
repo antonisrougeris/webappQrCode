@@ -231,6 +231,7 @@ function openView(view: string) {
     returns: "Returns",
     messages: "Messages",
     products: "Products",
+    inventory: "Inventory & Production",
     discounts: "Discount Codes",
     customers: "Customers",
     qr: "QR Codes",
@@ -277,6 +278,9 @@ async function loadView(view: string) {
       break;
     case "products":
       await loadProducts();
+      break;
+    case "inventory":
+      await loadSharedInventory();
       break;
     case "discounts":
       await loadDiscountCodes();
@@ -3016,3 +3020,61 @@ document.getElementById("dtfPhysicalSave")?.addEventListener("click",async ()=>{
   }catch(error){setInlineStatus(document.getElementById("dtfStatus"),errorMessage(error),"error");}
 });
 
+
+async function loadSharedInventory() {
+ const status=document.getElementById("sharedInventoryStatus");
+ try {
+  const data=await adminApi("/inventory/shared");
+  const panel=document.getElementById("sharedActivationPanel");
+  if(panel)panel.innerHTML=data.enabled?"<strong>Shared inventory ACTIVE</strong>":data.initialized
+   ?'<strong>Shared inventory OFF</strong><p>Verify payment holds, physical stock and shipping lead times before activation.</p><button id="sharedActivate">Activate shared stock</button>'
+   :'<strong>Shared inventory OFF</strong><p>Count stock before initialization: 2 S, 4 M, 6 L, 3 XL, 0 2XL PER COLOR.</p><button id="sharedInitialize">Initialize 30 blanks</button>';
+  const body=document.getElementById("sharedBlanksBody");
+  if(body)body.innerHTML=(data.rows||[]).map((r:any)=>`<tr><td>${escapeHtml(r.color)} ${escapeHtml(r.size)}</td>
+  <td>${r.onHand}</td><td>${r.committedPhysical}</td><td>${r.physicalAvailable}</td><td>${r.virtualLimit}</td><td>${r.backorderOpen}</td><td>${r.saleable}</td>
+  <td><button data-virtual="${escapeHtml(r.id)}">Set virtual</button> <button data-receive="${escapeHtml(r.id)}">Receive</button></td></tr>`).join("")||'<tr><td colspan="8">Not initialized</td></tr>';
+  const jobs=document.getElementById("sharedJobsBody");
+  if(jobs)jobs.innerHTML=(data.production||[]).map((j:any)=>`<tr><td>${escapeHtml(j.orderNumber||j.orderId)}</td>
+  <td>${escapeHtml(j.productTitle||"")}</td><td>${escapeHtml(j.blankId)}</td><td>${j.physicalAllocated} / ${j.virtualAllocated}</td><td>${escapeHtml(j.status)}</td>
+  <td>${j.status==="awaiting_blank"?`<button data-job="allocate" data-id="${escapeHtml(j.id)}">Allocate blank</button>`:j.status==="to_prepare"?`<button data-job="start" data-id="${escapeHtml(j.id)}">Start</button>`:j.status==="preparing"?`<button data-job="complete" data-id="${escapeHtml(j.id)}">Complete</button>`:"—"}</td></tr>`).join("")||'<tr><td colspan="6">No production jobs</td></tr>';
+  const qr=document.getElementById("sharedQrList");
+  if(qr)qr.innerHTML=(data.qrItems||[]).map((q:any)=>`<div class="dtf-stock-row"><span>${escapeHtml(q.shortId||q.id)} · ${escapeHtml(q.status)}</span><span>${escapeHtml(q.printColor||"")}</span></div>`).join("")||"No QR-only transfers";
+  if(status)status.textContent="";
+ }catch(e){setInlineStatus(status,errorMessage(e),"error");}
+}
+document.getElementById("refreshSharedInventory")?.addEventListener("click",()=>void loadSharedInventory());
+document.getElementById("sharedActivationPanel")?.addEventListener("click",async event=>{
+ const target=event.target as HTMLElement;
+ try{
+  if(target.closest("#sharedInitialize")){
+   if(!confirm("I have verified exactly 30 physical blanks in the stated sizes and colors."))return;
+   const stock=["BLACK","WHITE"].flatMap(color=>[["S",2],["M",4],["L",6],["XL",3],["2XL",0]].map(([size,quantity])=>({color,size,quantity})));
+   await adminApi("/inventory/shared/initialize",{method:"POST",body:JSON.stringify({stock})});
+  }else if(target.closest("#sharedActivate")){
+   if(!confirm("Confirm all old pending checkouts are resolved and activate shared T-shirt stock?"))return;
+   await adminApi("/inventory/shared/activate",{method:"POST",body:JSON.stringify({confirm:"ACTIVATE_SHARED_STOCK"})});
+  }else return;
+  await loadSharedInventory();
+ }catch(e){setInlineStatus(document.getElementById("sharedInventoryStatus"),errorMessage(e),"error");}
+});
+document.getElementById("sharedBlanksBody")?.addEventListener("click",async event=>{
+ const target=event.target as HTMLElement;
+ const virtual=target.closest<HTMLElement>("[data-virtual]"),receive=target.closest<HTMLElement>("[data-receive]");
+ const id=virtual?.dataset.virtual||receive?.dataset.receive;
+ if(!id)return;
+ const raw=prompt(virtual?"New maximum outstanding backorders":"How many physical blanks did you receive?",virtual?"0":"1");
+ if(raw===null)return;
+ const number=Number(raw);
+ if(!Number.isSafeInteger(number)||number<(virtual?0:1)||number>10000){alert("Invalid quantity");return;}
+ const [color,size]=id.split("__");
+ try{await adminApi(virtual?"/inventory/shared/virtual":"/inventory/shared/receive",{method:"POST",body:JSON.stringify({color,size,...(virtual?{virtualLimit:number}:{quantity:number})})});await loadSharedInventory();}
+ catch(e){setInlineStatus(document.getElementById("sharedInventoryStatus"),errorMessage(e),"error");}
+});
+document.getElementById("sharedJobsBody")?.addEventListener("click",async event=>{
+ const target=(event.target as HTMLElement).closest<HTMLElement>("[data-job]");
+ if(!target)return;
+ const action=target.dataset.job,id=target.dataset.id;
+ if(!action||!id||!confirm("Confirm this production transition?"))return;
+ try{await adminApi(`/inventory/shared/jobs/${encodeURIComponent(id)}/${action}`,{method:"POST",body:JSON.stringify(action==="complete"?{qrChecked:true,printChecked:true}:{})});await loadSharedInventory();}
+ catch(e){setInlineStatus(document.getElementById("sharedInventoryStatus"),errorMessage(e),"error");}
+});
