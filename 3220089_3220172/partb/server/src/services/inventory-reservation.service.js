@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { BLANK_COLLECTION, blankIdFromReservationKey, sharedInventoryKey, sharedAvailable } from "./shared-blank-inventory.service.js";
 
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
@@ -188,16 +189,20 @@ export async function reserveInventoryHold({
     }
 
     const { variant } = rawVariant(product, selectedVariant);
-    const inventoryKey = getInventoryKey(product.id, variant);
+    const configSnap = await tx.get(db.collection("inventorySettings").doc("sharedTshirts"));
+    const sharedKey = sharedInventoryKey(product, variant, configSnap.data()?.enabled === true);
+    const inventoryKey = sharedKey || getInventoryKey(product.id, variant);
 
     const holdRef = db
       .collection(COLLECTIONS.INVENTORY_HOLDS)
       .doc(reservationDocId(inventoryKey));
 
-    const [holdSnap, readyCount] = await Promise.all([
+    const [holdSnap, readyCount, blankSnap] = await Promise.all([
       tx.get(holdRef),
-      readyQrCountInTransaction(tx, db, product, variant),
+      sharedKey ? Promise.resolve(0) : readyQrCountInTransaction(tx, db, product, variant),
+      sharedKey ? tx.get(db.collection(BLANK_COLLECTION).doc(blankIdFromReservationKey(sharedKey))) : Promise.resolve(null),
     ]);
+    if (sharedKey && !blankSnap?.exists) throw new ApiError(409, "Blank inventory is not initialized");
 
     const activeHolds = pruneExpiredHolds(
       holdSnap.exists ? holdSnap.data()?.holds : [],
@@ -209,9 +214,9 @@ export async function reserveInventoryHold({
       nowMs,
     });
 
-    const baseStock =
-      rawFallbackStock(product, variant) +
-      readyCount;
+    const baseStock = sharedKey
+      ? sharedAvailable(blankSnap.data())
+      : rawFallbackStock(product, variant) + readyCount;
 
     const availableForThisHold =
       baseStock - reservedByOthers;

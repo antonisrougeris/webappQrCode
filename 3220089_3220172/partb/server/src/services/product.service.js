@@ -1,4 +1,5 @@
 import { getDB, toPlainDoc, toPlainDocs } from '../config/db.js';
+import { blankKey, isSharedTshirt, sharedAvailable, readSharedEnabled, readSharedBlankRows } from './shared-blank-inventory.service.js';
 import { COLLECTIONS } from '../constants/collections.js';
 import { ApiError } from '../utils/apiError.js';
 import { normalizeText } from '../utils/product.js';
@@ -74,16 +75,20 @@ async function readReadyCounts(db) {
   return counts;
 }
 
-function applyActiveReservations(product, reservedCounts) {
+function applyActiveReservations(product, reservedCounts, sharedEnabled = false, blankRows = new Map()) {
   if (Array.isArray(product.variants) && product.variants.length) {
     const variants = product.variants.map((variant) => {
-      const key = getInventoryKey(product.id, variant);
+      const shared = sharedEnabled && isSharedTshirt(product, variant);
+      const key = shared ? `blank::${blankKey(variant)}` : getInventoryKey(product.id, variant);
       const reserved = Number(reservedCounts.get(key) || 0);
-      const gross = Number(variant.stock || 0);
+      const gross = shared ? sharedAvailable(blankRows.get(blankKey(variant))) : Number(variant.stock || 0);
 
       return {
         ...variant,
         reservedStock: reserved,
+        ...(shared ? {physicalBlankStock: Math.max(0,Number(blankRows.get(blankKey(variant))?.onHand||0)-Number(blankRows.get(blankKey(variant))?.committedPhysical||0)),
+           virtualBlankStock: Math.max(0,Number(blankRows.get(blankKey(variant))?.virtualLimit||0)-Number(blankRows.get(blankKey(variant))?.backorderOpen||0)),
+           readyQrStock: 0, madeToOrderStock: 0, inventoryMode: "shared_blank"} : {}),
         stock: Math.max(0, gross - reserved),
       };
     });
@@ -147,25 +152,20 @@ export async function listProductsService({category, q, featured, limit, locale 
   products.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   const n = Number(limit);
   if (Number.isSafeInteger(n) && n > 0) products = products.slice(0, n);
-  if (!products.some(p => p.customQr && p.variants?.length)) {
-    return products.map((product) =>
-      localizeProduct(
-        withDefaultGallery(product),
-        locale
-      )
-    );
+  if (!products.some(p => p.variants?.length)) {
+    return products.map((product) => localizeProduct(withDefaultGallery(product), locale));
   }
-  const [ready, reserved] = await Promise.all([
-    readReadyCounts(db),
-    readActiveReservationCounts(db),
+  const [ready, reserved, sharedEnabled] = await Promise.all([
+    readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
   ]);
+  const blankRows = sharedEnabled ? await readSharedBlankRows(db) : new Map();
 
   return products.map((product) =>
     localizeProduct(
       withDefaultGallery(
         applyActiveReservations(
           availabilityForProduct(product, ready),
-          reserved
+          reserved, sharedEnabled, blankRows
         )
       ),
       locale
@@ -186,22 +186,22 @@ export async function getProductByIdOrSlug(idOrSlug, { locale = "en" } = {}) {
     product = { id: query.docs[0].id, ...query.docs[0].data() };
   }
   if (product.active === false) throw new ApiError(404, 'Product not found');
-  if (!product.customQr || !product.variants?.length) {
+  if (!product.variants?.length) {
     return localizeProduct(
       withDefaultGallery(product),
       locale
     );
   }
-  const [ready, reserved] = await Promise.all([
-    readReadyCounts(db),
-    readActiveReservationCounts(db),
+  const [ready, reserved, sharedEnabled] = await Promise.all([
+    readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
   ]);
+  const blankRows = sharedEnabled ? await readSharedBlankRows(db) : new Map();
 
   return localizeProduct(
     withDefaultGallery(
       applyActiveReservations(
         availabilityForProduct(product, ready),
-        reserved
+        reserved, sharedEnabled, blankRows
       )
     ),
     locale

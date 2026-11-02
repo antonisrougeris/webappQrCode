@@ -48,6 +48,7 @@ async function refreshCartReservations({
 
     refreshed.push({
       ...item,
+      inventoryKey: hold.inventoryKey,
       reservationExpiresAt: hold.expiresAt,
       updatedAt: nowIso(),
     });
@@ -180,6 +181,7 @@ export async function addCartItem({
     cart.items[existingIndex] = {
       ...existing,
       quantity: nextQty,
+      inventoryKey: hold.inventoryKey,
       reservationExpiresAt: hold.expiresAt,
       updatedAt: nowIso(),
     };
@@ -226,6 +228,7 @@ price: calculateDiscountedPrice(
       currency: product.currency || "EUR",
 
       quantity,
+      inventoryKey: hold.inventoryKey,
       variant: variant
         ? {
             sku: variant.sku || "",
@@ -415,10 +418,7 @@ export async function removeCartItem({ userId, itemId }) {
 
   await releaseInventoryHold({
     holdId: removedItem.id,
-    inventoryKey: getInventoryKey(
-      removedItem.productId,
-      removedItem.variant
-    ),
+    inventoryKey: removedItem.inventoryKey || getInventoryKey(removedItem.productId, removedItem.variant),
   });
 
   return nextCart;
@@ -449,10 +449,7 @@ export async function clearCart(userId) {
     (current.items || []).map((item) =>
       releaseInventoryHold({
         holdId: item.id,
-        inventoryKey: getInventoryKey(
-          item.productId,
-          item.variant
-        ),
+        inventoryKey: item.inventoryKey || getInventoryKey(item.productId, item.variant),
       })
     )
   );
@@ -538,10 +535,7 @@ if (guestCart.copiedFromUserCart && guestCart.sourceUserId === userId) {
       .map((item) =>
         releaseInventoryHold({
           holdId: item.id,
-          inventoryKey: getInventoryKey(
-            item.productId,
-            item.variant
-          ),
+          inventoryKey: item.inventoryKey || getInventoryKey(item.productId, item.variant),
         })
       )
   );
