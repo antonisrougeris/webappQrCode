@@ -270,8 +270,8 @@ function setupSizeGuideModal(product: Product): void {
     "A: Chest width, from seam to seam. B: Shoulder to bottom hem. Compare with a T-shirt you own.",
     "Α: Πλάτος στο στήθος, από ραφή σε ραφή. Β: Από τον ώμο ως το τελείωμα. Σύγκρινε με μια μπλούζα σου.");
   label("sizeGuideDisclaimer",
-    "This is an approximate suggestion, not a guaranteed fit. Compare the garment measurements above. 2XL? Contact us for measurements. Height and weight aren't saved.",
-    "Η πρόταση είναι ενδεικτική, όχι εγγύηση εφαρμογής. Σύγκρινε τις διαστάσεις με μία μπλούζα σου. Για 2XL, επικοινώνησε μαζί μας. Δεν αποθηκεύουμε ύψος ή βάρος.");
+    "This is an approximate suggestion, not a guaranteed fit. Compare the garment measurements above. Height and weight aren't saved.",
+    "Η πρόταση είναι ενδεικτική, όχι εγγύηση εφαρμογής. Σύγκρινε τις διαστάσεις με μία μπλούζα σου. Δεν αποθηκεύουμε ύψος ή βάρος.");
   label("sizeGuideResultLabel", "OUR SUGGESTION", "Η ΠΡΟΤΑΣΗ ΜΑΣ");
   label("sizeGuideApply", "Choose size", "Επίλεξε μέγεθος");
   label("sizeGuideDiagramTitle", "T-shirt width and length measurements", "Μετρήσεις πλάτους και μήκους μπλούζας");
@@ -431,7 +431,20 @@ function setupVariantControls(
   const sizesForColor = () =>
     unique(variantsForColor().map(v => v.size));
 
-  let selectedSize = linkedVariant && productHasSizes ? String(linkedVariant.size || "") : "";
+  // Default to an available Small only on desktop/laptop. Mobile remains
+  // unselected, and explicit Merchant Center SKU deep links always win.
+  const desktopSizeViewport = window.matchMedia("(min-width: 821px)");
+  const desktopDefaultSize = (): string => {
+    if (!desktopSizeViewport.matches || !productHasSizes) return "";
+    return String(variantsForColor().find(variant =>
+      String(variant.size || "").trim().toUpperCase() === "S" &&
+      Number(variant.stock || 0) > 0
+    )?.size || "");
+  };
+  let hasExplicitSizeSelection = Boolean(linkedVariant && productHasSizes);
+  let selectedSize = linkedVariant && productHasSizes
+    ? String(linkedVariant.size || "")
+    : desktopDefaultSize();
 
   const getSelectedVariant = () => {
     const candidates = variantsForColor();
@@ -566,6 +579,7 @@ function setupVariantControls(
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-size]");
     if (!button || button.disabled) return;
     selectedSize = button.dataset.size || "";
+    hasExplicitSizeSelection = true;
     redraw();
     // Desktop Add to cart may be waiting for this exact variant selection.
     // Mobile uses its own size picker and forwards its own cart click.
@@ -578,12 +592,22 @@ function setupVariantControls(
       button.dataset.productColor || "";
 
     if (productHasSizes) {
-      selectedSize = "";
+      hasExplicitSizeSelection = false;
+      selectedSize = desktopDefaultSize();
     }
 
     onColorChanged(selectedColor);
     redraw();
   });
+  // Resizing or browser zoom across the laptop/mobile breakpoint must never
+  // silently leave an auto-selected S on mobile. Keep user-made choices.
+  const onViewportChange = () => {
+    if (!hasExplicitSizeSelection && productHasSizes) {
+      selectedSize = desktopDefaultSize();
+      redraw();
+    }
+  };
+  desktopSizeViewport.addEventListener("change", onViewportChange);
   wrapper.hidden = false;
   onColorChanged(selectedColor);
   redraw();
