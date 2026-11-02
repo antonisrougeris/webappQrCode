@@ -1,5 +1,5 @@
 import { getDB, toPlainDoc, toPlainDocs } from '../config/db.js';
-import { blankKey, isSharedTshirt, sharedAvailable, readSharedEnabled, readSharedBlankRows } from './shared-blank-inventory.service.js';
+import { blankKey, isSharedTshirt, sharedAvailable, readSharedEnabled, readSharedBlankRows, isAvailableFinishedGood, finishedKey } from './shared-blank-inventory.service.js';
 import { COLLECTIONS } from '../constants/collections.js';
 import { ApiError } from '../utils/apiError.js';
 import { normalizeText } from '../utils/product.js';
@@ -7,6 +7,7 @@ import { chooseProductImages } from './product-colors.service.js';
 import { availabilityForProduct, inventoryKey, isReadyQr } from './stock-availability.service.js';
 import {
   getInventoryKey,
+  readSharedHoldBreakdown,
   readActiveReservationCounts,
 } from './inventory-reservation.service.js';
 import {
@@ -62,6 +63,13 @@ export function assertStockForVariant(product, variant, quantity) {
 
 // IMPORTANT: This reads available QR records to derive a storefront quantity, not to
 // reserve them. Checkout performs the authoritative query inside its transaction.
+async function readFinishedCounts(db) {
+ const snap=await db.collection(COLLECTIONS.QR_CODES).where("status","==","available").get();
+ const counts=new Map();
+ for(const doc of snap.docs){const qr=doc.data();if(!isAvailableFinishedGood(qr))continue;
+  const key=finishedKey(qr.productId,qr.sku);counts.set(key,(counts.get(key)||0)+1);}
+ return counts;
+}
 async function readReadyCounts(db) {
   const snap = await db.collection(COLLECTIONS.QR_CODES)
     .where('status', '==', 'available').get();
@@ -75,20 +83,21 @@ async function readReadyCounts(db) {
   return counts;
 }
 
-function applyActiveReservations(product, reservedCounts, sharedEnabled = false, blankRows = new Map()) {
+function applyActiveReservations(product, reservedCounts, sharedEnabled = false, blankRows = new Map(), finishedCounts=new Map(), sharedHolds={blank:new Map(),finished:new Map()}) {
   if (Array.isArray(product.variants) && product.variants.length) {
     const variants = product.variants.map((variant) => {
       const shared = sharedEnabled && isSharedTshirt(product, variant);
       const key = shared ? `blank::${blankKey(variant)}` : getInventoryKey(product.id, variant);
-      const reserved = Number(reservedCounts.get(key) || 0);
-      const gross = shared ? sharedAvailable(blankRows.get(blankKey(variant))) : Number(variant.stock || 0);
+      const reserved = shared ? Number(sharedHolds.blank.get(key)||0)+Number(sharedHolds.finished.get(finishedKey(product.id,variant.sku))||0) : Number(reservedCounts.get(key) || 0);
+      const gross = shared ? sharedAvailable(blankRows.get(blankKey(variant)))+Number(finishedCounts.get(finishedKey(product.id,variant.sku))||0) : Number(variant.stock || 0);
 
       return {
         ...variant,
         reservedStock: reserved,
         ...(shared ? {physicalBlankStock: Math.max(0,Number(blankRows.get(blankKey(variant))?.onHand||0)-Number(blankRows.get(blankKey(variant))?.committedPhysical||0)),
            virtualBlankStock: Math.max(0,Number(blankRows.get(blankKey(variant))?.virtualLimit||0)-Number(blankRows.get(blankKey(variant))?.backorderOpen||0)),
-           readyQrStock: 0, madeToOrderStock: 0, inventoryMode: "shared_blank"} : {}),
+           readyQrStock: 0, madeToOrderStock: 0, readyFinishedStock:Number(finishedCounts.get(finishedKey(product.id,variant.sku))||0),
+           inventoryMode: "shared_blank"} : {}),
         stock: Math.max(0, gross - reserved),
       };
     });
@@ -158,14 +167,14 @@ export async function listProductsService({category, q, featured, limit, locale 
   const [ready, reserved, sharedEnabled] = await Promise.all([
     readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
   ]);
-  const blankRows = sharedEnabled ? await readSharedBlankRows(db) : new Map();
+  const [blankRows,finishedCounts,sharedHolds] = sharedEnabled ? await Promise.all([readSharedBlankRows(db),readFinishedCounts(db),readSharedHoldBreakdown(db)]):[new Map(),new Map(),{blank:new Map(),finished:new Map()}];
 
   return products.map((product) =>
     localizeProduct(
       withDefaultGallery(
         applyActiveReservations(
           availabilityForProduct(product, ready),
-          reserved, sharedEnabled, blankRows
+          reserved, sharedEnabled, blankRows,finishedCounts,sharedHolds,finishedCounts,sharedHolds
         )
       ),
       locale

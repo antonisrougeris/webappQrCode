@@ -4,7 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { nowIso } from "../utils/ids.js";
 import {
  BLANK_COLLECTION, JOB_COLLECTION, SETTINGS_COLLECTION, SETTINGS_ID,
- BLANK_COLORS, BLANK_SIZES, blankNewRow, sharedAvailable, readSharedEnabled,
+ BLANK_COLORS, BLANK_SIZES, blankNewRow, sharedAvailable, readSharedEnabled,isAvailableFinishedGood,
 } from "../services/shared-blank-inventory.service.js";
 import { pruneExpiredHolds } from "../services/inventory-reservation.service.js";
 
@@ -25,11 +25,12 @@ function inventoryMove(tx, db, kind, blankId, qty, extra = {}) {
 
 export const getSharedBlankInventory = asyncHandler(async (_req,res) => {
  const db = getDB();
- const [config, blanks, jobs, qrs] = await Promise.all([
+ const [config, blanks, jobs, qrs, a3] = await Promise.all([
    db.collection(SETTINGS_COLLECTION).doc(SETTINGS_ID).get(),
    db.collection(BLANK_COLLECTION).get(),
    db.collection(JOB_COLLECTION).limit(300).get(),
-   db.collection("qrCodes").where("fulfillmentMode","==","modular_qr").limit(1000).get()
+   db.collection("qrCodes").where("fulfillmentMode","==","modular_qr").limit(1000).get(),
+   db.collection("qrCodes").where("fulfillmentMode","==","preprinted").limit(1000).get()
  ]);
  const rows = blanks.docs.map(doc => {
    const row={id:doc.id,...doc.data()};
@@ -38,7 +39,18 @@ export const getSharedBlankInventory = asyncHandler(async (_req,res) => {
  }).sort((a,b)=>a.id.localeCompare(b.id));
  const production = jobs.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
  const qrItems=qrs.docs.map(doc=>({id:doc.id,shortId:doc.data().shortId||"",printColor:doc.data().modularPrintColor||"",status:doc.data().status,printFileUrl:doc.data().printFileUrl||"",orderId:doc.data().orderId||"",physicalConfirmedAt:doc.data().physicalConfirmedAt||null}));
- res.json({success:true,enabled:config.data()?.enabled===true,initialized:rows.length===BLANK_COLORS.length*BLANK_SIZES.length,rows,production,qrItems});
+ const a3Items=a3.docs.map(doc=>({id:doc.id,shortId:doc.data().shortId||"",productId:doc.data().productId||"",
+  productTitle:doc.data().productTitle||"",variant:doc.data().variant||{},status:doc.data().status||"",
+  printFileUrl:doc.data().printFileUrl||"",physicalAppliedAt:doc.data().physicalAppliedAt||null,
+  finishedGoodStatus:doc.data().finishedGoodStatus||null,finishedSource:doc.data().finishedSource||null,
+  eligibleForFinish:doc.data().status==="available" && !doc.data().physicalAppliedAt && Boolean(doc.data().printFileUrl)}));
+ const readyFinished=a3.docs.filter(doc=>isAvailableFinishedGood(doc.data())).length;
+ res.json({success:true,enabled:config.data()?.enabled===true,initialized:rows.length===BLANK_COLORS.length*BLANK_SIZES.length,
+  rows,production,qrItems,a3Items,summary:{onHand:rows.reduce((n,x)=>n+Number(x.onHand||0),0),
+  committed:rows.reduce((n,x)=>n+Number(x.committedPhysical||0),0),
+  backorders:rows.reduce((n,x)=>n+Number(x.backorderOpen||0),0),
+  blankSellable:rows.reduce((n,x)=>n+Number(x.saleable||0),0),
+  finishedReady:readyFinished,qrReady:qrItems.filter(x=>x.status==="available").length}});
 });
 
 export const initializeBlankInventory = asyncHandler(async(req,res)=>{
@@ -151,4 +163,39 @@ export const completeProductionJob = asyncHandler(async(req,res)=>{
    tx.update(ref,{status:"completed",completedAt:nowIso(),qrChecked:true,printChecked:true,updatedAt:nowIso()});
  });
  res.json({success:true});
+});
+
+// Verify physical assembly before registering an A3 QR as a finished garment.
+// The same QR document is the unique finished unit; it cannot be registered twice.
+export const confirmFinishedShirt = asyncHandler(async(req,res)=>{
+ if(req.body?.confirm!=="PHYSICALLY_FINISHED")throw new ApiError(400,"Physical print and QR scan confirmation required");
+ const source=String(req.body?.source||"");
+ if(!["consume_blank","existing_finished"].includes(source))
+  throw new ApiError(400,"Choose whether the shirt came from tracked blank stock or existing finished stock");
+ const qrId=String(req.body?.qrId||"").trim();
+ if(!qrId)throw new ApiError(400,"QR ID is required");
+ const db=getDB(),ref=db.collection("qrCodes").doc(qrId);
+ const result=await db.runTransaction(async tx=>{
+  const snap=await tx.get(ref);
+  if(!snap.exists)throw new ApiError(404,"A3 QR not found");
+  const qr=snap.data();
+  const blankId=keyFromInput(qr.variant||{});
+  if(qr.fulfillmentMode!=="preprinted" || qr.status!=="available" ||
+    !qr.printFileUrl || qr.physicalAppliedAt || qr.finishedGoodStatus)
+    throw new ApiError(409,"QR must be an unassigned A3 transfer not already registered as finished");
+  const blankRef=db.collection(BLANK_COLLECTION).doc(blankId);
+  const blankSnap=source==="consume_blank"?await tx.get(blankRef):null;
+  if(source==="consume_blank" && (!blankSnap?.exists ||
+     Number(blankSnap.data().onHand||0)-Number(blankSnap.data().committedPhysical||0)<1))
+      throw new ApiError(409,"No unallocated physical blank to convert");
+  const at=nowIso();
+  if(source==="consume_blank"){
+   tx.update(blankRef,{onHand:Number(blankSnap.data().onHand)-1,updatedAt:at});
+   inventoryMove(tx,db,"blank_to_finished",blankId,1,{qrId});
+  }else inventoryMove(tx,db,"existing_finished_registered",blankId,1,{qrId});
+  tx.update(ref,{finishedGoodStatus:"available",physicalAppliedAt:at,finishedSource:source,
+    physicalQrChecked:true,updatedAt:at});
+  return {qrId,blankId,source};
+ });
+ res.json({success:true,...result});
 });

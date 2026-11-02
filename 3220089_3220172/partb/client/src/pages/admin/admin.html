@@ -432,13 +432,10 @@
             <div>
               <span class="admin-eyebrow">Catalog & inventory</span>
               <h2>Products</h2>
-              <p class="product-toolbar-note">Made-to-order stock is set per size / option. Ready physical QR stock is created separately with “Add QR stock”.</p>
+              <p class="product-toolbar-note">Manage products and prices. Stock and A3 printing are now under Inventory &amp; Production.</p>
             </div>
             <div class="admin-actions">
-              <button id="openAddStockButton" class="admin-secondary-button" type="button">+ Add ready A3 QR</button>
-              <button class="admin-secondary-button" type="button" data-open-dtf="qr">+ QR-only DTF</button>
-              <button class="admin-secondary-button" type="button" data-open-dtf="component">+ Logo / Neck / Text / Size</button>
-              <button class="admin-secondary-button" type="button" data-open-dtf="inventory">DTF Physical Stock</button>
+              <button class="admin-secondary-button" type="button" data-open-view="inventory">Inventory &amp; Production</button>
               <button id="addProductButton" class="admin-primary-button" type="button">+ Add product</button>
             </div>
           </div>
@@ -446,20 +443,15 @@
         </div>
       </section>
 
-      <section id="view-inventory" class="admin-view hidden">
-        <div class="admin-section">
-          <h2>Inventory &amp; Production</h2>
-          <p>Shared physical blanks and backorder capacity across all T-shirt designs.</p>
-          <p id="sharedInventoryStatus" role="status"></p>
-          <div id="sharedActivationPanel"></div>
-          <h3>Blank T-Shirts</h3>
-          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Color / Size</th><th>On hand</th><th>Committed</th><th>Available</th><th>Virtual limit</th><th>Backorders</th><th>Sellable</th><th>Actions</th></tr></thead><tbody id="sharedBlanksBody"></tbody></table></div>
-          <h3>Production Queue</h3>
-          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order</th><th>Product</th><th>Blank</th><th>Physical / Virtual</th><th>Status</th><th>Action</th></tr></thead><tbody id="sharedJobsBody"></tbody></table></div>
-          <h3>QR-only transfers</h3><div id="sharedQrList"></div>
-          <button type="button" class="admin-secondary-button" id="refreshSharedInventory">Refresh inventory</button>
-        </div>
-      </section>
+      <section id="view-inventory" class="admin-view hidden inv-workspace">
+ <div class="inv-top"><div><span class="admin-eyebrow">WAREHOUSE MANAGEMENT</span><h2>Inventory &amp; Production</h2><p>Manage shared blanks, finished shirts and every production job.</p></div><button id="refreshSharedInventory" class="admin-secondary-button">↻ Refresh</button></div>
+ <p id="sharedInventoryStatus" role="status"></p><div id="sharedActivationPanel"></div><div id="invSummary" class="inv-summary"></div>
+ <nav class="inv-tabs"><button class="is-active" data-inv-tab="blanks">Blank T-Shirts</button><button data-inv-tab="finished">Finished T-Shirts</button><button data-inv-tab="production">Production Queue</button><button data-inv-tab="transfers">QR &amp; DTF Transfers</button></nav>
+ <div class="inv-panel" data-inv-panel="blanks"><h3>Blank T-Shirts</h3><p>Shared physical blanks plus extra virtual sell capacity. Does not include finished shirts.</p><div class="inv-scroll"><table class="inv-table"><thead><tr><th>Color / Size</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Virtual limit</th><th>Backorders</th><th>Sellable*</th><th>Actions</th></tr></thead><tbody id="sharedBlanksBody"></tbody></table></div><small>* Before live cart and checkout holds. Storefront stock also subtracts temporary reservations.</small></div>
+ <div class="inv-panel hidden" data-inv-panel="finished"><h3>Finished T-Shirts</h3><p>Only shirts physically pressed with an A3 and QR scan checked; a generated A3 file is not a finished shirt.</p><div class="inv-scroll"><table class="inv-table"><thead><tr><th>QR</th><th>Design</th><th>Color / Size</th><th>Physical status</th><th>Source</th><th>Action</th></tr></thead><tbody id="sharedFinishedBody"></tbody></table></div><small>If a shirt used a blank already in On Hand, consume a tracked blank. Otherwise register an existing printed shirt without decrementing blanks.</small></div>
+ <div class="inv-panel hidden" data-inv-panel="production"><h3>Production Queue</h3><p>A production job is the work required to prepare a line from a paid T-shirt order.</p><div class="inv-scroll"><table class="inv-table"><thead><tr><th>Order</th><th>Product</th><th>Blank</th><th>Physical / Virtual / Finished</th><th>Status</th><th>Next action</th></tr></thead><tbody id="sharedJobsBody"></tbody></table></div></div>
+ <div class="inv-panel hidden" data-inv-panel="transfers"><h3>QR &amp; DTF Transfers</h3><p>Unapplied QR transfers are printing materials, not garments.</p><div class="inv-actions"><button id="openAddStockButton" class="admin-secondary-button">+ Generate A3</button><button data-open-dtf="qr" class="admin-secondary-button">+ QR-only</button><button data-open-dtf="component" class="admin-secondary-button">+ Logo / Neck / Text / Size</button><button data-open-dtf="inventory" class="admin-secondary-button">Physical DTF stock</button></div><h4>QR-only</h4><div id="sharedQrList"></div><h4>A3 artwork</h4><div id="sharedA3List"></div></div>
+ </section>
       <!-- DISCOUNT CODES -->
       <section id="view-discounts" class="admin-view hidden">
         <div class="admin-section">
@@ -679,9 +671,7 @@
             <button id="addVariantRowButton" class="admin-secondary-button" type="button">+ Add size / option</button>
           </div>
           <p class="variant-helper">
-            This is the small made-to-order stock you are willing to sell even when that exact QR is not already prepared.
-            It does <strong>not</strong> generate QR codes. Ready physical QR inventory is created later with <strong>Add QR stock</strong>.
-            For T-shirts, add each color above; its size rows will be created automatically. Existing SKUs remain locked for inventory compatibility.
+            For T-shirts, physical inventory is managed only in <strong>Inventory &amp; Production</strong>. Here you configure size/color options and internal SKUs. Accessories retain their own independent stock settings. Existing SKUs remain locked for compatibility.
           </p>
           <div id="variantRows"></div>
         </div>

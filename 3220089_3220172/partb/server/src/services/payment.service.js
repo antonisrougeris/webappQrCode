@@ -1,4 +1,4 @@
-import { BLANK_COLLECTION, JOB_COLLECTION, blankIdFromReservationKey, isSharedReservationKey, planSharedAllocation } from "./shared-blank-inventory.service.js";
+import { BLANK_COLLECTION, JOB_COLLECTION, blankIdFromReservationKey, isSharedReservationKey, planSharedAllocation, isAvailableFinishedGood } from "./shared-blank-inventory.service.js";
 import { sendMetaPurchaseForPaidOrder } from "./meta-conversions.service.js";
 import { sendAdminPush } from "./admin-push.service.js";
 import { getDB } from "../config/db.js";
@@ -1207,7 +1207,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
                   doc.data()
                     .printFileUrl
                 )
-            );
+            ).sort((a,b)=>Number(isAvailableFinishedGood(b.data()))-Number(isAvailableFinishedGood(a.data())));
 
 
           for (
@@ -1226,6 +1226,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
               qrAssignments.push({
                 type: "existing",
                 ref: doc.ref,
+                finishedGood:isAvailableFinishedGood(doc.data()),
                 item,
                 sku,
                 inventoryKey: key,
@@ -1471,17 +1472,27 @@ export async function markOrderPaidFromVivaWebhook(payload) {
         const reservation = reservationByItem.get(String(item.id));
         const blankId = blankIdFromReservationKey(reservation?.inventoryKey);
         if (!blankId) continue;
-        sharedLines.push({item,blankId,quantity:Number(item.quantity)});
+        const finishedQuantity=Number(reservation.finishedQuantity||0);
+        const blankQuantity=Number(reservation.blankQuantity??item.quantity);
+        if(!Number.isSafeInteger(finishedQuantity)||!Number.isSafeInteger(blankQuantity)||
+           finishedQuantity<0||blankQuantity<0||finishedQuantity+blankQuantity!==Number(item.quantity))
+           throw new ApiError(409,"Invalid finished/blank reservation");
+        const allocatedFinished=qrAssignments.filter(a=>String(a.item?.id)===String(item.id) &&
+           a.type==="existing" && a.finishedGood===true).length;
+        if(allocatedFinished<finishedQuantity)throw new ApiError(409,"Reserved finished garment unavailable at payment");
+        // Query-backed QR assignment must contain enough physically finished garments;
+        // payment must never consume a second blank for an already applied garment.
+        sharedLines.push({item,blankId,quantity:blankQuantity,finishedQuantity});
         sharedKeys.add(blankId);
       }
       const sharedRefs = new Map([...sharedKeys].map(id=>[id,db.collection(BLANK_COLLECTION).doc(id)]));
       const sharedSnaps = new Map(await Promise.all([...sharedRefs].map(async ([id,ref])=>[id,await tx.get(ref)])));
       const sharedBalances = new Map([...sharedSnaps].map(([id,snap])=>[id,snap.exists?{...snap.data()}:null]));
-      for (const {item,blankId,quantity} of sharedLines) {
+      for (const {item,blankId,quantity,finishedQuantity} of sharedLines) {
         const balance = sharedBalances.get(blankId);
         if (!balance) throw new ApiError(409,"Shared blank stock not initialized");
         let allocation;
-        try { allocation = planSharedAllocation(balance,quantity); }
+        try { allocation = quantity>0?planSharedAllocation(balance,quantity):{physical:0,virtual:0}; }
         catch { throw new ApiError(409,"Shared blank capacity exhausted before payment"); }
         balance.committedPhysical=Number(balance.committedPhysical||0)+allocation.physical;
         balance.backorderOpen=Number(balance.backorderOpen||0)+allocation.virtual;
@@ -1490,7 +1501,8 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           productId:item.productId,productTitle:item.title,sku:item.sku,
           variant:item.variant,quantity,blankId,
           physicalAllocated:allocation.physical,virtualAllocated:allocation.virtual,
-          status:allocation.virtual>0?"awaiting_blank":"to_prepare",
+          finishedAllocated:finishedQuantity,
+          status:allocation.virtual>0?"awaiting_blank":quantity===0?"completed":"to_prepare",
           qrDestination:item.qrDestination||null,createdAt:paidAt,updatedAt:paidAt
         });
       }

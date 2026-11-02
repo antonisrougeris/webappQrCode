@@ -1800,24 +1800,7 @@ function renderProducts() {
 
   grid.innerHTML = currentProducts
     .map((product: any) => {
-      const variants = Array.isArray(product.variants) ? product.variants : [];
       const active = product.active !== false;
-
-      const madeToOrderTotal = variants.reduce(
-        (sum: number, variant: any) => sum + Math.max(0, Number(variant.stock || 0)),
-        0
-      );
-
-      const readyQrCodes = currentQrCodes.filter(
-        (qr: any) => qr.productId === product.id && qr.status === "available"
-      );
-
-      const readyBySku = new Map<string, number>();
-      readyQrCodes.forEach((qr: any) => {
-        const sku = String(qr.sku || qr.variant?.sku || "");
-        if (!sku) return;
-        readyBySku.set(sku, (readyBySku.get(sku) || 0) + 1);
-      });
 
       return `
         <article class="admin-product ${active ? "" : "is-inactive"}">
@@ -1839,37 +1822,8 @@ function renderProducts() {
               ${adminMerchandisingLabel(product.merchandisingTag) ? ` · ${escapeHtml(adminMerchandisingLabel(product.merchandisingTag))}` : ""}
             </div>
 
-            <div class="admin-product__stock-box">
-              <div class="admin-product__stock-row">
-                <span>Made-to-order stock</span>
-                <strong>${madeToOrderTotal}</strong>
-              </div>
-
-              ${variants.length ? `
-                <div class="admin-product__variant-list">
-                  ${variants.map((variant: any) => {
-                    const ready = readyBySku.get(String(variant.sku || "")) || 0;
-                    const label = [variant.size || "One size", variant.color || ""].filter(Boolean).join(" · ");
-
-                    return `
-                      <div class="admin-product__variant">
-                        <span>${escapeHtml(label)}</span>
-                        <span>made-to-order ${Number(variant.stock || 0)} · ready QR ${ready}</span>
-                      </div>
-                    `;
-                  }).join("")}
-                </div>
-              ` : `<div class="admin-muted" style="margin-top:8px">No sellable size / option configured.</div>`}
-
-              <div class="admin-product__stock-row" style="margin-top:12px;padding-top:10px;border-top:1px solid #eeeeea">
-                <span>Ready QR stock</span>
-                <strong>${readyQrCodes.length}</strong>
-              </div>
-            </div>
-
             <div class="admin-product__actions">
-              <button class="admin-primary-button" type="button" data-add-qr-stock="${escapeHtml(product.id)}" ${active ? "" : "disabled"}>Add QR stock</button>
-              <button class="admin-secondary-button" type="button" data-edit-product="${escapeHtml(product.id)}">Edit</button>
+                            <button class="admin-secondary-button" type="button" data-edit-product="${escapeHtml(product.id)}">Edit</button>
               ${
                 active
                   ? `<button class="admin-danger-button" type="button" data-archive-product="${escapeHtml(product.id)}">Archive</button>`
@@ -2163,9 +2117,9 @@ function addVariantRow(variant: any = {}) {
         ${knownSizes.map(value => `<option value="${escapeHtml(value)}" ${value === size ? "selected" : ""}>${escapeHtml(value || "One size")}</option>`).join("")}
       </select>
     </label>
-    <label class="admin-field"><span>Made-to-order</span>
-      <input data-variant-stock type="number" min="0" step="1" value="${Math.max(0, Number(variant.stock || 0))}" />
-    </label>
+${tshirt
+      ? `<input data-variant-stock type="hidden" value="${Math.max(0, Number(variant.stock || 0))}" />`
+      : `<label class="admin-field"><span>Stock</span><input data-variant-stock type="number" min="0" step="1" value="${Math.max(0, Number(variant.stock || 0))}" /></label>`}
     <div class="admin-variant-sku"><span>Internal SKU</span><span data-variant-sku-preview class="variant-sku-preview"></span></div>
     <input data-variant-sku type="hidden" value="${escapeHtml(variant.sku || "")}" />
     <button class="admin-danger-button" data-remove-variant type="button" ${hasExistingSku ? "disabled" : ""}>Remove</button>
@@ -3021,27 +2975,65 @@ document.getElementById("dtfPhysicalSave")?.addEventListener("click",async ()=>{
 });
 
 
+
+let inventoryTab="blanks";
+function showInventoryTab(tab:string){
+ inventoryTab=tab;
+ document.querySelectorAll<HTMLElement>("[data-inv-tab]").forEach(el=>el.classList.toggle("is-active",el.dataset.invTab===tab));
+ document.querySelectorAll<HTMLElement>("[data-inv-panel]").forEach(el=>el.classList.toggle("hidden",el.dataset.invPanel!==tab));
+}
+document.querySelectorAll<HTMLElement>("[data-inv-tab]").forEach(el=>el.addEventListener("click",()=>showInventoryTab(el.dataset.invTab||"blanks")));
+function inventoryBadge(value:string,kind="normal"){
+ return `<span class="inv-tag ${kind==="ok"?"inv-tag--ok":kind==="warn"?"inv-tag--warn":""}">${escapeHtml(value.replaceAll("_"," "))}</span>`;
+}
 async function loadSharedInventory() {
  const status=document.getElementById("sharedInventoryStatus");
- try {
-  const data=await adminApi("/inventory/shared");
+ try{
+  const data=await adminApi("/inventory/shared"),summary=data.summary||{};
   const panel=document.getElementById("sharedActivationPanel");
-  if(panel)panel.innerHTML=data.enabled?"<strong>Shared inventory ACTIVE</strong>":data.initialized
-   ?'<strong>Shared inventory OFF</strong><p>Verify payment holds, physical stock and shipping lead times before activation.</p><button id="sharedActivate">Activate shared stock</button>'
-   :'<strong>Shared inventory OFF</strong><p>Count stock before initialization: 2 S, 4 M, 6 L, 3 XL, 0 2XL PER COLOR.</p><button id="sharedInitialize">Initialize 30 blanks</button>';
-  const body=document.getElementById("sharedBlanksBody");
-  if(body)body.innerHTML=(data.rows||[]).map((r:any)=>`<tr><td>${escapeHtml(r.color)} ${escapeHtml(r.size)}</td>
-  <td>${r.onHand}</td><td>${r.committedPhysical}</td><td>${r.physicalAvailable}</td><td>${r.virtualLimit}</td><td>${r.backorderOpen}</td><td>${r.saleable}</td>
-  <td><button data-virtual="${escapeHtml(r.id)}">Set virtual</button> <button data-receive="${escapeHtml(r.id)}">Receive</button></td></tr>`).join("")||'<tr><td colspan="8">Not initialized</td></tr>';
+  if(panel)panel.innerHTML=data.enabled?'<div class="inv-status"><strong>● Shared inventory active</strong><span>All T-shirt designs share the same physical blanks by color and size.</span></div>':
+   data.initialized?'<div class="inv-status"><strong>Shared inventory inactive</strong><button id="sharedActivate">Activate shared stock</button></div>':
+   '<div class="inv-status"><strong>Inventory not initialized</strong><button id="sharedInitialize">Initialize 30 counted blank shirts</button></div>';
+  const metrics=document.getElementById("invSummary");
+  if(metrics)metrics.innerHTML=[["Physical blanks",summary.onHand||0,"On hand"],["Reserved",summary.committed||0,"Paid orders"],
+   ["Backorders",summary.backorders||0,"Awaiting blanks"],["Blank sellable",summary.blankSellable||0,"Before live holds"],
+   ["Finished shirts",summary.finishedReady||0,"Physically completed"],["QR transfers",summary.qrReady||0,"QR-only available"]]
+   .map(([title,note,subtitle])=>`<div class="inv-card"><span>${escapeHtml(title)}</span><strong>${note}</strong><small>${escapeHtml(subtitle)}</small></div>`).join("");
+  const rows=document.getElementById("sharedBlanksBody");
+  if(rows)rows.innerHTML=(data.rows||[]).sort((a:any,b:any)=>a.color.localeCompare(b.color)||
+   ["S","M","L","XL","2XL"].indexOf(a.size)-["S","M","L","XL","2XL"].indexOf(b.size)).map((x:any)=>`<tr>
+   <td><span class="inv-swatch inv-swatch--${escapeHtml(x.color.toLowerCase())}"></span><strong>${escapeHtml(x.color)} · ${escapeHtml(x.size)}</strong></td>
+   <td>${x.onHand}</td><td>${x.committedPhysical}</td><td>${x.physicalAvailable}</td><td>${x.virtualLimit}</td><td>${x.backorderOpen}</td><td><strong>${x.saleable}</strong></td>
+   <td><button data-virtual="${escapeHtml(x.id)}">Edit limit</button> <button data-receive="${escapeHtml(x.id)}">+ Receive</button></td></tr>`).join("")||'<tr><td colspan="8">Not initialized</td></tr>';
   const jobs=document.getElementById("sharedJobsBody");
-  if(jobs)jobs.innerHTML=(data.production||[]).map((j:any)=>`<tr><td>${escapeHtml(j.orderNumber||j.orderId)}</td>
-  <td>${escapeHtml(j.productTitle||"")}</td><td>${escapeHtml(j.blankId)}</td><td>${j.physicalAllocated} / ${j.virtualAllocated}</td><td>${escapeHtml(j.status)}</td>
-  <td>${j.status==="awaiting_blank"?`<button data-job="allocate" data-id="${escapeHtml(j.id)}">Allocate blank</button>`:j.status==="to_prepare"?`<button data-job="start" data-id="${escapeHtml(j.id)}">Start</button>`:j.status==="preparing"?`<button data-job="complete" data-id="${escapeHtml(j.id)}">Complete</button>`:"—"}</td></tr>`).join("")||'<tr><td colspan="6">No production jobs</td></tr>';
+  if(jobs)jobs.innerHTML=(data.production||[]).map((j:any)=>`<tr><td><strong>${escapeHtml(j.orderNumber||j.orderId||"")}</strong></td>
+   <td>${escapeHtml(j.productTitle||"")}</td><td>${escapeHtml(j.blankId||"")}</td><td>${Number(j.physicalAllocated||0)} / ${Number(j.virtualAllocated||0)} / ${Number(j.finishedAllocated||0)}</td>
+   <td>${inventoryBadge(j.status||"",j.status==="completed"?"ok":j.status==="awaiting_blank"?"warn":"normal")}</td>
+   <td>${j.status==="awaiting_blank"?`<button data-job="allocate" data-id="${escapeHtml(j.id)}">Assign received blank</button>`:j.status==="to_prepare"?`<button data-job="start" data-id="${escapeHtml(j.id)}">Start production</button>`:j.status==="preparing"?`<button data-job="complete" data-id="${escapeHtml(j.id)}">Complete + QR check</button>`:"—"}</td></tr>`).join("")||'<tr><td colspan="6" class="inv-empty">No production jobs yet.</td></tr>';
+  const finished=document.getElementById("sharedFinishedBody");
+  if(finished)finished.innerHTML=(data.a3Items||[]).map((q:any)=>`<tr><td>${escapeHtml(q.shortId||q.id)}</td>
+   <td>${escapeHtml(q.productTitle||q.productId||"")}</td><td>${escapeHtml([q.variant?.color,q.variant?.size].filter(Boolean).join(" · "))}</td>
+   <td>${inventoryBadge(q.finishedGoodStatus==="available"?"Finished and available":q.status||"",q.finishedGoodStatus==="available"?"ok":"normal")}</td>
+   <td>${escapeHtml(q.finishedSource==="consume_blank"?"Tracked blank":q.finishedSource==="existing_finished"?"Previously finished":"—")}</td>
+   <td>${q.eligibleForFinish?`<button data-finish-qr="${escapeHtml(q.id)}">Mark physically finished</button>`:"—"}</td></tr>`).join("")||'<tr><td colspan="6" class="inv-empty">No A3 artwork found.</td></tr>';
   const qr=document.getElementById("sharedQrList");
-  if(qr)qr.innerHTML=(data.qrItems||[]).map((q:any)=>`<div class="dtf-stock-row"><span>${escapeHtml(q.shortId||q.id)} · ${escapeHtml(q.status)}</span><span>${escapeHtml(q.printColor||"")}</span></div>`).join("")||"No QR-only transfers";
+  if(qr)qr.innerHTML=(data.qrItems||[]).map((q:any)=>`<div class="inv-transfer"><strong>${escapeHtml(q.shortId||q.id)}</strong><span>${escapeHtml(q.printColor||"")} ink</span>${inventoryBadge(q.status||"",q.status==="available"?"ok":"normal")}</div>`).join("")||'<p class="inv-empty">No QR transfers yet.</p>';
+  const a3=document.getElementById("sharedA3List");
+  if(a3)a3.innerHTML=(data.a3Items||[]).filter((q:any)=>q.finishedGoodStatus!=="available").map((q:any)=>`<div class="inv-transfer"><strong>${escapeHtml(q.shortId||q.id)}</strong><span>${escapeHtml(q.productTitle||"")} · ${escapeHtml([q.variant?.color,q.variant?.size].filter(Boolean).join(" "))}</span>${inventoryBadge(q.status||"")}</div>`).join("")||'<p class="inv-empty">No loose A3 print assets.</p>';
+  showInventoryTab(inventoryTab);
   if(status)status.textContent="";
  }catch(e){setInlineStatus(status,errorMessage(e),"error");}
 }
+document.getElementById("sharedFinishedBody")?.addEventListener("click",async event=>{
+ const button=(event.target as HTMLElement).closest<HTMLElement>("[data-finish-qr]");
+ if(!button?.dataset.finishQr)return;
+ const choice=prompt("Enter 1 if you USED A BLANK ALREADY IN INVENTORY, or 2 if this is a FINISHED SHIRT that was never counted as a blank.","1");
+ if(choice===null)return;
+ if(choice!=="1"&&choice!=="2"){alert("Choose 1 or 2");return;}
+ if(!confirm("Confirm the shirt is physically printed and you tested the unique QR by scanning it?"))return;
+ try{await adminApi("/inventory/shared/finished/confirm",{method:"POST",body:JSON.stringify({qrId:button.dataset.finishQr,source:choice==="1"?"consume_blank":"existing_finished",confirm:"PHYSICALLY_FINISHED"})});await loadSharedInventory();}
+ catch(e){setInlineStatus(document.getElementById("sharedInventoryStatus"),errorMessage(e),"error");}
+});
 document.getElementById("refreshSharedInventory")?.addEventListener("click",()=>void loadSharedInventory());
 document.getElementById("sharedActivationPanel")?.addEventListener("click",async event=>{
  const target=event.target as HTMLElement;
