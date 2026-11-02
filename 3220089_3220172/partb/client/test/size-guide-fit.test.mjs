@@ -30,7 +30,7 @@ test("size assistant is accessible and responsive without the old oversized imag
 
 test("only gives an approximate recommendation and cannot select missing/out-of-stock variants",()=>{
   assert.match(logic,/bmi < 16 \|\| bmi > 34/);
-  assert.match(page,/estimateTshirtSize\(height, weight, fit\)/);
+  assert.match(page,/estimateTshirtFit\(height, weight, fit\)/);
   assert.match(page,/!option\.disabled/);
   assert.match(page,/option\.click\(\);/);
   assert.match(page,/Δεν αποθηκεύουμε ύψος ή βάρος/);
@@ -53,4 +53,18 @@ test("popup has all five size columns and never scrolls horizontally",()=>{
   assert.match(css,/\.size-guide-chart__scroll\{[^}]*overflow:hidden/);
   assert.match(css,/\.size-guide-modal__panel\{[^}]*overflow-x:hidden/);
   assert.match(css,/@media\(max-width:410px\)/);
+});
+
+test("fit heuristic uses continuous score and surfaces uncertainty instead of BMI cutoffs",()=>{
+  assert.match(logic,/export function estimateTshirtFit/);
+  assert.match(logic,/0\.24 \* \(heightCm - 170\)/);
+  assert.match(logic,/0\.03 \* \(weightKg - 80\)/);
+  assert.match(logic,/Math\.abs\(fraction - 0\.5\) <= 0\.18/);
+  assert.match(page,/estimate\.alternative/);
+  assert.match(page,/κοντά σε δύο μεγέθη/);
+  assert.doesNotMatch(logic,/const byHeight = heightCm </);
+  const regular = (height, weight) => Math.max(0,Math.min(4,Math.round(1+0.24*(height-170)+0.03*(weight-80))));
+  assert.equal(regular(175,70),2, "175cm / 70kg should recommend L");
+  assert.equal(regular(170,80),1, "170cm / 80kg should recommend M");
+  assert.equal(regular(170,81),1, "170cm / 81kg must not jump from M");
 });
