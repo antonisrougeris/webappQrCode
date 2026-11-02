@@ -1102,9 +1102,22 @@ setMetaName("twitter:image", productImage);
       const isClothing = product.category === "tshirt";
       facts.hidden = !isClothing;
       if (isClothing) {
+        // Product-specific apparel specifications; accessories have their own information.
         const messages = locale === "el"
-          ? ["100% οργανικό βαμβάκι", "Ανθεκτική και ποιοτική εκτύπωση QR", "Άνετη unisex εφαρμογή"]
-          : ["100% organic cotton", "High-quality, durable QR print", "Comfortable unisex fit"];
+          ? [
+              "100% βαμβάκι Semi-Combed Ringspun",
+              "Premium ύφασμα 190 GSM",
+              "Κλασική unisex γραμμή για καθημερινή άνεση",
+              "Μεγάλη, υψηλής ποιότητας εκτύπωση QR στην πλάτη",
+              "Διακριτικό λογότυπο SKANARE μπροστά",
+            ]
+          : [
+              "100% Semi-Combed Ringspun Cotton",
+              "Premium 190 GSM Fabric",
+              "Classic Unisex Fit for Everyday Comfort",
+              "Large, High-Quality QR Print on the Back",
+              "Minimal SKANARE Logo on the Front",
+            ];
         facts.replaceChildren(...messages.map((message) => {
           const li = document.createElement("li");
           li.textContent = message;
