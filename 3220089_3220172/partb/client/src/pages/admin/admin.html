@@ -593,8 +593,13 @@
           </div>
           <div class="admin-form-grid">
             <label class="admin-field">
-              <span>Discount (%)</span>
-              <input id="productDiscountPercent" type="number" min="0" max="90" step="1" value="0" />
+              <span>Discount type</span>
+              <select id="productDiscountType"><option value="percent">Percentage (%)</option><option value="amount">Fixed amount (€)</option></select>
+            </label>
+            <label class="admin-field">
+              <span id="productDiscountValueLabel">Discount (%)</span>
+              <input id="productDiscountPercent" type="number" min="0" max="90" step="0.01" value="0" />
+              <small id="productDiscountPreview" class="admin-muted"></small>
             </label>
             <label class="admin-field">
               <span>Store label</span>
