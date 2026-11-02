@@ -2117,9 +2117,9 @@ function addVariantRow(variant: any = {}) {
         ${knownSizes.map(value => `<option value="${escapeHtml(value)}" ${value === size ? "selected" : ""}>${escapeHtml(value || "One size")}</option>`).join("")}
       </select>
     </label>
-    <label class="admin-field"><span>Made-to-order</span>
-      <input data-variant-stock type="number" min="0" step="1" value="${Math.max(0, Number(variant.stock || 0))}" />
-    </label>
+${tshirt
+      ? `<input data-variant-stock type="hidden" value="${Math.max(0, Number(variant.stock || 0))}" />`
+      : `<label class="admin-field"><span>Stock</span><input data-variant-stock type="number" min="0" step="1" value="${Math.max(0, Number(variant.stock || 0))}" /></label>`}
     <div class="admin-variant-sku"><span>Internal SKU</span><span data-variant-sku-preview class="variant-sku-preview"></span></div>
     <input data-variant-sku type="hidden" value="${escapeHtml(variant.sku || "")}" />
     <button class="admin-danger-button" data-remove-variant type="button" ${hasExistingSku ? "disabled" : ""}>Remove</button>
