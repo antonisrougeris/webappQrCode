@@ -10,7 +10,8 @@ test("Android layouts keep title and subtitle full-width",()=>{
  assert.match(css,/grid-area:price; justify-self:end/);
 });
 test("mobile eco tags use short readable labels only",()=>{
- assert.match(html,/100% Organic Cotton/);
+ assert.match(html,/100% Cotton/);
+ assert.doesNotMatch(html,/100% Organic Cotton/);
  assert.match(html,/Quality Print · Made in Greece/);
  assert.match(css,/\.pdp-eco-compact \{\s*display:inline-flex!important/);
  assert.match(css,/font-size:clamp\(10px,2\.65vw,12px\)/);
