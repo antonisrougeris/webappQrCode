@@ -84,7 +84,8 @@ test("mobile price stays beside the title with enough width for long product tit
  assert.match(final,/overflow-wrap:break-word/);
  assert.match(final,/justify-content:center/);
  const html=read("src/pages/product-details/product-details.html");
- assert.match(html,/price-beside-title/);
+ // Version changes with each CSS release; validate that the unique mobile sheet is linked.
+ assert.match(html,/href="\/assets\/css\/product-mobile-android-price-v2-20261013\.css\?v=[^"]+"/);
  const css=read("public/assets/css/components.css");
  assert.match(css,/pdp-partner-trust\{justify-content:center/);
 });
