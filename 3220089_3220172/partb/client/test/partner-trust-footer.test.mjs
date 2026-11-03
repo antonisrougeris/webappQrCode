@@ -75,7 +75,7 @@ test("restores desktop size, quantity, delivery, CTA and partner sequence",()=>{
 test("mobile price stays beside the title with enough width for long product titles",()=>{
  const stylesheet=read("public/assets/css/product-mobile-android-price-v2-20261013.css");
  const final=stylesheet.slice(stylesheet.indexOf("/* Mobile PDP restore:"));
- assert.match(final,/grid-template-columns:minmax\\(0,1fr\\) 112px/);
+ assert.match(final,/grid-template-columns:minmax\(0,1fr\) 112px/);
  assert.match(final,/"title price"/);
  assert.match(final,/"meta price"/);
  assert.match(final,/grid-area:price/);
@@ -85,5 +85,5 @@ test("mobile price stays beside the title with enough width for long product tit
  const html=read("src/pages/product-details/product-details.html");
  assert.match(html,/price-beside-title/);
  const css=read("public/assets/css/components.css");
- assert.match(css,/pdp-partner-trust\\{justify-content:center/);
+ assert.match(css,/pdp-partner-trust\{justify-content:center/);
 });
