@@ -55,7 +55,8 @@ test("desktop title and price share the heading row and keep purchase ordering",
   assert.match(desktop, /\.product-price-area \{[\s\S]*?margin: 9px 0 0;/);
   assert.match(desktop, /\.tax-note \{[\s\S]*?text-align: right;/);
   assert.match(desktop, /"information information"[\s\S]*?"qr qr"[\s\S]*?"size size"[\s\S]*?"stock stock"[\s\S]*?"quantity quantity"[\s\S]*?"delivery delivery"[\s\S]*?"cart cart"/);
-  assert.match(html, /compact-pills-single-row/);
+  // Version tags change on each visual release; verify the live stylesheet link, not an old tag.
+  assert.match(html, /href="\/assets\/css\/product-desktop-premium\.css\?v=[^"]+"/);
 });
 
 
@@ -72,5 +73,6 @@ test("product highlights use brief copy and remain side by side on desktop", () 
   assert.match(desktop, /@media \(min-width: 601px\)/);
   assert.match(desktop, /#pdpEcoHighlights:not\(\[hidden\]\) \{[\s\S]*?flex-wrap: nowrap;/);
   assert.match(desktop, /#pdpEcoHighlights \.pdp-eco-full \{[\s\S]*?white-space: nowrap;/);
-  assert.match(html, /compact-pills-single-row/);
+  // Version tags change on each visual release; verify the live stylesheet link, not an old tag.
+  assert.match(html, /href="\/assets\/css\/product-desktop-premium\.css\?v=[^"]+"/);
 });
