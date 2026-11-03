@@ -653,12 +653,26 @@
   }
   .product-page .product-info #productPrice {
     display: flex;
+    flex-direction: column;
     flex-wrap: nowrap;
-    align-items: baseline;
-    justify-content: flex-end;
-    gap: 8px;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 2px;
     margin: 0;
     white-space: nowrap;
+  }
+  /* Sale hierarchy: crossed-out original above the current red price. */
+  .product-page .product-info #productPrice .product-price__old {
+    display: block;
+    font-size: 13px;
+    line-height: 1.1;
+    text-align: right;
+  }
+  .product-page .product-info #productPrice .product-price__current {
+    display: block;
+    font-size: 26px;
+    line-height: 1.08;
+    text-align: right;
   }
   .product-page .product-info .tax-note {
     margin: 0;
