@@ -5,6 +5,12 @@ export function renderFooter(): void {
 
   target.innerHTML = `
     <footer class="site-footer">
+    <div class="footer-partner-trust" aria-label="Payments and delivery">
+      <span class="footer-partner-trust__label">PAYMENTS &amp; DELIVERY</span>
+      <a href="/payment-security"><strong>Viva.com</strong><small>Secure payments</small></a>
+      <span class="footer-partner-trust__divider" aria-hidden="true"></span>
+      <a href="/shipping-policy"><strong>BOX NOW</strong><small>24/7 locker pickup</small></a>
+    </div>
 
       <div class="container footer-main">
 
@@ -46,6 +52,12 @@ export function renderFooter(): void {
                 <rect x="3" y="3" width="18" height="18" rx="5"></rect>
                 <circle cx="12" cy="12" r="4"></circle>
                 <circle cx="17.5" cy="6.5" r="1"></circle>
+              </svg>
+            </a>
+            <a class="footer-social footer-social--tiktok" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 3v10.4a4.6 4.6 0 1 1-4.6-4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M14 3c.6 3.2 2.4 5.2 6 5.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </a>
 

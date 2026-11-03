@@ -197,6 +197,7 @@
       "quantity quantity"
       "qr qr"
       "description description"
+      "partner partner"
       "delivery delivery"
       "benefits benefits";
     align-items: start;
@@ -800,7 +801,7 @@
      "rating original" "title title" "meta meta"
      "highlights highlights" "price price"
      "badges badges" "variants variants" "quantity quantity"
-     "qr qr" "description description" "delivery delivery" "benefits benefits";
+     "qr qr" "description description" "partner partner" "delivery delivery" "benefits benefits";
  }
  .product-page .product-info #productTitle {
    grid-area:title; width:100%; max-width:100%; min-width:0;
@@ -836,4 +837,8 @@
  .product-page .product-info .pdp-eco-highlights .pdp-eco-compact {
    padding:5px 6px;font-size:10px;
  }
+}
+
+@media (max-width:820px){
+  .product-page .product-info .pdp-partner-trust { grid-area:partner; width:100%; min-width:0; }
 }
