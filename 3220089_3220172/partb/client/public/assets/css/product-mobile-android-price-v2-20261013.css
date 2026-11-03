@@ -141,3 +141,84 @@
   }
   .product-page .product-info .pdp-eco-highlights:not([hidden]) { gap: 4px; }
 }
+
+/* 2026-11-03 Mobile PDP regression fix.
+   Full-width title and price rows prevent long names from being squeezed by price. */
+@media(max-width:600px){
+  .product-page .product-info{
+    display:grid;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:
+      "rating"
+      "title"
+      "meta"
+      "price"
+      "highlights"
+      "badges"
+      "variants"
+      "quantity"
+      "qr"
+      "description"
+      "partner"
+      "delivery"
+      "benefits";
+    column-gap:0;
+    row-gap:0;
+    overflow:visible;
+  }
+  .product-page .product-info #productTitle{
+    display:block!important;
+    grid-area:title;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    margin:0 0 6px;
+    font-size:clamp(21px,5.6vw,26px);
+    line-height:1.14;
+    white-space:normal;
+    overflow-wrap:break-word;
+    word-break:normal;
+    text-wrap:wrap;
+    overflow:visible;
+    -webkit-line-clamp:unset;
+    line-clamp:unset;
+  }
+  .product-page .product-info #productMeta{
+    grid-area:meta;
+    width:100%;
+    min-width:0;
+    margin:0 0 9px;
+    overflow-wrap:break-word;
+  }
+  .product-page .product-info .product-price-area{
+    grid-area:price;
+    justify-self:start;
+    align-self:start;
+    align-items:flex-start;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    margin:0 0 10px;
+    text-align:left;
+  }
+  .product-page .product-info #productPrice{
+    justify-content:flex-start;
+    max-width:100%;
+    flex-wrap:wrap;
+    text-align:left;
+  }
+  .product-page .product-info .pdp-eco-highlights:not([hidden]){
+    grid-area:highlights;
+    justify-content:flex-start;
+    max-width:100%;
+    margin:5px 0 12px;
+  }
+  .product-page .product-info .pdp-partner-trust{
+    grid-area:partner;
+    width:100%;
+    min-width:0;
+  }
+}
