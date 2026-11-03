@@ -39,3 +39,16 @@ test("purchase controls remain the original working variant/cart controls", () =
   assert.match(css, /\.product-page \.add-to-cart-btn \{/);
   assert.match(ts, /setupMobileProductPurchase\(addBtn\)/);
 });
+
+
+test("desktop title and price share the heading row and keep purchase ordering", () => {
+  const desktop = css.slice(css.indexOf("/* Desktop PDP: keep the price beside"));
+  assert.match(desktop, /@media \(min-width: 821px\)/);
+  assert.match(desktop, /"title price"/);
+  assert.match(desktop, /"meta price"/);
+  assert.match(desktop, /"rating price"/);
+  assert.match(desktop, /#productPrice \{[\s\S]*?flex-wrap: nowrap;/);
+  assert.match(desktop, /\.tax-note \{[\s\S]*?text-align: right;/);
+  assert.match(desktop, /"information information"[\s\S]*?"qr qr"[\s\S]*?"size size"[\s\S]*?"stock stock"[\s\S]*?"quantity quantity"[\s\S]*?"delivery delivery"[\s\S]*?"cart cart"/);
+  assert.match(html, /desktop-price-beside-title/);
+});

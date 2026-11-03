@@ -598,3 +598,84 @@
   .product-page .product-info .product-benefits { order:15; }
   .product-page .product-info .pdp-desktop-help-links { order:16; }
 }
+
+
+/* Desktop PDP: keep the price beside the product heading, as on mobile.
+   Explicit grid areas preserve the purchase-control sequence when
+   .variant-controls expands its children via display: contents.
+   Mobile styles (<821px) remain unchanged. */
+@media (min-width: 821px) {
+  .product-page .product-info {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "badges badges"
+      "title price"
+      "meta price"
+      "rating price"
+      "highlights highlights"
+      "colors colors"
+      "information information"
+      "qr qr"
+      "size size"
+      "stock stock"
+      "quantity quantity"
+      "delivery delivery"
+      "cart cart"
+      "partner partner"
+      "benefits benefits"
+      "help help";
+    column-gap: 14px;
+    row-gap: 0;
+    align-items: start;
+  }
+
+  .product-page .product-info .product-detail-badges { grid-area: badges; }
+  .product-page .product-info #productTitle { grid-area: title; min-width: 0; }
+  .product-page .product-info #productMeta { grid-area: meta; min-width: 0; }
+  .product-page .product-info .product-rating { grid-area: rating; }
+  .product-page .product-info .mobile-review-old-price { display: none !important; }
+
+  .product-page .product-info .product-price-area {
+    grid-area: price;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-self: end;
+    align-self: start;
+    gap: 4px;
+    width: max-content;
+    max-width: 100%;
+    margin: 9px 0 0;
+    padding: 0;
+    border: 0;
+    text-align: right;
+  }
+  .product-page .product-info #productPrice {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .product-page .product-info .tax-note {
+    margin: 0;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .product-page .product-info .pdp-eco-highlights { grid-area: highlights; }
+  .product-page .product-info #productColorRow { grid-area: colors; }
+  .product-page .product-info .pdp-product-information { grid-area: information; }
+  .product-page .product-info .qr-box { grid-area: qr; }
+  .product-page .product-info .size-row { grid-area: size; }
+  .product-page .product-info .size-stock-row { grid-area: stock; }
+  .product-page .product-info .product-purchase-row { grid-area: quantity; }
+  .product-page .product-info .delivery-info { grid-area: delivery; }
+  .product-page .product-info .add-to-cart-btn { grid-area: cart; }
+  .product-page .product-info .pdp-partner-trust { grid-area: partner; }
+  .product-page .product-info .product-benefits { grid-area: benefits; }
+  .product-page .product-info .pdp-desktop-help-links { grid-area: help; }
+}
