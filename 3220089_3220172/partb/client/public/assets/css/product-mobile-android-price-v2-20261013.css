@@ -279,3 +279,16 @@
   .product-page .product-info {grid-template-columns:minmax(0,1fr) 115px;column-gap:6px;}
   .product-page .product-info #productPrice .product-price__current {font-size:22px;}
 }
+
+/* Align mobile sale price with tax note at the far-right edge. */
+@media (max-width:600px) {
+  .product-page .product-info {grid-template-columns:minmax(0,1fr) 128px;column-gap:8px;}
+  .product-page .product-info .product-price-area {box-sizing:border-box;grid-area:price;width:100%;max-width:100%;min-width:0;justify-self:stretch;align-items:stretch;text-align:right;}
+  .product-page .product-info #productPrice {display:flex!important;box-sizing:border-box;width:100%;max-width:100%;justify-content:flex-end!important;align-items:center;text-align:right;flex-wrap:nowrap;}
+  .product-page .product-info #productPrice .product-price__current {display:block;flex:0 0 auto;margin-left:auto;font-size:clamp(23px,6vw,27px);font-weight:850;line-height:1.12;white-space:nowrap;text-align:right;}
+  .product-page .product-info .tax-note {box-sizing:border-box;width:100%;align-self:flex-end;text-align:right;margin:2px 0 0;}
+}
+@media (max-width:355px) {
+  .product-page .product-info {grid-template-columns:minmax(0,1fr) 115px;column-gap:6px;}
+  .product-page .product-info #productPrice .product-price__current {font-size:22px;}
+}
