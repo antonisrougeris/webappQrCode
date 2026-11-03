@@ -46,7 +46,9 @@ export function renderProducts(
   products: Product[],
   options: RenderProductsOptions = {}
 ): void {
-  container.innerHTML = "";
+  // Assemble cards off-screen and swap the DOM atomically after hydration.
+  // This avoids intermediate empty grids on mobile while products load.
+  const fragment = document.createDocumentFragment();
 
   const eagerFirstImages =
     Math.max(
@@ -270,6 +272,7 @@ export function renderProducts(
       );
     }
 
-    container.appendChild(article);
+    fragment.appendChild(article);
   });
+  container.replaceChildren(fragment);
 }

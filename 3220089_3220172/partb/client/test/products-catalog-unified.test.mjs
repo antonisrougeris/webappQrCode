@@ -46,3 +46,29 @@ test("homepage product collections share the catalog's card geometry and respons
   assert.match(home, /id="featuredTshirtsGrid"[\s\S]*?data-category="tshirt"[\s\S]*?data-limit="4"/);
   assert.match(home, /id="featuredAccessoriesGrid"[\s\S]*?data-category="accessory"[\s\S]*?data-limit="4"/);
 });
+
+
+test("mobile home cards are single column but shop cards stay two columns", () => {
+  const mobile = css.slice(css.indexOf("/* Mobile storefront: full-width homepage cards"));
+  assert.ok(mobile.length > 300);
+  assert.match(mobile, /@media \(max-width: 600px\)/);
+  assert.match(mobile, /\.home-catalog-section \.products-grid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(mobile, /\.products-shop \.products-grid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(mobile, /grid-template-areas:\s*"title title"\s*"stock price"/);
+  assert.match(mobile, /\.products-shop \.product-card \.product-row \{\s*display: contents;/);
+  assert.match(mobile, /\.products-shop \.product-card \.product-title \{[\s\S]*?grid-area: title;[\s\S]*?width: 100%;/);
+  assert.match(mobile, /\.products-shop \.product-card \.product-stock \{[\s\S]*?grid-area: stock;/);
+  assert.match(mobile, /\.products-shop \.product-card \.product-card-price \{[\s\S]*?grid-area: price;/);
+  assert.match(mobile, /\.products-shop \.product-card \.price \{[\s\S]*?font-size: 15px;/);
+  assert.match(mobile, /\.home-catalog-section \.product-card \.price--sale \{\s*font-size: 16px;/);
+});
+test("mobile tapping is stable and rehydration swaps cards only after rendering", () => {
+  const mobile = css.slice(css.indexOf("/* Mobile storefront: full-width homepage cards"));
+  assert.match(mobile, /-webkit-tap-highlight-color: transparent;/);
+  assert.match(mobile, /touch-action: manipulation;/);
+  assert.match(mobile, /@media \(hover: none\), \(pointer: coarse\)/);
+  assert.match(shared, /document\.createDocumentFragment\(\)/);
+  assert.match(shared, /fragment\.appendChild\(article\)/);
+  assert.match(shared, /container\.replaceChildren\(fragment\)/);
+  assert.doesNotMatch(shared, /container\.innerHTML = "";/);
+});

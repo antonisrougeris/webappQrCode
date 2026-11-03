@@ -16765,3 +16765,125 @@ body > div iframe[src*="boxnow"] {
   .home-catalog-section .product-card .product-stock { font-size: 11px; }
 }
 
+
+
+/* Mobile storefront: full-width homepage cards, compact two-column catalog.
+   The title owns its entire row; availability and prices form the next row.
+   Same selectors cover SSR/prerendered and client-hydrated cards. */
+@media (max-width: 600px) {
+  .home-catalog-section .products-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+
+  .products-shop .products-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 12px;
+    align-items: start;
+  }
+
+  .home-catalog-section .product-card,
+  .products-shop .product-card {
+    min-width: 0;
+    background: transparent;
+  }
+  .home-catalog-section .product-card .product-body,
+  .products-shop .product-card .product-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "title title"
+      "stock price";
+    gap: 8px 6px;
+    padding: 11px 1px 2px;
+    min-width: 0;
+    background: transparent;
+    align-items: end;
+  }
+  .home-catalog-section .product-card .product-row,
+  .products-shop .product-card .product-row {
+    display: contents;
+  }
+  .home-catalog-section .product-card .product-title,
+  .products-shop .product-card .product-title {
+    grid-area: title;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.3;
+    font-weight: 750;
+    overflow-wrap: normal;
+    word-break: normal;
+    white-space: normal;
+  }
+  .home-catalog-section .product-card .product-stock,
+  .products-shop .product-card .product-stock {
+    grid-area: stock;
+    margin: 0 0 2px;
+    align-self: end;
+    justify-self: start;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .home-catalog-section .product-card .product-card-price,
+  .products-shop .product-card .product-card-price {
+    grid-area: price;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    justify-self: end;
+    align-self: end;
+    gap: 2px;
+    min-width: 0;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .home-catalog-section .product-card .price,
+  .products-shop .product-card .price {
+    font-size: 15px;
+    line-height: 1.15;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .home-catalog-section .product-card .price--old,
+  .products-shop .product-card .price--old {
+    font-size: 10px;
+    font-weight: 650;
+  }
+  /* The single-column homepage has room for both price amounts side by side. */
+  .home-catalog-section .product-card .product-card-price {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .home-catalog-section .product-card .price--sale {
+    font-size: 16px;
+  }
+}
+
+/* Suppress touch-device flash/white active rectangles while preserving
+   keyboard focus-visible outlines and desktop hover effects. */
+@media (hover: none), (pointer: coarse) {
+  .home-catalog-section .product-card,
+  .products-shop .product-card,
+  .home-catalog-section .product-card-anchor,
+  .products-shop .product-card-anchor {
+    -webkit-tap-highlight-color: transparent;
+    background-color: transparent;
+    touch-action: manipulation;
+  }
+  .home-catalog-section .product-card:hover,
+  .products-shop .product-card:hover,
+  .home-catalog-section .product-card:active,
+  .products-shop .product-card:active {
+    transform: none;
+    box-shadow: none;
+  }
+}
