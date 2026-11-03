@@ -1,3 +1,4 @@
+import { compareStorefrontProducts } from '../services/storefront-product-order.service.js';
 
 import { readFile } from "fs/promises";
 import { join } from "path";
@@ -842,16 +843,7 @@ export const getAdminProducts =
                 ),
             };
           })
-          .sort(
-            (a, b) =>
-              String(
-                a.title || ""
-              ).localeCompare(
-                String(
-                  b.title || ""
-                )
-              )
-          );
+          .sort(compareStorefrontProducts);
 
 
       return res
@@ -1893,6 +1885,7 @@ export const createAdminProduct =
         discountAmount:Math.round(discountAmount*100)/100,
 
         merchandisingTag,
+        displayOrder: normalizeDisplayOrder(req.body?.displayOrder),
 
         currency:
           cleanString(
@@ -2287,6 +2280,10 @@ export const updateAdminProduct =
           const cover = chooseProductImages(merged)[0];
           if (cover) update.images = [cover];
         }
+      }
+
+      if (req.body?.displayOrder !== undefined) {
+        update.displayOrder = normalizeDisplayOrder(req.body.displayOrder);
       }
 
       update.updatedAt =
@@ -3766,3 +3763,10 @@ export const replyToAdminContactMessage = asyncHandler(
     });
   }
 );
+
+function normalizeDisplayOrder(value) {
+  if (value === undefined || value === null || value === "") return null;
+  if (!Number.isSafeInteger(value) || value < 1 || value > 10000)
+    throw new ApiError(400, "Storefront position must be an integer from 1 to 10000");
+  return value;
+}

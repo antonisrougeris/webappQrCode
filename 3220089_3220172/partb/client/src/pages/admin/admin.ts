@@ -1901,6 +1901,7 @@ function openProductModal(product: any = null) {
 
   setInputValue("productPrice", product?.price ?? "");
   setInputValue("productCurrency", product?.currency || "EUR");
+  setInputValue("productDisplayOrder", product?.displayOrder ?? "");
   setInputValue("productDiscountType", product?.discountType === "amount" ? "amount" : "percent");
   setInputValue("productDiscountPercent", product?.discountType === "amount" ? (product?.discountAmount ?? 0) : (product?.discountPercent ?? 0));
   refreshProductDiscountPreview();
@@ -1974,6 +1975,7 @@ function resetProductForm() {
   setInputValue("productMerchandisingTag", "none");
 
   setInputValue("productCurrency", "EUR");
+  setInputValue("productDisplayOrder", "");
   setInputValue("productTitleEl", "");
   setInputValue("productShortDescriptionEl", "");
   setInputValue("productDescriptionEl", "");
@@ -2461,6 +2463,12 @@ productForm?.addEventListener("submit", async (event) => {
       uid:c.uid, urls:await uploadPendingProductImages(c.pending)
     })));
     const payload = collectProductPayload();
+    const rawPosition = inputValue("productDisplayOrder").trim();
+    const displayOrder = rawPosition === "" ? null : Number(rawPosition);
+    if (displayOrder !== null &&
+      (!Number.isSafeInteger(displayOrder) || displayOrder < 1 || displayOrder > 10000))
+      throw new Error("Storefront position must be a whole number between 1 and 10000");
+    payload.displayOrder = displayOrder;
     payload.colorOptions = colorDrafts.map(c => ({
       name:c.name, hex:c.hex,
       images:[...c.images,...(uploadedByColor.find(item => item.uid === c.uid)?.urls || [])]
@@ -2535,6 +2543,7 @@ function collectProductPayload() {
       },
     },
     category: inputValue("productCategory") || "General",
+    displayOrder: null as number | null,
     price: Number(inputValue("productPrice") || 0),
     currency: inputValue("productCurrency") || "EUR",
     discountType: inputValue("productDiscountType") === "amount" ? "amount" : "percent",

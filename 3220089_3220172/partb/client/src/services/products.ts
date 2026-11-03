@@ -40,6 +40,7 @@ export interface Product {
   colorOptions?: ProductColorOption[];
   stock?: number;
   featured?: boolean;
+  displayOrder?: number | null;
   active?: boolean;
   merchandisingTag?: "none" | "new" | "featured" | "best_seller" | "limited" | string;
   badge?: string;
@@ -103,6 +104,7 @@ export function normalizeProduct(raw: any): Product {
     colorOptions: colors,
     stock: typeof raw?.stock === "number" ? raw.stock : 0,
     featured: raw?.featured === true,
+    displayOrder: Number.isSafeInteger(raw?.displayOrder) ? raw.displayOrder : null,
     active: raw?.active !== false,
     merchandisingTag: raw?.merchandisingTag || "none",
     badge: raw?.badge || "",
