@@ -16887,3 +16887,77 @@ body > div iframe[src*="boxnow"] {
     box-shadow: none;
   }
 }
+
+
+/* November 2026: refine mobile price placement for the two storefront views.
+   Homepage: price belongs beside the heading, stock remains beneath it.
+   Shop: reserve two title lines so price and stock are aligned on both cards. */
+@media (max-width: 600px) {
+  .home-catalog-section .product-card .product-body {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "title price"
+      "stock .";
+    column-gap: 12px;
+    row-gap: 7px;
+    align-items: start;
+  }
+  .home-catalog-section .product-card .product-title {
+    align-self: start;
+    min-width: 0;
+    width: auto;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .home-catalog-section .product-card .product-card-price {
+    align-self: start;
+    justify-self: end;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    margin: 0;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .home-catalog-section .product-card .price--sale,
+  .home-catalog-section .product-card .price:not(.price--old) {
+    font-size: 20px;
+    line-height: 1.12;
+    font-weight: 850;
+  }
+  .home-catalog-section .product-card .price--old {
+    font-size: 11px;
+    line-height: 1.1;
+  }
+  .home-catalog-section .product-card .product-stock {
+    align-self: start;
+    margin: 0;
+  }
+
+  .products-shop .product-card .product-body {
+    grid-template-areas:
+      "title title"
+      "stock price";
+    row-gap: 5px;
+    align-items: end;
+  }
+  .products-shop .product-card .product-title {
+    display: block;
+    min-height: 2.6em;
+    line-height: 1.3;
+    align-self: start;
+  }
+  .products-shop .product-card .product-stock {
+    align-self: end;
+    margin: 0 0 2px;
+  }
+  .products-shop .product-card .product-card-price {
+    align-self: end;
+    justify-self: end;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+    white-space: nowrap;
+  }
+}

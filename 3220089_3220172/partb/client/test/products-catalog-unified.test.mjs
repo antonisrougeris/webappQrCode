@@ -72,3 +72,21 @@ test("mobile tapping is stable and rehydration swaps cards only after rendering"
   assert.match(shared, /container\.replaceChildren\(fragment\)/);
   assert.doesNotMatch(shared, /container\.innerHTML = "";/);
 });
+
+
+test("mobile homepage prices sit beside titles, larger and above stock", () => {
+  const rules = css.slice(css.indexOf("/* November 2026: refine mobile price placement"));
+  assert.ok(rules.length > 500);
+  assert.match(rules, /@media \(max-width: 600px\)/);
+  assert.match(rules, /\.home-catalog-section \.product-card \.product-body \{[\s\S]*?grid-template-areas:\s*"title price"\s*"stock \.";/);
+  assert.match(rules, /\.home-catalog-section \.product-card \.product-card-price \{[\s\S]*?flex-direction: column;[\s\S]*?align-items: flex-end;/);
+  assert.match(rules, /\.home-catalog-section \.product-card \.price--sale,[\s\S]*?font-size: 20px;/);
+  assert.match(rules, /\.home-catalog-section \.product-card \.product-stock \{[\s\S]*?align-self: start;/);
+});
+test("mobile catalog keeps two columns with equal title space and aligned prices", () => {
+  const rules = css.slice(css.indexOf("/* November 2026: refine mobile price placement"));
+  assert.match(css, /\.products-shop \.products-grid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(rules, /\.products-shop \.product-card \.product-body \{[\s\S]*?grid-template-areas:\s*"title title"\s*"stock price";/);
+  assert.match(rules, /\.products-shop \.product-card \.product-title \{[\s\S]*?min-height: 2\.6em;/);
+  assert.match(rules, /\.products-shop \.product-card \.product-card-price \{[\s\S]*?align-self: end;[\s\S]*?flex-direction: column;/);
+});
