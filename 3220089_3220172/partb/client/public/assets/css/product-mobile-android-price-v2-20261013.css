@@ -153,6 +153,7 @@
     grid-template-columns:minmax(0,1fr);
     grid-template-areas:
       "rating"
+      "original"
       "title"
       "meta"
       "price"
@@ -168,6 +169,11 @@
     column-gap:0;
     row-gap:0;
     overflow:visible;
+  }
+  .product-page .product-info .mobile-review-old-price:not([hidden]){
+    grid-area:original;
+    justify-self:start;
+    margin:0 0 6px;
   }
   .product-page .product-info #productTitle{
     display:block!important;
