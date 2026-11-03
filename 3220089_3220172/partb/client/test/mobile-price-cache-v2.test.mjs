@@ -19,3 +19,12 @@ test("only compact green badges appear on mobile, desktop remains unchanged",()=
  assert.match(css,/#pdpEcoHighlights \.pdp-eco-compact \{\s*display: inline-flex !important/);
  assert.match(css,/white-space: nowrap;/);
 });
+
+test("mobile price is larger and right aligned with tax label",()=>{
+ const final=css.slice(css.lastIndexOf("/* November mobile price alignment:"));
+ assert.match(final,/grid-template-columns:minmax\(0,1fr\) 128px/);
+ assert.match(final,/justify-self:stretch;align-items:stretch;text-align:right/);
+ assert.match(final,/justify-content:flex-end!important/);
+ assert.match(final,/font-size:clamp\(23px,6vw,27px\)/);
+ assert.match(final,/\.tax-note \{[^}]*text-align:right/);
+});
