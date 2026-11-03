@@ -76,3 +76,34 @@ test("product highlights use brief copy and remain side by side on desktop", () 
   // Version tags change on each visual release; verify the live stylesheet link, not an old tag.
   assert.match(html, /href="\/assets\/css\/product-desktop-premium\.css\?v=[^"]+"/);
 });
+
+
+test("desktop and mobile long product titles auto-shrink without covering the price", () => {
+  const desktop = css.slice(css.indexOf("/* Desktop PDP: keep the price beside"));
+  assert.match(desktop, /#productTitle \{[\s\S]*?white-space: nowrap;/);
+  assert.match(desktop, /#productTitle \{[\s\S]*?text-wrap: nowrap;/);
+  assert.match(desktop, /#productTitle \{[\s\S]*?transform-origin: left center;/);
+  const fitter = ts.slice(ts.indexOf("function setupProductTitleAutoFit("));
+  assert.match(fitter, /matchMedia\("\(min-width: 821px\)"\)/);
+  assert.match(fitter, /matchMedia\("\(max-width: 600px\)"\)/);
+  assert.match(fitter, /title\.scrollWidth <= width \+ 1/);
+  assert.match(fitter, /title\.style\.fontSize = /);
+  assert.match(fitter, /new ResizeObserver\(requestFit\)/);
+  assert.match(fitter, /requestAnimationFrame\(fit\)/);
+  assert.match(fitter, /scaleX\(/);
+  assert.match(ts, /setupProductTitleAutoFit\(titleEl\)/);
+  assert.match(html, /href="\/assets\/css\/product-desktop-premium\.css\?v=[^"]+"/);
+});
+
+
+test("mobile price stays to the right of a single-line auto-fitting product title", () => {
+  const phoneCss = readFileSync("public/assets/css/product-mobile-android-price-v2-20261013.css", "utf8");
+  const final = phoneCss.slice(phoneCss.indexOf("/* Mobile PDP: use the same measured title auto-fit"));
+  assert.match(final, /@media \(max-width: 600px\)/);
+  assert.match(final, /#productTitle \{[\s\S]*?white-space: nowrap;/);
+  assert.match(final, /#productTitle \{[\s\S]*?text-wrap: nowrap;/);
+  assert.match(final, /#productTitle \{[\s\S]*?transform-origin: left center;/);
+  assert.match(ts, /const minimumSize = mobile\.matches \? 10 : 12;/);
+  assert.match(ts, /mobile\.addEventListener\("change", requestFit\)/);
+  assert.match(html, /product-mobile-android-price-v2-20261013\.css\?v=20261103-phone-title-autofit/);
+});

@@ -631,7 +631,16 @@
   }
 
   .product-page .product-info .product-detail-badges { grid-area: badges; }
-  .product-page .product-info #productTitle { grid-area: title; min-width: 0; }
+  /* JS shrinks long titles to the available column width; never wrap. */
+  .product-page .product-info #productTitle {
+    grid-area: title;
+    min-width: 0;
+    width: 100%;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    overflow: visible;
+    transform-origin: left center;
+  }
   .product-page .product-info #productMeta { grid-area: meta; min-width: 0; }
   .product-page .product-info .product-rating { grid-area: rating; }
   .product-page .product-info .mobile-review-old-price { display: none !important; }

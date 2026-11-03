@@ -282,3 +282,19 @@
   .product-page .product-info {grid-template-columns:minmax(0,1fr) 115px;column-gap:6px;}
   .product-page .product-info #productPrice .product-price__current {font-size:22px;}
 }
+
+
+/* Mobile PDP: use the same measured title auto-fit as desktop.
+   Never wrap into the price column; JS reduces font size only when necessary. */
+@media (max-width: 600px) {
+  .product-page .product-info #productTitle {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    word-break: normal;
+    overflow: visible;
+    transform-origin: left center;
+  }
+}

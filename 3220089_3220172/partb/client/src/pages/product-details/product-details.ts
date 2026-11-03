@@ -57,6 +57,63 @@ function formatProductPrice(value: number): string {
 
 
 
+/** Keep desktop and phone product titles on one line next to the price.
+ * Fit to the actual title column width, not just the viewport width.
+ */
+function setupProductTitleAutoFit(title: HTMLElement): void {
+  const panel = title.closest<HTMLElement>(".product-info");
+  if (!panel) return;
+
+  const desktop = window.matchMedia("(min-width: 821px)");
+  const mobile = window.matchMedia("(max-width: 600px)");
+  let frame = 0;
+
+  const fit = (): void => {
+    frame = 0;
+    // Always start from the intended CSS font size, including after a resize.
+    title.style.removeProperty("font-size");
+    title.style.removeProperty("transform");
+    if (!desktop.matches && !mobile.matches) return;
+
+    const width = title.clientWidth;
+    const originalSize = Number.parseFloat(window.getComputedStyle(title).fontSize);
+    if (width <= 0 || !Number.isFinite(originalSize)) return;
+    if (title.scrollWidth <= width + 1) return;
+
+    // Choose the largest font size that keeps the whole title on one line.
+    const minimumSize = mobile.matches ? 10 : 12;
+    let low = minimumSize;
+    let high = Math.max(originalSize, minimumSize);
+    for (let i = 0; i < 10; i += 1) {
+      const mid = (low + high) / 2;
+      title.style.fontSize = mid + "px";
+      if (title.scrollWidth <= width + 1) low = mid;
+      else high = mid;
+    }
+    title.style.fontSize = Math.max(minimumSize, low - 0.25) + "px";
+
+    // Extremely long names should still remain fully visible, not clipped.
+    if (title.scrollWidth > width + 1) {
+      title.style.transform = "scaleX(" + Math.max(0.1, (width - 2) / title.scrollWidth) + ")";
+    }
+  };
+
+  const requestFit = (): void => {
+    if (!frame) frame = window.requestAnimationFrame(fit);
+  };
+  if (typeof ResizeObserver !== "undefined") {
+    const observer = new ResizeObserver(requestFit);
+    observer.observe(panel);
+  }
+  window.addEventListener("resize", requestFit, { passive: true });
+  desktop.addEventListener("change", requestFit);
+  mobile.addEventListener("change", requestFit);
+  void document.fonts?.ready.then(requestFit);
+  requestFit();
+}
+
+
+
 function openExistingCartDrawer(): void {
   const cartLink = document.querySelector<HTMLElement>(
     "[data-cart-link], .cart-link"
@@ -1170,6 +1227,7 @@ setMetaName("twitter:image", productImage);
       reviewOldPrice.textContent = onSale ? formatProductPrice(originalPrice) : "";
     }
     priceEl?.classList.toggle("is-discounted", onSale);
+    if (titleEl instanceof HTMLElement) setupProductTitleAutoFit(titleEl);
 
     if (badgeEl && product.badge) {
       badgeEl.hidden = false;
