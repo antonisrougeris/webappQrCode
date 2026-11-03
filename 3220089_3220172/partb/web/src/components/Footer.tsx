@@ -22,6 +22,22 @@ export function Footer() {
         </div>
 
         <div>
+          <h4>Follow SKANARE</h4>
+          <ul>
+            <li><a href="https://www.instagram.com/skanare.gr?obrf=ZXU5ZXoyNnRsejF1" target="_blank" rel="noopener noreferrer" aria-label="Instagram">Instagram</a></li>
+            <li><a href="https://www.tiktok.com/@skanare.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">TikTok</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4>Follow SKANARE</h4>
+          <ul>
+            <li><a href="https://www.instagram.com/skanare.gr?obrf=ZXU5ZXoyNnRsejF1" target="_blank" rel="noopener noreferrer" aria-label="Instagram">Instagram</a></li>
+            <li><a href="https://www.tiktok.com/@skanare.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">TikTok</a></li>
+          </ul>
+        </div>
+
+        <div>
           <h4>Support</h4>
           <p>Email: hello@skanare.com</p>
           <p>Free QR link updates.</p>

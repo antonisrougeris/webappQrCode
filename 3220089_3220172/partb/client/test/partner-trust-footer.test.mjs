@@ -49,7 +49,8 @@ test("TikTok is next to Instagram throughout all statically rendered storefront 
   const fb=html.indexOf('aria-label="Facebook"');
   assert.ok(insta>=0 && tik>insta && fb>tik, "Expected Instagram, TikTok, Facebook order in "+page);
   assert.match(html,/class="footer-partner-trust"/,"Footer partner information missing in "+page);
-  assert.match(html,/href="https:\/\/www\.tiktok\.com\/"/);
+  assert.ok(html.includes('href="https://www.tiktok.com/@skanare.com"'));
+  assert.ok(html.includes('href="https://www.instagram.com/skanare.gr?obrf=ZXU5ZXoyNnRsejF1"'));
  }
 });
 
@@ -86,4 +87,14 @@ test("mobile price stays beside the title with enough width for long product tit
  assert.match(html,/price-beside-title/);
  const css=read("public/assets/css/components.css");
  assert.match(css,/pdp-partner-trust\{justify-content:center/);
+});
+
+test("shared and Next.js footers point to SKANARE social accounts",()=>{
+ const files=["src/components/footer.ts","../web/src/components/Footer.tsx","../web/src/components/layout/Footer.tsx"];
+ for(const file of files){
+  const content=read(file);
+  assert.ok(content.includes("https://www.instagram.com/skanare.gr?obrf=ZXU5ZXoyNnRsejF1"),file);
+  assert.ok(content.includes("https://www.tiktok.com/@skanare.com"),file);
+  assert.match(content,/rel="noopener noreferrer"/);
+ }
 });
