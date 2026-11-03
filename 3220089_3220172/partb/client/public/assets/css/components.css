@@ -3364,20 +3364,20 @@ body.cart-open {
 }
 
 
-.footer-social:nth-child(2) svg,
-.footer-social:nth-child(4) svg {
+.footer-social[aria-label="Facebook"] svg,
+.footer-social[aria-label="LinkedIn"] svg {
   fill: currentColor;
   stroke: none;
 }
 
 
-.footer-social:nth-child(3) svg path:first-child {
+.footer-social[aria-label="YouTube"] svg path:first-child {
   fill: currentColor;
   stroke: none;
 }
 
 
-.footer-social:nth-child(3) .footer-social__play {
+.footer-social[aria-label="YouTube"] .footer-social__play {
   fill: #050505;
   stroke: none;
 }
@@ -16635,3 +16635,15 @@ body > div iframe[src*="boxnow"] {
  .pdp-partner-trust__copy strong { font-size:11px; }
  .pdp-partner-trust__copy small,.pdp-partner-trust__wordmark { font-size:10px; }
 }
+
+/* Partner reassurance, shared across static and template-rendered footers. */
+.footer-partner-trust{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:13px 20px;max-width:1200px;margin:0 auto 42px;padding:20px 18px;border-top:1px solid rgba(255,255,255,.16);border-bottom:1px solid rgba(255,255,255,.16)}
+.footer-partner-trust__label{font-size:10px;font-weight:750;letter-spacing:.14em;color:#aaa}
+.footer-partner-trust a{display:flex;align-items:baseline;gap:9px;color:#fff;text-decoration:none;transition:color .2s}
+.footer-partner-trust a:hover{color:#cfcfcf}
+.footer-partner-trust a:focus-visible{outline:2px solid #fff;outline-offset:4px}
+.footer-partner-trust a strong{font-size:13px;font-weight:850;white-space:nowrap}
+.footer-partner-trust a small{font-size:11px;color:#bdbdbd}
+.footer-partner-trust__divider{height:20px;width:1px;background:rgba(255,255,255,.2)}
+.footer-social--tiktok svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2}
+@media(max-width:760px){.footer-partner-trust{padding:17px 10px;margin:0 auto 28px;gap:10px 13px}.footer-partner-trust__label{width:100%;text-align:center}.footer-partner-trust a{gap:6px}.footer-partner-trust a strong{font-size:12px}.footer-partner-trust a small{font-size:10px}}
