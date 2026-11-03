@@ -3,6 +3,7 @@ import { blankKey, isSharedTshirt, sharedAvailable, readSharedEnabled, readShare
 import { COLLECTIONS } from '../constants/collections.js';
 import { ApiError } from '../utils/apiError.js';
 import { normalizeText } from '../utils/product.js';
+import { compareStorefrontProducts } from './storefront-product-order.service.js';
 import { chooseProductImages } from './product-colors.service.js';
 import { availabilityForProduct, inventoryKey, isReadyQr } from './stock-availability.service.js';
 import {
@@ -158,7 +159,7 @@ export async function listProductsService({category, q, featured, limit, locale 
       );
     });
   }
-  products.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  products.sort(compareStorefrontProducts);
   const n = Number(limit);
   if (Number.isSafeInteger(n) && n > 0) products = products.slice(0, n);
   if (!products.some(p => p.variants?.length)) {
