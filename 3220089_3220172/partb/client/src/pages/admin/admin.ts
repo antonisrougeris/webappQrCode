@@ -2543,6 +2543,7 @@ function collectProductPayload() {
       },
     },
     category: inputValue("productCategory") || "General",
+    displayOrder: null as number | null,
     price: Number(inputValue("productPrice") || 0),
     currency: inputValue("productCurrency") || "EUR",
     discountType: inputValue("productDiscountType") === "amount" ? "amount" : "percent",
