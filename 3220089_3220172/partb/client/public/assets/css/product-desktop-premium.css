@@ -581,3 +581,12 @@
     height: 98px;
   }
 }
+
+@media (min-width:821px) {
+  .product-page .pdp-partner-trust { order:9; }
+  .product-page .delivery-info { order:10; }
+  .product-page .product-benefits { order:11; }
+  .product-page .pdp-desktop-help-links { order:12; }
+  .product-page .pdp-eco-highlights { order:13; }
+  .product-page .pdp-product-information { order:14; }
+}
