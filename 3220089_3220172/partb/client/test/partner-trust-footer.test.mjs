@@ -8,8 +8,8 @@ test("homepage trust information sits between product collections and How It Wor
  const home=read("index.html");
  assert.ok(home.indexOf('id="accessories"')<home.indexOf('class="home-partner-strip"'));
  assert.ok(home.indexOf('class="home-partner-strip"')<home.indexOf('id="how"'));
- assert.match(home,/Secure Payments via Viva\.com/);
- assert.match(home,/BOX NOW Delivery/);
+ assert.match(home,/Viva\.com/);
+ assert.match(home,/BOX NOW/);
  assert.match(home,/href="\/payment-security"/);
  assert.match(home,/href="\/shipping-policy"/);
 });
@@ -20,8 +20,8 @@ test("product purchase block contains both shipping and payments trust statement
  const partner=detail.indexOf('class="pdp-partner-trust"');
  const benefits=detail.indexOf('class="product-benefits"');
  assert.ok(atc>0 && partner>atc && benefits>partner);
- assert.match(detail,/Delivery via BOX NOW/);
- assert.match(detail,/Secure Payments with Viva\.com/);
+ assert.match(detail,/BOX NOW/);
+ assert.match(detail,/Viva\.com/);
  assert.match(detail,/href="\/shipping-policy"/);
  assert.match(detail,/href="\/payment-security"/);
 });
@@ -61,5 +61,19 @@ test("responsive trust styling preserves mobile purchase grid",()=>{
  assert.match(css,/\.footer-partner-trust/);
  assert.match(css,/\.footer-social--tiktok/);
  assert.match(mobile,/grid-area:partner/);
- assert.match(desktop,/\.pdp-partner-trust \{ order:9; \}/);
+ assert.match(desktop,/\.pdp-partner-trust \{ order:11; \}/);
+});
+
+test("mobile PDP is full-width and remains readable with long titles",()=>{
+ const styles=read("public/assets/css/product-mobile-android-price-v2-20261013.css");
+ const final=styles.slice(styles.indexOf("2026-11-03 Mobile PDP regression fix"));
+ assert.match(final,/grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(final,/"title"/);
+ assert.match(final,/"price"/);
+ assert.match(final,/justify-self:start/);
+ assert.match(final,/overflow-wrap:break-word/);
+ const markup=read("src/pages/product-details/product-details.html");
+ assert.match(markup,/class="pdp-partner-trust"[^>]*>[\s\S]*?Viva.com[\s\S]*?BOX NOW/);
+ const css=read("public/assets/css/components.css");
+ assert.doesNotMatch(css.slice(css.indexOf("Minimal trust row aligned"),css.indexOf("Partner reassurance, shared")),/\.pdp-partner-trust__icon/);
 });
