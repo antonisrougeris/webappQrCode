@@ -584,6 +584,11 @@
           <label class="admin-field"><span>Currency</span><input id="productCurrency" type="text" value="EUR" maxlength="6" /></label>
         </div>
 
+        <label class="admin-field" style="margin:14px 0">
+          <span>Storefront position (1 = first)</span>
+          <input id="productDisplayOrder" type="number" min="1" max="10000" step="1" placeholder="Use default order" />
+          <small>Sets product position on the homepage and the catalog. “Show on homepage” still controls visibility.</small>
+        </label>
         <div class="admin-subsection admin-subsection--commerce">
           <div class="admin-subsection__header">
             <div>
