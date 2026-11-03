@@ -693,3 +693,30 @@
   .product-page .product-info .product-benefits { grid-area: benefits; }
   .product-page .product-info .pdp-desktop-help-links { grid-area: help; }
 }
+
+
+/* Compact T-shirt highlights: show both green pills on one line on desktop/tablet.
+   Phone layouts (<=600px) already use the equivalent compact labels. */
+@media (min-width: 601px) {
+  .product-page .product-info #pdpEcoHighlights:not([hidden]) {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .product-page .product-info #pdpEcoHighlights .pdp-eco-full {
+    display: inline-flex;
+    box-sizing: border-box;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+    font-size: 10px;
+    line-height: 1.2;
+    padding: 6px 9px;
+  }
+}

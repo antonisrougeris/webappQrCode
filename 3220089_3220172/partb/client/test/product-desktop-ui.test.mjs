@@ -53,5 +53,22 @@ test("desktop title and price share the heading row and keep purchase ordering",
   assert.match(desktop, /#productPrice \.product-price__current \{[\s\S]*?font-size: 26px;/);
   assert.match(desktop, /\.tax-note \{[\s\S]*?text-align: right;/);
   assert.match(desktop, /"information information"[\s\S]*?"qr qr"[\s\S]*?"size size"[\s\S]*?"stock stock"[\s\S]*?"quantity quantity"[\s\S]*?"delivery delivery"[\s\S]*?"cart cart"/);
-  assert.match(html, /desktop-sale-price-stacked-v2/);
+  assert.match(html, /compact-pills-single-row/);
+});
+
+
+test("product highlights use brief copy and remain side by side on desktop", () => {
+  const pills = html.match(/<div class="pdp-eco-highlights"[^>]*>[\s\S]*?<\/div>/)?.[0];
+  assert.ok(pills);
+  assert.match(pills, /class="pdp-eco-full">100% Cotton<\/span>/);
+  assert.match(pills, /class="pdp-eco-full">Quality Print · Made in Greece<\/span>/);
+  assert.match(pills, /class="pdp-eco-compact">100% Cotton<\/span>/);
+  assert.match(pills, /class="pdp-eco-compact">Quality Print · Made in Greece<\/span>/);
+  assert.doesNotMatch(pills, /Premium 190 GSM Fabric|Made with love in Greece/);
+
+  const desktop = css.slice(css.indexOf("/* Compact T-shirt highlights:"));
+  assert.match(desktop, /@media \(min-width: 601px\)/);
+  assert.match(desktop, /#pdpEcoHighlights:not\(\[hidden\]\) \{[\s\S]*?flex-wrap: nowrap;/);
+  assert.match(desktop, /#pdpEcoHighlights \.pdp-eco-full \{[\s\S]*?white-space: nowrap;/);
+  assert.match(html, /compact-pills-single-row/);
 });
