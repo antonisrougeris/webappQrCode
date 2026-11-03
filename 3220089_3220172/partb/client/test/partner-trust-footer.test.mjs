@@ -61,19 +61,29 @@ test("responsive trust styling preserves mobile purchase grid",()=>{
  assert.match(css,/\.footer-partner-trust/);
  assert.match(css,/\.footer-social--tiktok/);
  assert.match(mobile,/grid-area:partner/);
- assert.match(desktop,/\.pdp-partner-trust \{ order:11; \}/);
+ assert.match(desktop,/\.pdp-partner-trust \{ order:14; \}/);
 });
 
-test("mobile PDP is full-width and remains readable with long titles",()=>{
- const styles=read("public/assets/css/product-mobile-android-price-v2-20261013.css");
- const final=styles.slice(styles.indexOf("2026-11-03 Mobile PDP regression fix"));
- assert.match(final,/grid-template-columns:minmax\(0,1fr\)/);
- assert.match(final,/"title"/);
- assert.match(final,/"price"/);
- assert.match(final,/justify-self:start/);
+test("restores desktop size, quantity, delivery, CTA and partner sequence",()=>{
+ const desktop=read("public/assets/css/product-desktop-premium.css");
+ const css=desktop.slice(desktop.lastIndexOf("/* Restore the original desktop purchase hierarchy"));
+ for(const [rule,order] of [["size-row",9],["size-stock-row",10],["product-purchase-row",11],["delivery-info",12],["add-to-cart-btn",13],["pdp-partner-trust",14]]){
+   assert.match(css,new RegExp("\\."+rule+" \\{ order:"+order+"; \\}"));
+ }
+});
+
+test("mobile price stays beside the title with enough width for long product titles",()=>{
+ const stylesheet=read("public/assets/css/product-mobile-android-price-v2-20261013.css");
+ const final=stylesheet.slice(stylesheet.indexOf("/* Mobile PDP restore:"));
+ assert.match(final,/grid-template-columns:minmax\(0,1fr\) 112px/);
+ assert.match(final,/"title price"/);
+ assert.match(final,/"meta price"/);
+ assert.match(final,/grid-area:price/);
+ assert.match(final,/justify-self:end/);
  assert.match(final,/overflow-wrap:break-word/);
- const markup=read("src/pages/product-details/product-details.html");
- assert.match(markup,/class="pdp-partner-trust"[^>]*>[\s\S]*?Viva.com[\s\S]*?BOX NOW/);
+ assert.match(final,/justify-content:center/);
+ const html=read("src/pages/product-details/product-details.html");
+ assert.match(html,/price-beside-title/);
  const css=read("public/assets/css/components.css");
- assert.doesNotMatch(css.slice(css.indexOf("Minimal trust row aligned"),css.indexOf("Partner reassurance, shared")),/\.pdp-partner-trust__icon/);
+ assert.match(css,/pdp-partner-trust\{justify-content:center/);
 });

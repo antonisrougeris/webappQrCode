@@ -582,17 +582,19 @@
   }
 }
 
-/* Preserve existing product-information -> QR -> sizes -> Add to Cart ordering.
-   The trust line follows immediately after the CTA. */
+/* Restore the original desktop purchase hierarchy from before the partner row.
+   variant-controls uses display:contents, so size and color controls get individual orders. */
 @media (min-width:821px) {
-  .product-page .product-info .pdp-eco-highlights { order:6; }
+  .product-page .product-info .pdp-eco-highlights { order:5; }
+  .product-page .product-info #productColorRow { order:6; }
   .product-page .product-info .pdp-product-information { order:7; }
   .product-page .product-info .qr-box { order:8; }
-  .product-page .product-info .variant-controls { order:5; }
-  .product-page .product-info .product-purchase-row { order:9; }
-  .product-page .product-info .add-to-cart-btn { order:10; }
-  .product-page .product-info .pdp-partner-trust { order:11; }
+  .product-page .product-info .size-row { order:9; }
+  .product-page .product-info .size-stock-row { order:10; }
+  .product-page .product-info .product-purchase-row { order:11; }
   .product-page .product-info .delivery-info { order:12; }
-  .product-page .product-info .product-benefits { order:13; }
-  .product-page .product-info .pdp-desktop-help-links { order:14; }
+  .product-page .product-info .add-to-cart-btn { order:13; }
+  .product-page .product-info .pdp-partner-trust { order:14; }
+  .product-page .product-info .product-benefits { order:15; }
+  .product-page .product-info .pdp-desktop-help-links { order:16; }
 }

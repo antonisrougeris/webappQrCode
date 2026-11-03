@@ -142,89 +142,118 @@
   .product-page .product-info .pdp-eco-highlights:not([hidden]) { gap: 4px; }
 }
 
-/* 2026-11-03 Mobile PDP regression fix.
-   Full-width title and price rows prevent long names from being squeezed by price. */
-@media(max-width:600px){
-  .product-page .product-info{
+/* Mobile PDP restore: sale price beside the title (as in the pre-partner layout).
+   Two columns preserve legibility, with the left title allowed to wrap naturally.
+   This file is intentionally last-loaded so it wins over older mobile rules. */
+@media (max-width:600px) {
+  .product-page .product-info {
     display:grid;
     width:100%;
     min-width:0;
     max-width:100%;
-    grid-template-columns:minmax(0,1fr);
+    grid-template-columns:minmax(0,1fr) 112px;
     grid-template-areas:
-      "rating"
-      "original"
-      "title"
-      "meta"
-      "price"
-      "highlights"
-      "badges"
-      "variants"
-      "quantity"
-      "qr"
-      "description"
-      "partner"
-      "delivery"
-      "benefits";
-    column-gap:0;
+      "rating original"
+      "title price"
+      "meta price"
+      "highlights highlights"
+      "badges badges"
+      "variants variants"
+      "quantity quantity"
+      "qr qr"
+      "description description"
+      "partner partner"
+      "delivery delivery"
+      "benefits benefits";
+    column-gap:10px;
     row-gap:0;
-    overflow:visible;
+    align-items:start;
   }
-  .product-page .product-info .mobile-review-old-price:not([hidden]){
+  .product-page .product-info .mobile-review-old-price:not([hidden]) {
     grid-area:original;
-    justify-self:start;
-    margin:0 0 6px;
+    justify-self:end;
+    align-self:center;
+    margin:0 0 8px;
+    max-width:100%;
   }
-  .product-page .product-info #productTitle{
+  .product-page .product-info #productTitle {
     display:block!important;
     grid-area:title;
+    justify-self:start;
+    align-self:start;
     width:100%;
     max-width:100%;
     min-width:0;
-    margin:0 0 6px;
-    font-size:clamp(21px,5.6vw,26px);
-    line-height:1.14;
+    margin:0 0 3px;
+    font-size:clamp(19px,5.2vw,24px);
+    line-height:1.15;
+    letter-spacing:-.035em;
     white-space:normal;
+    text-wrap:wrap;
     overflow-wrap:break-word;
     word-break:normal;
-    text-wrap:wrap;
     overflow:visible;
     -webkit-line-clamp:unset;
     line-clamp:unset;
   }
-  .product-page .product-info #productMeta{
+  .product-page .product-info #productMeta {
     grid-area:meta;
     width:100%;
+    max-width:100%;
     min-width:0;
-    margin:0 0 9px;
+    margin:2px 0 11px;
+    white-space:normal;
     overflow-wrap:break-word;
+    font-size:11px;
   }
-  .product-page .product-info .product-price-area{
+  .product-page .product-info .product-price-area {
+    display:flex!important;
     grid-area:price;
-    justify-self:start;
+    flex-direction:column;
+    justify-self:end;
     align-self:start;
-    align-items:flex-start;
-    width:100%;
-    max-width:100%;
+    align-items:flex-end;
+    width:112px;
     min-width:0;
-    margin:0 0 10px;
-    text-align:left;
+    max-width:112px;
+    gap:3px;
+    margin:0;
+    padding:0;
+    text-align:right;
+    border:0;
   }
-  .product-page .product-info #productPrice{
-    justify-content:flex-start;
+  .product-page .product-info #productPrice {
+    width:auto;
     max-width:100%;
-    flex-wrap:wrap;
-    text-align:left;
+    margin:0;
+    white-space:nowrap;
+    text-align:right;
+    justify-content:flex-end;
+    flex-wrap:nowrap;
   }
-  .product-page .product-info .pdp-eco-highlights:not([hidden]){
+  .product-page .product-info #productPrice .product-price__current {
+    font-size:clamp(18px,4.7vw,22px);
+    white-space:nowrap;
+  }
+  .product-page .product-info .pdp-eco-highlights:not([hidden]) {
     grid-area:highlights;
     justify-content:flex-start;
+    min-width:0;
     max-width:100%;
-    margin:5px 0 12px;
+    margin:7px 0 14px;
   }
-  .product-page .product-info .pdp-partner-trust{
+  .product-page .product-info .pdp-partner-trust {
     grid-area:partner;
+    display:flex;
+    justify-content:center;
+    align-items:center;
     width:100%;
     min-width:0;
   }
+}
+@media (max-width:355px) {
+  .product-page .product-info {grid-template-columns:minmax(0,1fr) 102px;column-gap:7px;}
+  .product-page .product-info .product-price-area {width:102px;max-width:102px;}
+  .product-page .product-info #productTitle {font-size:19px;}
+  .product-page .product-info #productPrice .product-price__current {font-size:18px;}
 }
