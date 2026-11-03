@@ -50,7 +50,9 @@ test("desktop title and price share the heading row and keep purchase ordering",
   assert.match(desktop, /#productPrice \{[\s\S]*?flex-direction: column;/);
   assert.match(desktop, /#productPrice \{[\s\S]*?align-items: flex-end;/);
   assert.match(desktop, /#productPrice \.product-price__old \{[\s\S]*?font-size: 13px;/);
-  assert.match(desktop, /#productPrice \.product-price__current \{[\s\S]*?font-size: 26px;/);
+  assert.match(desktop, /#productPrice \.product-price__current \{[\s\S]*?font-size: 30px;/);
+  assert.match(desktop, /\.product-price-area:has\(#productPrice\.is-discounted\) \{[\s\S]*?margin-top: -7px;/);
+  assert.match(desktop, /\.product-price-area \{[\s\S]*?margin: 9px 0 0;/);
   assert.match(desktop, /\.tax-note \{[\s\S]*?text-align: right;/);
   assert.match(desktop, /"information information"[\s\S]*?"qr qr"[\s\S]*?"size size"[\s\S]*?"stock stock"[\s\S]*?"quantity quantity"[\s\S]*?"delivery delivery"[\s\S]*?"cart cart"/);
   assert.match(html, /compact-pills-single-row/);

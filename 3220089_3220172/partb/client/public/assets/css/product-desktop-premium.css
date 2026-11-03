@@ -651,6 +651,11 @@
     border: 0;
     text-align: right;
   }
+  /* With a crossed-out price above it, raise the sale price to the
+     title's top edge. Regular (non-discounted) prices keep their baseline. */
+  .product-page .product-info .product-price-area:has(#productPrice.is-discounted) {
+    margin-top: -7px;
+  }
   .product-page .product-info #productPrice {
     display: flex;
     flex-direction: column;
@@ -670,8 +675,8 @@
   }
   .product-page .product-info #productPrice .product-price__current {
     display: block;
-    font-size: 26px;
-    line-height: 1.08;
+    font-size: 30px;
+    line-height: 1.05;
     text-align: right;
   }
   .product-page .product-info .tax-note {
