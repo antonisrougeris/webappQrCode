@@ -73,3 +73,29 @@
 .story-reel__preview-link{cursor:pointer}
 .story-reel__preview-link:focus-visible .story-reel__hover{opacity:1}
 @media(max-width:600px){.story-reel__hover-action{gap:6px}.story-reel__hover-label{font-size:10px}.story-reel__hover-icon{width:42px;height:42px}.story-reel__hover-icon svg{width:25px;height:25px}}
+
+
+/* 2026-11-04: editorial story typography — keep original copy and alignment. */
+.social-story__intro{max-width:760px}
+.social-story__tagline{font-size:13px;font-weight:850;letter-spacing:.13em;color:#292929}
+.social-story__intro p{font-size:clamp(16px,1.35vw,19px);font-weight:550;line-height:1.75;color:#292929;max-width:740px}
+.social-story__intro .social-story__lead{font-weight:650}
+.social-story__intro .social-story__values{font-size:clamp(19px,1.7vw,23px);font-weight:800;line-height:1.55;color:#171717}
+@media(max-width:600px){.social-story__intro{padding-inline:12px}.social-story__intro p{font-size:15px;line-height:1.65}.social-story__intro .social-story__values{font-size:19px}}
+/* Mobile catalog: match the homepage's prominent right-aligned sale price. */
+@media(max-width:600px){
+ .products-shop .product-card .product-body{
+   grid-template-columns:minmax(0,1fr) max-content;
+   grid-template-areas:"title price" "stock price";
+   column-gap:8px;row-gap:4px;align-items:start;
+ }
+ .products-shop .product-card .product-title{min-height:0;align-self:start;font-size:13px;line-height:1.3}
+ .products-shop .product-card .product-stock{align-self:start;margin:0}
+ .products-shop .product-card .product-card-price{
+   align-self:start;justify-self:end;display:flex;flex-direction:row;
+   align-items:baseline;gap:4px;white-space:nowrap;
+ }
+ .products-shop .product-card .price--old{font-size:10px;line-height:1.1}
+ .products-shop .product-card .price--sale,
+ .products-shop .product-card .price:not(.price--old){font-size:17px;line-height:1.15;font-weight:850}
+}
