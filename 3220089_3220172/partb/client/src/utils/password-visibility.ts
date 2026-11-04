@@ -160,20 +160,16 @@ export function initPasswordVisibility(
         .passwordVisibilityInitialized =
         "true";
 
-      const wrapper =
-        document.createElement(
-          "span"
-        );
-
-      wrapper.className =
-        "password-visibility";
-
-      input.parentNode?.insertBefore(
-        wrapper,
-        input
-      );
-
-      wrapper.appendChild(input);
+      // When a page renders the wrapper directly in HTML, keep the input
+      // in its original DOM location. Detaching an already-autofilled input
+      // can desync Edge/Chrome password-manager display and submitted value.
+      let wrapper = input.parentElement;
+      if (!wrapper?.classList.contains("password-visibility")) {
+        wrapper = document.createElement("span");
+        wrapper.className = "password-visibility";
+        input.parentNode?.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+      }
 
       const button =
         document.createElement(

@@ -21,6 +21,7 @@ import {
 
 import { showFlashToast } from "../../utils/toast.ts";
 import { normalizeSameOriginPath } from "../../utils/redirect";
+import { observeLoginCredentials } from "./login-credentials";
 import {
   locale,
   localizedPath,
@@ -33,6 +34,7 @@ const statusEl = document.getElementById("status");
 const googleBtn = document.querySelector<HTMLButtonElement>(".auth-google");
 const emailSubmitBtn = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
 let authInProgress = false;
+let readCredentials: ReturnType<typeof observeLoginCredentials> | null = null;
 
 function setAuthInProgress(inProgress: boolean): void {
   authInProgress = inProgress;
@@ -65,6 +67,9 @@ document.addEventListener("DOMContentLoaded", () => {
   showFlashToast();
 
   applyPrefill();
+  // Register after URL prefill, so browser suggestions and checkout redirects
+  // cannot leave an obsolete credential snapshot before the user edits.
+  if (form) readCredentials = observeLoginCredentials(form);
   applyForgotPasswordLink();
 
   const emailInput =
@@ -190,9 +195,13 @@ if (form) {
 
     if (statusEl) statusEl.textContent = "Logging in...";
 
-    const formData = new FormData(form);
-    const email = String(formData.get("email") || "").trim();
-    const password = String(formData.get("password") || "");
+    const { email, password } = (readCredentials ?? observeLoginCredentials(form))();
+
+    if (!email || !password) {
+      if (statusEl) statusEl.textContent = "Enter your email and password to sign in.";
+      setAuthInProgress(false);
+      return;
+    }
 
     try {
       await setPersistence(firebaseAuth, browserLocalPersistence);
@@ -202,6 +211,11 @@ if (form) {
         email,
         password
       );
+
+      // Never continue with a different account left in browser persistence.
+      if (String(credentials.user.email || "").trim().toLowerCase() !== email.toLowerCase()) {
+        throw new Error("The signed-in account does not match the email you entered. Please retry.");
+      }
 
       const token = await credentials.user.getIdToken();
 
@@ -215,6 +229,13 @@ if (form) {
 
       if (!user) {
         throw new Error("User not returned from server");
+      }
+
+      if (
+        (user.uid && user.uid !== credentials.user.uid) ||
+        (user.email && user.email.trim().toLowerCase() !== email.toLowerCase())
+      ) {
+        throw new Error("The account returned by the server does not match the login email.");
       }
 
       // 3. Firestore verification check (SOURCE OF TRUTH)
