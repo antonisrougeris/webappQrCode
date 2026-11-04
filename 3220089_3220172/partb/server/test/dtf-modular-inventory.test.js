@@ -11,7 +11,7 @@ test("shirt colors produce contrasting printed transfer inks and size aliases no
   assert.throws(()=>componentSpec("text","black",{text:""}),/Invalid/);
   assert.notEqual(componentKey(componentSpec("text","black",{text:"SCAN ME"})),componentKey(componentSpec("text","black",{text:"SCAN TO DISCOVER"})));
 });
-test("modular QR needs logo, neck, size and design-specific text; full A3 needs none",()=>{
+test("modular QR needs logo, combined neck + size, and design-specific text; full A3 needs none",()=>{
   const mod={id:"qr_123",fulfillmentMode:"modular_qr",variant:{color:"Black",size:"L"},qrConfig:{textPrint:"SCAN TO DISCOVER"}};
   assert.deepEqual(neededComponents(mod).map(x=>x.type),["logo","neck","text"]);
 });
@@ -46,9 +46,9 @@ test("consumes ONLY physically confirmed parts, reports shortages and is idempot
   });
   const qr={id:"qr1",fulfillmentMode:"modular_qr",variant:{size:"L",color:"Black"},qrConfig:{textPrint:"SCAN TO DISCOVER"}};
   const result=await ensureOrderDtfPlan("order1",[qr],{db});
-  assert.equal(result.components.length,4);
+  assert.equal(result.components.length,3);
   assert.equal(result.components.find(x=>x.type==="logo").source,"physical_stock");
-  assert.equal(result.missing.length,3);
+  assert.equal(result.missing.length,2);
   assert.equal(db.records.get(`dtfComponentStock/${componentKey(logo)}`).physicalQuantity,0);
   const duplicate=await ensureOrderDtfPlan("order1",[qr],{db});
   assert.deepEqual(duplicate,result);
