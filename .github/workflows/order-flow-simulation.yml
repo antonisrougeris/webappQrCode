@@ -27,6 +27,8 @@ jobs:
           cache-dependency-path: 3220089_3220172/partb/server/package-lock.json
       - name: Install test dependencies
         run: npm ci
+      - name: Test finished A3 reservation allocation with Node test runner
+        run: node --test test/payment-finished-qr.test.js
       - name: Simulate without Firebase or Viva
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ""
@@ -36,6 +38,9 @@ jobs:
           VIVA_API_KEY: ""
           VIVA_CLIENT_SECRET: ""
         run: node scripts/simulate-order-flow.mjs
+      - name: Run all backend regression tests (no production credentials)
+        if: always()
+        run: npm test
       - name: Upload report even on failed checks
         if: always()
         uses: actions/upload-artifact@v4

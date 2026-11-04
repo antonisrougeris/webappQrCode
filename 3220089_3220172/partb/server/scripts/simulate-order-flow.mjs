@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {
-  blankKey, sharedAvailable, planSharedAllocation, isAvailableFinishedGood,
+  blankKey, sharedAvailable, planSharedAllocation, isAvailableFinishedGood, isReservedFinishedGood,
   finishedKey, getSharedReservationSplit
 } from "../src/services/shared-blank-inventory.service.js";
 import {isReadyQr} from "../src/services/stock-availability.service.js";
@@ -168,13 +168,30 @@ await check("10","Real allocation helper prevents overselling",()=>{
   assert.throws(()=>planSharedAllocation(row,5),/Insufficient/);
   return "physical capacity=2, virtual=2, fifth item rejected";
 });
-await check("11","Actual paid webhook recognizes reserved finished A3 flag",()=>{
+await check("11","Reserved A3 metadata correctly survives into payment allocation",()=>{
   const match=payment.match(/for\s*\(\s*const id of\s*hold\.qrIds[\s\S]*?qrAssignments\.push\(\{([\s\S]*?)\}\);/);
   assert.ok(match,"Reserved QR assignment block not found");
+  assert.match(match[1],/finishedGood\s*:\s*isReservedFinishedGood\(qr\)/,
+    "Reserved existing QR must be verified as physically applied A3, not marked finished unconditionally");
   assert.match(payment,/a\.type==="existing" && a\.finishedGood===true/);
-  assert.match(match[1],/finishedGood\s*:/,
-    "SOURCE DEFECT: reserved existing QR omits finishedGood, while payment requires it. Paid A3 orders may fail.");
-  return "Finished QR flag propagated from reserved QR to paid allocation";
+  const reserved={...a3(),status:"reserved",reservationOrderId:"fake-order-01",
+    reservationItemId:"fake-item-01"};
+  assert.equal(isAvailableFinishedGood(reserved),false,"ordinary availability helper rejects reserved state");
+  assert.equal(isReservedFinishedGood(reserved),true,"reserved but physically finished A3 must count");
+  assert.equal(isReservedFinishedGood({...reserved,physicalAppliedAt:null}),false);
+  assert.equal(isReservedFinishedGood({...reserved,finishedGoodStatus:"draft"}),false);
+  assert.equal(isReservedFinishedGood({...reserved,fulfillmentMode:"modular_qr"}),false);
+  assert.equal(isReservedFinishedGood({...reserved,status:"assigned"}),false);
+  return "Real helper: properly reserved A3=true, loose/unprinted/assigned QRs=false; payment records flag";
+});
+await check("12","Current checkout stockReservations still use valid ready-A3 allocation",()=>{
+  const orderSource=fs.readFileSync(path.join(dir,"src/services/order.service.js"),"utf8");
+  assert.match(orderSource,/stockReservations:\s*promoted/,"modern checkout stores stockReservations");
+  assert.match(payment,/const holds\s*=\s*Array\.isArray\(\s*order\.inventoryReservations/);
+  assert.match(payment,/const ready\s*=\s*readySnap\.docs\.filter/);
+  assert.match(payment,/finishedGood:isAvailableFinishedGood\(doc\.data\(\)\)/);
+  assert.match(payment,/const reservation = reservationByItem\.get\(String\(item\.id\)\)/);
+  return "Production source review: current stockReservations route retains its existing ready-A3 check";
 });
 const passed=cases.filter(x=>x.status==="PASS").length, failed=cases.length-passed;
 const esc=s=>String(s).replaceAll("|","\\|").replaceAll("\n"," ");
@@ -198,7 +215,7 @@ const report=[
   "## Important limitations",
   "",
   "- This is a **dry-run**, NOT a real browser-to-API end-to-end checkout. HTTP controllers and Viva webhook are modeled, not invoked.",
-  "- Source guard #11 highlights a suspected **production defect** in the reserved-finished A3 path if it fails.",
+  "- Tests #11/#12 inspect the reserved-finished A3 compatibility route and the current stockReservations branch. This does not execute a real webhook.",
   "- A PASS in the fake checkout does not guarantee a real Viva payment will succeed.",
   "- Test fixtures contain no genuine user emails, customer orders, credentials or real QR IDs.",
   ""

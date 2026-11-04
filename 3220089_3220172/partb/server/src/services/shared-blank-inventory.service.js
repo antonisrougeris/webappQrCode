@@ -74,6 +74,15 @@ export function isAvailableFinishedGood(qr) {
  return qr?.fulfillmentMode === "preprinted" && qr?.finishedGoodStatus === "available" &&
    qr?.status === "available" && Boolean(qr?.physicalAppliedAt) && Boolean(qr?.printFileUrl);
 }
+/** A reserved QR retains its physical production metadata, but its status
+ * changes from available to reserved at checkout. Validate the *real*
+ * physical A3 properties, never label every reserved QR as finished.
+ */
+export function isReservedFinishedGood(qr) {
+  return qr?.status === "reserved" &&
+    isAvailableFinishedGood({...qr, status:"available"});
+}
+
 export function finishedKey(productId,sku) {
  return `${String(productId)}::${String(sku)}`;
 }
