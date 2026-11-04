@@ -16889,17 +16889,18 @@ body > div iframe[src*="boxnow"] {
 }
 
 
-/* November 2026: refine mobile price placement for the two storefront views.
-   Homepage: price belongs beside the heading, stock remains beneath it.
-   Shop: reserve two title lines so price and stock are aligned on both cards. */
+/* November 2026: mobile card alignment for both storefront views.
+   Homepage: old and sale prices share a single baseline, stock follows the
+   title immediately. The price spans both grid rows without pushing stock down.
+   Catalog: keep two cards per row with equal title height. */
 @media (max-width: 600px) {
   .home-catalog-section .product-card .product-body {
     grid-template-columns: minmax(0, 1fr) max-content;
     grid-template-areas:
       "title price"
-      "stock .";
+      "stock price";
     column-gap: 12px;
-    row-gap: 7px;
+    row-gap: 3px;
     align-items: start;
   }
   .home-catalog-section .product-card .product-title {
@@ -16912,9 +16913,10 @@ body > div iframe[src*="boxnow"] {
   .home-catalog-section .product-card .product-card-price {
     align-self: start;
     justify-self: end;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
+    flex-direction: row;
+    align-items: baseline;
+    flex-wrap: nowrap;
+    gap: 6px;
     margin: 0;
     text-align: right;
     white-space: nowrap;

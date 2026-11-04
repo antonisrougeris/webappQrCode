@@ -34,7 +34,7 @@ test("homepage product collections share the catalog's card geometry and respons
   for (const grid of ["featuredTshirtsGrid", "featuredAccessoriesGrid"]) {
     assert.match(home, new RegExp('id="' + grid + '"\\s+class="grid grid-4 products-grid"'));
   }
-  assert.match(home, /components\.css\?v=20261103-home-catalog-parity/);
+  assert.match(home, /components\.css\?v=20261104-mobile-home-price-inline/);
   const homeCss = css.slice(css.indexOf("/* Homepage product sections mirror the catalog card layout"));
   assert.match(homeCss, /\.home-catalog-section > \.container \{ width: min\(1440px, calc\(100% - 72px\)\)/);
   assert.match(homeCss, /\.home-catalog-section \.products-grid \{ grid-template-columns:repeat\(4,minmax\(0,1fr\)\); gap:32px 20px;/);
@@ -74,19 +74,35 @@ test("mobile tapping is stable and rehydration swaps cards only after rendering"
 });
 
 
-test("mobile homepage prices sit beside titles, larger and above stock", () => {
-  const rules = css.slice(css.indexOf("/* November 2026: refine mobile price placement"));
+test("mobile homepage stock follows title and old/new prices share a baseline", () => {
+  const rules = css.slice(css.indexOf("/* November 2026: mobile card alignment"));
   assert.ok(rules.length > 500);
   assert.match(rules, /@media \(max-width: 600px\)/);
-  assert.match(rules, /\.home-catalog-section \.product-card \.product-body \{[\s\S]*?grid-template-areas:\s*"title price"\s*"stock \.";/);
-  assert.match(rules, /\.home-catalog-section \.product-card \.product-card-price \{[\s\S]*?flex-direction: column;[\s\S]*?align-items: flex-end;/);
+  assert.match(rules, /\.home-catalog-section \.product-card \.product-body \{[\s\S]*?grid-template-areas:\s*"title price"\s*"stock price";/);
+  assert.match(rules, /\.home-catalog-section \.product-card \.product-body \{[\s\S]*?row-gap: 3px;/);
+  assert.match(rules, /\.home-catalog-section \.product-card \.product-card-price \{[\s\S]*?flex-direction: row;[\s\S]*?align-items: baseline;/);
+  assert.match(rules, /\.home-catalog-section \.product-card \.product-card-price \{[\s\S]*?flex-wrap: nowrap;/);
   assert.match(rules, /\.home-catalog-section \.product-card \.price--sale,[\s\S]*?font-size: 20px;/);
   assert.match(rules, /\.home-catalog-section \.product-card \.product-stock \{[\s\S]*?align-self: start;/);
 });
 test("mobile catalog keeps two columns with equal title space and aligned prices", () => {
-  const rules = css.slice(css.indexOf("/* November 2026: refine mobile price placement"));
+  const rules = css.slice(css.indexOf("/* November 2026: mobile card alignment"));
   assert.match(css, /\.products-shop \.products-grid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(rules, /\.products-shop \.product-card \.product-body \{[\s\S]*?grid-template-areas:\s*"title title"\s*"stock price";/);
   assert.match(rules, /\.products-shop \.product-card \.product-title \{[\s\S]*?min-height: 2\.6em;/);
   assert.match(rules, /\.products-shop \.product-card \.product-card-price \{[\s\S]*?align-self: end;[\s\S]*?flex-direction: column;/);
+});
+
+
+test("homepage uses horizontal sale prices without pushing stock down on mobile", () => {
+  const mobile = css.slice(css.indexOf("/* November 2026: mobile card alignment"));
+  const homeRule = mobile.slice(mobile.indexOf(".home-catalog-section .product-card .product-body"), mobile.indexOf(".products-shop .product-card .product-body"));
+  assert.match(homeRule, /"title price"\s*"stock price"/);
+  assert.match(homeRule, /row-gap: 3px;/);
+  assert.match(homeRule, /flex-direction: row;/);
+  assert.match(homeRule, /align-items: baseline;/);
+  assert.match(homeRule, /flex-wrap: nowrap;/);
+  assert.doesNotMatch(homeRule, /flex-direction: column;/);
+  const template = shared.slice(shared.indexOf('<div class="product-card-price">'));
+  assert.ok(template.indexOf('price--old') < template.indexOf('price--sale'));
 });
