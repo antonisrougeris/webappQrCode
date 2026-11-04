@@ -1,0 +1,46 @@
+
+name: SKANARE order simulation — NO PRODUCTION
+on:
+  push:
+    branches:
+      - test/order-flow-simulation-20261104
+
+permissions:
+  contents: read
+
+jobs:
+  simulation:
+    name: Fake buyer → cart → checkout → simulated Viva → report
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: 3220089_3220172/partb/server
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: 3220089_3220172/partb/server/package-lock.json
+      - name: Install test dependencies
+        run: npm ci
+      - name: Simulate without Firebase or Viva
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ""
+          FIREBASE_PROJECT_ID: ""
+          FIREBASE_CLIENT_EMAIL: ""
+          FIREBASE_PRIVATE_KEY: ""
+          VIVA_API_KEY: ""
+          VIVA_CLIENT_SECRET: ""
+        run: node scripts/simulate-order-flow.mjs
+      - name: Upload report even on failed checks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-flow-dry-run-report
+          path: 3220089_3220172/partb/server/test-results/order-flow/
+          retention-days: 30
+          if-no-files-found: warn
