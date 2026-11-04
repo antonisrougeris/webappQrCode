@@ -225,13 +225,7 @@ export async function generatePrintSheet({
     const neckLabelPath = resolveNeckPrintAsset(printColor, normalizedSize);
     neckLabelImage = await loadImage(fs.readFileSync(neckLabelPath));
   } else {
-    const neck=await loadImage(await generateDtfComponentArtwork({type:"neck",color:printColor}));
-    const size=await loadImage(await generateDtfComponentArtwork({type:"size",color:printColor,size:normalizedSize}));
-    const combined=createCanvas(neck.width,neck.height+size.height);
-    const combinedCtx=combined.getContext("2d");
-    combinedCtx.drawImage(neck,0,0);
-    combinedCtx.drawImage(size,(combined.width-size.width)/2,neck.height);
-    neckLabelImage=await loadImage(combined.toBuffer("image/png",{resolution:DPI}));
+    neckLabelImage=await loadImage(await generateDtfComponentArtwork({type:"neck",color:printColor,size:normalizedSize}));
   }
 
   // ----------------------------------------------------------

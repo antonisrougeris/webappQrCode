@@ -2913,7 +2913,7 @@ function refreshDtfInputs(){
   const type=dtfType?.value;
   const size=document.getElementById("dtfSizeField");
   const text=document.getElementById("dtfTextField");
-  if(size)size.hidden=type!=="size";
+  if(size)size.hidden=type!=="neck";
   if(text)text.hidden=type!=="text";
 }
 function closeDtfModal(){

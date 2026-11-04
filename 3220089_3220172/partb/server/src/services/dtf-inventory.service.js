@@ -28,12 +28,13 @@ export function componentSpec(type, color, {size, text}={}) {
   const kind = String(type || "").toLowerCase();
   if (!DTF_TYPES.includes(kind) || !DTF_COLORS.includes(color)) throw new Error("Invalid DTF component");
   const result = {type:kind,color};
-  if (kind === "size") result.size=normalizeSize(size);
+  // Existing generic-neck and size-only stock remains readable for historical records.
+  if (kind === "size" || (kind === "neck" && size)) result.size=normalizeSize(size);
   if (kind === "text") result.text=normalizePrintText(text);
   return result;
 }
 export function componentKey(spec) {
-  const extra = spec.type === "size" ? spec.size : spec.type === "text" ? spec.text : "";
+  const extra = spec.type === "size" || spec.type === "neck" ? (spec.size || "") : spec.type === "text" ? spec.text : "";
   return [spec.type,spec.color,extra].map(part=>encodeURIComponent(part)).join("__");
 }
 export function neededComponents(qr) {
@@ -41,8 +42,7 @@ export function neededComponents(qr) {
   const size = normalizeSize(qr.variant?.size);
   const result = [
     componentSpec("logo",color),
-    componentSpec("neck",color),
-    componentSpec("size",color,{size}),
+    componentSpec("neck",color,{size}),
   ];
   const text = String(qr.qrConfig?.textPrint ?? "").trim();
   if (text) result.push(componentSpec("text",color,{text}));

@@ -1,4 +1,4 @@
-import { BLANK_COLLECTION, JOB_COLLECTION, blankIdFromReservationKey, isSharedReservationKey, planSharedAllocation, isAvailableFinishedGood } from "./shared-blank-inventory.service.js";
+import { BLANK_COLLECTION, JOB_COLLECTION, blankIdFromReservationKey, isSharedReservationKey, planSharedAllocation, isAvailableFinishedGood, isReservedFinishedGood } from "./shared-blank-inventory.service.js";
 import { sendMetaPurchaseForPaidOrder } from "./meta-conversions.service.js";
 import { sendAdminPush } from "./admin-push.service.js";
 import { getDB } from "../config/db.js";
@@ -1071,6 +1071,9 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           qrAssignments.push({
             type: "existing",
             ref: snap.ref,
+            // Preserve the original physical A3 identity after its status
+            // changed from available to reserved during checkout.
+            finishedGood: isReservedFinishedGood(qr),
             item,
             sku,
             inventoryKey: key,

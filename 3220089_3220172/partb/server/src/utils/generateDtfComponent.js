@@ -145,14 +145,25 @@ export async function generateDtfComponentArtwork(spec) {
   }
 
   if (safe.type === "neck") {
-    const image = await loadImage(await fs.readFile(resolveNeckPrintAsset(safe.color, "l")));
-    // Crop out the size glyph, retaining the original SKANARE/slogan artwork
-    // scaled to precisely the same width used in the A3.
-    const sourceHeight = Math.round(image.height * 0.73);
+    const selectedSize = safe.size || "L"; // compatible with older generic neck records
+    if (selectedSize !== "2XL") {
+      const image = await loadImage(await fs.readFile(resolveNeckPrintAsset(safe.color, selectedSize.toLowerCase())));
+      const targetWidth = cmToPx(NECK_WIDTH_CM);
+      const targetHeight = Math.ceil((targetWidth * image.height) / image.width);
+      const canvas = createCanvas(targetWidth, targetHeight);
+      canvas.getContext("2d").drawImage(image, 0, 0, targetWidth, targetHeight);
+      return output(canvas);
+    }
+    const label = await loadImage(await fs.readFile(resolveNeckPrintAsset(safe.color, "l")));
+    const faceHeight = Math.round(label.height * 0.73);
     const targetWidth = cmToPx(NECK_WIDTH_CM);
-    const targetHeight = Math.ceil((targetWidth * sourceHeight) / image.width);
-    const canvas = createCanvas(targetWidth, targetHeight);
-    canvas.getContext("2d").drawImage(image, 0, 0, image.width, sourceHeight, 0, 0, targetWidth, targetHeight);
+    const targetFaceHeight = Math.ceil((targetWidth * faceHeight) / label.width);
+    const sizeImage = await loadImage(await generateSizeArtwork({...safe,size:"2XL"}));
+    const margin = Math.round(DPI * 0.08 / 2.54);
+    const canvas = createCanvas(targetWidth, targetFaceHeight + sizeImage.height + margin);
+    const context = canvas.getContext("2d");
+    context.drawImage(label, 0, 0, label.width, faceHeight, 0, 0, targetWidth, targetFaceHeight);
+    context.drawImage(sizeImage, Math.round((targetWidth-sizeImage.width)/2), targetFaceHeight+margin);
     return output(canvas);
   }
 

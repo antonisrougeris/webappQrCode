@@ -1,0 +1,41 @@
+name: SKANARE feature integration validation — no deployment
+on:
+  push:
+    branches:
+      - feature/social-proof-neck-size-safe-20261104
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 3220089_3220172/partb/client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: 3220089_3220172/partb/client/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          VITE_API_BASE_URL: https://skanare.com/api
+          VITE_QR_REDIRECT_BASE_URL: https://go.skanare.com
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 3220089_3220172/partb/server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: 3220089_3220172/partb/server/package-lock.json
+      - run: npm ci
+      - run: find src scripts -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - run: npm test

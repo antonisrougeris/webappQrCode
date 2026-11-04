@@ -749,9 +749,9 @@
             <label class="admin-field"><span>What to print</span><select id="dtfType">
               <option value="qr">Unique QR codes only</option>
               <option value="logo">SKANARE logo only</option>
-              <option value="neck">Neck · NOT JUST A BRAND A CODE (no size)</option>
+              <option value="neck">Neck + Size · NOT JUST A BRAND A CODE</option>
               <option value="text">Fixed slogan / QR text only</option>
-              <option value="size">Size letter only</option>
+              <!-- Standalone size printing disabled; Neck includes size. -->
             </select></label>
             <label class="admin-field"><span>DTF print ink color (contrasts with shirt)</span><select id="dtfColor">
               <option value="white">White ink · for black garments</option>
@@ -759,13 +759,13 @@
             </select></label>
           </div>
           <div class="admin-form-grid">
-          <label class="admin-field" id="dtfSizeField"><span>Size</span><select id="dtfSize">
+          <label class="admin-field" id="dtfSizeField"><span>Neck print size</span><select id="dtfSize">
               <option>S</option><option>M</option><option>L</option><option>XL</option><option value="2XL">XXL</option>
             </select></label>
             <label class="admin-field" id="dtfTextField"><span>Fixed text (for example SCAN TO DISCOVER)</span><input id="dtfText" maxlength="90" placeholder="SCAN TO DISCOVER"/></label>
           </div>
           <label class="admin-field"><span>Transfers to print (each QR is individually unique)</span><input id="dtfQuantity" type="number" min="1" max="100" value="1" step="1" required/></label>
-          <p class="admin-muted">All QR-only transfers print at 28 cm wide / 300 DPI, for every T-shirt size. Mark QR transfers as physically received before they are used; other artwork is counted separately.</p>
+          <p class="admin-muted">QR-only prints are 28 cm at 300 DPI. Neck + Size is one 6 cm-wide transfer with the selected size printed in it. Record physical stock only when received.</p>
           <p id="dtfStatus" class="admin-inline-status" aria-live="polite"></p>
           <button id="dtfPrintSubmit" class="admin-primary-button" type="submit">Create artwork &amp; email</button>
         </form>

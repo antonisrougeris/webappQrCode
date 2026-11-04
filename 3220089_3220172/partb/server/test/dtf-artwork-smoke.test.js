@@ -6,10 +6,12 @@ import { generateDtfComponentArtwork } from "../src/utils/generateDtfComponent.j
 import { makeSkanareWordmark, resolveNeckPrintAsset } from "../src/utils/printArtworkAssets.js";
 import fs from "node:fs";
 
-test("standalone neck DTF has no size and uses exact 6cm x 300DPI",async()=>{
-  const image=await loadImage(await generateDtfComponentArtwork({type:"neck",color:"white"}));
-  assert.equal(image.width,Math.round(6/2.54*300));
-  assert.ok(image.height>150);
+test("neck with selected size is a single 6cm print",async()=>{
+  for(const size of ["S","M","L","XL","2XL"]){
+    const image=await loadImage(await generateDtfComponentArtwork({type:"neck",color:"white",size}));
+    assert.equal(image.width,Math.round(6/2.54*300));
+    assert.ok(image.height>150);
+  }
 });
 test("standalone size, slogan and SKANARE logo generate on transparent PNG backgrounds",async()=>{
   const cases=[
@@ -85,7 +87,7 @@ test("DTF standalone component sizing follows the A3 print proportions", async (
   const { cropDtfRegion } = await import("../src/utils/generateDtfComponent.js");
   for (const ink of ["white", "black"]) {
     const logo = await loadImage(await generateDtfComponentArtwork({ type: "logo", color: ink }));
-    const neck = await loadImage(await generateDtfComponentArtwork({ type: "neck", color: ink }));
+    const neck = await loadImage(await generateDtfComponentArtwork({ type: "neck", color: ink, size: "L" }));
     assert.equal(logo.width, Math.round(7 / 2.54 * 300));
     assert.equal(neck.width, Math.round(6 / 2.54 * 300));
     const xl = await loadImage(await generateDtfComponentArtwork({ type: "size", color: ink, size: "XL" }));
@@ -103,4 +105,12 @@ test("DTF standalone component sizing follows the A3 print proportions", async (
     }
   }
   assert.equal(typeof cropDtfRegion, "function");
+});
+
+test("modular DTF uses one size-specific neck, not a detached size transfer",async()=>{
+ const {neededComponents,componentSpec,componentKey}=await import("../src/services/dtf-inventory.service.js");
+ const parts=neededComponents({variant:{color:"Black",size:"M"},qrConfig:{textPrint:"SCAN ME"}});
+ assert.deepEqual(parts.map(p=>p.type),["logo","neck","text"]);
+ assert.equal(parts[1].size,"M");
+ assert.notEqual(componentKey(componentSpec("neck","white",{size:"M"})),componentKey(componentSpec("neck","white",{size:"L"})));
 });

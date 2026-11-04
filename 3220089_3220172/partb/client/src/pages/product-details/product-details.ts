@@ -1,5 +1,6 @@
 import { trackEcommerceEvent, trackMetaEcommerceEvent } from "../../services/analytics";
 import "../../i18n/auto";
+import {mountBrandTrustSections} from "../../components/brandTrustSections";
 import { initOfferToast } from "../../components/offerToast";
 /* 3220089_3220172 */
 
@@ -1905,6 +1906,7 @@ if (imageStage) {
   }
 }
 
+mountBrandTrustSections("productDetails");
 void initProductDetailsPage();
 
 

@@ -13,7 +13,7 @@ test("shirt colors produce contrasting printed transfer inks and size aliases no
 });
 test("modular QR needs logo, neck, size and design-specific text; full A3 needs none",()=>{
   const mod={id:"qr_123",fulfillmentMode:"modular_qr",variant:{color:"Black",size:"L"},qrConfig:{textPrint:"SCAN TO DISCOVER"}};
-  assert.deepEqual(neededComponents(mod).map(x=>x.type),["logo","neck","size","text"]);
+  assert.deepEqual(neededComponents(mod).map(x=>x.type),["logo","neck","text"]);
 });
 function fakeDatabase(seed) {
   const records=new Map(Object.entries(seed));

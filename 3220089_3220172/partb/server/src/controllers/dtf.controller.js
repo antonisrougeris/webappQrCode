@@ -43,6 +43,8 @@ export const listDtfStock = asyncHandler(async(req,res)=>{
 
 export const generateDtfPrintBatch=asyncHandler(async(req,res)=>{
   const spec=readSpec(req.body);
+  if(spec.type==="size") throw new ApiError(400,"Standalone size-letter printing is disabled; select Neck + Size");
+  if(spec.type==="neck"&&!spec.size) throw new ApiError(400,"Select the neck print size");
   const quantity=safeQuantity(req.body?.quantity);
   const bytes=await generateDtfComponentArtwork(spec);
   const item=await uploadQrToStorage(`dtf-${createId("batch")}`,bytes);

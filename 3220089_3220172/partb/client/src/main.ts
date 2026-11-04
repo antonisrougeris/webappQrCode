@@ -1,4 +1,5 @@
 import "./i18n/auto";
+import { initHomepageSocialProof } from "./components/homepageSocialProof";
 import { locale, translatePhrase, localizedPath } from "./i18n/locale";
 import "./boxnow-tracking.css";
 import { initOfferToast } from "./components/offerToast";
@@ -1183,6 +1184,7 @@ async function loadHomepageProducts(
 ========================= */
 
 document.addEventListener("DOMContentLoaded", () => {
+  initHomepageSocialProof();
   void loadHomepageProducts(
     "featuredTshirtsGrid",
     "featuredTshirtsLoading",

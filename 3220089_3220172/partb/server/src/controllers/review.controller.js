@@ -5,6 +5,7 @@ import {
   createVerifiedReview,
   getReviewsForProduct,
   getMyReviewedProductIds,
+  getHomepageReviews,
 } from "../services/review.service.js";
 import { parseOrThrow } from "../utils/validators.js";
 
@@ -29,3 +30,8 @@ export const createReview = asyncHandler(async (req, res) => {
   return ok(res, result, 201);
 });
 export const myReviewedProducts = asyncHandler(async (req, res) => ok(res, { productIds: await getMyReviewedProductIds(req.user.uid) }));
+
+export const listHomepageReviews = asyncHandler(async (_req, res) => {
+  const reviews = await getHomepageReviews();
+  return ok(res, {reviews});
+});
