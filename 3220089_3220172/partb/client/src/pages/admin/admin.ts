@@ -577,16 +577,8 @@ document.getElementById("operationsPaymentsBody")?.addEventListener("click", asy
   }
 });
 
-window.setInterval(() => {
-  const active = document.querySelector<HTMLElement>(".admin-nav__item.is-active");
-  if (
-    firebaseAuth.currentUser &&
-    active?.dataset.view === "operations" &&
-    !document.hidden
-  ) {
-    void loadOperations();
-  }
-}, 60000);
+// Operations is refreshed explicitly when opened or via the Refresh button.
+// Do not repeatedly scan carts, orders, users and all QRs in an idle admin tab.
 
 
 /* =========================================================
