@@ -26,6 +26,7 @@ import {
 import {
   pruneExpiredHolds,
   reservationDocId,
+  isPaidCheckoutHold,
 } from "./inventory-reservation.service.js";
 import { recoveryOfferRef } from "./recovery-offer.service.js";
 import { approveReturnForAdmin } from "./returns.service.js";
@@ -1636,11 +1637,9 @@ export async function markOrderPaidFromVivaWebhook(payload) {
             // Checkout hold IDs are order:<orderId>:<orderItemId>, NOT the
             // item ID. Remove only the paid order's holds so committedPhysical
             // and a stale reservation cannot both reduce sellable inventory.
-            holds: active.filter(hold =>
-              !checkoutHoldIds.has(String(hold.id)) &&
-              !(String(hold.orderId || "") === String(order.id) &&
-                orderItemIds.has(String(hold.orderItemId || "")))
-            ),
+            holds: active.filter(hold => !isPaidCheckoutHold(hold, {
+              orderId: order.id, orderItemIds, checkoutHoldIds,
+            })),
             updatedAt:
               paidAt,
           },
