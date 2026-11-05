@@ -1316,6 +1316,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
      * Cart / pending checkout reservations reduce storefront availability
      * but do NOT mutate product stock.
      */
+    const productionAllocations = [];
     const stockReservations =
       Array.isArray(order.stockReservations)
         ? order.stockReservations
@@ -1501,6 +1502,16 @@ export async function markOrderPaidFromVivaWebhook(payload) {
         catch { throw new ApiError(409,"Shared blank capacity exhausted before payment"); }
         balance.committedPhysical=Number(balance.committedPhysical||0)+allocation.physical;
         balance.backorderOpen=Number(balance.backorderOpen||0)+allocation.virtual;
+        productionAllocations.push({
+          orderItemId: String(item.id),
+          productId: String(item.productId),
+          shirtColor: String(item.variant?.color || ""),
+          size: String(item.variant?.size || ""),
+          blankId,
+          finished: finishedQuantity,
+          physical: allocation.physical,
+          virtual: allocation.virtual,
+        });
         tx.create(db.collection(JOB_COLLECTION).doc(`${order.id}__${item.id}`),{
           orderId:order.id,orderNumber:order.orderNumber,orderItemId:item.id,
           productId:item.productId,productTitle:item.title,sku:item.sku,
@@ -1673,6 +1684,8 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
         qrCodesCreated:
           qrAssignments.length,
+
+        productionAllocations,
 
         ...(holds
           ? {
