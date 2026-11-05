@@ -1874,10 +1874,10 @@ if (imageStage) {
       }catch(error){console.warn("Stock refresh failed; checkout will revalidate",error);}
       finally{stockFetchInFlight=false;}
     };
-    const onStockFocus=()=>{if(!document.hidden&&Date.now()-lastStockFetch>1500)void refreshProductStock();};
+    const onStockFocus=()=>{if(!document.hidden&&Date.now()-lastStockFetch>=60000)void refreshProductStock();};
     window.addEventListener("focus",onStockFocus);
     document.addEventListener("visibilitychange",onStockFocus);
-    window.setInterval(()=>{if(!document.hidden&&Date.now()-lastStockFetch>=10000)void refreshProductStock();},10000);
+    // Cart/checkout reserve stock transactionally. Avoid reads when tab sits open.
     // Non-critical requests run AFTER cart handlers are attached. Neither
     // reviews nor recommendations should delay the size picker / CTA.
     void (async () => {

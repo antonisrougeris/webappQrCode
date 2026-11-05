@@ -1,4 +1,4 @@
-import { getDB, toPlainDoc, toPlainDocs } from '../config/db.js';
+import { getDB, toPlainDocs } from '../config/db.js';
 import { blankKey, isSharedTshirt, sharedAvailable, readSharedEnabled, readSharedBlankRows, isAvailableFinishedGood, finishedKey } from './shared-blank-inventory.service.js';
 import { COLLECTIONS } from '../constants/collections.js';
 import { ApiError } from '../utils/apiError.js';
@@ -6,10 +6,9 @@ import { normalizeText } from '../utils/product.js';
 import { compareStorefrontProducts } from './storefront-product-order.service.js';
 import { chooseProductImages } from './product-colors.service.js';
 import { availabilityForProduct, inventoryKey, isReadyQr } from './stock-availability.service.js';
+import { cacheStorefrontRead } from './storefront-read-cache.service.js';
 import {
-  getInventoryKey,
-  readSharedHoldBreakdown,
-  readActiveReservationCounts,
+  getInventoryKey, readReservationCountsAndSharedBreakdown,
 } from './inventory-reservation.service.js';
 import {
   decorateProductPricing,
@@ -62,26 +61,46 @@ export function assertStockForVariant(product, variant, quantity) {
   }
 }
 
-// IMPORTANT: This reads available QR records to derive a storefront quantity, not to
-// reserve them. Checkout performs the authoritative query inside its transaction.
-async function readFinishedCounts(db) {
- const snap=await db.collection(COLLECTIONS.QR_CODES).where("status","==","available").get();
- const counts=new Map();
- for(const doc of snap.docs){const qr=doc.data();if(!isAvailableFinishedGood(qr))continue;
-  const key=finishedKey(qr.productId,qr.sku);counts.set(key,(counts.get(key)||0)+1);}
- return counts;
-}
-async function readReadyCounts(db) {
-  const snap = await db.collection(COLLECTIONS.QR_CODES)
-    .where('status', '==', 'available').get();
-  const counts = new Map();
+// Both readiness and truly finished counts are derived from ONE QR scan,
+// preserving legacy accessory behavior until the physical-stock migration.
+async function readQrCounts(db) {
+  const snap = await db.collection(COLLECTIONS.QR_CODES).where("status","==","available").get();
+  const ready = new Map();
+  const finished = new Map();
   for (const doc of snap.docs) {
-    const qr = doc.data();
-    if (!isReadyQr(qr)) continue;
-    const key = qr.inventoryKey || inventoryKey(qr.productId, qr.sku);
-    counts.set(key, (counts.get(key) || 0) + 1);
+    const qr=doc.data();
+    if (isReadyQr(qr)) {
+      const key = qr.inventoryKey || inventoryKey(qr.productId, qr.sku);
+      ready.set(key,(ready.get(key)||0)+1);
+    }
+    if (isAvailableFinishedGood(qr)) {
+      const key=finishedKey(qr.productId,qr.sku);
+      finished.set(key,(finished.get(key)||0)+1);
+    }
   }
-  return counts;
+  return { ready, finished };
+}
+
+// No timers; only read Firestore when a real request arrives.
+function readCatalogDocuments(db) {
+  return cacheStorefrontRead("products", 300_000, async () =>
+    toPlainDocs(await db.collection(COLLECTIONS.PRODUCTS).get()));
+}
+
+function readStorefrontAvailability(db) {
+  return cacheStorefrontRead("availability", 120_000, async () => {
+    const [qr, holds, sharedEnabled] = await Promise.all([
+      readQrCounts(db),
+      readReservationCountsAndSharedBreakdown(db),
+      readSharedEnabled(db),
+    ]);
+    const blankRows = sharedEnabled ? await readSharedBlankRows(db) : new Map();
+    return {
+      ready: qr.ready, finishedCounts: sharedEnabled ? qr.finished : new Map(),
+      reserved: holds.counts, sharedHolds: holds.sharedHolds,
+      sharedEnabled, blankRows,
+    };
+  });
 }
 
 function applyActiveReservations(product, reservedCounts, sharedEnabled = false, blankRows = new Map(), finishedCounts=new Map(), sharedHolds={blank:new Map(),finished:new Map()}) {
@@ -130,8 +149,8 @@ function applyActiveReservations(product, reservedCounts, sharedEnabled = false,
 
 export async function listProductsService({category, q, featured, limit, locale = "en"} = {}) {
   const db = getDB();
-  const snap = await db.collection(COLLECTIONS.PRODUCTS).get();
-  let products = toPlainDocs(snap).filter(p => p.active !== false);
+  const catalog = await readCatalogDocuments(db);
+  let products = catalog.filter(p => p.active !== false);
   if (category && category !== 'All') products = products.filter(p => p.category === category);
   if (featured !== undefined) {
     const desired = featured === true || featured === 'true';
@@ -165,10 +184,8 @@ export async function listProductsService({category, q, featured, limit, locale 
   if (!products.some(p => p.variants?.length)) {
     return products.map((product) => localizeProduct(withDefaultGallery(product), locale));
   }
-  const [ready, reserved, sharedEnabled] = await Promise.all([
-    readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
-  ]);
-  const [blankRows,finishedCounts,sharedHolds] = sharedEnabled ? await Promise.all([readSharedBlankRows(db),readFinishedCounts(db),readSharedHoldBreakdown(db)]):[new Map(),new Map(),{blank:new Map(),finished:new Map()}];
+  const {ready,reserved,sharedEnabled,blankRows,finishedCounts,sharedHolds} =
+    await readStorefrontAvailability(db);
 
   return products.map((product) =>
     localizeProduct(
@@ -183,31 +200,31 @@ export async function listProductsService({category, q, featured, limit, locale 
   );
 }
 
-export async function getProductByIdOrSlug(idOrSlug, { locale = "en" } = {}) {
+export async function getProductByIdOrSlug(idOrSlug, { locale = "en", fresh = false, includeAvailability = true } = {}) {
   const db = getDB();
   const identifier = String(idOrSlug || '');
   let product;
-  const doc = await db.collection(COLLECTIONS.PRODUCTS).doc(identifier).get();
-  if (doc.exists) product = toPlainDoc(doc);
-  else {
-    const query = await db.collection(COLLECTIONS.PRODUCTS)
-      .where('slug', '==', identifier).limit(1).get();
-    if (query.empty) throw new ApiError(404, 'Product not found');
-    product = { id: query.docs[0].id, ...query.docs[0].data() };
+  if (fresh) {
+    const doc = await db.collection(COLLECTIONS.PRODUCTS).doc(identifier).get();
+    if (doc.exists) product = { id: doc.id, ...doc.data() };
+    else {
+      const query = await db.collection(COLLECTIONS.PRODUCTS)
+        .where("slug", "==", identifier).limit(1).get();
+      if (!query.empty) product = { id: query.docs[0].id, ...query.docs[0].data() };
+    }
+  } else {
+    const catalog = await readCatalogDocuments(db);
+    product = catalog.find(p => String(p.id) === identifier || String(p.slug || "") === identifier);
   }
-  if (product.active === false) throw new ApiError(404, 'Product not found');
-  if (!product.variants?.length) {
+  if (!product || product.active === false) throw new ApiError(404, 'Product not found');
+  if (!includeAvailability || !product.variants?.length) {
     return localizeProduct(
       withDefaultGallery(product),
       locale
     );
   }
-  const [ready, reserved, sharedEnabled] = await Promise.all([
-    readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
-  ]);
-  const [blankRows, finishedCounts, sharedHolds] = sharedEnabled
-    ? await Promise.all([readSharedBlankRows(db), readFinishedCounts(db), readSharedHoldBreakdown(db)])
-    : [new Map(), new Map(), { blank: new Map(), finished: new Map() }];
+  const {ready,reserved,sharedEnabled,blankRows,finishedCounts,sharedHolds} =
+    await readStorefrontAvailability(db);
 
   return localizeProduct(
     withDefaultGallery(
