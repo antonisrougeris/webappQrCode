@@ -445,8 +445,14 @@ export async function sendPaidOrderEmails(order) {
         <hr/>
 
         <h3>Blank T-shirt allocation</h3>
-        <p>Check Inventory &amp; Production → Production Queue for physical/virtual allocations.
-        Jobs marked awaiting_blank require receiving the physical shirt before production.</p>
+        <ul>${(freshOrder.productionAllocations || []).map(row=>
+          `<li>${escapeHtml(row.shirtColor || "")} / ${escapeHtml(row.size || "")}:
+            ${Number(row.finished || 0)} finished ready,
+            ${Number(row.physical || 0)} physical blank(s) committed,
+            ${Number(row.virtual || 0)} virtual — ${Number(row.virtual || 0) > 0 ? "<strong>RECEIVE BLANK BEFORE PRODUCTION</strong>" : "no blank shortage"}
+          </li>`
+        ).join("")}</ul>
+        <p>Track physical and virtual allocations in Inventory &amp; Production → Production Queue.</p>
         <h3>QR transfers by garment color</h3>
         <ul>${(productionPlan.qrTransfers || []).map(qr=>
           `<li>${escapeHtml(qr.shirtColor)} shirt / ${escapeHtml(qr.size)}:
