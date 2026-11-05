@@ -1877,7 +1877,7 @@ if (imageStage) {
     const onStockFocus=()=>{if(!document.hidden&&Date.now()-lastStockFetch>1500)void refreshProductStock();};
     window.addEventListener("focus",onStockFocus);
     document.addEventListener("visibilitychange",onStockFocus);
-    window.setInterval(()=>{if(!document.hidden&&Date.now()-lastStockFetch>=10000)void refreshProductStock();},10000);
+    window.setInterval(()=>{if(!document.hidden&&Date.now()-lastStockFetch>=60000)void refreshProductStock();},60000);
     // Non-critical requests run AFTER cart handlers are attached. Neither
     // reviews nor recommendations should delay the size picker / CTA.
     void (async () => {
