@@ -11,6 +11,8 @@ import { generatePrintQrImage } from "../utils/generatePrintQrImage.js";
 
 import { generatePrintSheet } from "../utils/generatePrintSheet.js";
 import { generateDtfComponentArtwork } from "../utils/generateDtfComponent.js";
+import { createCanvas, loadImage } from "canvas";
+import { normalizeDtfColor } from "./dtf-inventory.service.js";
 import { ensureOrderDtfPlan, componentKey } from "./dtf-inventory.service.js";
 import { getBoxNowOrderLabel } from "./boxnow.service.js";
 
@@ -68,6 +70,21 @@ function orderItemsHtml(order, locale = "en") {
       `;
     })
     .join("");
+}
+
+// Print only the unique QR for modular production. The separately planned
+// logo/neck/slogan materials must not be printed twice on a full A3 sheet.
+async function generateQrOnlyForPaidShirt(qrUrl, garmentColor) {
+  const ink = normalizeDtfColor(garmentColor);
+  const hex = ink === "white" ? "#ffffff" : "#000000";
+  const png = await generatePrintQrImage(qrUrl, {
+    qrColor: hex, textColor: hex, textPrint: "", size: 3540,
+  });
+  const image = await loadImage(png);
+  const width = Math.round(28 / 2.54 * 300);
+  const canvas = createCanvas(width, width);
+  canvas.getContext("2d").drawImage(image, 0, 0, width, width);
+  return canvas.toBuffer("image/png", { resolution: 300 });
 }
 
 function isTshirtPrintSize(size) {
@@ -281,7 +298,8 @@ export async function sendPaidOrderEmails(order) {
     freshOrder.customer?.email &&
     !freshOrder.emails?.customerOrderSentAt
   ) {
-    await sendEmail({
+    try {
+      await sendEmail({
       from,
       to: freshOrder.customer.email,
       subject: freshOrder.locale === "el"
@@ -300,12 +318,18 @@ export async function sendPaidOrderEmails(order) {
       },
       { merge: true }
     );
+    } catch (error) {
+      console.error("paid_customer_email_failed", {
+        orderId: freshOrder.id, message: error?.message,
+      });
+    }
   }
 
   if (
     adminEmail &&
     !freshOrder.emails?.adminOrderSentAt
   ) {
+    try {
     const attachments = [];
     const downloadLinks = [];
 
@@ -335,39 +359,31 @@ export async function sendPaidOrderEmails(order) {
       if (["preprinted","modular_qr"].includes(qr.fulfillmentMode)) continue;
       const qrUrl = `${QR_BASE_URL}/${qr.shortId}`;
 
-      const qrBuffer = await generatePrintQrImage(
-        qrUrl,
-        {
-          qrColor:
-            qr.qrConfig?.qrColor ||
-            qr.qrConfig?.color ||
-            "#000000",
-          textColor:
-            qr.qrConfig?.textColor ||
-            qr.qrConfig?.qrColor ||
-            qr.qrConfig?.color ||
-            "#000000",
-          // Empty text is intentional: preserve it instead of
-          // replacing it with the old "SCAN ME" fallback.
-          text:
-            String(qr.qrConfig?.textPrint ?? "").trim(),
-          textPosition:
-            qr.qrConfig?.textPosition ||
-            "bottom",
-        }
-      );
-
-      let buffer = qrBuffer;
+      const needsQrOnly = qr.fulfillmentMode === "made_to_order" &&
+        isTshirtPrintSize(qr.variant?.size);
+      let buffer;
       let filename = `qr-${qr.productTitle || qr.shortId}.png`;
 
-      if (isTshirtPrintSize(qr.variant?.size)) {
-        buffer = await generatePrintSheet({
-          qrBuffer,
-          shirtColor: qr.variant?.color || "Black",
-          shirtSize: qr.variant?.size,
+      if (needsQrOnly) {
+        // Use the selected contrast ink and no slogan; the correct component
+        // prints are allocated separately in dtfProductionPlan.
+        buffer = await generateQrOnlyForPaidShirt(qrUrl, qr.variant.color);
+        filename = `QR-ONLY-${qr.shortId}-${normalizeDtfColor(qr.variant.color)}-28cm.png`;
+      } else {
+        const qrBuffer = await generatePrintQrImage(qrUrl, {
+          qrColor: qr.qrConfig?.qrColor || qr.qrConfig?.color || "#000000",
+          textColor: qr.qrConfig?.textColor || qr.qrConfig?.qrColor || "#000000",
+          text: String(qr.qrConfig?.textPrint ?? "").trim(),
+          textPosition: qr.qrConfig?.textPosition || "bottom",
         });
-
-        filename = `print-${qr.productTitle || qr.shortId}.png`;
+        buffer = qrBuffer;
+        if (isTshirtPrintSize(qr.variant?.size)) {
+          buffer = await generatePrintSheet({
+            qrBuffer, shirtColor: qr.variant?.color || "Black",
+            shirtSize: qr.variant?.size,
+          });
+          filename = `print-${qr.productTitle || qr.shortId}.png`;
+        }
       }
 
       const uploaded =
@@ -426,6 +442,9 @@ export async function sendPaidOrderEmails(order) {
       }
     }
 
+    // Persist print downloads even if email transport temporarily fails.
+    await orderRef.set({ qrFiles: downloadLinks, updatedAt: nowIso() }, { merge: true });
+
     await sendEmail({
       from,
       to: adminEmail,
@@ -435,6 +454,21 @@ export async function sendPaidOrderEmails(order) {
 
         <hr/>
 
+        <h3>Blank T-shirt allocation</h3>
+        <ul>${(freshOrder.productionAllocations || []).map(row=>
+          `<li>${escapeHtml(row.shirtColor || "")} / ${escapeHtml(row.size || "")}:
+            ${Number(row.finished || 0)} finished ready,
+            ${Number(row.physical || 0)} physical blank(s) committed,
+            ${Number(row.virtual || 0)} virtual — ${Number(row.virtual || 0) > 0 ? "<strong>RECEIVE BLANK BEFORE PRODUCTION</strong>" : "no blank shortage"}
+          </li>`
+        ).join("")}</ul>
+        <p>Track physical and virtual allocations in Inventory &amp; Production → Production Queue.</p>
+        <h3>QR transfers by garment color</h3>
+        <ul>${(productionPlan.qrTransfers || []).map(qr=>
+          `<li>${escapeHtml(qr.shirtColor)} shirt / ${escapeHtml(qr.size)}:
+          ${escapeHtml(qr.inkColor)} ink QR ${escapeHtml(qr.shortId)} —
+          ${qr.source === "print_required" ? "PRINT NEW QR (attached 28cm artwork)" : "PICK EXISTING PHYSICAL QR TRANSFER"}</li>`
+        ).join("")}</ul>
         <h3>DTF Production Plan</h3>
         <p>Full A3 and QR-only physical transfers are not regenerated.</p>
         <p>Artwork attachments below are templates: print the required number
@@ -468,6 +502,11 @@ export async function sendPaidOrderEmails(order) {
       },
       { merge: true }
     );
+    } catch (error) {
+      console.error("paid_admin_email_or_artwork_failed", {
+        orderId: freshOrder.id, message: error?.message,
+      });
+    }
   }
 
   const finalSnap = await orderRef.get();

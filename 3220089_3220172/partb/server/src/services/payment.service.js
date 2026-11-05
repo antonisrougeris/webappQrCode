@@ -8,6 +8,7 @@ import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
 
 import { sendPaidOrderEmails } from "./order-email.service.js";
+import { ensureOrderDtfPlan } from "./dtf-inventory.service.js";
 
 import {
   reserveUniqueQrShortId,
@@ -25,6 +26,7 @@ import {
 import {
   pruneExpiredHolds,
   reservationDocId,
+  isPaidCheckoutHold,
 } from "./inventory-reservation.service.js";
 import { recoveryOfferRef } from "./recovery-offer.service.js";
 import { approveReturnForAdmin } from "./returns.service.js";
@@ -1194,82 +1196,67 @@ export async function markOrderPaidFromVivaWebhook(payload) {
                 )
             );
 
-          const ready =
-            readySnap.docs.filter(
-              (doc) =>
-                !selected.has(
-                  doc.ref.path
-                ) &&
-                [
-                  "uploaded",
-                  "email_sent",
-                ].includes(
-                  doc.data()
-                    .printStatus
-                ) &&
-                Boolean(
-                  doc.data()
-                    .printFileUrl
-                )
-            ).sort((a,b)=>Number(isAvailableFinishedGood(b.data()))-Number(isAvailableFinishedGood(a.data())));
+          const ready = readySnap.docs.filter(doc =>
+            !selected.has(doc.ref.path) &&
+            ["uploaded", "email_sent"].includes(doc.data()?.printStatus) &&
+            Boolean(doc.data()?.printFileUrl)
+          );
+          const finishedReady = ready.filter(doc => isAvailableFinishedGood(doc.data()));
+          const printedA3Transfers = ready.filter(doc => !isAvailableFinishedGood(doc.data()));
+          // Only use finished shirts explicitly reserved for THIS checkout.
+          // Otherwise the same physical garment may be promised to a second cart.
+          const matchingStockHold = Array.isArray(order.stockReservations)
+            ? order.stockReservations.find(h => String(h.orderItemId) === String(item.id))
+            : null;
+          const permittedFinished = Array.isArray(order.stockReservations)
+            ? Number(matchingStockHold?.finishedQuantity || 0) : quantity;
+          let finishedPicked = 0;
+          let loosePrintedPicked = 0;
 
-
-          for (
-            let i = 0;
-            i < quantity;
-            i += 1
-          ) {
-            const doc =
-              ready[i];
-
-            if (doc) {
-              selected.add(
-                doc.ref.path
-              );
-
-              qrAssignments.push({
-                type: "existing",
-                ref: doc.ref,
-                finishedGood:isAvailableFinishedGood(doc.data()),
-                item,
-                sku,
-                inventoryKey: key,
-                qrConfig:
-                  buildQrConfig(item),
-              });
-            } else {
-              const modular=chooseModularQr(item);
-              if (modular) {
-                qrAssignments.push({
-                  type:"modular",ref:modular.ref,item,sku,
-                  inventoryKey:key,qrConfig:buildQrConfig(item),
-                });
-                continue;
-              }
-              const qrId =
-                createId("qr");
-
-              const {
-                shortId,
-                reservationRef,
-              } =
-                await reserveUniqueQrShortId(
-                  tx,
-                  db
-                );
-
-              qrAssignments.push({
-                type: "new",
-                qrId,
-                shortId,
-                reservationRef,
-                item,
-                sku,
-                inventoryKey: key,
-                qrConfig:
-                  buildQrConfig(item),
-              });
+          for (let i = 0; i < quantity; i += 1) {
+            let doc = null;
+            if (finishedPicked < permittedFinished) {
+              doc = finishedReady[finishedPicked++];
+              if (!doc) throw new ApiError(409, "Reserved finished T-shirt is no longer available");
             }
+            if (doc) {
+              selected.add(doc.ref.path);
+              qrAssignments.push({
+                type:"existing",ref:doc.ref,finishedGood:true,
+                item,sku,inventoryKey:key,qrConfig:buildQrConfig(item),
+              });
+              continue;
+            }
+
+            // A QR-only transfer is physical printing material, NOT a garment.
+            // A black shirt needs white ink; a white shirt needs black ink.
+            const modular = chooseModularQr(item);
+            if (modular) {
+              qrAssignments.push({
+                type:"modular",ref:modular.ref,item,sku,
+                inventoryKey:key,qrConfig:buildQrConfig(item),
+              });
+              continue;
+            }
+
+            // Retain any already printed A3 full-transfer stock, if available.
+            // It still requires a blank shirt and is never counted as finished.
+            doc = printedA3Transfers[loosePrintedPicked++] || null;
+            if (doc) {
+              selected.add(doc.ref.path);
+              qrAssignments.push({
+                type:"existing",ref:doc.ref,finishedGood:false,
+                item,sku,inventoryKey:key,qrConfig:buildQrConfig(item),
+              });
+              continue;
+            }
+
+            const qrId = createId("qr");
+            const { shortId, reservationRef } = await reserveUniqueQrShortId(tx, db);
+            qrAssignments.push({
+              type:"new",qrId,shortId,reservationRef,
+              item,sku,inventoryKey:key,qrConfig:buildQrConfig(item),
+            });
           }
         }
       }
@@ -1315,6 +1302,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
      * Cart / pending checkout reservations reduce storefront availability
      * but do NOT mutate product stock.
      */
+    const productionAllocations = [];
     const stockReservations =
       Array.isArray(order.stockReservations)
         ? order.stockReservations
@@ -1500,6 +1488,16 @@ export async function markOrderPaidFromVivaWebhook(payload) {
         catch { throw new ApiError(409,"Shared blank capacity exhausted before payment"); }
         balance.committedPhysical=Number(balance.committedPhysical||0)+allocation.physical;
         balance.backorderOpen=Number(balance.backorderOpen||0)+allocation.virtual;
+        productionAllocations.push({
+          orderItemId: String(item.id),
+          productId: String(item.productId),
+          shirtColor: String(item.variant?.color || ""),
+          size: String(item.variant?.size || ""),
+          blankId,
+          finished: finishedQuantity,
+          physical: allocation.physical,
+          virtual: allocation.virtual,
+        });
         tx.create(db.collection(JOB_COLLECTION).doc(`${order.id}__${item.id}`),{
           orderId:order.id,orderNumber:order.orderNumber,orderItemId:item.id,
           productId:item.productId,productTitle:item.title,sku:item.sku,
@@ -1614,22 +1612,19 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           );
 
         const orderItemIds =
-          new Set(
-            (order.items || []).map((item) =>
-              String(item.id)
-            )
-          );
+          new Set((order.items || []).map(item => String(item.id)));
+        const checkoutHoldIds =
+          new Set(stockReservations.map(reservation => String(reservation.holdId || "")));
 
         tx.set(
           entry.holdRef,
           {
-            holds:
-              active.filter(
-                (hold) =>
-                  !orderItemIds.has(
-                    String(hold.id)
-                  )
-              ),
+            // Checkout hold IDs are order:<orderId>:<orderItemId>, NOT the
+            // item ID. Remove only the paid order's holds so committedPhysical
+            // and a stale reservation cannot both reduce sellable inventory.
+            holds: active.filter(hold => !isPaidCheckoutHold(hold, {
+              orderId: order.id, orderItemIds, checkoutHoldIds,
+            })),
             updatedAt:
               paidAt,
           },
@@ -1672,6 +1667,8 @@ export async function markOrderPaidFromVivaWebhook(payload) {
 
         qrCodesCreated:
           qrAssignments.length,
+
+        productionAllocations,
 
         ...(holds
           ? {
@@ -1805,6 +1802,9 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           {
             status:
               "assigned",
+            // Consumed finished shirts must leave the saleable-finished query.
+            // Without this, historical sold garments cause ever-growing reads.
+            ...(assignment.finishedGood ? { finishedGoodStatus: "assigned" } : {}),
 
             reservationOrderId:
               null,
@@ -2031,6 +2031,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
       }
     );
   });
+
   if (newlyPaidOrder) invalidateStorefrontReadCache("availability", "products");
 
   console.log(
@@ -2267,6 +2268,24 @@ export async function markOrderPaidFromVivaWebhook(payload) {
     }
   }
 
+
+  // Persist the physical transfer/QR production plan regardless of whether
+  // customer/admin email delivery succeeds. Never reconsume component stock
+  // on duplicate Viva notifications: ensureOrderDtfPlan is idempotent.
+  if (paidOrderForEmail?.id && !paidOrderForEmail?.dtfProductionPlan) {
+    try {
+      const qrDocs = await getDB().collection(COLLECTIONS.QR_CODES)
+        .where("orderId", "==", paidOrderForEmail.id).get();
+      await ensureOrderDtfPlan(
+        paidOrderForEmail.id,
+        qrDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      );
+    } catch (error) {
+      console.error("paid_order_production_plan_failed", {
+        orderId: paidOrderForEmail.id, message: error?.message,
+      });
+    }
+  }
 
   /* ==================================================
      EMAIL

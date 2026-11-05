@@ -31,5 +31,12 @@ test("paid reserved-QR allocation uses validated finishedGood and preserves lega
   assert.ok(reservedBranch);
   assert.match(reservedBranch[1],/finishedGood:\s*isReservedFinishedGood\(qr\)/);
   assert.match(payment,/a\.type==="existing" && a\.finishedGood===true/);
-  assert.match(payment,/finishedGood:isAvailableFinishedGood\(doc\.data\(\)\)/);
+  // The new paid allocation must prioritize finished shirts only up to the
+  // quantity reserved for this order, then use QR-only transfers.
+  assert.match(payment,/const finishedReady = ready\.filter\(doc => isAvailableFinishedGood\(doc\.data\(\)\)\)/);
+  assert.match(payment,/const permittedFinished = Array\.isArray\(order\.stockReservations\)/);
+  assert.match(payment,/if \(finishedPicked < permittedFinished\)/);
+  assert.match(payment,/finishedGood:true/);
+  assert.match(payment,/assignment\.finishedGood \? \{ finishedGoodStatus: "assigned" \} : \{\}/);
+  assert.match(payment,/const modular = chooseModularQr\(item\)/);
 });
