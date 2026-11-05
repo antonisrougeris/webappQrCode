@@ -79,6 +79,15 @@ export function pruneExpiredHolds(holds, nowMs = Date.now()) {
   });
 }
 
+/** Only the paid order's checkout holds may be discarded at payment commit.
+ * Cart holds belonging to other shoppers must be retained.
+ */
+export function isPaidCheckoutHold(hold, { orderId, orderItemIds, checkoutHoldIds }) {
+  if (String(hold?.orderId || "") !== String(orderId)) return false;
+  return checkoutHoldIds.has(String(hold?.id || "")) ||
+    (hold?.phase === "checkout" && orderItemIds.has(String(hold?.orderItemId || "")));
+}
+
 export function reservedQuantity(holds, { excludeHoldId = null, nowMs = Date.now() } = {}) {
   return pruneExpiredHolds(holds, nowMs).reduce((sum, hold) => {
     if (excludeHoldId && String(hold.id) === String(excludeHoldId)) {
