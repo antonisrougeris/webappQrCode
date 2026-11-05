@@ -48,7 +48,6 @@ import contactRoutes from "./routes/contact.routes.js";
 import { startBoxNowShippingMonitor, stopBoxNowShippingMonitor } from "./services/boxnow-monitor.service.js";
 import {
   refreshStorefrontProductHtmlSafe,
-  startStorefrontProductHtmlRefreshLoop,
 } from "./services/storefront-seo-html.service.js";
 
 dotenv.config();
@@ -265,9 +264,9 @@ await refreshStorefrontProductHtmlSafe({
   reason: "startup",
 });
 
-startStorefrontProductHtmlRefreshLoop({
-  intervalMs: 60_000,
-});
+// The static catalog is rendered on startup and explicit Admin product changes.
+// Do not poll all Firestore inventory once per minute when there are no visitors.
+// Customer availability is read through the normal API and checkout remains authoritative.
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
