@@ -352,40 +352,31 @@ export async function sendPaidOrderEmails(order) {
       if (["preprinted","modular_qr"].includes(qr.fulfillmentMode)) continue;
       const qrUrl = `${QR_BASE_URL}/${qr.shortId}`;
 
-      const qrBuffer = await generatePrintQrImage(
-        qrUrl,
-        {
-          qrColor:
-            qr.qrConfig?.qrColor ||
-            qr.qrConfig?.color ||
-            "#000000",
-          textColor:
-            qr.qrConfig?.textColor ||
-            qr.qrConfig?.qrColor ||
-            qr.qrConfig?.color ||
-            "#000000",
-          // Empty text is intentional: preserve it instead of
-          // replacing it with the old "SCAN ME" fallback.
-          text:
-            String(qr.qrConfig?.textPrint ?? "").trim(),
-          textPosition:
-            qr.qrConfig?.textPosition ||
-            "bottom",
-        }
-      );
-
-      let buffer = qrBuffer;
+      const needsQrOnly = qr.fulfillmentMode === "made_to_order" &&
+        isTshirtPrintSize(qr.variant?.size);
+      let buffer;
       let filename = `qr-${qr.productTitle || qr.shortId}.png`;
 
-      if (qr.fulfillmentMode === "made_to_order" && isTshirtPrintSize(qr.variant?.size)) {
+      if (needsQrOnly) {
+        // Use the selected contrast ink and no slogan; the correct component
+        // prints are allocated separately in dtfProductionPlan.
         buffer = await generateQrOnlyForPaidShirt(qrUrl, qr.variant.color);
         filename = `QR-ONLY-${qr.shortId}-${normalizeDtfColor(qr.variant.color)}-28cm.png`;
-      } else if (isTshirtPrintSize(qr.variant?.size)) {
-        buffer = await generatePrintSheet({
-          qrBuffer, shirtColor: qr.variant?.color || "Black",
-          shirtSize: qr.variant?.size,
+      } else {
+        const qrBuffer = await generatePrintQrImage(qrUrl, {
+          qrColor: qr.qrConfig?.qrColor || qr.qrConfig?.color || "#000000",
+          textColor: qr.qrConfig?.textColor || qr.qrConfig?.qrColor || "#000000",
+          text: String(qr.qrConfig?.textPrint ?? "").trim(),
+          textPosition: qr.qrConfig?.textPosition || "bottom",
         });
-        filename = `print-${qr.productTitle || qr.shortId}.png`;
+        buffer = qrBuffer;
+        if (isTshirtPrintSize(qr.variant?.size)) {
+          buffer = await generatePrintSheet({
+            qrBuffer, shirtColor: qr.variant?.color || "Black",
+            shirtSize: qr.variant?.size,
+          });
+          filename = `print-${qr.productTitle || qr.shortId}.png`;
+        }
       }
 
       const uploaded =
