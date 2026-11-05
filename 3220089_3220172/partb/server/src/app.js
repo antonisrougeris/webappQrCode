@@ -48,7 +48,6 @@ import contactRoutes from "./routes/contact.routes.js";
 import { startBoxNowShippingMonitor, stopBoxNowShippingMonitor } from "./services/boxnow-monitor.service.js";
 import {
   refreshStorefrontProductHtmlSafe,
-  startStorefrontProductHtmlRefreshLoop,
 } from "./services/storefront-seo-html.service.js";
 
 dotenv.config();
@@ -265,9 +264,9 @@ await refreshStorefrontProductHtmlSafe({
   reason: "startup",
 });
 
-startStorefrontProductHtmlRefreshLoop({
-  intervalMs: 60_000,
-});
+// No background storefront refresh: changes from Admin explicitly refresh the
+// prerendered HTML, while interactive stock remains backed by transactional API
+// reads. A timer here would scan all inventory even with zero visitors.
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
