@@ -298,7 +298,8 @@ export async function sendPaidOrderEmails(order) {
     freshOrder.customer?.email &&
     !freshOrder.emails?.customerOrderSentAt
   ) {
-    await sendEmail({
+    try {
+      await sendEmail({
       from,
       to: freshOrder.customer.email,
       subject: freshOrder.locale === "el"
@@ -317,12 +318,18 @@ export async function sendPaidOrderEmails(order) {
       },
       { merge: true }
     );
+    } catch (error) {
+      console.error("paid_customer_email_failed", {
+        orderId: freshOrder.id, message: error?.message,
+      });
+    }
   }
 
   if (
     adminEmail &&
     !freshOrder.emails?.adminOrderSentAt
   ) {
+    try {
     const attachments = [];
     const downloadLinks = [];
 
@@ -435,6 +442,9 @@ export async function sendPaidOrderEmails(order) {
       }
     }
 
+    // Persist print downloads even if email transport temporarily fails.
+    await orderRef.set({ qrFiles: downloadLinks, updatedAt: nowIso() }, { merge: true });
+
     await sendEmail({
       from,
       to: adminEmail,
@@ -492,6 +502,11 @@ export async function sendPaidOrderEmails(order) {
       },
       { merge: true }
     );
+    } catch (error) {
+      console.error("paid_admin_email_or_artwork_failed", {
+        orderId: freshOrder.id, message: error?.message,
+      });
+    }
   }
 
   const finalSnap = await orderRef.get();
