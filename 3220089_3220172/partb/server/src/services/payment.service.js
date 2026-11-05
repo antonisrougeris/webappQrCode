@@ -1802,6 +1802,9 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           {
             status:
               "assigned",
+            // Consumed finished shirts must leave the saleable-finished query.
+            // Without this, historical sold garments cause ever-growing reads.
+            ...(assignment.finishedGood ? { finishedGoodStatus: "assigned" } : {}),
 
             reservationOrderId:
               null,
