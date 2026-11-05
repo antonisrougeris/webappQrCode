@@ -61,44 +61,63 @@ export function assertStockForVariant(product, variant, quantity) {
   }
 }
 
-// Both readiness and truly finished counts are derived from ONE QR scan,
-// preserving legacy accessory behavior until the physical-stock migration.
-async function readQrCounts(db) {
-  const snap = await db.collection(COLLECTIONS.QR_CODES).where("status","==","available").get();
-  const ready = new Map();
-  const finished = new Map();
+// Read only physically finished garments. As stock grows, sold QRs do not
+// accumulate here: paid assignment updates finishedGoodStatus to "assigned".
+async function readFinishedGarmentCounts(db) {
+  const snap = await db.collection(COLLECTIONS.QR_CODES)
+    .where("finishedGoodStatus", "==", "available").get();
+  const counts = new Map();
   for (const doc of snap.docs) {
     const qr=doc.data();
-    if (isReadyQr(qr)) {
-      const key = qr.inventoryKey || inventoryKey(qr.productId, qr.sku);
-      ready.set(key,(ready.get(key)||0)+1);
-    }
-    if (isAvailableFinishedGood(qr)) {
-      const key=finishedKey(qr.productId,qr.sku);
-      finished.set(key,(finished.get(key)||0)+1);
-    }
+    if (!isAvailableFinishedGood(qr)) continue;
+    const key=finishedKey(qr.productId,qr.sku);
+    counts.set(key,(counts.get(key)||0)+1);
   }
-  return { ready, finished };
+  return counts;
 }
 
-// No timers; only read Firestore when a real request arrives.
+// Legacy ready-QR stock is relevant to non-shirt accessories only.
+// Limit reads to those products; never scan all shop QR codes for T-shirts.
+async function readAccessoryReadyCounts(db, products, sharedEnabled) {
+  const accessories = products.filter(product =>
+    product?.customQr && Array.isArray(product.variants) &&
+    product.variants.length && !(sharedEnabled &&
+      product.variants.some(variant => isSharedTshirt(product, variant))));
+  const snapshots = await Promise.all(accessories.map(product =>
+    db.collection(COLLECTIONS.QR_CODES).where("productId", "==", String(product.id)).get()));
+  const ready = new Map();
+  snapshots.forEach((snapshot, index) => {
+    for (const doc of snapshot.docs) {
+      const qr=doc.data();
+      if (!isReadyQr(qr)) continue;
+      const key=qr.inventoryKey || inventoryKey(accessories[index].id, qr.sku);
+      ready.set(key,(ready.get(key)||0)+1);
+    }
+  });
+  return ready;
+}
+
+// No timers or polling: all reads are demand-driven.
 function readCatalogDocuments(db) {
   return cacheStorefrontRead("products", 300_000, async () =>
     toPlainDocs(await db.collection(COLLECTIONS.PRODUCTS).get()));
 }
 
 function readStorefrontAvailability(db) {
-  return cacheStorefrontRead("availability", 120_000, async () => {
-    const [qr, holds, sharedEnabled] = await Promise.all([
-      readQrCounts(db),
+  return cacheStorefrontRead("availability", 60_000, async () => {
+    const [catalog, holds, sharedEnabled] = await Promise.all([
+      readCatalogDocuments(db),
       readReservationCountsAndSharedBreakdown(db),
       readSharedEnabled(db),
     ]);
-    const blankRows = sharedEnabled ? await readSharedBlankRows(db) : new Map();
+    const [ready, blankRows, finishedCounts] = await Promise.all([
+      readAccessoryReadyCounts(db, catalog, sharedEnabled),
+      sharedEnabled ? readSharedBlankRows(db) : Promise.resolve(new Map()),
+      sharedEnabled ? readFinishedGarmentCounts(db) : Promise.resolve(new Map()),
+    ]);
     return {
-      ready: qr.ready, finishedCounts: sharedEnabled ? qr.finished : new Map(),
-      reserved: holds.counts, sharedHolds: holds.sharedHolds,
-      sharedEnabled, blankRows,
+      ready, finishedCounts, reserved: holds.counts,
+      sharedHolds: holds.sharedHolds, sharedEnabled, blankRows,
     };
   });
 }
