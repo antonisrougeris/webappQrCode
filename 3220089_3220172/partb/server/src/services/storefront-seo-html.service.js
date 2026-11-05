@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 import { listProductsService } from "./product.service.js";
+import { invalidateStorefrontReadCache } from "./storefront-read-cache.service.js";
 
 const distDir = fileURLToPath(
   new URL("../../../client/dist/", import.meta.url)
@@ -399,6 +400,9 @@ async function refreshOnce(reason) {
 export function refreshStorefrontProductHtml({
   reason = "manual",
 } = {}) {
+  // Admin product/QR mutations must not be hidden by the read-through cache.
+  // On-demand only: this does not schedule recurring database work.
+  invalidateStorefrontReadCache("products", "availability");
   if (activeRefresh) {
     return activeRefresh;
   }
