@@ -1196,82 +1196,67 @@ export async function markOrderPaidFromVivaWebhook(payload) {
                 )
             );
 
-          const ready =
-            readySnap.docs.filter(
-              (doc) =>
-                !selected.has(
-                  doc.ref.path
-                ) &&
-                [
-                  "uploaded",
-                  "email_sent",
-                ].includes(
-                  doc.data()
-                    .printStatus
-                ) &&
-                Boolean(
-                  doc.data()
-                    .printFileUrl
-                )
-            ).sort((a,b)=>Number(isAvailableFinishedGood(b.data()))-Number(isAvailableFinishedGood(a.data())));
+          const ready = readySnap.docs.filter(doc =>
+            !selected.has(doc.ref.path) &&
+            ["uploaded", "email_sent"].includes(doc.data()?.printStatus) &&
+            Boolean(doc.data()?.printFileUrl)
+          );
+          const finishedReady = ready.filter(doc => isAvailableFinishedGood(doc.data()));
+          const printedA3Transfers = ready.filter(doc => !isAvailableFinishedGood(doc.data()));
+          // Only use finished shirts explicitly reserved for THIS checkout.
+          // Otherwise the same physical garment may be promised to a second cart.
+          const matchingStockHold = Array.isArray(order.stockReservations)
+            ? order.stockReservations.find(h => String(h.orderItemId) === String(item.id))
+            : null;
+          const permittedFinished = Array.isArray(order.stockReservations)
+            ? Number(matchingStockHold?.finishedQuantity || 0) : quantity;
+          let finishedPicked = 0;
+          let loosePrintedPicked = 0;
 
-
-          for (
-            let i = 0;
-            i < quantity;
-            i += 1
-          ) {
-            const doc =
-              ready[i];
-
-            if (doc) {
-              selected.add(
-                doc.ref.path
-              );
-
-              qrAssignments.push({
-                type: "existing",
-                ref: doc.ref,
-                finishedGood:isAvailableFinishedGood(doc.data()),
-                item,
-                sku,
-                inventoryKey: key,
-                qrConfig:
-                  buildQrConfig(item),
-              });
-            } else {
-              const modular=chooseModularQr(item);
-              if (modular) {
-                qrAssignments.push({
-                  type:"modular",ref:modular.ref,item,sku,
-                  inventoryKey:key,qrConfig:buildQrConfig(item),
-                });
-                continue;
-              }
-              const qrId =
-                createId("qr");
-
-              const {
-                shortId,
-                reservationRef,
-              } =
-                await reserveUniqueQrShortId(
-                  tx,
-                  db
-                );
-
-              qrAssignments.push({
-                type: "new",
-                qrId,
-                shortId,
-                reservationRef,
-                item,
-                sku,
-                inventoryKey: key,
-                qrConfig:
-                  buildQrConfig(item),
-              });
+          for (let i = 0; i < quantity; i += 1) {
+            let doc = null;
+            if (finishedPicked < permittedFinished) {
+              doc = finishedReady[finishedPicked++];
+              if (!doc) throw new ApiError(409, "Reserved finished T-shirt is no longer available");
             }
+            if (doc) {
+              selected.add(doc.ref.path);
+              qrAssignments.push({
+                type:"existing",ref:doc.ref,finishedGood:true,
+                item,sku,inventoryKey:key,qrConfig:buildQrConfig(item),
+              });
+              continue;
+            }
+
+            // A QR-only transfer is physical printing material, NOT a garment.
+            // A black shirt needs white ink; a white shirt needs black ink.
+            const modular = chooseModularQr(item);
+            if (modular) {
+              qrAssignments.push({
+                type:"modular",ref:modular.ref,item,sku,
+                inventoryKey:key,qrConfig:buildQrConfig(item),
+              });
+              continue;
+            }
+
+            // Retain any already printed A3 full-transfer stock, if available.
+            // It still requires a blank shirt and is never counted as finished.
+            doc = printedA3Transfers[loosePrintedPicked++] || null;
+            if (doc) {
+              selected.add(doc.ref.path);
+              qrAssignments.push({
+                type:"existing",ref:doc.ref,finishedGood:false,
+                item,sku,inventoryKey:key,qrConfig:buildQrConfig(item),
+              });
+              continue;
+            }
+
+            const qrId = createId("qr");
+            const { shortId, reservationRef } = await reserveUniqueQrShortId(tx, db);
+            qrAssignments.push({
+              type:"new",qrId,shortId,reservationRef,
+              item,sku,inventoryKey:key,qrConfig:buildQrConfig(item),
+            });
           }
         }
       }
