@@ -319,43 +319,42 @@ export async function releaseInventoryHold({
   });
 }
 
-export async function readActiveReservationCounts(db = getDB()) {
-  const snapshot = await db
-    .collection(COLLECTIONS.INVENTORY_HOLDS)
-    .get();
-
+/**
+ * Read inventory holds once and derive all storefront projections from
+ * the same snapshot. Reservations still use Firestore transactions.
+ */
+export async function readReservationCountsAndSharedBreakdown(db = getDB()) {
+  const snapshot = await db.collection(COLLECTIONS.INVENTORY_HOLDS).get();
   const counts = new Map();
+  const blank = new Map();
+  const finished = new Map();
   const nowMs = Date.now();
 
   for (const doc of snapshot.docs) {
     const data = doc.data() || {};
     const key = String(data.inventoryKey || "");
-
     if (!key) continue;
+    const holds = pruneExpiredHolds(data.holds, nowMs);
+    const quantity = reservedQuantity(holds, { nowMs });
+    if (quantity > 0) counts.set(key, quantity);
 
-    const quantity = reservedQuantity(data.holds, {
-      nowMs,
-    });
-
-    if (quantity > 0) {
-      counts.set(key, quantity);
+    if (key.startsWith("blank::")) {
+      const split = getSharedReservationSplit(holds, { nowMs });
+      blank.set(key, split.blankReserved);
+      for (const [finishedKey, amount] of split.finishedReservedBySku) {
+        finished.set(finishedKey, (finished.get(finishedKey) || 0) + amount);
+      }
     }
   }
-
-  return counts;
+  return { counts, sharedHolds: { blank, finished } };
 }
 
-export async function readSharedHoldBreakdown(db=getDB()){
- const snapshot=await db.collection(COLLECTIONS.INVENTORY_HOLDS).get();
- const blank=new Map(),finished=new Map(),now=Date.now();
- for(const doc of snapshot.docs){
-  const key=String(doc.data()?.inventoryKey||"");
-  if(!key.startsWith("blank::"))continue;
-  const split=getSharedReservationSplit(doc.data()?.holds||[],{nowMs:now});
-  blank.set(key,split.blankReserved);
-  for(const [k,n] of split.finishedReservedBySku)finished.set(k,(finished.get(k)||0)+n);
- }
- return {blank,finished};
+export async function readActiveReservationCounts(db = getDB()) {
+  return (await readReservationCountsAndSharedBreakdown(db)).counts;
+}
+
+export async function readSharedHoldBreakdown(db = getDB()) {
+  return (await readReservationCountsAndSharedBreakdown(db)).sharedHolds;
 }
 
 export function isReservationActive(expiresAt, nowMs = Date.now()) {
