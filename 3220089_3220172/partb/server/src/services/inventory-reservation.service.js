@@ -5,6 +5,7 @@ import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
+import { invalidateStorefrontReadCache } from "./storefront-read-cache.service.js";
 import {
   inventoryKey as qrInventoryKey,
   isReadyQr,
@@ -168,7 +169,7 @@ export async function reserveInventoryHold({
   const updatedAt = nowIso();
   const expiresAt = new Date(nowMs + ttlMs).toISOString();
 
-  return db.runTransaction(async (tx) => {
+  const result = await db.runTransaction(async (tx) => {
     const productRef = db
       .collection(COLLECTIONS.PRODUCTS)
       .doc(String(productId));
@@ -284,7 +285,8 @@ export async function reserveInventoryHold({
       expiresAt,
       availableAfter: availableForThisHold - qty,
     };
-  });
+    invalidateStorefrontReadCache("availability");
+  return result;
 }
 
 export async function releaseInventoryHold({
@@ -317,6 +319,7 @@ export async function releaseInventoryHold({
       { merge: true }
     );
   });
+  invalidateStorefrontReadCache("availability");
 }
 
 /**
