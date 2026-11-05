@@ -577,16 +577,8 @@ document.getElementById("operationsPaymentsBody")?.addEventListener("click", asy
   }
 });
 
-window.setInterval(() => {
-  const active = document.querySelector<HTMLElement>(".admin-nav__item.is-active");
-  if (
-    firebaseAuth.currentUser &&
-    active?.dataset.view === "operations" &&
-    !document.hidden
-  ) {
-    void loadOperations();
-  }
-}, 15000);
+// Commerce Operations loads on visit and via Refresh, not every 15 seconds.
+// Each refresh may scan hundreds of carts/users/orders/QRs.
 
 
 /* =========================================================
