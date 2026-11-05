@@ -2,6 +2,7 @@ import { getDB } from "../config/db.js";
 import { ApiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { nowIso } from "../utils/ids.js";
+import { invalidateStorefrontReadCache } from "../services/storefront-read-cache.service.js";
 import {
  BLANK_COLLECTION, JOB_COLLECTION, SETTINGS_COLLECTION, SETTINGS_ID,
  BLANK_COLORS, BLANK_SIZES, blankNewRow, sharedAvailable, readSharedEnabled,isAvailableFinishedGood,
@@ -67,6 +68,7 @@ export const initializeBlankInventory = asyncHandler(async(req,res)=>{
    for(const ref of refs)tx.create(ref,blankNewRow(ref.id,inputs.get(ref.id)));
    tx.set(configRef,{enabled:false,initializedAt:nowIso(),updatedAt:nowIso()},{merge:true});
  });
+ invalidateStorefrontReadCache("availability");
  res.json({success:true,message:"Blank inventory initialized. Activate it separately after verification."});
 });
 
@@ -83,6 +85,7 @@ export const enableSharedBlankInventory = asyncHandler(async(req,res)=>{
  // Prevent the cutover while active legacy carts or checkouts hold old per-product stock.
  if(holdSnap.docs.some(doc=>pruneExpiredHolds(doc.data()?.holds).length))throw new ApiError(409,"Active carts/checkouts exist. Activate after their stock holds expire.");
  await db.collection(SETTINGS_COLLECTION).doc(SETTINGS_ID).set({enabled:true,activatedAt:nowIso(),updatedAt:nowIso()},{merge:true});
+ invalidateStorefrontReadCache("availability");
  res.json({success:true,enabled:true});
 });
 
@@ -98,6 +101,7 @@ export const setBlankVirtualLimit = asyncHandler(async(req,res)=>{
    inventoryMove(tx,db,"virtual_limit_changed",id,limit);
    return {...snap.data(),virtualLimit:limit};
  });
+ invalidateStorefrontReadCache("availability");
  res.json({success:true,row:{id,...row}});
 });
 
@@ -113,6 +117,7 @@ export const receiveBlankStock = asyncHandler(async(req,res)=>{
    inventoryMove(tx,db,"received",id,quantity);
    return next;
  });
+ invalidateStorefrontReadCache("availability");
  res.json({success:true,id,onHand,message:"Stock received. Allocate pending backorders from the production queue."});
 });
 
@@ -133,6 +138,7 @@ export const allocateProductionBlank = asyncHandler(async(req,res)=>{
    tx.update(jobRef,{physicalAllocated:Number(job.physicalAllocated||0)+quantity,virtualAllocated:0,status:"to_prepare",updatedAt:nowIso()});
    inventoryMove(tx,db,"backorder_allocated",job.blankId,quantity,{jobId:jobRef.id});
  });
+ invalidateStorefrontReadCache("availability");
  res.json({success:true});
 });
 
@@ -150,6 +156,7 @@ export const startProductionJob = asyncHandler(async(req,res)=>{
    tx.update(jobRef,{status:"preparing",startedAt:nowIso(),updatedAt:nowIso()});
    inventoryMove(tx,db,"blank_consumed",job.blankId,quantity,{jobId:jobRef.id});
  });
+ invalidateStorefrontReadCache("availability");
  res.json({success:true});
 });
 
@@ -162,6 +169,7 @@ export const completeProductionJob = asyncHandler(async(req,res)=>{
    if(snap.data().status!=="preparing")throw new ApiError(409,"Job must be in production");
    tx.update(ref,{status:"completed",completedAt:nowIso(),qrChecked:true,printChecked:true,updatedAt:nowIso()});
  });
+ invalidateStorefrontReadCache("availability");
  res.json({success:true});
 });
 
@@ -197,5 +205,6 @@ export const confirmFinishedShirt = asyncHandler(async(req,res)=>{
     physicalQrChecked:true,updatedAt:at});
   return {qrId,blankId,source};
  });
+ invalidateStorefrontReadCache("availability");
  res.json({success:true,...result});
 });
