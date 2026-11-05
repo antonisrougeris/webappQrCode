@@ -8,8 +8,7 @@ import { chooseProductImages } from './product-colors.service.js';
 import { availabilityForProduct, inventoryKey, isReadyQr } from './stock-availability.service.js';
 import {
   getInventoryKey,
-  readSharedHoldBreakdown,
-  readActiveReservationCounts,
+  readReservationCountsAndSharedBreakdown,
 } from './inventory-reservation.service.js';
 import {
   decorateProductPricing,
@@ -64,24 +63,25 @@ export function assertStockForVariant(product, variant, quantity) {
 
 // IMPORTANT: This reads available QR records to derive a storefront quantity, not to
 // reserve them. Checkout performs the authoritative query inside its transaction.
-async function readFinishedCounts(db) {
- const snap=await db.collection(COLLECTIONS.QR_CODES).where("status","==","available").get();
- const counts=new Map();
- for(const doc of snap.docs){const qr=doc.data();if(!isAvailableFinishedGood(qr))continue;
-  const key=finishedKey(qr.productId,qr.sku);counts.set(key,(counts.get(key)||0)+1);}
- return counts;
-}
-async function readReadyCounts(db) {
+// One available-QR query supplies both ready-transfer and finished-shirt counts.
+// Previously identical queries each downloaded the entire matching collection.
+async function readQrAvailabilityCounts(db) {
   const snap = await db.collection(COLLECTIONS.QR_CODES)
-    .where('status', '==', 'available').get();
-  const counts = new Map();
+    .where("status", "==", "available").get();
+  const ready = new Map();
+  const finished = new Map();
   for (const doc of snap.docs) {
     const qr = doc.data();
-    if (!isReadyQr(qr)) continue;
-    const key = qr.inventoryKey || inventoryKey(qr.productId, qr.sku);
-    counts.set(key, (counts.get(key) || 0) + 1);
+    if (isReadyQr(qr)) {
+      const key = qr.inventoryKey || inventoryKey(qr.productId, qr.sku);
+      ready.set(key, (ready.get(key) || 0) + 1);
+    }
+    if (isAvailableFinishedGood(qr)) {
+      const key = finishedKey(qr.productId, qr.sku);
+      finished.set(key, (finished.get(key) || 0) + 1);
+    }
   }
-  return counts;
+  return { ready, finished };
 }
 
 function applyActiveReservations(product, reservedCounts, sharedEnabled = false, blankRows = new Map(), finishedCounts=new Map(), sharedHolds={blank:new Map(),finished:new Map()}) {
@@ -165,10 +165,16 @@ export async function listProductsService({category, q, featured, limit, locale 
   if (!products.some(p => p.variants?.length)) {
     return products.map((product) => localizeProduct(withDefaultGallery(product), locale));
   }
-  const [ready, reserved, sharedEnabled] = await Promise.all([
-    readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
+  const [qrCounts, reservations, sharedEnabled] = await Promise.all([
+    readQrAvailabilityCounts(db),
+    readReservationCountsAndSharedBreakdown(db),
+    readSharedEnabled(db),
   ]);
-  const [blankRows,finishedCounts,sharedHolds] = sharedEnabled ? await Promise.all([readSharedBlankRows(db),readFinishedCounts(db),readSharedHoldBreakdown(db)]):[new Map(),new Map(),{blank:new Map(),finished:new Map()}];
+  const blankRows = sharedEnabled ? await readSharedBlankRows(db) : new Map();
+  const ready = qrCounts.ready;
+  const finishedCounts = sharedEnabled ? qrCounts.finished : new Map();
+  const reserved = reservations.counts;
+  const sharedHolds = reservations.sharedHolds;
 
   return products.map((product) =>
     localizeProduct(
@@ -202,12 +208,16 @@ export async function getProductByIdOrSlug(idOrSlug, { locale = "en" } = {}) {
       locale
     );
   }
-  const [ready, reserved, sharedEnabled] = await Promise.all([
-    readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
+  const [qrCounts, reservations, sharedEnabled] = await Promise.all([
+    readQrAvailabilityCounts(db),
+    readReservationCountsAndSharedBreakdown(db),
+    readSharedEnabled(db),
   ]);
-  const [blankRows, finishedCounts, sharedHolds] = sharedEnabled
-    ? await Promise.all([readSharedBlankRows(db), readFinishedCounts(db), readSharedHoldBreakdown(db)])
-    : [new Map(), new Map(), { blank: new Map(), finished: new Map() }];
+  const blankRows = sharedEnabled ? await readSharedBlankRows(db) : new Map();
+  const ready = qrCounts.ready;
+  const finishedCounts = sharedEnabled ? qrCounts.finished : new Map();
+  const reserved = reservations.counts;
+  const sharedHolds = reservations.sharedHolds;
 
   return localizeProduct(
     withDefaultGallery(
