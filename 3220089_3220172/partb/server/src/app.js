@@ -264,9 +264,9 @@ await refreshStorefrontProductHtmlSafe({
   reason: "startup",
 });
 
-// No background storefront refresh: changes from Admin explicitly refresh the
-// prerendered HTML, while interactive stock remains backed by transactional API
-// reads. A timer here would scan all inventory even with zero visitors.
+// The static catalog is rendered on startup and explicit Admin product changes.
+// Do not poll all Firestore inventory once per minute when there are no visitors.
+// Customer availability is read through the normal API and checkout remains authoritative.
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
