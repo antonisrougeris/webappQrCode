@@ -577,16 +577,8 @@ document.getElementById("operationsPaymentsBody")?.addEventListener("click", asy
   }
 });
 
-window.setInterval(() => {
-  const active = document.querySelector<HTMLElement>(".admin-nav__item.is-active");
-  if (
-    firebaseAuth.currentUser &&
-    active?.dataset.view === "operations" &&
-    !document.hidden
-  ) {
-    void loadOperations();
-  }
-}, 15000);
+// Operations is refreshed explicitly when opened or via the Refresh button.
+// Do not repeatedly scan carts, orders, users and all QRs in an idle admin tab.
 
 
 /* =========================================================
@@ -706,6 +698,36 @@ async function loadFulfillment() {
   renderFulfillment();
 }
 
+function productionRequirementsHtml(order: any, compact = false): string {
+  const allocations = Array.isArray(order.productionAllocations) ? order.productionAllocations : [];
+  const plan = order.dtfProductionPlan || null;
+  const qrTransfers = Array.isArray(plan?.qrTransfers) ? plan.qrTransfers : [];
+  const missing = Array.isArray(plan?.missing) ? plan.missing : [];
+  if (!allocations.length && !qrTransfers.length && !missing.length) {
+    return compact ? "" : '<p class="admin-muted">No separate production requirements recorded.</p>';
+  }
+  const rows = [
+    ...allocations.map((a: any) => {
+      const parts = [
+        a.finished ? `${a.finished} finished shirt(s) ready` : "",
+        a.physical ? `${a.physical} physical blank(s) allocated` : "",
+        a.virtual ? `${a.virtual} VIRTUAL — RECEIVE ${a.virtual} BLANK(S)` : "",
+      ].filter(Boolean).join(" / ");
+      return `<li>${escapeHtml(a.shirtColor || "")} ${escapeHtml(a.size || "")}: ${escapeHtml(parts)}</li>`;
+    }),
+    ...qrTransfers.map((q: any) =>
+      `<li>${escapeHtml(q.shirtColor || "")} shirt → ${escapeHtml(q.inkColor || "")} ink QR ${escapeHtml(q.shortId || "")}: <strong>${q.source === "print_required" ? "PRINT QR" : "PICK EXISTING QR"}</strong></li>`
+    ),
+    ...missing.map((m: any) =>
+      `<li><strong>PRINT ${escapeHtml(m.type || "")}</strong> · ${escapeHtml(m.color || "")} ink ${escapeHtml(m.size || m.text || "")}</li>`
+    ),
+  ];
+  return `<div class="admin-detail-group" style="margin-top:12px">
+    <h3 style="margin:0 0 8px">Production requirements</h3>
+    <ul style="margin:0;padding-left:18px;line-height:1.7">${rows.join("")}</ul>
+  </div>`;
+}
+
 function countFulfillment(status: string) {
   return currentFulfillmentOrders.filter(
     (order) => String(order.fulfillmentStatus || "to_prepare") === status
@@ -744,6 +766,7 @@ function renderFulfillment() {
           <div class="fulfillment-card__items">
             ${items.slice(0, 4).map((item: any) => fulfillmentItemHtml(item)).join("")}
             ${items.length > 4 ? `<div class="admin-muted">+ ${items.length - 4} more item(s)</div>` : ""}
+            ${productionRequirementsHtml(order, true)}
           </div>
 
           <div class="fulfillment-card__footer">
@@ -924,6 +947,16 @@ async function openOrder(orderId: string) {
       <div class="drawer-process-summary">
         ${(order.items || []).map((item: any) => drawerItemHtml(item)).join("") || `<span class="admin-muted">No items.</span>`}
       </div>
+    </div>
+
+    ${productionRequirementsHtml(order)}
+    <div class="admin-detail-group">
+      <h3>QR / DTF production artwork</h3>
+      ${(Array.isArray(order.qrFiles) ? order.qrFiles : [])
+        .filter((url: unknown) => typeof url === "string" && /^https:\/\//.test(url))
+        .map((url: string, index: number) =>
+          `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="admin-secondary-button admin-button-link">Download production artwork ${index + 1}</a>`
+        ).join(" ") || '<p class="admin-muted">Artwork will be available here after the paid-order production email is prepared.</p>'}
     </div>
 
     <div class="admin-detail-group">

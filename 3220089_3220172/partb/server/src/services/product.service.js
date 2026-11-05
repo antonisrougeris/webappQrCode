@@ -1,15 +1,15 @@
-import { getDB, toPlainDoc, toPlainDocs } from '../config/db.js';
+import { getDB, toPlainDocs } from '../config/db.js';
 import { blankKey, isSharedTshirt, sharedAvailable, readSharedEnabled, readSharedBlankRows, isAvailableFinishedGood, finishedKey } from './shared-blank-inventory.service.js';
 import { COLLECTIONS } from '../constants/collections.js';
 import { ApiError } from '../utils/apiError.js';
 import { normalizeText } from '../utils/product.js';
 import { compareStorefrontProducts } from './storefront-product-order.service.js';
 import { chooseProductImages } from './product-colors.service.js';
-import { availabilityForProduct, inventoryKey, isReadyQr } from './stock-availability.service.js';
+import { availabilityForProduct } from './stock-availability.service.js';
+import { cacheStorefrontRead } from './storefront-read-cache.service.js';
 import {
   getInventoryKey,
-  readSharedHoldBreakdown,
-  readActiveReservationCounts,
+  readReservationCountsAndSharedBreakdown,
 } from './inventory-reservation.service.js';
 import {
   decorateProductPricing,
@@ -62,26 +62,49 @@ export function assertStockForVariant(product, variant, quantity) {
   }
 }
 
-// IMPORTANT: This reads available QR records to derive a storefront quantity, not to
-// reserve them. Checkout performs the authoritative query inside its transaction.
-async function readFinishedCounts(db) {
- const snap=await db.collection(COLLECTIONS.QR_CODES).where("status","==","available").get();
- const counts=new Map();
- for(const doc of snap.docs){const qr=doc.data();if(!isAvailableFinishedGood(qr))continue;
-  const key=finishedKey(qr.productId,qr.sku);counts.set(key,(counts.get(key)||0)+1);}
- return counts;
-}
-async function readReadyCounts(db) {
+// Physical finished garments are the only QR-linked objects that count as stock.
+// Unprinted, modular and otherwise unused QR documents are NOT inventory.
+// Query only the physical-finished subset, never all available QR codes.
+async function readFinishedGarmentCounts(db) {
   const snap = await db.collection(COLLECTIONS.QR_CODES)
-    .where('status', '==', 'available').get();
+    .where("finishedGoodStatus", "==", "available").get();
   const counts = new Map();
   for (const doc of snap.docs) {
     const qr = doc.data();
-    if (!isReadyQr(qr)) continue;
-    const key = qr.inventoryKey || inventoryKey(qr.productId, qr.sku);
+    if (!isAvailableFinishedGood(qr)) continue;
+    const key = finishedKey(qr.productId, qr.sku);
     counts.set(key, (counts.get(key) || 0) + 1);
   }
   return counts;
+}
+
+function readCatalogDocuments(db) {
+  // Five-minute warm catalog; no reads at all while no one visits.
+  return cacheStorefrontRead("products", 300_000, async () => {
+    const snap = await db.collection(COLLECTIONS.PRODUCTS).get();
+    return toPlainDocs(snap);
+  });
+}
+
+function readStorefrontAvailability(db) {
+  // Short, single-flight snapshot for browsing only. Authoritative reservations
+  // and payment continue to run Firestore transactions against live documents.
+  return cacheStorefrontRead("availability", 60_000, async () => {
+    const [reservations, sharedEnabled] = await Promise.all([
+      readReservationCountsAndSharedBreakdown(db),
+      readSharedEnabled(db),
+    ]);
+    const [blankRows, finishedCounts] = sharedEnabled
+      ? await Promise.all([readSharedBlankRows(db), readFinishedGarmentCounts(db)])
+      : [new Map(), new Map()];
+    return {
+      reserved: reservations.counts,
+      sharedHolds: reservations.sharedHolds,
+      sharedEnabled,
+      blankRows,
+      finishedCounts,
+    };
+  });
 }
 
 function applyActiveReservations(product, reservedCounts, sharedEnabled = false, blankRows = new Map(), finishedCounts=new Map(), sharedHolds={blank:new Map(),finished:new Map()}) {
@@ -130,8 +153,8 @@ function applyActiveReservations(product, reservedCounts, sharedEnabled = false,
 
 export async function listProductsService({category, q, featured, limit, locale = "en"} = {}) {
   const db = getDB();
-  const snap = await db.collection(COLLECTIONS.PRODUCTS).get();
-  let products = toPlainDocs(snap).filter(p => p.active !== false);
+  const catalog = await readCatalogDocuments(db);
+  let products = catalog.filter(p => p.active !== false);
   if (category && category !== 'All') products = products.filter(p => p.category === category);
   if (featured !== undefined) {
     const desired = featured === true || featured === 'true';
@@ -165,16 +188,14 @@ export async function listProductsService({category, q, featured, limit, locale 
   if (!products.some(p => p.variants?.length)) {
     return products.map((product) => localizeProduct(withDefaultGallery(product), locale));
   }
-  const [ready, reserved, sharedEnabled] = await Promise.all([
-    readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
-  ]);
-  const [blankRows,finishedCounts,sharedHolds] = sharedEnabled ? await Promise.all([readSharedBlankRows(db),readFinishedCounts(db),readSharedHoldBreakdown(db)]):[new Map(),new Map(),{blank:new Map(),finished:new Map()}];
+  const { reserved, sharedEnabled, blankRows, finishedCounts, sharedHolds } =
+    await readStorefrontAvailability(db);
 
   return products.map((product) =>
     localizeProduct(
       withDefaultGallery(
         applyActiveReservations(
-          availabilityForProduct(product, ready),
+          availabilityForProduct(product),
           reserved, sharedEnabled, blankRows, finishedCounts, sharedHolds
         )
       ),
@@ -183,36 +204,40 @@ export async function listProductsService({category, q, featured, limit, locale 
   );
 }
 
-export async function getProductByIdOrSlug(idOrSlug, { locale = "en" } = {}) {
+export async function getProductByIdOrSlug(idOrSlug, { locale = "en", includeAvailability = true, fresh = false } = {}) {
   const db = getDB();
   const identifier = String(idOrSlug || '');
+  // Cart/checkout callers can bypass the browsing cache for price and active status.
   let product;
-  const doc = await db.collection(COLLECTIONS.PRODUCTS).doc(identifier).get();
-  if (doc.exists) product = toPlainDoc(doc);
-  else {
-    const query = await db.collection(COLLECTIONS.PRODUCTS)
-      .where('slug', '==', identifier).limit(1).get();
-    if (query.empty) throw new ApiError(404, 'Product not found');
-    product = { id: query.docs[0].id, ...query.docs[0].data() };
+  if (fresh) {
+    const direct = await db.collection(COLLECTIONS.PRODUCTS).doc(identifier).get();
+    if (direct.exists) product = { id: direct.id, ...direct.data() };
+    else {
+      const bySlug = await db.collection(COLLECTIONS.PRODUCTS)
+        .where("slug", "==", identifier).limit(1).get();
+      if (!bySlug.empty) product = { id: bySlug.docs[0].id, ...bySlug.docs[0].data() };
+    }
+  } else {
+    const catalog = await readCatalogDocuments(db);
+    product = catalog.find(p =>
+      String(p.id) === identifier || String(p.slug || '') === identifier
+    );
   }
+  if (!product) throw new ApiError(404, 'Product not found');
   if (product.active === false) throw new ApiError(404, 'Product not found');
-  if (!product.variants?.length) {
+  if (!includeAvailability || !product.variants?.length) {
     return localizeProduct(
       withDefaultGallery(product),
       locale
     );
   }
-  const [ready, reserved, sharedEnabled] = await Promise.all([
-    readReadyCounts(db), readActiveReservationCounts(db), readSharedEnabled(db),
-  ]);
-  const [blankRows, finishedCounts, sharedHolds] = sharedEnabled
-    ? await Promise.all([readSharedBlankRows(db), readFinishedCounts(db), readSharedHoldBreakdown(db)])
-    : [new Map(), new Map(), { blank: new Map(), finished: new Map() }];
+  const { reserved, sharedEnabled, blankRows, finishedCounts, sharedHolds } =
+    await readStorefrontAvailability(db);
 
   return localizeProduct(
     withDefaultGallery(
       applyActiveReservations(
-        availabilityForProduct(product, ready),
+        availabilityForProduct(product),
         reserved, sharedEnabled, blankRows, finishedCounts, sharedHolds
       )
     ),

@@ -31,7 +31,7 @@ async function refreshCartReservations({
   const refreshed = [];
 
   for (const item of Array.isArray(items) ? items : []) {
-    const product = await getProductByIdOrSlug(item.productId);
+    const product = await getProductByIdOrSlug(item.productId, { fresh: true, includeAvailability: false });
     const variant = item.variant
       ? resolveVariantOrThrow(product, item.variant)
       : null;
@@ -103,7 +103,7 @@ export async function getCartByUserId(userId) {
   let rewardItem = null;
   if (qualifiesForKeychain(merchandiseSubtotal(items))) {
     try {
-      const product = await getProductByIdOrSlug(KEYCHAIN_REWARD_PRODUCT_ID);
+      const product = await getProductByIdOrSlug(KEYCHAIN_REWARD_PRODUCT_ID, { fresh: true, includeAvailability: false });
       const variant = availableKeychainVariant(product);
       if (variant !== null) rewardItem = freeKeychainItem(product, variant);
     } catch { /* Out-of-stock or unpublished reward is not promised. */ }
@@ -131,7 +131,7 @@ export async function addCartItem({
 }) {
   const db = getDB();
 
-  const product = await getProductByIdOrSlug(productId);
+  const product = await getProductByIdOrSlug(productId, { fresh: true, includeAvailability: false });
 
   if (product.active === false) {
     throw new ApiError(400, "Product is inactive");
@@ -281,7 +281,7 @@ export async function updateCartItem({
   }
 
   const current = cart.items[idx];
-  const product = await getProductByIdOrSlug(current.productId);
+  const product = await getProductByIdOrSlug(current.productId, { fresh: true, includeAvailability: false });
 
   if (product.active === false) {
     throw new ApiError(400, "Product is inactive");
