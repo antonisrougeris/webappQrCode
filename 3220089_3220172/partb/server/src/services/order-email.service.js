@@ -11,6 +11,8 @@ import { generatePrintQrImage } from "../utils/generatePrintQrImage.js";
 
 import { generatePrintSheet } from "../utils/generatePrintSheet.js";
 import { generateDtfComponentArtwork } from "../utils/generateDtfComponent.js";
+import { createCanvas, loadImage } from "canvas";
+import { normalizeDtfColor } from "./dtf-inventory.service.js";
 import { ensureOrderDtfPlan, componentKey } from "./dtf-inventory.service.js";
 import { getBoxNowOrderLabel } from "./boxnow.service.js";
 
@@ -68,6 +70,21 @@ function orderItemsHtml(order, locale = "en") {
       `;
     })
     .join("");
+}
+
+// Print only the unique QR for modular production. The separately planned
+// logo/neck/slogan materials must not be printed twice on a full A3 sheet.
+async function generateQrOnlyForPaidShirt(qrUrl, garmentColor) {
+  const ink = normalizeDtfColor(garmentColor);
+  const hex = ink === "white" ? "#ffffff" : "#000000";
+  const png = await generatePrintQrImage(qrUrl, {
+    qrColor: hex, textColor: hex, textPrint: "", size: 3540,
+  });
+  const image = await loadImage(png);
+  const width = Math.round(28 / 2.54 * 300);
+  const canvas = createCanvas(width, width);
+  canvas.getContext("2d").drawImage(image, 0, 0, width, width);
+  return canvas.toBuffer("image/png", { resolution: 300 });
 }
 
 function isTshirtPrintSize(size) {
@@ -360,13 +377,14 @@ export async function sendPaidOrderEmails(order) {
       let buffer = qrBuffer;
       let filename = `qr-${qr.productTitle || qr.shortId}.png`;
 
-      if (isTshirtPrintSize(qr.variant?.size)) {
+      if (qr.fulfillmentMode === "made_to_order" && isTshirtPrintSize(qr.variant?.size)) {
+        buffer = await generateQrOnlyForPaidShirt(qrUrl, qr.variant.color);
+        filename = `QR-ONLY-${qr.shortId}-${normalizeDtfColor(qr.variant.color)}-28cm.png`;
+      } else if (isTshirtPrintSize(qr.variant?.size)) {
         buffer = await generatePrintSheet({
-          qrBuffer,
-          shirtColor: qr.variant?.color || "Black",
+          qrBuffer, shirtColor: qr.variant?.color || "Black",
           shirtSize: qr.variant?.size,
         });
-
         filename = `print-${qr.productTitle || qr.shortId}.png`;
       }
 
@@ -435,6 +453,15 @@ export async function sendPaidOrderEmails(order) {
 
         <hr/>
 
+        <h3>Blank T-shirt allocation</h3>
+        <p>Check Inventory &amp; Production → Production Queue for physical/virtual allocations.
+        Jobs marked awaiting_blank require receiving the physical shirt before production.</p>
+        <h3>QR transfers by garment color</h3>
+        <ul>${(productionPlan.qrTransfers || []).map(qr=>
+          `<li>${escapeHtml(qr.shirtColor)} shirt / ${escapeHtml(qr.size)}:
+          ${escapeHtml(qr.inkColor)} ink QR ${escapeHtml(qr.shortId)} —
+          ${qr.source === "print_required" ? "PRINT NEW QR (attached 28cm artwork)" : "PICK EXISTING PHYSICAL QR TRANSFER"}</li>`
+        ).join("")}</ul>
         <h3>DTF Production Plan</h3>
         <p>Full A3 and QR-only physical transfers are not regenerated.</p>
         <p>Artwork attachments below are templates: print the required number
