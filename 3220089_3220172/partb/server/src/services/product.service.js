@@ -89,7 +89,7 @@ function readCatalogDocuments(db) {
 function readStorefrontAvailability(db) {
   // Short, single-flight snapshot for browsing only. Authoritative reservations
   // and payment continue to run Firestore transactions against live documents.
-  return cacheStorefrontRead("availability", 60_000, async () => {
+  return cacheStorefrontRead("availability", 300_000, async () => {
     const [reservations, sharedEnabled] = await Promise.all([
       readReservationCountsAndSharedBreakdown(db),
       readSharedEnabled(db),
@@ -204,13 +204,25 @@ export async function listProductsService({category, q, featured, limit, locale 
   );
 }
 
-export async function getProductByIdOrSlug(idOrSlug, { locale = "en", includeAvailability = true } = {}) {
+export async function getProductByIdOrSlug(idOrSlug, { locale = "en", includeAvailability = true, fresh = false } = {}) {
   const db = getDB();
   const identifier = String(idOrSlug || '');
-  const catalog = await readCatalogDocuments(db);
-  const product = catalog.find(p =>
-    String(p.id) === identifier || String(p.slug || '') === identifier
-  );
+  // Cart/checkout callers can bypass the browsing cache for price and active status.
+  let product;
+  if (fresh) {
+    const direct = await db.collection(COLLECTIONS.PRODUCTS).doc(identifier).get();
+    if (direct.exists) product = { id: direct.id, ...direct.data() };
+    else {
+      const bySlug = await db.collection(COLLECTIONS.PRODUCTS)
+        .where("slug", "==", identifier).limit(1).get();
+      if (!bySlug.empty) product = { id: bySlug.docs[0].id, ...bySlug.docs[0].data() };
+    }
+  } else {
+    const catalog = await readCatalogDocuments(db);
+    product = catalog.find(p =>
+      String(p.id) === identifier || String(p.slug || '') === identifier
+    );
+  }
   if (!product) throw new ApiError(404, 'Product not found');
   if (product.active === false) throw new ApiError(404, 'Product not found');
   if (!includeAvailability || !product.variants?.length) {
