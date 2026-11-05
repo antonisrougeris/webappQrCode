@@ -89,7 +89,7 @@ function readCatalogDocuments(db) {
 function readStorefrontAvailability(db) {
   // Short, single-flight snapshot for browsing only. Authoritative reservations
   // and payment continue to run Firestore transactions against live documents.
-  return cacheStorefrontRead("availability", 300_000, async () => {
+  return cacheStorefrontRead("availability", 60_000, async () => {
     const [reservations, sharedEnabled] = await Promise.all([
       readReservationCountsAndSharedBreakdown(db),
       readSharedEnabled(db),
