@@ -6,10 +6,7 @@ import { COLLECTIONS } from "../constants/collections.js";
 import { ApiError } from "../utils/apiError.js";
 import { nowIso } from "../utils/ids.js";
 import { invalidateStorefrontReadCache } from "./storefront-read-cache.service.js";
-import {
-  inventoryKey as qrInventoryKey,
-  isReadyQr,
-} from "./stock-availability.service.js";
+import { inventoryKey as qrInventoryKey } from "./stock-availability.service.js";
 
 const DEFAULT_GUEST_CART_RESERVATION_MINUTES = 30;
 const DEFAULT_SIGNED_IN_CART_RESERVATION_HOURS = 2;
@@ -126,23 +123,6 @@ function rawFallbackStock(product, variant) {
   return Number.isSafeInteger(value) && value >= 0 ? value : 0;
 }
 
-async function readyQrCountInTransaction(tx, db, product, variant) {
-  if (!product?.customQr || !variant?.sku) {
-    return 0;
-  }
-
-  const key = getInventoryKey(product.id, variant);
-
-  const snapshot = await tx.get(
-    db
-      .collection(COLLECTIONS.QR_CODES)
-      .where("status", "==", "available")
-      .where("inventoryKey", "==", key)
-  );
-
-  return snapshot.docs.filter((doc) => isReadyQr(doc.data())).length;
-}
-
 export async function reserveInventoryHold({
   holdId,
   ownerId,
@@ -198,10 +178,10 @@ export async function reserveInventoryHold({
       .collection(COLLECTIONS.INVENTORY_HOLDS)
       .doc(reservationDocId(inventoryKey));
 
-    const [holdSnap, readyCount, blankSnap, finishedSnap] = await Promise.all([
+    const [holdSnap, blankSnap, finishedSnap] = await Promise.all([
       tx.get(holdRef),
-      sharedKey ? Promise.resolve(0) : readyQrCountInTransaction(tx, db, product, variant),
       sharedKey ? tx.get(db.collection(BLANK_COLLECTION).doc(blankIdFromReservationKey(sharedKey))) : Promise.resolve(null),
+      // Only physically finished shirts count as extra sellable units.
       sharedKey ? tx.get(db.collection(COLLECTIONS.QR_CODES)
         .where("status","==","available").where("inventoryKey","==",finishedKey(product.id,variant.sku))) : Promise.resolve(null),
     ]);
@@ -227,7 +207,7 @@ export async function reserveInventoryHold({
     const freeBlank=sharedKey?Math.max(0,sharedAvailable(blankSnap.data())-breakdown.blankReserved):0;
     const finishedQuantity=sharedKey?Math.min(qty,freeFinished):0;
     const blankQuantity=sharedKey?qty-finishedQuantity:qty;
-    const baseStock=sharedKey?freeFinished+freeBlank:rawFallbackStock(product,variant)+readyCount;
+    const baseStock=sharedKey?freeFinished+freeBlank:rawFallbackStock(product,variant);
     const availableForThisHold=sharedKey?freeFinished+freeBlank:baseStock-reservedByOthers;
     if(availableForThisHold<qty || (sharedKey && blankQuantity>freeBlank)){
       throw new ApiError(409,"Not enough stock for the selected size/color");
