@@ -1,5 +1,6 @@
 import { BLANK_COLLECTION, JOB_COLLECTION, blankIdFromReservationKey, isSharedReservationKey, planSharedAllocation, isAvailableFinishedGood, isReservedFinishedGood } from "./shared-blank-inventory.service.js";
 import { sendMetaPurchaseForPaidOrder } from "./meta-conversions.service.js";
+import { invalidateStorefrontReadCache } from "./storefront-read-cache.service.js";
 import { sendAdminPush } from "./admin-push.service.js";
 import { getDB } from "../config/db.js";
 import { COLLECTIONS } from "../constants/collections.js";
@@ -2031,6 +2032,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
     );
   });
 
+  if (newlyPaidOrder) invalidateStorefrontReadCache("availability");
 
   console.log(
     "After transaction paidOrderForEmail:",
