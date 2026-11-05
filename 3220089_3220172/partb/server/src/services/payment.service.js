@@ -2032,7 +2032,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
     );
   });
 
-  if (newlyPaidOrder) invalidateStorefrontReadCache("availability");
+  if (newlyPaidOrder) invalidateStorefrontReadCache("availability", "products");
 
   console.log(
     "After transaction paidOrderForEmail:",
