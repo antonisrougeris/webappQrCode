@@ -8,6 +8,7 @@ import { ApiError } from "../utils/apiError.js";
 import { createId, nowIso } from "../utils/ids.js";
 
 import { sendPaidOrderEmails } from "./order-email.service.js";
+import { ensureOrderDtfPlan } from "./dtf-inventory.service.js";
 
 import {
   reserveUniqueQrShortId,
@@ -2268,6 +2269,24 @@ export async function markOrderPaidFromVivaWebhook(payload) {
     }
   }
 
+
+  // Persist the physical transfer/QR production plan regardless of whether
+  // customer/admin email delivery succeeds. Never reconsume component stock
+  // on duplicate Viva notifications: ensureOrderDtfPlan is idempotent.
+  if (paidOrderForEmail?.id) {
+    try {
+      const qrDocs = await getDB().collection(COLLECTIONS.QR_CODES)
+        .where("orderId", "==", paidOrderForEmail.id).get();
+      await ensureOrderDtfPlan(
+        paidOrderForEmail.id,
+        qrDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      );
+    } catch (error) {
+      console.error("paid_order_production_plan_failed", {
+        orderId: paidOrderForEmail.id, message: error?.message,
+      });
+    }
+  }
 
   /* ==================================================
      EMAIL
