@@ -54,19 +54,50 @@ export function neededComponents(qr) {
  * This is intentionally separate from QR assignment; missing transfers become
  * production instructions and never falsely count as physical inventory.
  */
-export async function ensureOrderDtfPlan(orderId, qrDocs, {db=getDB()}={}) {
-  const orderRef=db.collection("orders").doc(String(orderId));
+/**
+ * Finished shirts and preprinted A3 transfers already carry their printed QR
+ * and complete artwork; only modular or newly generated QR items need
+ * individual DTF components. A QR transfer is NEVER garment inventory.
+ */
+export function buildPaidOrderDtfRequirements(qrDocs) {
   const needed = [];
+  const qrPrints = [];
+  const qrTransfers = [];
   for (const qr of qrDocs) {
-    if (qr.fulfillmentMode !== "modular_qr") continue;
-    if (!qr.variant?.size || !["S","M","L","XL","2XL","XXL"].includes(String(qr.variant.size).toUpperCase())) continue;
+    if (!["modular_qr", "made_to_order"].includes(qr.fulfillmentMode)) continue;
+    const shirtSize = String(qr.variant?.size || "").toUpperCase();
+    if (!DTF_SIZES.includes(shirtSize === "XXL" ? "2XL" : shirtSize)) continue;
+    if (!qr.variant?.color) continue;
+    const printColor = normalizeDtfColor(qr.variant.color);
+    const instruction = {
+      qrId: String(qr.id),
+      shortId: String(qr.shortId || ""),
+      orderItemId: String(qr.orderItemId || ""),
+      shirtColor: String(qr.variant.color),
+      inkColor: printColor,
+      size: normalizeSize(qr.variant.size),
+      source: qr.fulfillmentMode === "modular_qr" ? "physical_stock" : "print_required",
+    };
+    qrTransfers.push(instruction);
+    if (instruction.source === "print_required") qrPrints.push(instruction);
     for (const spec of neededComponents(qr)) needed.push({...spec, qrId:qr.id});
   }
-  if (!needed.length) return {components:[], missing:[]};
+  return { needed, qrPrints, qrTransfers };
+}
+
+/**
+ * Claim physical logo/neck/slogan transfers exactly once for each PAID order.
+ * Missing transfers remain explicit print instructions; they are not invented
+ * as stock. The saved plan is idempotent across repeated Viva webhooks/emails.
+ */
+export async function ensureOrderDtfPlan(orderId, qrDocs, {db=getDB()}={}) {
+  const orderRef=db.collection("orders").doc(String(orderId));
+  const {needed,qrPrints,qrTransfers}=buildPaidOrderDtfRequirements(qrDocs);
   const keys=[...new Set(needed.map(componentKey))].sort();
   return db.runTransaction(async tx=>{
     const orderSnap=await tx.get(orderRef);
     if (!orderSnap.exists) throw new Error("Order missing for DTF allocation");
+    if (orderSnap.data()?.paymentStatus !== "paid") throw new Error("DTF allocation is only allowed after payment");
     if (orderSnap.data()?.dtfProductionPlan) return orderSnap.data().dtfProductionPlan;
     const refs=keys.map(key=>db.collection(DTF_COLLECTION).doc(key));
     const snaps=await Promise.all(refs.map(ref=>tx.get(ref)));
@@ -86,7 +117,13 @@ export async function ensureOrderDtfPlan(orderId, qrDocs, {db=getDB()}={}) {
       const consumed=used.get(keys[i])||0;
       if (consumed) tx.set(refs[i],{physicalQuantity:availability.get(keys[i]),updatedAt:nowIso()},{merge:true});
     }
-    const plan={components,missing:components.filter(item=>item.source==="print_required"),createdAt:nowIso()};
+    const plan={
+      components,
+      missing:components.filter(item=>item.source==="print_required"),
+      qrPrints,
+      qrTransfers,
+      createdAt:nowIso(),
+    };
     tx.set(orderRef,{dtfProductionPlan:plan,updatedAt:nowIso()},{merge:true});
     return plan;
   });
