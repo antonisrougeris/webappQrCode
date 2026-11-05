@@ -950,6 +950,14 @@ async function openOrder(orderId: string) {
     </div>
 
     ${productionRequirementsHtml(order)}
+    <div class="admin-detail-group">
+      <h3>QR / DTF production artwork</h3>
+      ${(Array.isArray(order.qrFiles) ? order.qrFiles : [])
+        .filter((url: unknown) => typeof url === "string" && /^https:\/\//.test(url))
+        .map((url: string, index: number) =>
+          `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="admin-secondary-button admin-button-link">Download production artwork ${index + 1}</a>`
+        ).join(" ") || '<p class="admin-muted">Artwork will be available here after the paid-order production email is prepared.</p>'}
+    </div>
 
     <div class="admin-detail-group">
       <h3>Assigned QR codes</h3>
