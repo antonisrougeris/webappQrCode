@@ -37,5 +37,6 @@ test("paid reserved-QR allocation uses validated finishedGood and preserves lega
   assert.match(payment,/const permittedFinished = Array\.isArray\(order\.stockReservations\)/);
   assert.match(payment,/if \(finishedPicked < permittedFinished\)/);
   assert.match(payment,/finishedGood:true/);
+  assert.match(payment,/assignment\.finishedGood \? \{ finishedGoodStatus: "assigned" \} : \{\}/);
   assert.match(payment,/const modular = chooseModularQr\(item\)/);
 });
