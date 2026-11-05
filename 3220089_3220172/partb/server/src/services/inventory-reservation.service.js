@@ -285,7 +285,8 @@ export async function reserveInventoryHold({
       expiresAt,
       availableAfter: availableForThisHold - qty,
     };
-    invalidateStorefrontReadCache("availability");
+  });
+  invalidateStorefrontReadCache("availability");
   return result;
 }
 
