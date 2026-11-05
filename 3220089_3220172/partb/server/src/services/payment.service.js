@@ -1626,22 +1626,21 @@ export async function markOrderPaidFromVivaWebhook(payload) {
           );
 
         const orderItemIds =
-          new Set(
-            (order.items || []).map((item) =>
-              String(item.id)
-            )
-          );
+          new Set((order.items || []).map(item => String(item.id)));
+        const checkoutHoldIds =
+          new Set(stockReservations.map(reservation => String(reservation.holdId || "")));
 
         tx.set(
           entry.holdRef,
           {
-            holds:
-              active.filter(
-                (hold) =>
-                  !orderItemIds.has(
-                    String(hold.id)
-                  )
-              ),
+            // Checkout hold IDs are order:<orderId>:<orderItemId>, NOT the
+            // item ID. Remove only the paid order's holds so committedPhysical
+            // and a stale reservation cannot both reduce sellable inventory.
+            holds: active.filter(hold =>
+              !checkoutHoldIds.has(String(hold.id)) &&
+              !(String(hold.orderId || "") === String(order.id) &&
+                orderItemIds.has(String(hold.orderItemId || "")))
+            ),
             updatedAt:
               paidAt,
           },
@@ -2286,7 +2285,7 @@ export async function markOrderPaidFromVivaWebhook(payload) {
   // Persist the physical transfer/QR production plan regardless of whether
   // customer/admin email delivery succeeds. Never reconsume component stock
   // on duplicate Viva notifications: ensureOrderDtfPlan is idempotent.
-  if (paidOrderForEmail?.id) {
+  if (paidOrderForEmail?.id && !paidOrderForEmail?.dtfProductionPlan) {
     try {
       const qrDocs = await getDB().collection(COLLECTIONS.QR_CODES)
         .where("orderId", "==", paidOrderForEmail.id).get();
