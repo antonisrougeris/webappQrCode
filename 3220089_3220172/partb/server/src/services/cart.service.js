@@ -131,7 +131,7 @@ export async function addCartItem({
 }) {
   const db = getDB();
 
-  const product = await getProductByIdOrSlug(productId);
+  const product = await getProductByIdOrSlug(productId, { fresh: true, includeAvailability: false });
 
   if (product.active === false) {
     throw new ApiError(400, "Product is inactive");
