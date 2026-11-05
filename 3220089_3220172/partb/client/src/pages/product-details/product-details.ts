@@ -1874,10 +1874,13 @@ if (imageStage) {
       }catch(error){console.warn("Stock refresh failed; checkout will revalidate",error);}
       finally{stockFetchInFlight=false;}
     };
-    const onStockFocus=()=>{if(!document.hidden&&Date.now()-lastStockFetch>1500)void refreshProductStock();};
+    // Do not poll Firestore indirectly while a product tab sits open.
+    // Revalidate after returning to the tab; cart/checkout transactions remain authoritative.
+    const onStockFocus=()=>{
+      if(!document.hidden&&Date.now()-lastStockFetch>=60000)void refreshProductStock();
+    };
     window.addEventListener("focus",onStockFocus);
     document.addEventListener("visibilitychange",onStockFocus);
-    window.setInterval(()=>{if(!document.hidden&&Date.now()-lastStockFetch>=60000)void refreshProductStock();},60000);
     // Non-critical requests run AFTER cart handlers are attached. Neither
     // reviews nor recommendations should delay the size picker / CTA.
     void (async () => {
