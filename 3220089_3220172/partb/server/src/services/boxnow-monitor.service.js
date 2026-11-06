@@ -11,7 +11,6 @@ import {
 } from "./boxnow-webhook.service.js";
 import { sendEmail } from "./email.service.js";
 import {
-  BOXNOW_MONITOR_INTERVAL_MS,
   BOXNOW_MONITOR_ERROR_THRESHOLD,
   isMonitorCandidate,
   extractBoxNowParcelSnapshot,
@@ -22,13 +21,9 @@ import {
   isFinalizedBoxNowMonitorEvent,
 } from "./boxnow-monitor-policy.js";
 
-const JOB_COLLECTION = "operational_jobs";
 const ALERT_COLLECTION = "boxnow_shipping_monitor_alerts";
-const LEASE_MS = 20 * 60_000;
 const ALERT_LEASE_MS = 15 * 60_000;
-const MAX_ORDERS = 40;
-let timer = null;
-let running = false;
+const inFlightOrderChecks = new Map();
 
 const escapeHtml = value => String(value ?? "").replaceAll("&", "&amp;")
   .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
@@ -42,32 +37,6 @@ function isEnabled() {
 
 function parcelIdFor(order) {
   return String(order?.shipping?.boxnow?.parcelIds?.[0] || order?.shipping?.parcelId || "").trim();
-}
-
-async function leaseJob(db) {
-  const ref = db.collection(JOB_COLLECTION).doc("boxnow_shipping_monitor");
-  const owner = crypto.randomUUID();
-  const claimed = await db.runTransaction(async tx => {
-    const doc = await tx.get(ref);
-    const state = doc.exists ? doc.data() : {};
-    if (Date.parse(state.leaseUntil || "") > Date.now()) return false;
-    tx.set(ref, {
-      owner,
-      leaseUntil: new Date(Date.now() + LEASE_MS).toISOString(),
-      startedAt: nowIso(),
-    }, { merge: true });
-    return true;
-  });
-  return claimed ? { ref, owner } : null;
-}
-
-async function releaseJob(db, lease) {
-  if (!lease) return;
-  await db.runTransaction(async tx => {
-    const snap = await tx.get(lease.ref);
-    if (snap.data()?.owner !== lease.owner) return;
-    tx.set(lease.ref, { leaseUntil: nowIso(), finishedAt: nowIso() }, { merge: true });
-  });
 }
 
 function alertId(orderId, kind) {
@@ -337,66 +306,43 @@ async function processOrder(db, order) {
   }
 }
 
-export async function runBoxNowShippingMonitor() {
-  if (!isEnabled() || running) return { skipped: true };
-  running = true;
-  let lease;
-  try {
-    const db = getDB();
-    lease = await leaseJob(db);
-    if (!lease) return { skipped: true, reason: "leased" };
-    const query = await db.collection(COLLECTIONS.ORDERS)
-      .where("shipping.boxnow.environment", "==", "production").get();
-    const candidates = query.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(isMonitorCandidate)
-      .sort((a, b) => {
-        const aChecked = Date.parse(a.shipping?.monitor?.lastCheckedAt || "");
-        const bChecked = Date.parse(b.shipping?.monitor?.lastCheckedAt || "");
-        return (Number.isFinite(aChecked) ? aChecked : 0) -
-          (Number.isFinite(bChecked) ? bChecked : 0);
-      });
-    // Finite, low-concurrency polling; other orders are picked next run.
-    const batch = candidates.slice(0, MAX_ORDERS);
-    let processed = 0;
-    for (const order of batch) {
-      try {
-        await processOrder(db, order);
-        processed += 1;
-      } catch (error) {
-        console.error("boxnow_monitor_order_failed", {
-          orderId: order.id, message: error.message,
-        });
-      }
+/**
+ * Event-driven reconciliation: only the order that changed is read.
+ * No 30-minute background timer, global lease, or query over all orders.
+ * Webhooks remain authoritative and this is a one-shot recovery check.
+ *
+ * Multiple requests in the same Node process share one check. Firestore
+ * transactions and alert leases still protect provider event updates and
+ * email notifications across multiple workers.
+ */
+export async function checkBoxNowOrderNow(orderId, { source = "manual" } = {}) {
+  const id = String(orderId || "").trim();
+  if (!id) return { skipped: true, reason: "missing_order" };
+  if (!isEnabled()) return { skipped: true, reason: "monitor_disabled" };
+  if (inFlightOrderChecks.has(id)) return inFlightOrderChecks.get(id);
+  const promise = (async () => {
+    const snap = await getDB().collection(COLLECTIONS.ORDERS).doc(id).get();
+    if (!snap.exists) return { skipped: true, reason: "order_not_found" };
+    const order = { id: snap.id, ...snap.data() };
+    if (!isMonitorCandidate(order)) {
+      return { skipped: true, reason: "not_eligible" };
     }
-    console.info("boxnow_monitor_completed", { processed, eligible: candidates.length });
-    return { processed, eligible: candidates.length };
-  } catch (error) {
-    console.error("boxnow_monitor_run_failed", { message: error.message });
-    return { error: true };
-  } finally {
-    if (lease) {
-      try { await releaseJob(getDB(), lease); }
-      catch (error) { console.error("boxnow_monitor_release_failed", error.message); }
-    }
-    running = false;
-  }
+    await processOrder(getDB(), order);
+    console.info("boxnow_order_checked", { orderId: id, source });
+    return { checked: true, orderId: id };
+  })().finally(() => inFlightOrderChecks.delete(id));
+  inFlightOrderChecks.set(id, promise);
+  return promise;
 }
 
-export function startBoxNowShippingMonitor() {
-  if (!isEnabled()) {
-    console.info("boxnow_monitor_disabled");
-    return;
-  }
-  if (timer) return;
-  console.info("boxnow_monitor_started", { intervalMinutes: 30, batchLimit: MAX_ORDERS });
-  // Startup delay avoids competing with deployment health checks and initial API setup.
-  const startup = setTimeout(() => { void runBoxNowShippingMonitor(); }, 120_000);
-  startup.unref();
-  timer = setInterval(() => { void runBoxNowShippingMonitor(); }, BOXNOW_MONITOR_INTERVAL_MS);
-  timer.unref();
-}
-
-export function stopBoxNowShippingMonitor() {
-  if (timer) clearInterval(timer);
-  timer = null;
+/**
+ * Run a check only in response to a real order change. Never throw into a
+ * successful payment/admin operation if the carrier API is unavailable.
+ */
+export function triggerBoxNowOrderCheck(orderId, source = "order_change") {
+  void checkBoxNowOrderNow(orderId, { source }).catch(error => {
+    console.error("boxnow_event_check_failed", {
+      orderId: String(orderId), source, message: error?.message,
+    });
+  });
 }
