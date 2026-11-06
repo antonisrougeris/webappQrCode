@@ -9,6 +9,7 @@ import { createId, nowIso } from "../utils/ids.js";
 
 import { sendPaidOrderEmails } from "./order-email.service.js";
 import { ensureOrderDtfPlan } from "./dtf-inventory.service.js";
+import { triggerBoxNowOrderCheck } from "./boxnow-monitor.service.js";
 
 import {
   reserveUniqueQrShortId,
@@ -594,6 +595,9 @@ async function processPaidBoxNowShipping(orderId) {
       attemptId,
       result,
     });
+    // One immediate check for this new production parcel. No recurring
+    // scan of unrelated orders and no impact on Viva payment success.
+    triggerBoxNowOrderCheck(order.id, "parcel_created");
   } catch (error) {
     await markBoxNowShippingFailed({
       orderId: order.id,

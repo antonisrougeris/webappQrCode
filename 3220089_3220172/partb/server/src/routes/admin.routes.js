@@ -19,6 +19,7 @@ import {
 
   getAdminFulfillment,
   updateOrderFulfillment,
+  checkAdminOrderBoxNow,
   updateOrderChecklist,
   updateOrderShipping,
   updateOrderReceipt,
@@ -222,6 +223,8 @@ router.patch(
   "/orders/:id/fulfillment",
   updateOrderFulfillment
 );
+
+router.post("/orders/:id/boxnow/check", checkAdminOrderBoxNow);
 
 router.patch(
   "/orders/:id/checklist",

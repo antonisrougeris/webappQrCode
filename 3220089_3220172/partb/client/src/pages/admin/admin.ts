@@ -1023,7 +1023,10 @@ async function openOrder(orderId: string) {
       ${shipping.parcelId
         ? `<p class="admin-muted">Tracking: <a href="https://boxnow.gr/?track=${encodeURIComponent(String(shipping.parcelId))}" target="_blank" rel="noopener noreferrer">https://boxnow.gr/?track=${escapeHtml(String(shipping.parcelId))}</a></p>`
         : ""}
-      <div class="admin-actions"><button id="saveShippingButton" class="admin-secondary-button" type="button">Save parcel ID</button></div>
+      <div class="admin-actions">
+        <button id="saveShippingButton" class="admin-secondary-button" type="button">Save parcel ID</button>
+        <button id="checkBoxNowButton" class="admin-secondary-button" type="button">Check BOX NOW status</button>
+      </div>
       <p id="shippingStatus" class="admin-inline-status"></p>
     </div>
 
@@ -1206,6 +1209,27 @@ function bindOrderDrawerActions(order: any) {
         "success"
       );
       await openOrder(order.id);
+    } catch (error) {
+      setInlineStatus(statusEl, errorMessage(error), "error");
+    }
+  });
+
+  document.getElementById("checkBoxNowButton")?.addEventListener("click", async () => {
+    const statusEl = document.getElementById("shippingStatus");
+    setInlineStatus(statusEl, "Checking this order with BOX NOW...");
+    try {
+      const result = await adminApi(`/orders/${encodeURIComponent(order.id)}/boxnow/check`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      if (result.skipped) {
+        setInlineStatus(statusEl, `BOX NOW check skipped: ${result.reason || "not eligible"}.`, "error");
+      } else if (result.error) {
+        setInlineStatus(statusEl, `BOX NOW status could not be verified: ${result.error}`, "error");
+      } else {
+        setInlineStatus(statusEl, "BOX NOW check completed.", "success");
+        await openOrder(order.id);
+      }
     } catch (error) {
       setInlineStatus(statusEl, errorMessage(error), "error");
     }
