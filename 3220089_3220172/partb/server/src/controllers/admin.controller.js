@@ -13,6 +13,7 @@ import { ok } from "../utils/response.js";
 import { ApiError } from "../utils/apiError.js";
 
 import { getDB } from "../config/db.js";
+import { checkBoxNowOrderNow, triggerBoxNowOrderCheck } from "../services/boxnow-monitor.service.js";
 import {
   parseProductColors,
   parseProductVariants,
@@ -1484,6 +1485,9 @@ export const updateOrderFulfillment = asyncHandler(
     }
 
     await ref.update(update);
+    if (status !== previousStatus && ["ready", "cancelled"].includes(status)) {
+      triggerBoxNowOrderCheck(orderId, "fulfillment_status_changed");
+    }
 
     const updated = await ref.get();
 
@@ -1496,6 +1500,16 @@ export const updateOrderFulfillment = asyncHandler(
     });
   }
 );
+
+
+/* Admin-only, on-demand BOX NOW reconciliation of ONE order.
+ * A failed API call never edits payment state and is surfaced to the admin.
+ */
+export const checkAdminOrderBoxNow = asyncHandler(async (req, res) => {
+  const orderId = cleanString(req.params.id, 200);
+  const result = await checkBoxNowOrderNow(orderId, { source: "admin_manual" });
+  return res.status(200).json({ success: true, ...result });
+});
 
 
 /* =========================================================
@@ -1604,6 +1618,9 @@ export const updateOrderShipping = asyncHandler(
       shipping,
       updatedAt: nowIso(),
     });
+    if (String(current.parcelId || "") !== parcelId) {
+      triggerBoxNowOrderCheck(orderId, "parcel_id_updated");
+    }
 
     return res.status(200).json({
       success: true,
@@ -3601,6 +3618,8 @@ export const shipOrderAndNotify =
         }
       );
 
+
+      triggerBoxNowOrderCheck(order.id, "order_shipped");
 
       return res
         .status(200)
