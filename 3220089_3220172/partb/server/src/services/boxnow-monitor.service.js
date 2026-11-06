@@ -237,7 +237,7 @@ async function processOrder(db, order) {
     order.completionSource === "boxnow_api_reconciliation" &&
     !order.emails?.deliveredOrderSentAt) {
     await sendDeliveredOrderEmail(order.id);
-    return;
+    return { checked: true, outcome: "delivery_email_retried" };
   }
   const parcelId = parcelIdFor(order);
   let snapshot;
@@ -246,7 +246,7 @@ async function processOrder(db, order) {
     snapshot = extractBoxNowParcelSnapshot(response, parcelId, order.orderNumber);
   } catch (error) {
     await recordFailure(db, order, error);
-    return;
+    return { checked: false, error: "carrier_lookup_failed" };
   }
 
   const changed = await reconcile(db, order, snapshot);
@@ -303,7 +303,7 @@ async function processOrder(db, order) {
         '<p>Tracking: <a href="https://boxnow.gr/?track=' +
         encodeURIComponent(parcelId) + '">BOX NOW</a></p></div>',
     });
-  }
+  }  return { checked: true, outcome: changed.updated ? "reconciled" : "up_to_date", event: snapshot.event };
 }
 
 /**
@@ -327,9 +327,9 @@ export async function checkBoxNowOrderNow(orderId, { source = "manual" } = {}) {
     if (!isMonitorCandidate(order)) {
       return { skipped: true, reason: "not_eligible" };
     }
-    await processOrder(getDB(), order);
-    console.info("boxnow_order_checked", { orderId: id, source });
-    return { checked: true, orderId: id };
+    const result = await processOrder(getDB(), order);
+    console.info("boxnow_order_checked", { orderId: id, source, outcome: result?.outcome || result?.error });
+    return { orderId: id, ...result };
   })().finally(() => inFlightOrderChecks.delete(id));
   inFlightOrderChecks.set(id, promise);
   return promise;
