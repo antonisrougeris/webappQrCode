@@ -1485,7 +1485,7 @@ export const updateOrderFulfillment = asyncHandler(
     }
 
     await ref.update(update);
-    if (status !== previousStatus && ["ready", "cancelled"].includes(status)) {
+    if (status !== previousStatus) {
       triggerBoxNowOrderCheck(orderId, "fulfillment_status_changed");
     }
 
